@@ -792,6 +792,27 @@
         { "index": 9, "name": "lfoFreqUnit", "label": "LFO freq unit", "type": "enum", "enum": "flanger_lfo_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 2 }
       ]
     },
+    "FM": {
+      "controllers": [
+        { "index": 0, "name": "cVolume", "label": "C.Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
+        { "index": 1, "name": "mVolume", "label": "M.Volume", "type": "int32", "min": 0, "max": 256, "default": 48, "normal": -1, "group": 0 },
+        { "index": 2, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 3, "name": "cFreqRatio", "label": "C.Freq ratio", "type": "int32", "min": 0, "max": 16, "default": 1, "normal": -1, "group": 0 },
+        { "index": 4, "name": "mFreqRatio", "label": "M.Freq ratio", "type": "int32", "min": 0, "max": 16, "default": 1, "normal": -1, "group": 0 },
+        { "index": 5, "name": "mSelfModulation", "label": "M.Self-modulation", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 0 },
+        { "index": 6, "name": "cAttack", "label": "C.Attack", "type": "int32", "min": 0, "max": 512, "default": 32, "normal": -1, "group": 1 },
+        { "index": 7, "name": "cDecay", "label": "C.Decay", "type": "int32", "min": 0, "max": 512, "default": 32, "normal": -1, "group": 1 },
+        { "index": 8, "name": "cSustain", "label": "C.Sustain", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 1 },
+        { "index": 9, "name": "cRelease", "label": "C.Release", "type": "int32", "min": 0, "max": 512, "default": 64, "normal": -1, "group": 1 },
+        { "index": 10, "name": "mAttack", "label": "M.Attack", "type": "int32", "min": 0, "max": 512, "default": 32, "normal": -1, "group": 2 },
+        { "index": 11, "name": "mDecay", "label": "M.Decay", "type": "int32", "min": 0, "max": 512, "default": 32, "normal": -1, "group": 2 },
+        { "index": 12, "name": "mSustain", "label": "M.Sustain", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 2 },
+        { "index": 13, "name": "mRelease", "label": "M.Release", "type": "int32", "min": 0, "max": 512, "default": 64, "normal": -1, "group": 2 },
+        { "index": 14, "name": "mScalingPerKey", "label": "M.Scaling per key", "type": "int32", "min": 0, "max": 4, "default": 0, "normal": -1, "group": 2 },
+        { "index": 15, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 16, "default": 4, "normal": -1, "group": 3, "unit": "ch." },
+        { "index": 16, "name": "mode", "label": "Mode", "type": "enum", "enum": "quality_mode", "min": 0, "max": 3, "default": 1, "normal": -1, "group": 3 }
+      ]
+    },
     "FMX": {
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 0 },

@@ -543,6 +543,48 @@ test("decodes LFO controllers", async () => {
   });
 });
 
+test("decodes FM controllers", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const fms = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "FM") {
+        fms.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  assert.equal(fms.length, 17);
+  assert.deepEqual(fms[0].controllers, {
+    cVolume: 32,
+    mVolume: 0,
+    panning: 128,
+    cFreqRatio: 8,
+    mFreqRatio: 12,
+    mSelfModulation: 7,
+    cAttack: 0,
+    cDecay: 64,
+    cSustain: 0,
+    cRelease: 64,
+    mAttack: 0,
+    mDecay: 0,
+    mSustain: 101,
+    mRelease: 64,
+    mScalingPerKey: 4,
+    polyphony: 16,
+    mode: "hq",
+  });
+});
+
 test("decodes FMX controllers as operator structures", async () => {
   const buffer = await readFile("music/2022-04-18.sunvox");
   const document = parseContainer(buffer);
