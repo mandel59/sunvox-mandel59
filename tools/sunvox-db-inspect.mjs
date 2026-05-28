@@ -596,7 +596,49 @@ function hasControllerRepeat(moduleDefinition) {
   return (moduleDefinition?.controllers ?? []).some((controller) => controller.repeat);
 }
 
-function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
+function dataDefinitionLabel(definition) {
+  if (Number.isInteger(definition.index)) {
+    return `${definition.name ?? "(unnamed)"}#${definition.index}`;
+  }
+  if (Number.isInteger(definition.start) && Number.isInteger(definition.end)) {
+    return `${definition.name ?? "(unnamed)"}#${definition.start}-${definition.end}`;
+  }
+  return definition.name ?? "(unnamed)";
+}
+
+function checkNamedReference(errors, moduleName, subject, kind, name, collection) {
+  if (name && !collection?.[name]) {
+    errors.push(`${moduleName}: ${subject} references missing ${kind} ${name}`);
+  }
+}
+
+function checkBinaryFields(errors, moduleName, subject, fields = []) {
+  for (const field of fields) {
+    const fieldSubject = `${subject} field ${field.name ?? "(unnamed)"}`;
+    checkNamedReference(errors, moduleName, fieldSubject, "enum", field.enum, SUNVOX_DB.enums);
+    checkNamedReference(errors, moduleName, fieldSubject, "bitfield", field.bitfield, SUNVOX_DB.bitfields);
+    checkNamedReference(errors, moduleName, fieldSubject, "bitflags", field.bitflags, SUNVOX_DB.bitflags);
+  }
+}
+
+function checkDataDefinitionReferences(errors, moduleName, definition) {
+  const subject = `data chunk ${dataDefinitionLabel(definition)}`;
+  checkNamedReference(errors, moduleName, subject, "flag bitfield", definition.flagBitfield, SUNVOX_DB.bitfields);
+  checkNamedReference(errors, moduleName, subject, "flag bitflags", definition.flagBitflags, SUNVOX_DB.bitflags);
+  checkNamedReference(errors, moduleName, subject, "index enum", definition.indexEnum, SUNVOX_DB.enums);
+  checkBinaryFields(errors, moduleName, subject, definition.fields);
+}
+
+function claimDataChunkIndex(errors, moduleName, owners, index, owner) {
+  const previousOwner = owners.get(index);
+  if (previousOwner) {
+    errors.push(`${moduleName}: data chunk index ${index} is defined by both ${previousOwner} and ${owner}`);
+    return;
+  }
+  owners.set(index, owner);
+}
+
+export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const errors = [];
   const warnings = [];
   const sourceReport = collectSourceReport(sourceRoot);
@@ -619,21 +661,31 @@ function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
       }
     }
 
-    const dataChunkIndexes = new Set();
+    const dataChunkOwners = new Map();
     for (const dataChunk of moduleDefinition.dataChunks ?? []) {
       if (!Number.isInteger(dataChunk.index)) {
         errors.push(`${moduleName}: data chunk ${dataChunk.name ?? "(unnamed)"} has non-integer index`);
         continue;
       }
-      if (dataChunkIndexes.has(dataChunk.index)) {
-        errors.push(`${moduleName}: duplicate data chunk index ${dataChunk.index}`);
-      }
-      dataChunkIndexes.add(dataChunk.index);
+      const owner = `data chunk ${dataDefinitionLabel(dataChunk)}`;
+      claimDataChunkIndex(errors, moduleName, dataChunkOwners, dataChunk.index, owner);
+      checkDataDefinitionReferences(errors, moduleName, dataChunk);
     }
 
     for (const range of moduleDefinition.dataChunkRanges ?? []) {
+      const owner = `data chunk range ${dataDefinitionLabel(range)}`;
+      const step = range.step ?? 1;
+      checkDataDefinitionReferences(errors, moduleName, range);
       if (!Number.isInteger(range.start) || !Number.isInteger(range.end) || range.end < range.start) {
         errors.push(`${moduleName}: invalid data chunk range ${range.name ?? "(unnamed)"}`);
+        continue;
+      }
+      if (!Number.isInteger(step) || step < 1) {
+        errors.push(`${moduleName}: invalid data chunk range step ${range.name ?? "(unnamed)"}`);
+        continue;
+      }
+      for (let index = range.start; index <= range.end; index += step) {
+        claimDataChunkIndex(errors, moduleName, dataChunkOwners, index, owner);
       }
     }
 
