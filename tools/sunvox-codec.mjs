@@ -9,123 +9,28 @@ export const EDITABLE_TEXT_FORMAT = "sunvox-editable-text-v1";
 export const VERBOSE_TEXT_FORMAT = "sunvox-container-text-v1";
 export const SUPPORTED_MAGICS = new Set(["SVOX", "SSYN"]);
 
-const UINT32_CHUNKS = new Set([
-  "BVER",
-  "VERS",
-  "SFGS",
-  "BPM ",
-  "SPED",
-  "TGRD",
-  "TGD2",
-  "GVOL",
-  "MSCL",
-  "MZOO",
-  "LMSK",
-  "CURL",
-  "TIME",
-  "REPS",
-  "SELS",
-  "LGEN",
-  "PATN",
-  "PATT",
-  "PATL",
-  "PCHN",
-  "PLIN",
-  "PYSZ",
-  "PICO",
-  "PPAR",
-  "PPR#",
-  "PFLG",
-  "PFFF",
-  "SFFF",
-  "SSCL",
-  "SVPR",
-  "SMII",
-  "SMIC",
-  "SMIP",
-  "CHNK",
-  "CHNM",
-  "CHFF",
-  "CHFR",
-  "FLGS",
-  "JAMD",
-]);
-
-const INT32_CHUNKS = new Set([
-  "MXOF",
-  "MYOF",
-  "PXXX",
-  "PYYY",
-  "SFIN",
-  "SREL",
-  "SXXX",
-  "SYYY",
-  "SZZZ",
-  "SMIB",
-  "CVAL",
-]);
-
-const INT32_ARRAY_CHUNKS = new Set(["SLNK", "SLnK", "SLNk", "SLnk"]);
-const UINT32_ARRAY_CHUNKS = new Set(["CMID", "STMT"]);
-const STRING_CHUNKS = new Set(["NAME", "PNME", "SNAM", "STYP", "SMIN"]);
-const RGB_CHUNKS = new Set(["PFGC", "PBGC", "SCOL"]);
-const PATTERN_CHUNKS = new Set([
-  "PATT",
-  "PATL",
-  "PDTA",
-  "PNME",
-  "PLIN",
-  "PCHN",
-  "PYSZ",
-  "PICO",
-  "PPAR",
-  "PPR#",
-  "PFLG",
-  "PFFF",
-  "PXXX",
-  "PYYY",
-  "PFGC",
-  "PBGC",
-  "PEND",
-]);
-const MODULE_CHUNKS = new Set([
-  "SFFF",
-  "SNAM",
-  "STYP",
-  "SFIN",
-  "SREL",
-  "SXXX",
-  "SYYY",
-  "SZZZ",
-  "SSCL",
-  "SVPR",
-  "SCOL",
-  "SMII",
-  "SMIN",
-  "SMIC",
-  "SMIB",
-  "SMIP",
-  "SLNK",
-  "SLnK",
-  "SLNk",
-  "SLnk",
-  "CVAL",
-  "CMID",
-  "CHNK",
-  "CHNM",
-  "CHDT",
-  "CHFF",
-  "CHFR",
-  "SEND",
-]);
-
 export const SUNVOX_DB = JSON.parse(
   readFileSync(new URL("./sunvox-db/database.json", import.meta.url), "utf8"),
 );
 
+const CHUNKS_BY_ID = new Map(SUNVOX_DB.chunks.map((chunk) => [chunk.id, chunk]));
 const CHUNK_DESCRIPTIONS = Object.fromEntries(
   SUNVOX_DB.chunks.map((chunk) => [chunk.id, chunk.label]),
 );
+const PATTERN_CHUNKS = scopedChunkSet("pattern");
+const MODULE_CHUNKS = scopedChunkSet("module");
+
+function chunkDefinition(id) {
+  return CHUNKS_BY_ID.get(id);
+}
+
+function chunkType(id) {
+  return chunkDefinition(id)?.type;
+}
+
+function scopedChunkSet(scope) {
+  return new Set(SUNVOX_DB.chunks.filter((chunk) => chunk.scope === scope).map((chunk) => chunk.id));
+}
 
 function usage() {
   console.error(`Usage:
@@ -361,18 +266,19 @@ function encodePatternNotes(pattern) {
 
 export function decodeChunkData(id, data) {
   const decoded = {};
+  const type = chunkType(id);
   if (CHUNK_DESCRIPTIONS[id]) {
     decoded._description = CHUNK_DESCRIPTIONS[id];
   }
 
-  if (STRING_CHUNKS.has(id)) {
+  if (type === "string") {
     const text = decodeCString(data);
     if (text !== undefined) {
       return { ...decoded, kind: "string", value: text };
     }
   }
 
-  if (RGB_CHUNKS.has(id) && data.length === 3) {
+  if (type === "rgb24" && data.length === 3) {
     return {
       ...decoded,
       kind: "rgb",
@@ -385,14 +291,14 @@ export function decodeChunkData(id, data) {
     };
   }
 
-  if (id === "PDTA") {
+  if (type === "structArray:sunvox_note") {
     const pattern = decodePatternNotes(data);
     if (pattern) {
       return { ...decoded, kind: "patternNotes", value: pattern };
     }
   }
 
-  if (id === "CMID" && data.length % 8 === 0) {
+  if (type === "structArray:midi_binding" && data.length % 8 === 0) {
     const bindings = [];
     for (let offset = 0; offset < data.length; offset += 8) {
       bindings.push(decodeMidiBinding(data.readUInt32LE(offset), data.readUInt32LE(offset + 4)));
@@ -400,11 +306,11 @@ export function decodeChunkData(id, data) {
     return { ...decoded, kind: "midiBindings", value: bindings };
   }
 
-  if (INT32_ARRAY_CHUNKS.has(id) && data.length % 4 === 0) {
+  if (type === "int32Array" && data.length % 4 === 0) {
     return { ...decoded, kind: "int32Array", value: readInt32Array(data) };
   }
 
-  if (UINT32_ARRAY_CHUNKS.has(id) && data.length % 4 === 0) {
+  if (type === "uint32Array" && data.length % 4 === 0) {
     return { ...decoded, kind: "uint32Array", value: readUInt32Array(data) };
   }
 
@@ -413,11 +319,11 @@ export function decodeChunkData(id, data) {
     return decoded;
   }
 
-  if (INT32_CHUNKS.has(id) && data.length === 4) {
+  if (type === "int32" && data.length === 4) {
     return { ...decoded, kind: "int32", value: data.readInt32LE(0) };
   }
 
-  if (UINT32_CHUNKS.has(id) && data.length === 4) {
+  if (type === "uint32" && data.length === 4) {
     return { ...decoded, kind: "uint32", value: data.readUInt32LE(0) };
   }
 
@@ -518,31 +424,32 @@ function encodeRgbChunk(chunk) {
 }
 
 function editableChunkData(chunk, index) {
+  const type = chunkType(chunk.id);
   if (chunk.base64 !== undefined) {
     return decodeBase64(chunk.base64, `chunks[${index}].base64`);
   }
-  if (STRING_CHUNKS.has(chunk.id) && chunk.text !== undefined) {
+  if (type === "string" && chunk.text !== undefined) {
     return encodeTextChunk(chunk);
   }
-  if (RGB_CHUNKS.has(chunk.id) && chunk.rgb !== undefined) {
+  if (type === "rgb24" && chunk.rgb !== undefined) {
     return encodeRgbChunk(chunk);
   }
-  if ((INT32_CHUNKS.has(chunk.id) || UINT32_CHUNKS.has(chunk.id)) && chunk.value !== undefined) {
+  if ((type === "int32" || type === "uint32") && chunk.value !== undefined) {
     const buffer = Buffer.alloc(4);
-    if (INT32_CHUNKS.has(chunk.id)) {
+    if (type === "int32") {
       buffer.writeInt32LE(chunk.value, 0);
     } else {
       buffer.writeUInt32LE(chunk.value, 0);
     }
     return buffer;
   }
-  if (INT32_ARRAY_CHUNKS.has(chunk.id) && Array.isArray(chunk.values)) {
+  if (type === "int32Array" && Array.isArray(chunk.values)) {
     return writeInt32Array(chunk.values);
   }
-  if (UINT32_ARRAY_CHUNKS.has(chunk.id) && Array.isArray(chunk.values)) {
+  if (type === "uint32Array" && Array.isArray(chunk.values)) {
     return writeUInt32Array(chunk.values);
   }
-  if (chunk.id === "CMID" && Array.isArray(chunk.midiBindings)) {
+  if (type === "structArray:midi_binding" && Array.isArray(chunk.midiBindings)) {
     const buffer = Buffer.alloc(chunk.midiBindings.length * 8);
     chunk.midiBindings.forEach((binding, bindingIndex) => {
       const values = encodeMidiBinding(binding);
@@ -552,7 +459,7 @@ function editableChunkData(chunk, index) {
     });
     return buffer;
   }
-  if (chunk.id === "PDTA" && chunk.pattern !== undefined) {
+  if (type === "structArray:sunvox_note" && chunk.pattern !== undefined) {
     return encodePatternNotes(chunk.pattern);
   }
   if (chunk.value === undefined && chunk.text === undefined && chunk.rgb === undefined && chunk.values === undefined && chunk.pattern === undefined) {
