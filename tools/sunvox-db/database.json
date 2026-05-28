@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "chunks": [
+    { "id": "VERS", "scope": "project", "name": "version", "type": "uint32", "label": "SunVox engine version" },
+    { "id": "BVER", "scope": "project", "name": "baseVersion", "type": "uint32", "label": "base engine version" },
+    { "id": "FLGS", "scope": "project", "name": "flags", "type": "uint32", "label": "project flags" },
+    { "id": "BPM ", "scope": "project", "name": "bpm", "type": "uint32", "label": "project bpm" },
+    { "id": "GVOL", "scope": "project", "name": "globalVolume", "type": "uint32", "label": "project global volume" },
+    { "id": "NAME", "scope": "project", "name": "name", "type": "string", "label": "project name" },
+    { "id": "PDTA", "scope": "pattern", "name": "events", "type": "structArray:sunvox_note", "label": "pattern note data" },
+    { "id": "PEND", "scope": "pattern", "name": "end", "type": "empty", "label": "pattern terminator" },
+    { "id": "PNME", "scope": "pattern", "name": "name", "type": "string", "label": "pattern name" },
+    { "id": "PCHN", "scope": "pattern", "name": "tracks", "type": "uint32", "label": "pattern channel count" },
+    { "id": "PLIN", "scope": "pattern", "name": "lines", "type": "uint32", "label": "pattern line count" },
+    { "id": "PFGC", "scope": "pattern", "name": "foreground", "type": "rgb24", "label": "pattern foreground color" },
+    { "id": "PBGC", "scope": "pattern", "name": "background", "type": "rgb24", "label": "pattern background color" },
+    { "id": "SFFF", "scope": "module", "name": "flags", "type": "uint32", "label": "module flags" },
+    { "id": "SNAM", "scope": "module", "name": "name", "type": "string", "label": "module name" },
+    { "id": "STYP", "scope": "module", "name": "type", "type": "string", "label": "module type" },
+    { "id": "SFIN", "scope": "module", "name": "finetune", "type": "int32", "label": "module finetune" },
+    { "id": "SREL", "scope": "module", "name": "relativeNote", "type": "int32", "label": "module relative note" },
+    { "id": "SXXX", "scope": "module", "name": "x", "type": "int32", "label": "module x position" },
+    { "id": "SYYY", "scope": "module", "name": "y", "type": "int32", "label": "module y position" },
+    { "id": "SZZZ", "scope": "module", "name": "z", "type": "int32", "label": "module z position" },
+    { "id": "SSCL", "scope": "module", "name": "scale", "type": "uint32", "label": "module scale" },
+    { "id": "SCOL", "scope": "module", "name": "color", "type": "rgb24", "label": "module color" },
+    { "id": "SMIN", "scope": "module", "name": "midiOutputName", "type": "string", "label": "module MIDI output name" },
+    { "id": "CVAL", "scope": "module", "name": "controllerValue", "type": "int32", "label": "module controller value" },
+    { "id": "CMID", "scope": "module", "name": "midiBindings", "type": "structArray:midi_binding", "label": "module controller MIDI bindings" },
+    { "id": "CHNK", "scope": "module", "name": "chunkCount", "type": "uint32", "label": "module chunk count" },
+    { "id": "CHNM", "scope": "module", "name": "chunkIndex", "type": "uint32", "label": "module chunk index" },
+    { "id": "CHDT", "scope": "module", "name": "chunkData", "type": "bytes", "label": "module chunk data" },
+    { "id": "CHFF", "scope": "module", "name": "chunkFlags", "type": "uint32", "label": "module chunk flags" },
+    { "id": "CHFR", "scope": "module", "name": "chunkSampleRate", "type": "uint32", "label": "module chunk sample rate" },
+    { "id": "SEND", "scope": "module", "name": "end", "type": "empty", "label": "module terminator" }
+  ],
+  "enums": {
+    "metamodule_play_patterns": {
+      "0": "off",
+      "1": "repeat",
+      "2": "once",
+      "3": "repeatEndless",
+      "4": "onceEndless"
+    },
+    "psynth_midi_type": {
+      "0": "none",
+      "1": "note",
+      "2": "keyPressure",
+      "3": "controlChange",
+      "4": "nrpn",
+      "5": "rpn",
+      "6": "programChange",
+      "7": "channelPressure",
+      "8": "pitch"
+    },
+    "psynth_midi_mode": {
+      "0": "linear",
+      "1": "exp1",
+      "2": "exp2",
+      "3": "spline",
+      "4": "trigger",
+      "5": "toggle"
+    }
+  },
+  "bitfields": {
+    "midi_pars1": {
+      "type": "uint32",
+      "fields": [
+        { "name": "type", "shift": 0, "bits": 8, "enum": "psynth_midi_type" },
+        { "name": "channel", "shift": 8, "bits": 8 },
+        { "name": "mode", "shift": 16, "bits": 8, "enum": "psynth_midi_mode" }
+      ]
+    },
+    "midi_pars2": {
+      "type": "uint32",
+      "fields": [
+        { "name": "parameter", "shift": 0, "bits": 16 },
+        { "name": "min", "shift": 16, "bits": 8 },
+        { "name": "max", "shift": 24, "bits": 8 }
+      ]
+    }
+  },
+  "modules": {
+    "MetaModule": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "inputModule", "label": "Input module", "type": "int32", "min": 1, "max": 256, "default": 1, "normal": -1, "group": 1 },
+        { "index": 2, "name": "playPatterns", "label": "Play patterns", "type": "enum", "enum": "metamodule_play_patterns", "min": 0, "max": 4, "default": 0, "normal": -1, "group": 1 },
+        { "index": 3, "name": "bpm", "label": "BPM", "type": "int32", "min": 1, "max": 1000, "default": 125, "normal": 125, "group": 1 },
+        { "index": 4, "name": "tpl", "label": "TPL", "type": "int32", "min": 1, "max": 31, "default": 6, "normal": 6, "group": 1 }
+      ]
+    }
+  }
+}

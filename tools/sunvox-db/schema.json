@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mandel59.github.io/sunvox-mandel59/sunvox-db.schema.json",
+  "title": "SunVox codec knowledge database",
+  "type": "object",
+  "required": ["version", "chunks", "enums", "bitfields", "modules"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "chunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": {
+          "id": { "type": "string", "minLength": 4, "maxLength": 4 },
+          "scope": { "enum": ["project", "pattern", "module"] },
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "label": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "enums": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": "string" }
+      }
+    },
+    "bitfields": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type", "fields"],
+        "properties": {
+          "type": { "enum": ["uint32"] },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "shift", "bits"],
+              "properties": {
+                "name": { "type": "string" },
+                "shift": { "type": "integer", "minimum": 0 },
+                "bits": { "type": "integer", "minimum": 1, "maximum": 32 },
+                "enum": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "controllers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["index", "name", "type"],
+              "properties": {
+                "index": { "type": "integer", "minimum": 0 },
+                "name": { "type": "string" },
+                "label": { "type": "string" },
+                "type": { "enum": ["int32", "enum"] },
+                "enum": { "type": "string" },
+                "min": { "type": "integer" },
+                "max": { "type": "integer" },
+                "default": { "type": "integer" },
+                "normal": { "type": "integer" },
+                "group": { "type": "integer" }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}
