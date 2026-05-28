@@ -151,7 +151,7 @@
               "properties": {
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["container", "packedUInt32Array", "recordArray", "string", "struct", "uint8Array", "uint16Array"] },
+                "type": { "enum": ["container", "int8Array", "packedUInt32Array", "recordArray", "string", "struct", "uint8Array", "uint16Array"] },
                 "path": { "type": "string" },
                 "count": { "type": "integer", "minimum": 0 },
                 "size": { "type": "integer", "minimum": 0 },
@@ -160,6 +160,7 @@
                 "omitZero": { "type": "boolean" },
                 "omitDefaults": { "type": "boolean" },
                 "omitDefaultRecords": { "type": "boolean" },
+                "trimTrailingZeroes": { "type": "boolean" },
                 "magic": {
                   "type": "array",
                   "items": { "enum": ["SVOX", "SSYN"] }

@@ -682,6 +682,34 @@
       ]
     },
     "Analog generator": {
+      "dataChunks": [
+        { "index": 0, "name": "drawnWaveform", "type": "int8Array", "count": 32 },
+        {
+          "index": 1,
+          "name": "options",
+          "type": "struct",
+          "path": "options",
+          "size": 15,
+          "trimTrailingZeroes": true,
+          "fields": [
+            { "name": "volumeEnvelopeScalingPerKey", "type": "bool8", "offset": 0, "default": false },
+            { "name": "filterEnvelopeScalingPerKey", "type": "bool8", "offset": 1, "default": false },
+            { "name": "volumeScalingPerKey", "type": "bool8", "offset": 2, "default": false },
+            { "name": "filterFreqScalingPerKey", "type": "bool8", "offset": 3, "default": false },
+            { "name": "filterFreqScalingOnVelocity", "type": "bool8", "offset": 4, "default": false },
+            { "name": "freqDiv2", "type": "bool8", "offset": 5, "default": false },
+            { "name": "smoothFreqChange", "type": "bool8", "offset": 6, "invert": true, "default": true },
+            { "name": "filterFreqScalingPerKeyReverse", "type": "bool8", "offset": 7, "default": false },
+            { "name": "retainPhase", "type": "bool8", "offset": 8, "default": false },
+            { "name": "randomPhase", "type": "bool8", "offset": 9, "default": false },
+            { "name": "filterFreqIsNoteFreq", "type": "bool8", "offset": 10, "default": false },
+            { "name": "filterResScalingOnVelocity", "type": "bool8", "offset": 11, "default": false },
+            { "name": "trueZeroAttackRelease", "type": "bool8", "offset": 12, "default": false },
+            { "name": "increasedFreqAccuracy", "type": "bool8", "offset": 13, "default": false },
+            { "name": "alwaysPlayOsc2", "type": "bool8", "offset": 14, "default": false }
+          ]
+        }
+      ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 80, "normal": -1, "group": 0 },
         { "index": 1, "name": "waveform", "label": "Waveform", "type": "enum", "enum": "gen2_waveform", "min": 0, "max": 16, "default": 0, "normal": -1, "group": 0 },
@@ -913,6 +941,9 @@
       ]
     },
     "Generator": {
+      "dataChunks": [
+        { "index": 0, "name": "drawnWaveform", "type": "int8Array", "count": 32 }
+      ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
         { "index": 1, "name": "waveform", "label": "Waveform", "type": "enum", "enum": "gen_wave_type", "min": 0, "max": 8, "default": 0, "normal": -1, "group": 0 },

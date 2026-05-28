@@ -47,6 +47,7 @@ export type ModuleControllers = number[] | ({ extra?: Record<string, number> } &
 export interface ModuleDataChunk {
   index: number;
   name?: string;
+  dataSize?: number;
   controller?: number;
   count?: number;
   links?: Array<{ index: number; module: number; controller: number }>;
@@ -60,6 +61,7 @@ export interface ModuleDataChunk {
   }>;
   values?: number[];
   options?: {
+    [key: string]: unknown;
     userControllers?: number;
     arpeggiator?: boolean;
     useVelocity?: boolean;

@@ -13,6 +13,20 @@ import {
   sha256,
 } from "../tools/sunvox-codec.mjs";
 
+function withoutAuxiliaryProperties(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => withoutAuxiliaryProperties(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => !key.startsWith("_"))
+        .map(([key, item]) => [key, withoutAuxiliaryProperties(item)]),
+    );
+  }
+  return value;
+}
+
 test("parses project into structured metadata", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
@@ -72,6 +86,25 @@ test("round-trips editable parsed documents", async () => {
   const rebuilt = buildContainer(document);
 
   assert.equal(sha256(rebuilt), sha256(buffer));
+});
+
+test("round-trips structured documents without auxiliary properties", async () => {
+  const files = [
+    "music/2022-04-16.sunvox",
+    "music/2022-04-17.sunvox",
+    "music/2022-04-18.sunvox",
+    "music/2022-04-20.sunvox",
+    "instruments/mandel59 shepard.sunsynth",
+    "instruments/mandel59 SuperSaw.sunsynth",
+  ];
+
+  for (const file of files) {
+    const buffer = await readFile(file);
+    const document = withoutAuxiliaryProperties(parseContainer(buffer));
+    const rebuilt = buildContainer(document);
+
+    assert.equal(sha256(rebuilt), sha256(buffer), file);
+  }
 });
 
 test("decodes pattern note data", async () => {
@@ -252,16 +285,59 @@ test("decodes Analog generator and Filter Pro controllers", async () => {
   const document = parseContainer(buffer);
   const embedded = document.module.dataChunks[0].container;
   const generator = embedded.modules.find((module) => module.type === "Analog generator");
+  const options = generator.dataChunks.find((chunk) => chunk.name === "options");
   const filter = embedded.modules.find((module) => module.type === "Filter Pro");
 
   assert.equal(generator.controllers.waveform, "sin");
   assert.equal(generator.controllers.sustain, "on");
   assert.equal(generator.controllers.filter, "off");
   assert.equal(generator.controllers.osc2Mode, "add");
+  assert.equal(options.dataSize, 14);
+  assert.equal(options.options.smoothFreqChange, true);
+  assert.equal(options.options.alwaysPlayOsc2, false);
   assert.equal(filter.controllers.type, "bpConstSkirtGain");
   assert.equal(filter.controllers.rolloff, "db12");
   assert.equal(filter.controllers.mode, "stereo");
   assert.equal(filter.controllers.lfoFreqUnit, "hz002");
+});
+
+test("decodes Analog generator waveform and option data chunks", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const analogGenerators = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "Analog generator") {
+        analogGenerators.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  const drawn = analogGenerators
+    .flatMap((module) => module.dataChunks ?? [])
+    .find((chunk) => chunk.name === "drawnWaveform");
+  const randomPhase = analogGenerators
+    .flatMap((module) => module.dataChunks ?? [])
+    .find((chunk) => chunk.options?.randomPhase);
+  const trueZeroOnly = analogGenerators
+    .flatMap((module) => module.dataChunks ?? [])
+    .find((chunk) => chunk.options?.trueZeroAttackRelease && !chunk.options?.increasedFreqAccuracy);
+
+  assert.equal(drawn.count, 32);
+  assert.deepEqual(drawn.values.slice(0, 8), [127, 127, 127, 127, 127, 127, 127, 127]);
+  assert.deepEqual(drawn.values.slice(-4), [127, 127, 127, 127]);
+  assert.equal(randomPhase.options.randomPhase, true);
+  assert.equal(randomPhase.options.increasedFreqAccuracy, true);
+  assert.equal(randomPhase.options.alwaysPlayOsc2, false);
+  assert.equal(trueZeroOnly.dataSize, 14);
 });
 
 test("decodes utility and delay-style effect controllers", async () => {
@@ -475,6 +551,10 @@ test("decodes Generator and Filter controllers", async () => {
 
   assert.equal(generators.length, 6);
   assert.equal(filters.length, 4);
+  assert.equal(generators[0].dataChunks[0].name, "drawnWaveform");
+  assert.equal(generators[0].dataChunks[0].count, 32);
+  assert.deepEqual(generators[0].dataChunks[0].values.slice(0, 8), [-127, -100, -81, -66, -19, 18, 31, 50]);
+  assert.deepEqual(generators[0].dataChunks[0].values.slice(-4), [-114, -79, -53, -44]);
   assert.deepEqual(generators[0].controllers, {
     volume: 128,
     waveform: "saw",

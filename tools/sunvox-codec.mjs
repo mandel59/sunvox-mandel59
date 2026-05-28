@@ -84,6 +84,14 @@ function readUInt16Array(data) {
   return values;
 }
 
+function readInt8Array(data) {
+  const values = [];
+  for (let offset = 0; offset < data.length; offset += 1) {
+    values.push(data.readInt8(offset));
+  }
+  return values;
+}
+
 function readUInt8Array(data) {
   return [...data];
 }
@@ -96,6 +104,12 @@ function writeInt32Array(values) {
 
 function writeUInt8Array(values) {
   return Buffer.from(values.map((value) => value & 0xff));
+}
+
+function writeInt8Array(values) {
+  const buffer = Buffer.alloc(values.length);
+  values.forEach((value, index) => buffer.writeInt8(value, index));
+  return buffer;
 }
 
 function writeUInt16Array(values) {
@@ -794,6 +808,14 @@ function encodeStructData(dataChunk, definition) {
   }
   const buffer = Buffer.alloc(definition.size ?? binaryLayoutSize(definition.fields ?? []));
   writeStructRecord(buffer, definition.fields, object);
+  if (definition.trimTrailingZeroes) {
+    let length = buffer.length;
+    const minLength = Math.min(buffer.length, dataChunk.dataSize ?? 0);
+    while (length > minLength && buffer[length - 1] === 0) {
+      length -= 1;
+    }
+    return buffer.subarray(0, length);
+  }
   return buffer;
 }
 
@@ -947,6 +969,17 @@ const MODULE_DATA_CODECS = {
     decode: decodeStructData,
     encode: encodeStructData,
   },
+  int8Array: {
+    decode(data, definition) {
+      return {
+        count: definition.count ?? data.length,
+        values: readInt8Array(data),
+      };
+    },
+    encode(dataChunk) {
+      return Array.isArray(dataChunk.values) ? writeInt8Array(dataChunk.values) : undefined;
+    },
+  },
   uint8Array: {
     decode(data, definition) {
       return {
@@ -1010,6 +1043,9 @@ function decodeModuleDataChunk(type, index, chunk) {
     const decoded = decodeModuleDataPayload(definition, data);
     if (decoded) {
       Object.assign(dataChunk, decoded);
+      if (definition?.trimTrailingZeroes) {
+        dataChunk.dataSize = data.length;
+      }
     } else {
       dataChunk.base64 = chunk.base64;
     }

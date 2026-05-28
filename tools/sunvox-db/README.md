@@ -31,7 +31,10 @@ covers common generators and effects including FMX, Analog generator, Filter
 Pro, Delay, Echo, Glide, Modulator, WaveShaper, MultiSynth, MultiCtl,
 Sound2Ctl, and several utility modules. FMX uses a repeated operator template
 so the editable text contains an `operators` array instead of a long raw
-controller list.
+controller list. Module data chunk layouts now cover sampled curves and compact
+option structures for MultiSynth, WaveShaper, SpectraVoice, Generator, and
+Analog generator; Analog generator options also record the original chunk byte
+length as `dataSize` so SunVox's trailing-zero trimming can round-trip exactly.
 
 ## Inspection Tool
 
@@ -90,3 +93,7 @@ loss.
 Modeled properties are emitted without a leading underscore. Leading underscore
 properties are reserved for auxiliary comments, labels, and source metadata that
 do not affect the generated binary.
+Any value required for exact binary reconstruction must be a normal property,
+not an auxiliary one. The test suite enforces this by deleting every `_`-prefixed
+property from structured documents and verifying that all checked-in SunVox
+samples still round-trip byte-for-byte.
