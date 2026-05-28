@@ -18,7 +18,8 @@ project/pattern/module chunk order, `CMID` MIDI binding bitfields, and the core
 as an embedded SunVox container, allowing the codec to recurse into it instead
 of keeping that payload as opaque base64. Additional `MetaModule` data chunk
 definitions describe user controller links, options, and custom controller
-names.
+names. `MultiCtl` definitions cover its named controllers, output slots, and
+16-bit response curve.
 
 ## Round-Trip Policy
 

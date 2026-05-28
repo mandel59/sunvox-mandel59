@@ -46,6 +46,15 @@ export interface ModuleDataChunk {
   controller?: number;
   count?: number;
   links?: Array<{ index: number; module: number; controller: number }>;
+  slots?: Array<{
+    index: number;
+    min?: number;
+    max?: number;
+    controller?: number;
+    flags?: number;
+    futureUse?: number[];
+  }>;
+  values?: number[];
   options?: {
     userControllers?: number;
     arpeggiator?: boolean;

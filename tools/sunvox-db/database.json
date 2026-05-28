@@ -214,6 +214,20 @@
         { "index": 3, "name": "bpm", "label": "BPM", "type": "int32", "min": 1, "max": 1000, "default": 125, "normal": 125, "group": 1 },
         { "index": 4, "name": "tpl", "label": "TPL", "type": "int32", "min": 1, "max": 31, "default": 6, "normal": 6, "group": 1 }
       ]
+    },
+    "MultiCtl": {
+      "dataChunks": [
+        { "index": 0, "name": "outputSlots", "type": "multictlOutputSlots", "count": 16 },
+        { "index": 1, "name": "curve", "type": "uint16Array", "count": 257 }
+      ],
+      "controllers": [
+        { "index": 0, "name": "value", "label": "Value", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 0 },
+        { "index": 1, "name": "gain", "label": "Gain", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
+        { "index": 2, "name": "quantization", "label": "Quantization", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 0 },
+        { "index": 3, "name": "outOffset", "label": "OUT offset", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 0 },
+        { "index": 4, "name": "response", "label": "Response", "type": "int32", "min": 0, "max": 1000, "default": 1000, "normal": -1, "group": 1 },
+        { "index": 5, "name": "sampleRate", "label": "Sample rate", "type": "int32", "min": 1, "max": 32768, "default": 150, "normal": 50, "group": 1 }
+      ]
     }
   }
 }

@@ -170,9 +170,23 @@ function readUInt32Array(data) {
   return values;
 }
 
+function readUInt16Array(data) {
+  const values = [];
+  for (let offset = 0; offset + 2 <= data.length; offset += 2) {
+    values.push(data.readUInt16LE(offset));
+  }
+  return values;
+}
+
 function writeInt32Array(values) {
   const buffer = Buffer.alloc(values.length * 4);
   values.forEach((value, index) => buffer.writeInt32LE(value, index * 4));
+  return buffer;
+}
+
+function writeUInt16Array(values) {
+  const buffer = Buffer.alloc(values.length * 2);
+  values.forEach((value, index) => buffer.writeUInt16LE(value, index * 2));
   return buffer;
 }
 
@@ -770,6 +784,71 @@ function encodeMetaModuleControllerName(dataChunk) {
   return Buffer.from(`${text}\0`, "utf8");
 }
 
+function decodeMultiCtlOutputSlots(data, count) {
+  const slots = [];
+  const slotCount = Math.floor(data.length / 32);
+  for (let index = 0; index < slotCount; index += 1) {
+    const offset = index * 32;
+    const slot = {
+      index,
+      min: data.readInt32LE(offset),
+      max: data.readInt32LE(offset + 4),
+      controller: data.readInt32LE(offset + 8),
+      flags: data.readUInt32LE(offset + 12),
+      futureUse: [
+        data.readInt32LE(offset + 16),
+        data.readInt32LE(offset + 20),
+        data.readInt32LE(offset + 24),
+        data.readInt32LE(offset + 28),
+      ],
+    };
+    const isDefault =
+      slot.min === 0 &&
+      slot.max === 32768 &&
+      slot.controller === 0 &&
+      slot.flags === 0 &&
+      slot.futureUse.every((value) => value === 0);
+    if (!isDefault) {
+      if (slot.min === 0) delete slot.min;
+      if (slot.max === 32768) delete slot.max;
+      if (slot.controller === 0) delete slot.controller;
+      if (slot.flags === 0) delete slot.flags;
+      if (slot.futureUse.every((value) => value === 0)) delete slot.futureUse;
+      slots.push(slot);
+    }
+  }
+  return {
+    count: count ?? slotCount,
+    slots,
+  };
+}
+
+function encodeMultiCtlOutputSlots(dataChunk) {
+  const count = dataChunk.count ?? 16;
+  const buffer = Buffer.alloc(count * 32);
+  for (let index = 0; index < count; index += 1) {
+    const offset = index * 32;
+    buffer.writeInt32LE(0, offset);
+    buffer.writeInt32LE(32768, offset + 4);
+  }
+  for (const slot of dataChunk.slots ?? []) {
+    const index = slot.index;
+    if (!Number.isInteger(index) || index < 0 || index >= count) {
+      throw new Error(`Invalid MultiCtl output slot index: ${index}`);
+    }
+    const offset = index * 32;
+    buffer.writeInt32LE(slot.min ?? 0, offset);
+    buffer.writeInt32LE(slot.max ?? 32768, offset + 4);
+    buffer.writeInt32LE(slot.controller ?? 0, offset + 8);
+    buffer.writeUInt32LE(slot.flags ?? 0, offset + 12);
+    const futureUse = slot.futureUse ?? [];
+    for (let futureIndex = 0; futureIndex < 4; futureIndex += 1) {
+      buffer.writeInt32LE(futureUse[futureIndex] ?? 0, offset + 16 + futureIndex * 4);
+    }
+  }
+  return buffer;
+}
+
 function decodeModuleDataChunk(type, index, chunk) {
   const definition = moduleDataDefinition(type, index);
   const dataChunk = { index };
@@ -800,6 +879,11 @@ function decodeModuleDataChunk(type, index, chunk) {
       } else {
         dataChunk.base64 = chunk.base64;
       }
+    } else if (definition?.type === "multictlOutputSlots" && data.length % 32 === 0) {
+      Object.assign(dataChunk, decodeMultiCtlOutputSlots(data, definition.count));
+    } else if (definition?.type === "uint16Array" && data.length % 2 === 0) {
+      dataChunk.count = definition.count ?? data.length / 2;
+      dataChunk.values = readUInt16Array(data);
     } else {
       dataChunk.base64 = chunk.base64;
     }
@@ -1008,6 +1092,18 @@ function makeModuleDataChunks(module) {
         id: "CHDT",
         _label: chunkLabel("CHDT"),
         base64: encodeMetaModuleControllerName(dataChunk).toString("base64"),
+      });
+    } else if (dataChunk.slots) {
+      chunks.push({
+        id: "CHDT",
+        _label: chunkLabel("CHDT"),
+        base64: encodeMultiCtlOutputSlots(dataChunk).toString("base64"),
+      });
+    } else if (dataChunk.values) {
+      chunks.push({
+        id: "CHDT",
+        _label: chunkLabel("CHDT"),
+        base64: writeUInt16Array(dataChunk.values).toString("base64"),
       });
     } else {
       chunks.push({

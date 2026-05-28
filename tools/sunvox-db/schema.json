@@ -117,7 +117,7 @@
               "properties": {
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["container", "metamoduleControllerLinks", "metamoduleOptions"] },
+                "type": { "enum": ["container", "metamoduleControllerLinks", "metamoduleOptions", "multictlOutputSlots", "uint16Array"] },
                 "count": { "type": "integer", "minimum": 0 },
                 "flags": { "type": "string" },
                 "magic": {

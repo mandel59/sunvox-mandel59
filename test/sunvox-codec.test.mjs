@@ -168,6 +168,22 @@ test("decodes MetaModule controller link and option data chunks", async () => {
   });
 });
 
+test("decodes MultiCtl controllers, output slots, and curve", async () => {
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const document = parseContainer(buffer);
+  const multiCtl = document.modules.find((module) => module.type === "MultiCtl");
+  const slots = multiCtl.dataChunks.find((chunk) => chunk.name === "outputSlots");
+  const curve = multiCtl.dataChunks.find((chunk) => chunk.name === "curve");
+
+  assert.equal(multiCtl.controllers.value, 958);
+  assert.deepEqual(slots.slots, [
+    { index: 0, controller: 1 },
+    { index: 1, max: 20000, controller: 1 },
+  ]);
+  assert.equal(curve.values.length, 257);
+  assert.deepEqual(curve.values.slice(0, 4), [0, 128, 256, 384]);
+});
+
 test("decodes primitive chunk payloads", () => {
   const intData = Buffer.alloc(4);
   intData.writeInt32LE(-12);
