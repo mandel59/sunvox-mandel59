@@ -135,6 +135,15 @@
       "1": "slowTransition",
       "2": "fastTransition"
     },
+    "pitch2ctl_mode": {
+      "0": "frequencyHz",
+      "1": "pitch"
+    },
+    "pitch2ctl_noteoff_action": {
+      "0": "doNothing",
+      "1": "pitchDown",
+      "2": "pitchUp"
+    },
     "velocity2ctl_noteoff_action": {
       "0": "doNothing",
       "1": "velDown",
@@ -144,6 +153,10 @@
       "0": "off",
       "1": "on",
       "2": "improved"
+    },
+    "smooth_mode": {
+      "0": "linear",
+      "1": "lpFilter"
     },
     "gen_wave_type": {
       "0": "triangle",
@@ -787,6 +800,12 @@
         { "index": 3, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": 1, "group": 1 }
       ]
     },
+    "Feedback": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 10000, "default": 1000, "normal": -1, "group": 0 },
+        { "index": 1, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
+      ]
+    },
     "DrumSynth": {
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
@@ -990,6 +1009,12 @@
         { "index": 9, "name": "freqDiv", "label": "Frequency divider", "type": "int32", "min": 1, "max": 256, "default": 1, "normal": 1, "group": 1 }
       ]
     },
+    "Input": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "channels", "label": "Channels", "type": "enum", "enum": "mono_stereo", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
+      ]
+    },
     "MetaModule": {
       "dataChunks": [
         { "index": 0, "name": "embeddedProject", "type": "container", "magic": ["SVOX"] },
@@ -1127,6 +1152,16 @@
         { "index": 8, "name": "outController", "label": "OUT controller", "type": "int32", "min": 0, "max": 255, "default": 0, "normal": -1, "group": 1 }
       ]
     },
+    "Smooth": {
+      "controllers": [
+        { "index": 0, "name": "rise", "label": "Rise", "type": "int32", "min": 0, "max": 32768, "default": 5000, "normal": -1, "group": 0, "scale": "exp3" },
+        { "index": 1, "name": "fall", "label": "Fall", "type": "int32", "min": 0, "max": 32768, "default": 5000, "normal": -1, "group": 0, "scale": "exp3" },
+        { "index": 2, "name": "fallIsRise", "label": "Fall = Rise", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 3, "name": "scale", "label": "Scale", "type": "int32", "min": 0, "max": 400, "default": 100, "normal": 100, "group": 0, "unit": "%" },
+        { "index": 4, "name": "mode", "label": "Mode", "type": "enum", "enum": "smooth_mode", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 5, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 1 }
+      ]
+    },
     "SpectraVoice": {
       "dataChunks": [
         { "index": 0, "name": "harmonicFrequencies", "type": "uint16Array", "count": 16 },
@@ -1168,6 +1203,17 @@
         { "index": 4, "name": "setPhase", "label": "Set phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 0 },
         { "index": 5, "name": "frequencyUnit", "label": "Frequency unit", "type": "enum", "enum": "vibrato_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 0 },
         { "index": 6, "name": "exponentialAmplitude", "label": "Exponential amplitude", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
+      ]
+    },
+    "Pitch2Ctl": {
+      "controllers": [
+        { "index": 0, "name": "mode", "label": "Mode", "type": "enum", "enum": "pitch2ctl_mode", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 1, "name": "onNoteOff", "label": "On NoteOFF", "type": "enum", "enum": "pitch2ctl_noteoff_action", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "firstNote", "label": "First note", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 1 },
+        { "index": 3, "name": "rangeSemitones", "label": "Range (number of semitones)", "type": "int32", "min": 0, "max": 256, "default": 120, "normal": 120, "group": 1 },
+        { "index": 4, "name": "outMin", "label": "OUT min", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 2 },
+        { "index": 5, "name": "outMax", "label": "OUT max", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 2 },
+        { "index": 6, "name": "outController", "label": "OUT controller", "type": "int32", "min": 0, "max": 255, "default": 0, "normal": -1, "group": 2 }
       ]
     },
     "Pitch shifter": {
