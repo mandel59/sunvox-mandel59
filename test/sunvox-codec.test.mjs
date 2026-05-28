@@ -11,6 +11,7 @@ import {
   parseEditableContainer,
   parseVerboseContainer,
   sha256,
+  TEXT_FORMAT,
 } from "../tools/sunvox-codec.mjs";
 
 function withoutAuxiliaryProperties(value) {
@@ -765,6 +766,139 @@ test("decodes Sound2Ctl controllers and options", async () => {
       sendChangesOnly: true,
     },
   });
+});
+
+test("decodes Sampler instrument samples and envelopes", () => {
+  const signature = Buffer.from("SAMP", "latin1").readUInt32LE(0);
+  const sampleBytes = Buffer.alloc(8);
+  sampleBytes.writeInt16LE(0, 0);
+  sampleBytes.writeInt16LE(1200, 2);
+  sampleBytes.writeInt16LE(-1200, 4);
+  sampleBytes.writeInt16LE(0, 6);
+
+  const document = {
+    format: TEXT_FORMAT,
+    magic: "SSYN",
+    headerTailHex: "00000000",
+    module: {
+      name: "Synthetic Sampler",
+      type: "Sampler",
+      dataChunkCount: 5,
+      dataChunks: [
+        {
+          index: 0,
+          instrument: {
+            name: "Synthetic",
+            samples: 1,
+            signature,
+            version: 6,
+            maxVersion: 6,
+          },
+        },
+        {
+          index: 1,
+          sample: {
+            length: 4,
+            loopStart: 1,
+            loopLength: 2,
+            volume: 64,
+            finetune: -3,
+            type: {
+              loop: "on",
+              loopRelease: "off",
+              reserved3: 0,
+              stereo: "off",
+              reserved7: 0,
+            },
+            panning: 128,
+            relativeNote: 0,
+            reserved2: 0,
+            name: "Wave",
+            startPosition: 0,
+          },
+        },
+        {
+          index: 2,
+          bytesBase64: sampleBytes.toString("base64"),
+          flags: {
+            format: "int16",
+            channelsMinusOne: 0,
+            dontSave: "off",
+            reserved6: 0,
+          },
+          sampleRate: 44100,
+        },
+        {
+          index: 257,
+          options: {
+            recordOnPlay: true,
+            recordMono: false,
+            recordReducedFreq: false,
+            record16Bit: true,
+            finishRecordingOnStop: false,
+            ignoreVelocityForVolume: true,
+            frequencyAccuracy: true,
+            fitToPattern: 2,
+          },
+        },
+        {
+          index: 258,
+          envelope: {
+            flags: {
+              enabled: true,
+              sustain: true,
+            },
+            effectController: 0,
+            gain: 100,
+            velocityInfluence: 0,
+            pointCount: 2,
+            sustain: 1,
+            loopStart: 0,
+            loopEnd: 1,
+            points: [
+              { x: 0, value: 32768 },
+              { x: 16, value: 0 },
+            ],
+          },
+        },
+      ],
+    },
+  };
+
+  const buffer = buildContainer(document);
+  const parsed = parseContainer(buffer);
+
+  const instrument = parsed.module.dataChunks.find((chunk) => chunk.name === "instrument");
+  const sample = parsed.module.dataChunks.find((chunk) => chunk.name === "sample");
+  const sampleData = parsed.module.dataChunks.find((chunk) => chunk.name === "sampleData");
+  const envelope = parsed.module.dataChunks.find((chunk) => chunk.name === "envelope");
+
+  assert.equal(instrument.instrument.name, "Synthetic");
+  assert.equal(instrument.instrument.samples, 1);
+  assert.equal(sample.slot, 0);
+  assert.equal(sample.sample.name, "Wave");
+  assert.equal(sample.sample.finetune, -3);
+  assert.equal(sample.sample.type.loop, "on");
+  assert.equal(sampleData.slot, 0);
+  assert.equal(sampleData.byteLength, 8);
+  assert.equal(sampleData.bytesBase64, sampleBytes.toString("base64"));
+  assert.deepEqual(sampleData.flags, {
+    format: "int16",
+    channelsMinusOne: 0,
+    dontSave: "off",
+    reserved6: 0,
+  });
+  assert.equal(sampleData.sampleRate, 44100);
+  assert.equal(envelope.envelopeType, "volume");
+  assert.deepEqual(envelope.envelope.flags, {
+    enabled: true,
+    sustain: true,
+  });
+  assert.deepEqual(envelope.envelope.points, [
+    { x: 0, value: 32768 },
+    { x: 16, value: 0 },
+  ]);
+  assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
 });
 
 test("decodes primitive chunk payloads", () => {

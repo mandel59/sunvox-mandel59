@@ -544,12 +544,37 @@ function moduleDefinition(type) {
   return type ? SUNVOX_DB.modules[type] : undefined;
 }
 
+function dataChunkRangeMatches(definition, index) {
+  if (index < definition.start || index > definition.end) {
+    return false;
+  }
+  return !definition.step || (index - definition.start) % definition.step === 0;
+}
+
 function moduleDataDefinition(type, index) {
   const definition = moduleDefinition(type);
   return (
     definition?.dataChunks?.find((chunk) => chunk.index === index) ??
-    definition?.dataChunkRanges?.find((chunk) => index >= chunk.start && index <= chunk.end)
+    definition?.dataChunkRanges?.find((chunk) => dataChunkRangeMatches(chunk, index))
   );
+}
+
+function dataChunkRangeIndex(definition, index) {
+  if (definition.indexOffset === undefined) {
+    return undefined;
+  }
+  const divisor = definition.indexDivisor ?? definition.step ?? 1;
+  return Math.floor((index - definition.indexOffset) / divisor);
+}
+
+function assignDataChunkRangeIndex(dataChunk, definition, index) {
+  const rangeIndex = dataChunkRangeIndex(definition, index);
+  if (rangeIndex === undefined) {
+    return;
+  }
+  dataChunk[definition.indexName ?? "controller"] = definition.indexEnum
+    ? enumToName(definition.indexEnum, rangeIndex)
+    : rangeIndex;
 }
 
 function expandControllerTemplate(template, context) {
@@ -637,6 +662,7 @@ function encodeMetaModuleControllerName(dataChunk) {
 
 const BINARY_TYPES = {
   bool8: { size: 1, read: "readUInt8", write: "writeUInt8" },
+  int8: { size: 1, read: "readInt8", write: "writeInt8" },
   int32: { size: 4, read: "readInt32LE", write: "writeInt32LE" },
   uint8: { size: 1, read: "readUInt8", write: "writeUInt8" },
   uint16: { size: 2, read: "readUInt16LE", write: "writeUInt16LE" },
@@ -652,10 +678,32 @@ function binaryType(field) {
 }
 
 function binaryFieldSize(field) {
+  if (field.type === "fixedString") {
+    return field.count ?? 0;
+  }
   return binaryType(field).size * (field.count ?? 1);
 }
 
+function readFixedString(data, field, offset) {
+  const size = binaryFieldSize(field);
+  const bytes = data.subarray(offset, offset + size);
+  const nul = bytes.indexOf(0);
+  return bytes.subarray(0, nul >= 0 ? nul : bytes.length).toString("latin1");
+}
+
+function writeFixedString(buffer, field, offset, value) {
+  const size = binaryFieldSize(field);
+  const bytes = Buffer.from(value ?? "", "latin1");
+  if (bytes.length > size) {
+    throw new Error(`${field.name} is longer than fixed string size ${size}`);
+  }
+  bytes.copy(buffer, offset);
+}
+
 function readBinaryScalar(data, field, offset) {
+  if (field.type === "fixedString") {
+    return readFixedString(data, field, offset);
+  }
   let value = data[binaryType(field).read](offset);
   if (field.type === "bool8") {
     value = Boolean(value);
@@ -674,6 +722,10 @@ function readBinaryScalar(data, field, offset) {
 }
 
 function writeBinaryScalar(buffer, field, offset, value) {
+  if (field.type === "fixedString") {
+    writeFixedString(buffer, field, offset, value);
+    return;
+  }
   let binaryValue = value;
   if (field.type === "bool8") {
     binaryValue = field.invert ? !Boolean(value) : Boolean(value);
@@ -693,7 +745,7 @@ function readBinaryField(data, field, baseOffset = 0) {
   if (offset + binaryFieldSize(field) > data.length) {
     return cloneJson(field.default);
   }
-  if (!field.count) {
+  if (!field.count || field.type === "fixedString") {
     return readBinaryScalar(data, field, offset);
   }
   const values = [];
@@ -707,7 +759,7 @@ function readBinaryField(data, field, baseOffset = 0) {
 function writeBinaryField(buffer, field, object, baseOffset = 0) {
   const offset = baseOffset + field.offset;
   const value = (field.flatten && object?.[field.name] === undefined ? object : object?.[field.name]) ?? cloneJson(field.default);
-  if (!field.count) {
+  if (!field.count || field.type === "fixedString") {
     writeBinaryScalar(buffer, field, offset, value);
     return;
   }
@@ -940,7 +992,64 @@ function encodeStringData(dataChunk, definition) {
   return text === undefined ? undefined : Buffer.from(`${text}\0`, "utf8");
 }
 
+function decodeBytesData(data) {
+  return {
+    byteLength: data.length,
+    bytesBase64: data.toString("base64"),
+  };
+}
+
+function encodeBytesData(dataChunk) {
+  return dataChunk.bytesBase64 === undefined ? undefined : decodeBase64(dataChunk.bytesBase64, "module data bytes");
+}
+
+function decodeSamplerEnvelope(data, definition) {
+  const headerSize = definition.headerSize ?? binaryLayoutSize(definition.fields ?? []);
+  if (data.length < headerSize) {
+    return undefined;
+  }
+  const envelope = readStructRecord(data, definition.fields);
+  const pointCount = envelope.pointCount ?? 0;
+  const points = [];
+  for (let index = 0, offset = headerSize; index < pointCount; index += 1, offset += 4) {
+    if (offset + 4 > data.length) {
+      return undefined;
+    }
+    const packed = data.readUInt32LE(offset);
+    points.push({
+      x: packed & 0xffff,
+      value: packed >>> 16,
+    });
+  }
+  envelope.points = points;
+  const result = {};
+  setPath(result, definition.path ?? "envelope", envelope);
+  return result;
+}
+
+function encodeSamplerEnvelope(dataChunk, definition) {
+  const envelope = getPath(dataChunk, definition.path ?? "envelope");
+  if (!envelope || typeof envelope !== "object") {
+    return undefined;
+  }
+  const headerSize = definition.headerSize ?? binaryLayoutSize(definition.fields ?? []);
+  const points = Array.isArray(envelope.points) ? envelope.points : [];
+  const pointCount = envelope.pointCount ?? points.length;
+  const buffer = Buffer.alloc(headerSize + pointCount * 4);
+  writeStructRecord(buffer, definition.fields, { ...envelope, pointCount });
+  for (let index = 0; index < pointCount; index += 1) {
+    const point = points[index] ?? {};
+    const packed = ((point.x ?? 0) & 0xffff) | (((point.value ?? 0) & 0xffff) << 16);
+    buffer.writeUInt32LE(packed >>> 0, headerSize + index * 4);
+  }
+  return buffer;
+}
+
 const MODULE_DATA_CODECS = {
+  bytes: {
+    decode: decodeBytesData,
+    encode: encodeBytesData,
+  },
   container: {
     decode(data, definition) {
       const magic = data.length >= 4 ? toAscii(data.subarray(0, 4)) : undefined;
@@ -964,6 +1073,10 @@ const MODULE_DATA_CODECS = {
   string: {
     decode: decodeStringData,
     encode: encodeStringData,
+  },
+  samplerEnvelope: {
+    decode: decodeSamplerEnvelope,
+    encode: encodeSamplerEnvelope,
   },
   struct: {
     decode: decodeStructData,
@@ -1034,9 +1147,7 @@ function decodeModuleDataChunk(type, index, chunk) {
   if (definition?.name) {
     dataChunk.name = definition.name;
   }
-  if (definition?.indexOffset !== undefined) {
-    dataChunk.controller = index - definition.indexOffset;
-  }
+  assignDataChunkRangeIndex(dataChunk, definition ?? {}, index);
 
   if (chunk.base64 !== undefined) {
     const data = decodeBase64(chunk.base64, `module data chunk ${index}`);
@@ -1054,6 +1165,30 @@ function decodeModuleDataChunk(type, index, chunk) {
 
   dataChunk.chunk = cloneJson(chunk);
   return dataChunk;
+}
+
+function decodeDataChunkInfoValue(definition, kind, value) {
+  if (kind === "flags") {
+    if (definition?.flagBitfield) {
+      return unpackBitfield(definition.flagBitfield, value);
+    }
+    if (definition?.flagBitflags) {
+      return decodeBitflags(definition.flagBitflags, value);
+    }
+  }
+  return value;
+}
+
+function encodeDataChunkInfoValue(definition, kind, value) {
+  if (kind === "flags") {
+    if (definition?.flagBitfield) {
+      return packBitfield(definition.flagBitfield, value);
+    }
+    if (definition?.flagBitflags) {
+      return encodeBitflags(definition.flagBitflags, value);
+    }
+  }
+  return value;
 }
 
 function decodeControllerValue(definition, value) {
@@ -1270,8 +1405,9 @@ function consumeModuleDataChunks(chunks, target, used, type) {
 
     while (index + 1 < chunks.length) {
       const next = chunks[index + 1];
+      const definition = moduleDataDefinition(type, dataChunk.index);
       if (next.id === "CHFF" && !used.has(index + 1)) {
-        dataChunk.flags = next.value;
+        dataChunk.flags = decodeDataChunkInfoValue(definition, "flags", next.value);
         used.add(index + 1);
         index += 1;
       } else if (next.id === "CHFR" && !used.has(index + 1)) {
@@ -1310,7 +1446,7 @@ function makeModuleDataChunks(module) {
       });
     }
     if (dataChunk.flags !== undefined) {
-      chunks.push(makeSemanticChunk("CHFF", "value", dataChunk.flags));
+      chunks.push(makeSemanticChunk("CHFF", "value", encodeDataChunkInfoValue(definition, "flags", dataChunk.flags)));
     }
     if (dataChunk.sampleRate !== undefined) {
       chunks.push(makeSemanticChunk("CHFR", "value", dataChunk.sampleRate));

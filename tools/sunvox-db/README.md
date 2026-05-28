@@ -29,14 +29,13 @@ options, and custom controller names through reusable layout types such as
 that metadata with CVAL chunks so user controller values appear under
 `controllers.user`. FMX uses a repeated operator template so the editable text
 contains an `operators` array instead of a long raw controller list. Module data
-chunk layouts now cover sampled curves and compact option structures for
-MultiSynth, WaveShaper, SpectraVoice, Generator, and Analog generator; Analog
-generator options also record the original chunk byte length as `dataSize` so
-SunVox's trailing-zero trimming can round-trip exactly.
-
-Remaining DB expansion work is concentrated in module data payloads whose
-formats are larger than controller metadata, especially the Sampler sample,
-loop, envelope, and recording-related chunks.
+chunk layouts now cover sampled curves, compact option structures, and Sampler
+instrument/sample/envelope records. Analog generator and Sampler option chunks
+also record the original chunk byte length as `dataSize` so SunVox's
+trailing-zero trimming can round-trip exactly. Sampler PCM payloads are treated
+as known byte payloads with decoded chunk flags and sample rates; the raw bytes
+remain in `bytesBase64` until a higher-level audio sample representation is
+added.
 
 ## Inspection Tool
 

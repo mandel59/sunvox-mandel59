@@ -151,16 +151,19 @@
               "properties": {
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["container", "int8Array", "packedUInt32Array", "recordArray", "string", "struct", "uint8Array", "uint16Array"] },
+                "type": { "enum": ["bytes", "container", "int8Array", "packedUInt32Array", "recordArray", "samplerEnvelope", "string", "struct", "uint8Array", "uint16Array"] },
                 "path": { "type": "string" },
                 "count": { "type": "integer", "minimum": 0 },
                 "size": { "type": "integer", "minimum": 0 },
+                "headerSize": { "type": "integer", "minimum": 0 },
                 "recordSize": { "type": "integer", "minimum": 0 },
                 "format": { "type": "string" },
                 "omitZero": { "type": "boolean" },
                 "omitDefaults": { "type": "boolean" },
                 "omitDefaultRecords": { "type": "boolean" },
                 "trimTrailingZeroes": { "type": "boolean" },
+                "flagBitfield": { "type": "string" },
+                "flagBitflags": { "type": "string" },
                 "magic": {
                   "type": "array",
                   "items": { "enum": ["SVOX", "SSYN"] }
@@ -172,7 +175,7 @@
                     "required": ["name"],
                     "properties": {
                       "name": { "type": "string" },
-                      "type": { "enum": ["bool8", "int32", "uint8", "uint16", "uint32"] },
+                      "type": { "enum": ["bool8", "fixedString", "int8", "int32", "uint8", "uint16", "uint32"] },
                       "offset": { "type": "integer", "minimum": 0 },
                       "count": { "type": "integer", "minimum": 1 },
                       "default": {},
@@ -200,9 +203,50 @@
                 "start": { "type": "integer", "minimum": 0 },
                 "end": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["string"] },
+                "type": { "enum": ["bytes", "container", "int8Array", "packedUInt32Array", "recordArray", "samplerEnvelope", "string", "struct", "uint8Array", "uint16Array"] },
+                "path": { "type": "string" },
+                "step": { "type": "integer", "minimum": 1 },
+                "count": { "type": "integer", "minimum": 0 },
+                "size": { "type": "integer", "minimum": 0 },
+                "headerSize": { "type": "integer", "minimum": 0 },
+                "recordSize": { "type": "integer", "minimum": 0 },
                 "format": { "type": "string" },
-                "indexOffset": { "type": "integer", "minimum": 0 }
+                "omitZero": { "type": "boolean" },
+                "omitDefaults": { "type": "boolean" },
+                "omitDefaultRecords": { "type": "boolean" },
+                "trimTrailingZeroes": { "type": "boolean" },
+                "flagBitfield": { "type": "string" },
+                "flagBitflags": { "type": "string" },
+                "magic": {
+                  "type": "array",
+                  "items": { "enum": ["SVOX", "SSYN"] }
+                },
+                "indexOffset": { "type": "integer", "minimum": 0 },
+                "indexDivisor": { "type": "integer", "minimum": 1 },
+                "indexName": { "type": "string" },
+                "indexEnum": { "type": "string" },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "enum": ["bool8", "fixedString", "int8", "int32", "uint8", "uint16", "uint32"] },
+                      "offset": { "type": "integer", "minimum": 0 },
+                      "count": { "type": "integer", "minimum": 1 },
+                      "default": {},
+                      "invert": { "type": "boolean" },
+                      "enum": { "type": "string" },
+                      "bitfield": { "type": "string" },
+                      "bitflags": { "type": "string" },
+                      "flatten": { "type": "boolean" },
+                      "shift": { "type": "integer", "minimum": 0 },
+                      "bits": { "type": "integer", "minimum": 1, "maximum": 32 }
+                    },
+                    "additionalProperties": false
+                  }
+                }
               },
               "additionalProperties": false
             }

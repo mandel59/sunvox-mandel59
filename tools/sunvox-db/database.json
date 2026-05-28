@@ -615,6 +615,28 @@
       "4": "random",
       "5": "random2",
       "6": "random3"
+    },
+    "sampler_loop_type": {
+      "0": "off",
+      "1": "on",
+      "2": "pingPong",
+      "3": "reserved"
+    },
+    "sampler_sample_data_format": {
+      "0": "none",
+      "1": "int8",
+      "2": "int16",
+      "3": "int32",
+      "4": "float32"
+    },
+    "sampler_envelope": {
+      "0": "volume",
+      "1": "panning",
+      "2": "pitch",
+      "3": "effect1",
+      "4": "effect2",
+      "5": "effect3",
+      "6": "effect4"
     }
   },
   "bitfields": {
@@ -643,6 +665,25 @@
         { "name": "recordPitchCurve", "shift": 3, "bits": 1, "enum": "off_on" },
         { "name": "noteDifference", "shift": 5, "bits": 1, "enum": "off_on" },
         { "name": "outputSlotMode", "shift": 6, "bits": 4, "enum": "multisynth_output_slot_mode" }
+      ]
+    },
+    "sampler_sample_type": {
+      "type": "uint8",
+      "fields": [
+        { "name": "loop", "shift": 0, "bits": 2, "enum": "sampler_loop_type" },
+        { "name": "loopRelease", "shift": 2, "bits": 1, "enum": "off_on" },
+        { "name": "reserved3", "shift": 3, "bits": 3 },
+        { "name": "stereo", "shift": 6, "bits": 1, "enum": "off_on" },
+        { "name": "reserved7", "shift": 7, "bits": 1 }
+      ]
+    },
+    "sampler_sample_data_flags": {
+      "type": "uint32",
+      "fields": [
+        { "name": "format", "shift": 0, "bits": 3, "enum": "sampler_sample_data_format" },
+        { "name": "channelsMinusOne", "shift": 3, "bits": 2 },
+        { "name": "dontSave", "shift": 5, "bits": 1, "enum": "off_on" },
+        { "name": "reserved6", "shift": 6, "bits": 26 }
       ]
     }
   },
@@ -719,6 +760,11 @@
       { "name": "autoBpmTpl", "bit": 2 },
       { "name": "ignoreEffect31AfterLastNoteOff", "bit": 3 },
       { "name": "jumpToReleasePatternAfterLastNoteOff", "bit": 4 }
+    ],
+    "sampler_envelope_flags": [
+      { "name": "enabled", "bit": 0 },
+      { "name": "sustain", "bit": 1 },
+      { "name": "loop", "bit": 2 }
     ]
   },
   "grammar": {
@@ -1495,6 +1541,135 @@
       ]
     },
     "Sampler": {
+      "dataChunks": [
+        {
+          "index": 0,
+          "name": "instrument",
+          "type": "struct",
+          "path": "instrument",
+          "size": 400,
+          "fields": [
+            { "name": "unused1", "type": "uint32", "offset": 0 },
+            { "name": "name", "type": "fixedString", "offset": 4, "count": 22 },
+            { "name": "unused2", "type": "uint16", "offset": 26 },
+            { "name": "samples", "type": "uint16", "offset": 28 },
+            { "name": "unused3", "type": "uint16", "offset": 30 },
+            { "name": "unused4", "type": "uint32", "offset": 32 },
+            { "name": "legacySampleMap", "type": "uint8", "offset": 36, "count": 96 },
+            { "name": "legacyVolumePoints", "type": "uint16", "offset": 132, "count": 24 },
+            { "name": "legacyPanningPoints", "type": "uint16", "offset": 180, "count": 24 },
+            { "name": "legacyVolumePointCount", "type": "uint8", "offset": 228 },
+            { "name": "legacyPanningPointCount", "type": "uint8", "offset": 229 },
+            { "name": "legacyVolumeSustain", "type": "uint8", "offset": 230 },
+            { "name": "legacyVolumeLoopStart", "type": "uint8", "offset": 231 },
+            { "name": "legacyVolumeLoopEnd", "type": "uint8", "offset": 232 },
+            { "name": "legacyPanningSustain", "type": "uint8", "offset": 233 },
+            { "name": "legacyPanningLoopStart", "type": "uint8", "offset": 234 },
+            { "name": "legacyPanningLoopEnd", "type": "uint8", "offset": 235 },
+            { "name": "legacyVolumeType", "type": "uint8", "offset": 236 },
+            { "name": "legacyPanningType", "type": "uint8", "offset": 237 },
+            { "name": "vibratoType", "type": "uint8", "offset": 238 },
+            { "name": "vibratoSweep", "type": "uint8", "offset": 239 },
+            { "name": "vibratoDepth", "type": "uint8", "offset": 240 },
+            { "name": "vibratoRate", "type": "uint8", "offset": 241 },
+            { "name": "volumeFadeout", "type": "uint16", "offset": 242 },
+            { "name": "legacyVolume", "type": "uint8", "offset": 244 },
+            { "name": "finetune", "type": "int8", "offset": 245 },
+            { "name": "unused5", "type": "uint8", "offset": 246 },
+            { "name": "relativeNote", "type": "int8", "offset": 247 },
+            { "name": "unused6", "type": "uint32", "offset": 248 },
+            { "name": "signature", "type": "uint32", "offset": 252 },
+            { "name": "version", "type": "uint32", "offset": 256 },
+            { "name": "sampleMap", "type": "uint8", "offset": 260, "count": 128 },
+            { "name": "maxVersion", "type": "uint32", "offset": 388 },
+            { "name": "editorCursor", "type": "int32", "offset": 392 },
+            { "name": "editorSelectedSize", "type": "int32", "offset": 396 }
+          ]
+        },
+        {
+          "index": 257,
+          "name": "options",
+          "type": "struct",
+          "path": "options",
+          "size": 8,
+          "trimTrailingZeroes": true,
+          "fields": [
+            { "name": "recordOnPlay", "type": "bool8", "offset": 0, "default": false },
+            { "name": "recordMono", "type": "bool8", "offset": 1, "default": false },
+            { "name": "recordReducedFreq", "type": "bool8", "offset": 2, "default": false },
+            { "name": "record16Bit", "type": "bool8", "offset": 3, "default": false },
+            { "name": "finishRecordingOnStop", "type": "bool8", "offset": 4, "default": false },
+            { "name": "ignoreVelocityForVolume", "type": "bool8", "offset": 5, "default": false },
+            { "name": "frequencyAccuracy", "type": "bool8", "offset": 6, "default": false },
+            { "name": "fitToPattern", "type": "uint8", "offset": 7, "default": 0 }
+          ]
+        },
+        { "index": 266, "name": "effectModule", "type": "container", "magic": ["SSYN"] }
+      ],
+      "dataChunkRanges": [
+        {
+          "start": 1,
+          "end": 255,
+          "step": 2,
+          "name": "sample",
+          "type": "struct",
+          "path": "sample",
+          "size": 44,
+          "indexOffset": 1,
+          "indexDivisor": 2,
+          "indexName": "slot",
+          "fields": [
+            { "name": "length", "type": "uint32", "offset": 0 },
+            { "name": "loopStart", "type": "uint32", "offset": 4 },
+            { "name": "loopLength", "type": "uint32", "offset": 8 },
+            { "name": "volume", "type": "uint8", "offset": 12 },
+            { "name": "finetune", "type": "int8", "offset": 13 },
+            { "name": "type", "type": "uint8", "offset": 14, "bitfield": "sampler_sample_type" },
+            { "name": "panning", "type": "uint8", "offset": 15 },
+            { "name": "relativeNote", "type": "int8", "offset": 16 },
+            { "name": "reserved2", "type": "uint8", "offset": 17 },
+            { "name": "name", "type": "fixedString", "offset": 18, "count": 22 },
+            { "name": "startPosition", "type": "uint32", "offset": 40 }
+          ]
+        },
+        {
+          "start": 2,
+          "end": 256,
+          "step": 2,
+          "name": "sampleData",
+          "type": "bytes",
+          "indexOffset": 2,
+          "indexDivisor": 2,
+          "indexName": "slot",
+          "flagBitfield": "sampler_sample_data_flags"
+        },
+        {
+          "start": 258,
+          "end": 264,
+          "name": "envelope",
+          "type": "samplerEnvelope",
+          "path": "envelope",
+          "headerSize": 20,
+          "indexOffset": 258,
+          "indexName": "envelopeType",
+          "indexEnum": "sampler_envelope",
+          "fields": [
+            { "name": "flags", "type": "uint16", "offset": 0, "bitflags": "sampler_envelope_flags" },
+            { "name": "effectController", "type": "uint8", "offset": 2 },
+            { "name": "gain", "type": "uint8", "offset": 3, "default": 100 },
+            { "name": "velocityInfluence", "type": "uint8", "offset": 4 },
+            { "name": "unused3", "type": "uint8", "offset": 5 },
+            { "name": "unused4", "type": "uint8", "offset": 6 },
+            { "name": "unused5", "type": "uint8", "offset": 7 },
+            { "name": "pointCount", "type": "uint16", "offset": 8 },
+            { "name": "sustain", "type": "uint16", "offset": 10 },
+            { "name": "loopStart", "type": "uint16", "offset": 12 },
+            { "name": "loopEnd", "type": "uint16", "offset": 14 },
+            { "name": "unused6", "type": "uint16", "offset": 16 },
+            { "name": "unused7", "type": "uint16", "offset": 18 }
+          ]
+        }
+      ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },

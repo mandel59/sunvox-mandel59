@@ -25,8 +25,10 @@ example, FMX operators are decoded into an `operators` array instead of a raw
 controller list. MultiCtl output slots and response curves are also decoded
 when present. MultiSynth, WaveShaper, SpectraVoice, Generator, and Analog
 generator module data chunks are decoded into typed arrays or named option
-fields where the SunVox source layout is known. Sound2Ctl controller values and
-options are decoded into named fields.
+fields where the SunVox source layout is known. Sampler instrument, sample,
+option, and envelope chunks are decoded into structured records; sample PCM
+bytes remain reversible as `bytesBase64` with decoded format flags. Sound2Ctl
+controller values and options are decoded into named fields.
 
 ```sh
 npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json
