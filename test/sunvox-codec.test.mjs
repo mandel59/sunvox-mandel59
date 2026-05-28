@@ -276,6 +276,38 @@ test("decodes utility and delay-style effect controllers", async () => {
   assert.equal(waveShaper.controllers.dcBlocker, "on");
 });
 
+test("decodes Pitch shifter controllers", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const pitchShifters = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "Pitch shifter") {
+        pitchShifters.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  assert.equal(pitchShifters.length, 26);
+  assert.deepEqual(pitchShifters[0].controllers, {
+    volume: 256,
+    pitch: 599,
+    pitchScale: 35,
+    feedback: 0,
+    grainSize: 10,
+    mode: "hq",
+    bypassIfPitch0: "off",
+  });
+});
+
 test("decodes FMX controllers as operator structures", async () => {
   const buffer = await readFile("music/2022-04-18.sunvox");
   const document = parseContainer(buffer);

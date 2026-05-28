@@ -124,6 +124,17 @@
       "2": "lq",
       "3": "lqMono"
     },
+    "quality_mode": {
+      "0": "hq",
+      "1": "hqMono",
+      "2": "lq",
+      "3": "lqMono"
+    },
+    "pitch_shifter_bypass": {
+      "0": "off",
+      "1": "slowTransition",
+      "2": "fastTransition"
+    },
     "allpass_filter": {
       "0": "off",
       "1": "on",
@@ -813,6 +824,17 @@
         { "index": 6, "name": "outMin", "label": "OUT min", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1 },
         { "index": 7, "name": "outMax", "label": "OUT max", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 1 },
         { "index": 8, "name": "outController", "label": "OUT controller", "type": "int32", "min": 0, "max": 255, "default": 0, "normal": -1, "group": 1 }
+      ]
+    },
+    "Pitch shifter": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "pitch", "label": "Pitch", "type": "int32", "min": 0, "max": 1200, "default": 600, "normal": 600, "group": 0, "displayOffset": -600, "unit": "semitone/10" },
+        { "index": 2, "name": "pitchScale", "label": "Pitch scale", "type": "int32", "min": 0, "max": 200, "default": 100, "normal": 100, "group": 0, "unit": "%" },
+        { "index": 3, "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": 0, "group": 0 },
+        { "index": 4, "name": "grainSize", "label": "Grain size", "type": "int32", "min": 0, "max": 256, "default": 64, "normal": -1, "group": 0 },
+        { "index": 5, "name": "mode", "label": "Mode", "type": "enum", "enum": "quality_mode", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 1 },
+        { "index": 6, "name": "bypassIfPitch0", "label": "Bypass if pitch=0", "type": "enum", "enum": "pitch_shifter_bypass", "min": 0, "max": 2, "default": 0, "normal": 0, "group": 1 }
       ]
     },
     "Reverb": {
