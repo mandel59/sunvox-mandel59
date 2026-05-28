@@ -58,8 +58,8 @@ const SV_MODULE_OUTPUTS_MASK = ( 255 << SV_MODULE_OUTPUTS_OFF );
 function sv_init( config, freq, channels, flags ) 
 {
     var config_mptr = 0;
-    if( config != 0 && config != null ) 
-	config_mptr = svlib.allocate( svlib.intArrayFromString( config ), 'i8', svlib.ALLOC_NORMAL );
+    if( config != 0 && config != null )
+	svlib.allocate( svlib.intArrayFromString( config ), 'i8', svlib.ALLOC_NORMAL );
     sv_flags = flags;
     sv_channels = channels;
     var rv = svlib._sv_init( config_mptr, freq, channels, flags );
@@ -177,6 +177,7 @@ function sv_set_song_name( slot, name )
     var rv = svlib._sv_set_song_name( slot, name_mptr );
     svlib._free( name_mptr );
 }
+function sv_get_base_version( slot ) { return svlib._sv_get_base_version( slot ); }
 function sv_get_song_bpm( slot ) { return svlib._sv_get_song_bpm( slot ); }
 function sv_get_song_tpl( slot ) { return svlib._sv_get_song_tpl( slot ); }
 function sv_get_song_length_frames( slot ) { return svlib._sv_get_song_length_frames( slot ); }
