@@ -128,6 +128,29 @@
       ]
     }
   },
+  "structs": {
+    "sunvox_note": {
+      "kind": "patternNotes",
+      "path": "pattern.events",
+      "recordSize": 8,
+      "fields": [
+        { "name": "note", "type": "uint8", "offset": 0 },
+        { "name": "velocity", "type": "uint8", "offset": 1 },
+        { "name": "module", "type": "uint16", "offset": 2 },
+        { "name": "controller", "type": "uint16", "offset": 4 },
+        { "name": "value", "type": "uint16", "offset": 6 }
+      ]
+    },
+    "midi_binding": {
+      "kind": "midiBindings",
+      "path": "midiBindings",
+      "recordSize": 8,
+      "fields": [
+        { "name": "midiPars1", "type": "uint32", "offset": 0, "bitfield": "midi_pars1", "flatten": true },
+        { "name": "midiPars2", "type": "uint32", "offset": 4, "bitfield": "midi_pars2", "flatten": true }
+      ]
+    }
+  },
   "bitflags": {
     "metamodule_option_flags": [
       { "name": "forceGenerator", "bit": 0 },

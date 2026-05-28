@@ -9,6 +9,8 @@ can either interpret it directly or generate conversion code from it later.
 - `chunks`: maps chunk IDs to labels, scopes, and payload types.
 - `enums`: maps stored numeric values to editable names.
 - `bitfields`: describes packed integer fields such as `CMID`.
+- `structs`: describes fixed-size record arrays such as pattern notes and MIDI
+  bindings.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
 - `modules`: describes module-specific controller layouts and data chunk
   layouts.

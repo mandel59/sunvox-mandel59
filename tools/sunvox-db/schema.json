@@ -68,6 +68,39 @@
         }
       }
     },
+    "structs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["recordSize", "fields"],
+        "properties": {
+          "kind": { "type": "string" },
+          "path": { "type": "string" },
+          "recordSize": { "type": "integer", "minimum": 1 },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "type", "offset"],
+              "properties": {
+                "name": { "type": "string" },
+                "type": { "enum": ["bool8", "int32", "uint8", "uint16", "uint32"] },
+                "offset": { "type": "integer", "minimum": 0 },
+                "count": { "type": "integer", "minimum": 1 },
+                "default": {},
+                "invert": { "type": "boolean" },
+                "enum": { "type": "string" },
+                "bitfield": { "type": "string" },
+                "bitflags": { "type": "string" },
+                "flatten": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "grammar": {
       "type": "object",
       "required": ["scopes"],
@@ -143,7 +176,9 @@
                       "default": {},
                       "invert": { "type": "boolean" },
                       "enum": { "type": "string" },
+                      "bitfield": { "type": "string" },
                       "bitflags": { "type": "string" },
+                      "flatten": { "type": "boolean" },
                       "shift": { "type": "integer", "minimum": 0 },
                       "bits": { "type": "integer", "minimum": 1, "maximum": 32 }
                     },

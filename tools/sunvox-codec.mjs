@@ -171,26 +171,6 @@ function encodeBitflags(bitflagName, value) {
   return result >>> 0;
 }
 
-function decodeMidiBinding(midiPars1, midiPars2) {
-  return {
-    ...unpackBitfield("midi_pars1", midiPars1),
-    ...unpackBitfield("midi_pars2", midiPars2),
-  };
-}
-
-function encodeMidiBinding(binding) {
-  if (Array.isArray(binding)) {
-    return binding;
-  }
-  if (binding?.midiPars1 !== undefined || binding?.midiPars2 !== undefined) {
-    return [binding.midiPars1 ?? 0, binding.midiPars2 ?? 0];
-  }
-  return [
-    packBitfield("midi_pars1", binding),
-    packBitfield("midi_pars2", binding),
-  ];
-}
-
 function decodeCString(data) {
   const nul = data.indexOf(0);
   const end = nul >= 0 ? nul : data.length;
@@ -211,62 +191,10 @@ function decodeCString(data) {
   return text;
 }
 
-function decodePatternNotes(data) {
-  if (data.length % 8 !== 0) {
-    return undefined;
-  }
-
-  const events = [];
-  let nonEmptyEvents = 0;
-  for (let offset = 0; offset < data.length; offset += 8) {
-    const event = {
-      note: data.readUInt8(offset),
-      velocity: data.readUInt8(offset + 1),
-      module: data.readUInt16LE(offset + 2),
-      controller: data.readUInt16LE(offset + 4),
-      value: data.readUInt16LE(offset + 6),
-    };
-    if (event.note || event.velocity || event.module || event.controller || event.value) {
-      nonEmptyEvents += 1;
-    }
-    events.push(event);
-  }
-
-  return {
-    eventSize: 8,
-    events,
-    eventCount: events.length,
-    nonEmptyEventCount: nonEmptyEvents,
-  };
-}
-
-function encodePatternNotes(pattern) {
-  const events = pattern?.events;
-  if (!Array.isArray(events)) {
-    throw new Error("pattern.events must be an array");
-  }
-
-  const buffer = Buffer.alloc(events.length * 8);
-  events.forEach((event, index) => {
-    const values = Array.isArray(event)
-      ? event
-      : [event.note, event.velocity, event.module, event.controller, event.value];
-    if (values.length !== 5) {
-      throw new Error(`pattern.events[${index}] must contain 5 values`);
-    }
-    const offset = index * 8;
-    buffer.writeUInt8(values[0], offset);
-    buffer.writeUInt8(values[1], offset + 1);
-    buffer.writeUInt16LE(values[2], offset + 2);
-    buffer.writeUInt16LE(values[3], offset + 4);
-    buffer.writeUInt16LE(values[4], offset + 6);
-  });
-  return buffer;
-}
-
 export function decodeChunkData(id, data) {
   const decoded = {};
   const type = chunkType(id);
+  const structArray = structArrayDefinition(type);
   if (CHUNK_DESCRIPTIONS[id]) {
     decoded._description = CHUNK_DESCRIPTIONS[id];
   }
@@ -291,19 +219,11 @@ export function decodeChunkData(id, data) {
     };
   }
 
-  if (type === "structArray:sunvox_note") {
-    const pattern = decodePatternNotes(data);
-    if (pattern) {
-      return { ...decoded, kind: "patternNotes", value: pattern };
+  if (structArray) {
+    const value = decodeStructArrayData(data, structArray);
+    if (value) {
+      return { ...decoded, kind: structArray.kind ?? "structArray", value };
     }
-  }
-
-  if (type === "structArray:midi_binding" && data.length % 8 === 0) {
-    const bindings = [];
-    for (let offset = 0; offset < data.length; offset += 8) {
-      bindings.push(decodeMidiBinding(data.readUInt32LE(offset), data.readUInt32LE(offset + 4)));
-    }
-    return { ...decoded, kind: "midiBindings", value: bindings };
   }
 
   if (type === "int32Array" && data.length % 4 === 0) {
@@ -449,18 +369,12 @@ function editableChunkData(chunk, index) {
   if (type === "uint32Array" && Array.isArray(chunk.values)) {
     return writeUInt32Array(chunk.values);
   }
-  if (type === "structArray:midi_binding" && Array.isArray(chunk.midiBindings)) {
-    const buffer = Buffer.alloc(chunk.midiBindings.length * 8);
-    chunk.midiBindings.forEach((binding, bindingIndex) => {
-      const values = encodeMidiBinding(binding);
-      const offset = bindingIndex * 8;
-      buffer.writeUInt32LE(values[0], offset);
-      buffer.writeUInt32LE(values[1], offset + 4);
-    });
-    return buffer;
-  }
-  if (type === "structArray:sunvox_note" && chunk.pattern !== undefined) {
-    return encodePatternNotes(chunk.pattern);
+  const structArray = structArrayDefinition(type);
+  if (structArray) {
+    const values = getPath(chunk, structArray.path);
+    if (values !== undefined) {
+      return encodeStructArrayData(values, structArray);
+    }
   }
   if (chunk.value === undefined && chunk.text === undefined && chunk.rgb === undefined && chunk.values === undefined && chunk.pattern === undefined) {
     return Buffer.alloc(0);
@@ -663,6 +577,9 @@ function readBinaryScalar(data, field, offset) {
     value = Boolean(value);
     return field.invert ? !value : value;
   }
+  if (field.bitfield) {
+    return unpackBitfield(field.bitfield, value);
+  }
   if (field.bitflags) {
     return decodeBitflags(field.bitflags, value);
   }
@@ -676,6 +593,8 @@ function writeBinaryScalar(buffer, field, offset, value) {
   let binaryValue = value;
   if (field.type === "bool8") {
     binaryValue = field.invert ? !Boolean(value) : Boolean(value);
+  } else if (field.bitfield) {
+    binaryValue = typeof value === "number" ? value : packBitfield(field.bitfield, value);
   } else if (field.bitflags) {
     binaryValue = encodeBitflags(field.bitflags, value ?? 0);
   } else if (field.enum) {
@@ -703,7 +622,7 @@ function readBinaryField(data, field, baseOffset = 0) {
 
 function writeBinaryField(buffer, field, object, baseOffset = 0) {
   const offset = baseOffset + field.offset;
-  const value = object?.[field.name] ?? cloneJson(field.default);
+  const value = (field.flatten && object?.[field.name] === undefined ? object : object?.[field.name]) ?? cloneJson(field.default);
   if (!field.count) {
     writeBinaryScalar(buffer, field, offset, value);
     return;
@@ -727,14 +646,69 @@ function valuesEqual(left, right) {
   return left === right;
 }
 
-function decodeStructData(data, definition) {
-  const object = {};
-  for (const field of definition.fields ?? []) {
-    const value = readBinaryField(data, field);
-    if (value !== undefined) {
-      object[field.name] = value;
+function recordObject(record, fields) {
+  return Array.isArray(record)
+    ? Object.fromEntries(fields.map((field, index) => [field.name, record[index]]))
+    : record;
+}
+
+function readStructRecord(data, fields, baseOffset = 0) {
+  const record = {};
+  for (const field of fields ?? []) {
+    const value = readBinaryField(data, field, baseOffset);
+    if (field.flatten && value && typeof value === "object") {
+      Object.assign(record, value);
+    } else if (value !== undefined) {
+      record[field.name] = value;
     }
   }
+  return record;
+}
+
+function writeStructRecord(buffer, fields, record, baseOffset = 0) {
+  const object = recordObject(record, fields ?? []);
+  for (const field of fields ?? []) {
+    writeBinaryField(buffer, field, object, baseOffset);
+  }
+}
+
+function structArrayDefinition(type) {
+  const match = /^structArray:(.+)$/u.exec(type ?? "");
+  return match ? SUNVOX_DB.structs?.[match[1]] : undefined;
+}
+
+function decodeStructArrayData(data, definition) {
+  const recordSize = definition.recordSize ?? binaryLayoutSize(definition.fields ?? []);
+  if (recordSize <= 0 || data.length % recordSize !== 0) {
+    return undefined;
+  }
+  const records = [];
+  for (let offset = 0; offset < data.length; offset += recordSize) {
+    records.push(readStructRecord(data, definition.fields, offset));
+  }
+  if (definition.kind !== "patternNotes") {
+    return records;
+  }
+  return {
+    eventSize: recordSize,
+    events: records,
+    eventCount: records.length,
+    nonEmptyEventCount: records.filter((record) => Object.values(record).some(Boolean)).length,
+  };
+}
+
+function encodeStructArrayData(records, definition) {
+  if (!Array.isArray(records)) {
+    throw new Error(`${definition.kind ?? "structArray"} must be an array`);
+  }
+  const recordSize = definition.recordSize ?? binaryLayoutSize(definition.fields ?? []);
+  const buffer = Buffer.alloc(records.length * recordSize);
+  records.forEach((record, index) => writeStructRecord(buffer, definition.fields, record, index * recordSize));
+  return buffer;
+}
+
+function decodeStructData(data, definition) {
+  const object = readStructRecord(data, definition.fields);
   if (!definition.path) {
     return object;
   }
@@ -749,9 +723,7 @@ function encodeStructData(dataChunk, definition) {
     return undefined;
   }
   const buffer = Buffer.alloc(definition.size ?? binaryLayoutSize(definition.fields ?? []));
-  for (const field of definition.fields ?? []) {
-    writeBinaryField(buffer, field, object);
-  }
+  writeStructRecord(buffer, definition.fields, object);
   return buffer;
 }
 
@@ -806,10 +778,11 @@ function decodeRecordArray(data, definition) {
   const records = [];
   const count = Math.floor(data.length / recordSize);
   for (let index = 0; index < count; index += 1) {
+    const values = readStructRecord(data, definition.fields, index * recordSize);
     const record = { [definition.indexField ?? "index"]: index };
     let hasNonDefault = false;
     for (const field of definition.fields ?? []) {
-      const value = readBinaryField(data, field, index * recordSize);
+      const value = values[field.name];
       const defaultValue = cloneJson(field.default);
       if (!valuesEqual(value, defaultValue)) {
         hasNonDefault = true;
@@ -841,18 +814,14 @@ function encodeRecordArray(dataChunk, definition) {
     emptyRecord[field.name] = cloneJson(field.default);
   }
   for (let index = 0; index < count; index += 1) {
-    for (const field of definition.fields ?? []) {
-      writeBinaryField(buffer, field, emptyRecord, index * recordSize);
-    }
+    writeStructRecord(buffer, definition.fields, emptyRecord, index * recordSize);
   }
   for (const record of records) {
     const index = record[definition.indexField ?? "index"];
     if (!Number.isInteger(index) || index < 0 || index >= count) {
       throw new Error(`Invalid ${definition.name} index: ${index}`);
     }
-    for (const field of definition.fields ?? []) {
-      writeBinaryField(buffer, field, record, index * recordSize);
-    }
+    writeStructRecord(buffer, definition.fields, record, index * recordSize);
   }
   return buffer;
 }
