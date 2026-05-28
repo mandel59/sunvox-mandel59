@@ -490,6 +490,59 @@ test("decodes Generator and Filter controllers", async () => {
   });
 });
 
+test("decodes LFO controllers", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const lfos = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "LFO") {
+        lfos.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  assert.equal(lfos.length, 6);
+  assert.deepEqual(lfos[0].controllers, {
+    volume: 256,
+    type: "amplitude",
+    amplitude: 16,
+    freq: 16384,
+    waveform: "random",
+    setPhase: 0,
+    channels: "stereo",
+    frequencyUnit: "hz",
+    dutyCycle: 128,
+    generator: "off",
+    freqScale: 100,
+    smoothTransitions: "off",
+    sineQuality: "auto",
+  });
+  assert.deepEqual(lfos[3].controllers, {
+    volume: 256,
+    type: "amplitude",
+    amplitude: 256,
+    freq: 65,
+    waveform: "randomInterpolated",
+    setPhase: 0,
+    channels: "stereo",
+    frequencyUnit: "hz64",
+    dutyCycle: 128,
+    generator: "on",
+    freqScale: 100,
+    smoothTransitions: "waveform",
+    sineQuality: "auto",
+  });
+});
+
 test("decodes FMX controllers as operator structures", async () => {
   const buffer = await readFile("music/2022-04-18.sunvox");
   const document = parseContainer(buffer);

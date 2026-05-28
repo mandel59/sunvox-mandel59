@@ -253,6 +253,41 @@
       "5": "line2",
       "6": "line3"
     },
+    "lfo_type": {
+      "0": "amplitude",
+      "1": "panning"
+    },
+    "lfo_waveform": {
+      "0": "sin",
+      "1": "square",
+      "2": "sin2",
+      "3": "saw",
+      "4": "saw2",
+      "5": "random",
+      "6": "triangle",
+      "7": "randomInterpolated"
+    },
+    "lfo_freq_unit": {
+      "0": "hz64",
+      "1": "ms",
+      "2": "hz",
+      "3": "tick",
+      "4": "line",
+      "5": "line2",
+      "6": "line3",
+      "7": "semitone",
+      "8": "semitone100"
+    },
+    "lfo_smooth_transition": {
+      "0": "off",
+      "1": "waveform"
+    },
+    "sine_quality": {
+      "0": "auto",
+      "1": "low",
+      "2": "middle",
+      "3": "high"
+    },
     "flanger_lfo_waveform": {
       "0": "hsin",
       "1": "sin"
@@ -815,6 +850,25 @@
         { "index": 7, "name": "sustain", "label": "Sustain", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
         { "index": 8, "name": "freqModulationByInput", "label": "Freq.modulation by input", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
         { "index": 9, "name": "dutyCycle", "label": "Duty cycle", "type": "int32", "min": 0, "max": 1022, "default": 511, "normal": 511, "group": 2 }
+      ]
+    },
+    "LFO": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "type", "label": "Type", "type": "enum", "enum": "lfo_type", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "amplitude", "label": "Amplitude", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1 },
+        { "index": 3, "name": "freq", "label": "Freq", "type": "int32", "min": 1, "max": 2048, "default": 256, "normal": -1, "group": 1 },
+        { "index": 4, "name": "waveform", "label": "Waveform", "type": "enum", "enum": "lfo_waveform", "min": 0, "max": 7, "default": 2, "normal": -1, "group": 1 },
+        { "index": 5, "name": "setPhase", "label": "Set phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 1 },
+        { "index": 6, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 7, "name": "frequencyUnit", "label": "Frequency unit", "type": "enum", "enum": "lfo_freq_unit", "min": 0, "max": 8, "default": 0, "normal": -1, "group": 1 },
+        { "index": 8, "name": "dutyCycle", "label": "Duty cycle", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 1 },
+        { "index": 9, "name": "generator", "label": "Generator", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 10, "name": "freqScale", "label": "Freq scale", "type": "int32", "min": 0, "max": 200, "default": 100, "normal": 100, "group": 1, "unit": "%" },
+        { "index": 11, "name": "smoothTransitions", "label": "Smooth transitions", "type": "enum", "enum": "lfo_smooth_transition", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 2 },
+        { "index": 12, "name": "sineQuality", "label": "Sine quality", "type": "enum", "enum": "sine_quality", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 1 },
+        { "index": 13, "name": "transpose", "label": "Transpose", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 1, "displayOffset": -128, "unit": "semitone" },
+        { "index": 14, "name": "finetune", "label": "Finetune", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 1, "displayOffset": -256, "unit": "semitone/256" }
       ]
     },
     "Glide": {
