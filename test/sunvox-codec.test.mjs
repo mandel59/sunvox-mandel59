@@ -217,3 +217,17 @@ test("decodes primitive chunk payloads", () => {
     value: { r: 1, g: 2, b: 3, hex: "#010203" },
   });
 });
+
+test("decodes structured flags as named bitflags", async () => {
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const document = parseContainer(buffer);
+  const multiCtl = document.modules.find((module) => module.type === "MultiCtl");
+
+  assert.deepEqual(document.project.flags, {});
+  assert.deepEqual(document.patterns[0].displayFlags, {});
+  assert.equal(multiCtl.flags.exists, true);
+  assert.equal(multiCtl.flags.effect, true);
+  assert.equal(multiCtl.flags.noScopeBuffer, true);
+  assert.equal(multiCtl.flags.outputIsEmpty, true);
+  assert.equal(multiCtl.flags.output, undefined);
+});

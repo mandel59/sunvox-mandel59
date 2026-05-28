@@ -152,6 +152,49 @@
     }
   },
   "bitflags": {
+    "psynth_flags": [
+      { "name": "exists", "bit": 0 },
+      { "name": "output", "bit": 1 },
+      { "name": "generator", "bit": 3 },
+      { "name": "effect", "bit": 4 },
+      { "name": "initialized", "bit": 6 },
+      { "name": "mute", "bit": 7 },
+      { "name": "solo", "bit": 8 },
+      { "name": "getSpeedChanges", "bit": 10 },
+      { "name": "hidden", "bit": 11 },
+      { "name": "dontFillInput", "bit": 13 },
+      { "name": "bypass", "bit": 14 },
+      { "name": "useMutex", "bit": 15 },
+      { "name": "ignoreMute", "bit": 16 },
+      { "name": "noScopeBuffer", "bit": 17 },
+      { "name": "outputIsEmpty", "bit": 18 },
+      { "name": "open", "bit": 19 },
+      { "name": "getPlayCommands", "bit": 20 },
+      { "name": "getRenderSetupCommands", "bit": 21 },
+      { "name": "feedback", "bit": 22 },
+      { "name": "getStopCommands", "bit": 23 },
+      { "name": "noRender", "bit": 24 },
+      { "name": "selected", "bit": 25 }
+    ],
+    "sunvox_project_flags": [
+      { "name": "supertracks", "bit": 0 },
+      { "name": "noTonePortaOnTick0", "bit": 1 },
+      { "name": "noVolSlideOnTick0", "bit": 2 },
+      { "name": "keyboardRoundRobin", "bit": 3 }
+    ],
+    "sunvox_pattern_flags": [
+      { "name": "noIcon", "bit": 0 },
+      { "name": "noNotesOff", "bit": 1 }
+    ],
+    "sunvox_pattern_info_flags": [
+      { "name": "clone", "bit": 0 },
+      { "name": "selected", "bit": 1 },
+      { "name": "unused", "bit": 2 },
+      { "name": "mute", "bit": 3 },
+      { "name": "solo", "bit": 4 },
+      { "name": "justLoaded", "bit": 30 },
+      { "name": "selected2", "bit": 31 }
+    ],
     "metamodule_option_flags": [
       { "name": "forceGenerator", "bit": 0 },
       { "name": "forceNotGenerator", "bit": 1 },
@@ -166,7 +209,7 @@
         "fields": [
           { "chunk": "VERS", "path": "version", "field": "value" },
           { "chunk": "BVER", "path": "baseVersion", "field": "value" },
-          { "chunk": "FLGS", "path": "flags", "field": "value" },
+          { "chunk": "FLGS", "path": "flags", "field": "value", "bitflags": "sunvox_project_flags" },
           { "chunk": "SFGS", "path": "sessionFlags", "field": "value" },
           { "chunk": "BPM ", "path": "bpm", "field": "value" },
           { "chunk": "SPED", "path": "speed", "field": "value" },
@@ -196,13 +239,13 @@
           { "chunk": "PCHN", "path": "tracks", "field": "value" },
           { "chunk": "PLIN", "path": "lines", "field": "value" },
           { "chunk": "PYSZ", "path": "ySize", "field": "value" },
-          { "chunk": "PFLG", "path": "displayFlags", "field": "value" },
+          { "chunk": "PFLG", "path": "displayFlags", "field": "value", "bitflags": "sunvox_pattern_flags" },
           { "chunk": "PICO", "path": "iconBase64", "field": "base64" },
           { "chunk": "PFGC", "path": "foreground", "field": "rgb" },
           { "chunk": "PBGC", "path": "background", "field": "rgb" },
           { "chunk": "PNME", "path": "name", "field": "text" },
           { "chunk": "PPAR", "path": "parent", "field": "value" },
-          { "chunk": "PFFF", "path": "flags", "field": "value" },
+          { "chunk": "PFFF", "path": "flags", "field": "value", "bitflags": "sunvox_pattern_info_flags" },
           { "chunk": "PXXX", "path": "position.x", "field": "value" },
           { "chunk": "PYYY", "path": "position.y", "field": "value" }
         ],
@@ -211,7 +254,7 @@
       "module": {
         "terminator": "SEND",
         "fields": [
-          { "chunk": "SFFF", "path": "flags", "field": "value" },
+          { "chunk": "SFFF", "path": "flags", "field": "value", "bitflags": "psynth_flags" },
           { "chunk": "SNAM", "path": "name", "field": "text", "textSize": 32 },
           { "chunk": "STYP", "path": "type", "field": "text" },
           { "chunk": "SFIN", "path": "finetune", "field": "value" },

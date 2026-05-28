@@ -151,8 +151,16 @@ function packBitfield(bitfieldName, value) {
 function decodeBitflags(bitflagName, value) {
   const definition = SUNVOX_DB.bitflags?.[bitflagName] ?? [];
   const result = {};
+  let knownMask = 0;
   for (const flag of definition) {
-    result[flag.name] = Boolean(value & (1 << flag.bit));
+    knownMask |= 1 << flag.bit;
+    if (value & (1 << flag.bit)) {
+      result[flag.name] = true;
+    }
+  }
+  const unknown = value & ~knownMask;
+  if (unknown) {
+    result.unknown = unknown >>> 0;
   }
   return result;
 }
@@ -162,7 +170,7 @@ function encodeBitflags(bitflagName, value) {
     return value >>> 0;
   }
   const definition = SUNVOX_DB.bitflags?.[bitflagName] ?? [];
-  let result = 0;
+  let result = value?.unknown ?? 0;
   for (const flag of definition) {
     if (value?.[flag.name]) {
       result |= 1 << flag.bit;
@@ -431,17 +439,18 @@ function setPath(object, path, value) {
 }
 
 function chunkSemanticValue(chunk, field) {
-  if (field === "pattern.events") {
-    return chunk.pattern?.events;
-  }
-  return chunk[field];
+  const fieldName = typeof field === "string" ? field : field.field;
+  const value = fieldName === "pattern.events" ? chunk.pattern?.events : chunk[fieldName];
+  return field.bitflags && value !== undefined ? decodeBitflags(field.bitflags, value) : value;
 }
 
 function assignChunkSemanticValue(chunk, field, value) {
-  if (field === "pattern.events") {
-    chunk.pattern = { events: value };
+  const fieldName = typeof field === "string" ? field : field.field;
+  const chunkValue = field.bitflags ? encodeBitflags(field.bitflags, value) : value;
+  if (fieldName === "pattern.events") {
+    chunk.pattern = { events: chunkValue };
   } else {
-    chunk[field] = value;
+    chunk[fieldName] = chunkValue;
   }
 }
 
@@ -455,8 +464,8 @@ function makeSemanticChunk(chunkId, field, value, options = {}) {
   if (label) {
     chunk._label = label;
   }
-  assignChunkSemanticValue(chunk, field, value);
-  if (field === "text" && options.textSize !== undefined) {
+  assignChunkSemanticValue(chunk, options.field ? options : field, value);
+  if (options.field === "text" && options.textSize !== undefined) {
     chunk.textSize = options.textSize;
   }
   return chunk;
@@ -469,7 +478,7 @@ function consumeScopeFields(scopeName, chunks, target, used) {
     if (index < 0) {
       continue;
     }
-    const value = chunkSemanticValue(chunks[index], field.field);
+    const value = chunkSemanticValue(chunks[index], field);
     if (value !== undefined) {
       setPath(target, field.path, value);
       used.add(index);
@@ -1259,7 +1268,7 @@ function syncLegacyScope(scopeName, object) {
     const chunk = firstChunk(chunks, field.chunk);
     const value = getPath(object, field.path);
     if (chunk && value !== undefined) {
-      assignChunkSemanticValue(chunk, field.field, value);
+      assignChunkSemanticValue(chunk, field, value);
     }
   }
   return chunks;
