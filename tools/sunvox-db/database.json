@@ -158,6 +158,37 @@
       "0": "linear",
       "1": "lpFilter"
     },
+    "ctl2note_noteon_mode": {
+      "0": "none",
+      "1": "onPitchChange"
+    },
+    "ctl2note_noteoff_mode": {
+      "0": "none",
+      "1": "onMinPitch",
+      "2": "onMaxPitch"
+    },
+    "kicker_wave_type": {
+      "0": "triangle",
+      "1": "square",
+      "2": "sin"
+    },
+    "loop_mode": {
+      "0": "normal",
+      "1": "pingPong"
+    },
+    "loop_length_unit": {
+      "0": "line128",
+      "1": "line",
+      "2": "line2",
+      "3": "line3",
+      "4": "tick",
+      "5": "ms",
+      "6": "hz"
+    },
+    "loop_noteon_mode": {
+      "0": "restart",
+      "1": "restartCurrentIteration"
+    },
     "gen_wave_type": {
       "0": "triangle",
       "1": "saw",
@@ -759,6 +790,20 @@
         { "index": 6, "name": "sideChainInput", "label": "Side chain input", "type": "int32", "min": 0, "max": 32, "default": 0, "normal": -1, "group": 2 }
       ]
     },
+    "Ctl2Note": {
+      "controllers": [
+        { "index": 0, "name": "pitch", "label": "Pitch", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 0 },
+        { "index": 1, "name": "firstNote", "label": "First note", "type": "int32", "min": 0, "max": 120, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "rangeSemitones", "label": "Range (number of semitones)", "type": "int32", "min": 0, "max": 120, "default": 120, "normal": -1, "group": 0 },
+        { "index": 3, "name": "transpose", "label": "Transpose", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 1, "displayOffset": -128 },
+        { "index": 4, "name": "finetune", "label": "Finetune", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 1, "displayOffset": -256 },
+        { "index": 5, "name": "velocity", "label": "Velocity", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1 },
+        { "index": 6, "name": "state", "label": "State", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 2 },
+        { "index": 7, "name": "noteOn", "label": "NoteON", "type": "enum", "enum": "ctl2note_noteon_mode", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 3 },
+        { "index": 8, "name": "noteOff", "label": "NoteOFF", "type": "enum", "enum": "ctl2note_noteoff_mode", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 3 },
+        { "index": 9, "name": "recordNotes", "label": "Record notes", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 4 }
+      ]
+    },
     "DC Blocker": {
       "controllers": [
         { "index": 0, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
@@ -976,6 +1021,19 @@
         { "index": 9, "name": "dutyCycle", "label": "Duty cycle", "type": "int32", "min": 0, "max": 1022, "default": 511, "normal": 511, "group": 2 }
       ]
     },
+    "Kicker": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "waveform", "label": "Waveform", "type": "enum", "enum": "kicker_wave_type", "min": 0, "max": 2, "default": 2, "normal": -1, "group": 0 },
+        { "index": 2, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 3, "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 512, "default": 0, "normal": -1, "group": 1, "unit": "sec/256" },
+        { "index": 4, "name": "release", "label": "Release", "type": "int32", "min": 0, "max": 512, "default": 32, "normal": -1, "group": 1, "unit": "sec/256" },
+        { "index": 5, "name": "boost", "label": "Boost", "type": "int32", "min": 0, "max": 1024, "default": 0, "normal": -1, "group": 1 },
+        { "index": 6, "name": "acceleration", "label": "Acceleration", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 1 },
+        { "index": 7, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 4, "default": 1, "normal": -1, "group": 2, "unit": "ch." },
+        { "index": 8, "name": "noClick", "label": "No click", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
     "LFO": {
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
@@ -995,6 +1053,18 @@
         { "index": 14, "name": "finetune", "label": "Finetune", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 1, "displayOffset": -256, "unit": "semitone/256" }
       ]
     },
+    "Loop": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "length", "label": "Length", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 2, "name": "channels", "label": "Channels", "type": "enum", "enum": "mono_stereo", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
+        { "index": 3, "name": "repeat128Endless", "label": "Repeats (128=endless)", "type": "int32", "min": 0, "max": 128, "default": 0, "normal": -1, "group": 0 },
+        { "index": 4, "name": "mode", "label": "Mode", "type": "enum", "enum": "loop_mode", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 5, "name": "lengthUnit", "label": "Length unit", "type": "enum", "enum": "loop_length_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 0 },
+        { "index": 6, "name": "maxBufferSize", "label": "Max buffer size", "type": "int32", "min": 1, "max": 240, "default": 4, "normal": -1, "group": 0, "unit": "sec" },
+        { "index": 7, "name": "onNoteOn", "label": "On NoteON", "type": "enum", "enum": "loop_noteon_mode", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
+      ]
+    },
     "Glide": {
       "controllers": [
         { "index": 0, "name": "response", "label": "Response", "type": "int32", "min": 0, "max": 1000, "default": 500, "normal": -1, "group": 0 },
@@ -1007,6 +1077,17 @@
         { "index": 7, "name": "octave", "label": "Octave", "type": "int32", "min": 0, "max": 20, "default": 10, "normal": 10, "group": 1 },
         { "index": 8, "name": "freqMul", "label": "Frequency multiplier", "type": "int32", "min": 1, "max": 256, "default": 1, "normal": 1, "group": 1 },
         { "index": 9, "name": "freqDiv", "label": "Frequency divider", "type": "int32", "min": 1, "max": 256, "default": 1, "normal": 1, "group": 1 }
+      ]
+    },
+    "GPIO": {
+      "controllers": [
+        { "index": 0, "name": "out", "label": "Out", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 1, "name": "outPin", "label": "Out pin", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "outThreshold", "label": "Out threshold", "type": "int32", "min": 0, "max": 100, "default": 50, "normal": -1, "group": 0, "unit": "%" },
+        { "index": 3, "name": "in", "label": "In", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 1 },
+        { "index": 4, "name": "inPin", "label": "In pin", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 1 },
+        { "index": 5, "name": "inNote", "label": "In note", "type": "int32", "min": 0, "max": 128, "default": 0, "normal": -1, "group": 1 },
+        { "index": 6, "name": "inAmplitude", "label": "In amplitude", "type": "int32", "min": 0, "max": 100, "default": 100, "normal": -1, "group": 1, "unit": "%" }
       ]
     },
     "Input": {
