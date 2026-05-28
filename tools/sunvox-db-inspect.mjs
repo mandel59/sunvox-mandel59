@@ -12,7 +12,7 @@ const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 
 function usage() {
   console.error(`Usage:
-  node tools/sunvox-db-inspect.mjs coverage [--json] [--details] [sample-path ...]
+  node tools/sunvox-db-inspect.mjs coverage [--json] [--details] [--check] [sample-path ...]
   node tools/sunvox-db-inspect.mjs report [--json] [source-root]
   node tools/sunvox-db-inspect.mjs scaffold <module-name> [source-root]
   node tools/sunvox-db-inspect.mjs check [--json] [source-root]`);
@@ -848,6 +848,29 @@ function formatCoverage(coverage, options = {}) {
   return lines.join("\n");
 }
 
+function coverageFailures(coverage) {
+  const missingStyp = coverage.modulesWithoutType.filter((row) => row.kind === "(missing STYP)");
+  return [
+    { name: "parse errors", count: coverage.errors.length },
+    { name: "missing DB module types", count: coverage.missingDbTypes.length },
+    { name: "modules with missing STYP", count: missingStyp.length },
+    { name: "raw controller arrays", count: coverage.rawControllers.length },
+    { name: "controller extras", count: coverage.controllerExtras.length },
+    { name: "module extra chunks", count: coverage.moduleExtraChunks.length },
+    { name: "opaque data chunks", count: coverage.opaqueDataChunks.length },
+  ].filter((failure) => failure.count > 0);
+}
+
+function formatCoverageGate(failures) {
+  if (failures.length === 0) {
+    return "Coverage gate: passed";
+  }
+  return [
+    "Coverage gate: failed",
+    ...failures.map((failure) => `  - ${failure.name}: ${failure.count}`),
+  ].join("\n");
+}
+
 function formatSourceReport(report) {
   const sourceControllerTotal = report.sourceModules.reduce((total, module) => total + module.controllers, 0);
   const dbControllerTotal = report.dbModules.reduce((total, module) => total + module.dbControllers, 0);
@@ -922,9 +945,18 @@ function main(argv) {
   if (command === "coverage") {
     const details = args.includes("--details");
     const json = args.includes("--json");
-    const paths = withoutFlags(args, ["--details", "--json"]);
+    const check = args.includes("--check");
+    const paths = withoutFlags(args, ["--details", "--json", "--check"]);
     const coverage = collectCoverage(paths.length ? paths : DEFAULT_SAMPLE_ROOTS);
-    console.log(json ? JSON.stringify(coverage, null, 2) : formatCoverage(coverage, { details }));
+    const failures = coverageFailures(coverage);
+    if (json) {
+      console.log(JSON.stringify(check ? { ...coverage, ok: failures.length === 0, failures } : coverage, null, 2));
+    } else {
+      console.log([formatCoverage(coverage, { details }), check ? formatCoverageGate(failures) : ""].filter(Boolean).join("\n\n"));
+    }
+    if (check && failures.length > 0) {
+      process.exitCode = 1;
+    }
     return;
   }
   if (command === "report") {

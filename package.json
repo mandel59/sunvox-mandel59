@@ -10,6 +10,8 @@
     "sunvox:encode": "node tools/sunvox-codec.mjs encode",
     "sunvox:decode": "node tools/sunvox-codec.mjs decode",
     "sunvox:verify": "node tools/sunvox-codec.mjs verify",
+    "sunvox:verify:all": "node tools/sunvox-verify-all.mjs",
+    "sunvox:coverage:check": "node tools/sunvox-db-inspect.mjs coverage --check",
     "sunvox:inspect": "node tools/sunvox-db-inspect.mjs"
   },
   "devDependencies": {

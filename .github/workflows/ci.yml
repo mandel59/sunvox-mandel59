@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Check SunVox DB
+        run: npm run sunvox:inspect -- check
+
+      - name: Check SunVox coverage
+        run: npm run sunvox:coverage:check
+
+      - name: Verify SunVox samples
+        run: npm run sunvox:verify:all
+
+      - name: Build frontend
+        run: npm run build

@@ -44,10 +44,12 @@ Use `tools/sunvox-db-inspect.mjs` to make codec/DB coverage work repeatable.
 npm run sunvox:inspect -- coverage
 npm run sunvox:inspect -- coverage --details
 npm run sunvox:inspect -- coverage --json
+npm run sunvox:coverage:check
 npm run sunvox:inspect -- report
 npm run sunvox:inspect -- report --json
 npm run sunvox:inspect -- scaffold "Distortion"
 npm run sunvox:inspect -- check
+npm run sunvox:verify:all
 ```
 
 - `coverage` decodes checked-in sample `.sunvox` and `.sunsynth` files,
@@ -59,6 +61,13 @@ npm run sunvox:inspect -- check
   source module/controller declaration counts with the DB.
 - `coverage --json` and `report --json` emit machine-readable metrics for
   future CI or frontend tooling.
+- `sunvox:coverage:check` runs the coverage report as a CI gate. It fails on
+  parse errors, missing DB module types, unexpected missing-STYP modules, raw
+  controller arrays, controller extras, module extra chunks, or opaque data
+  chunks. Output and empty module slots without `STYP` are reported separately
+  and do not fail the gate.
+- `sunvox:verify:all` recursively verifies every checked-in `.sunvox` and
+  `.sunsynth` sample under `music/` and `instruments/`.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
@@ -72,15 +81,12 @@ Run this loop before committing codec or DB changes:
 
 ```sh
 npm test
+npm run sunvox:coverage:check
 npm run sunvox:inspect -- coverage
 npm run sunvox:inspect -- report
 npm run sunvox:inspect -- check
-npm run sunvox:verify -- music/2022-04-16.sunvox
-npm run sunvox:verify -- music/2022-04-17.sunvox
-npm run sunvox:verify -- music/2022-04-18.sunvox
-npm run sunvox:verify -- music/2022-04-20.sunvox
-npm run sunvox:verify -- "instruments/mandel59 shepard.sunsynth"
-npm run sunvox:verify -- "instruments/mandel59 SuperSaw.sunsynth"
+npm run sunvox:verify:all
+npm run build
 git diff --check
 ```
 
