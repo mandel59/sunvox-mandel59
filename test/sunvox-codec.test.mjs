@@ -168,6 +168,21 @@ test("decodes MetaModule controller link and option data chunks", async () => {
   });
 });
 
+test("decodes and encodes MetaModule user controller values", async () => {
+  const buffer = await readFile("instruments/mandel59 SuperSaw.sunsynth");
+  const document = parseContainer(buffer);
+
+  assert.equal(document.module.controllers.user[0].value, 8192);
+  assert.equal(document.module.controllers.user[0]._label, "Detune 1");
+  assert.deepEqual(document.module.controllers.user[0]._link, { module: 16, controller: 0 });
+
+  document.module.controllers.user[0].value = 4096;
+  const reparsed = parseContainer(buildContainer(document));
+
+  assert.equal(reparsed.module.controllers.user[0].value, 4096);
+  assert.equal(reparsed.module.controllers.user[0]._label, "Detune 1");
+});
+
 test("decodes MultiCtl controllers, output slots, and curve", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);

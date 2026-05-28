@@ -1015,7 +1015,77 @@ function encodeControllerValue(definition, value) {
   return value;
 }
 
-function decodeModuleControllers(type, controllerValues) {
+function metaModuleUserControllerMetadata(module) {
+  const dataChunks = module?.dataChunks ?? [];
+  const names = new Map();
+  for (const chunk of dataChunks) {
+    if (chunk.name === "userControllerName" && chunk.controller !== undefined) {
+      names.set(chunk.controller, chunk);
+    }
+  }
+  const links = new Map();
+  for (const link of dataChunks.find((chunk) => chunk.name === "controllerLinks")?.links ?? []) {
+    links.set(link.index, link);
+  }
+  const count = dataChunks.find((chunk) => chunk.name === "options")?.options?.userControllers ?? names.size;
+  return { count, links, names };
+}
+
+function decodeMetaModuleUserControllers(controllers, module) {
+  const extra = controllers.extra;
+  if (!extra) {
+    return;
+  }
+  const { count, links, names } = metaModuleUserControllerMetadata(module);
+  const userControllers = [];
+  for (let index = 0; index < count; index += 1) {
+    const controllerIndex = index + 5;
+    const value = extra[controllerIndex];
+    if (value === undefined) {
+      continue;
+    }
+    const name = names.get(index);
+    const link = links.get(index);
+    userControllers.push({
+      index,
+      value,
+      ...(name?.label !== undefined ? { _label: name.label } : {}),
+      ...(name?.group !== undefined ? { _group: name.group } : {}),
+      ...(link ? { _link: { module: link.module, controller: link.controller } } : {}),
+    });
+    delete extra[controllerIndex];
+  }
+  if (userControllers.length) {
+    controllers.user = userControllers;
+  }
+  if (Object.keys(extra).length === 0) {
+    delete controllers.extra;
+  }
+}
+
+function applyMetaModuleUserControllerValues(controllers, values, controllerChunks) {
+  if (!Array.isArray(controllers?.user)) {
+    return;
+  }
+  controllers.user.forEach((controller, arrayIndex) => {
+    const index = controller.index ?? arrayIndex;
+    const value = controller.value;
+    const chunkIndex = index + 5;
+    if (!Number.isInteger(index) || value === undefined) {
+      return;
+    }
+    if (controllerChunks) {
+      const chunk = controllerChunks[chunkIndex];
+      if (chunk) {
+        chunk.value = value;
+      }
+    } else {
+      values[chunkIndex] = value;
+    }
+  });
+}
+
+function decodeModuleControllers(type, controllerValues, module) {
   const definitions = moduleControllers(type);
   if (definitions.length === 0 || controllerValues.length === 0) {
     return controllerValues.length ? controllerValues : undefined;
@@ -1033,6 +1103,9 @@ function decodeModuleControllers(type, controllerValues) {
       controllers.extra ??= {};
       controllers.extra[index] = controllerValues[index];
     }
+  }
+  if (type === "MetaModule") {
+    decodeMetaModuleUserControllers(controllers, module);
   }
   return Object.keys(controllers).length ? controllers : undefined;
 }
@@ -1056,6 +1129,9 @@ function syncModuleControllers(type, controllers, controllerChunks) {
     if (value !== undefined && chunk) {
       chunk.value = encodeControllerValue(controller, value);
     }
+  }
+  if (type === "MetaModule") {
+    applyMetaModuleUserControllerValues(controllers, undefined, controllerChunks);
   }
   if (controllers.extra && typeof controllers.extra === "object") {
     for (const [indexText, value] of Object.entries(controllers.extra)) {
@@ -1082,6 +1158,9 @@ function controllerValuesFromObject(type, controllers) {
     if (value !== undefined) {
       values[controller.index] = encodeControllerValue(controller, value);
     }
+  }
+  if (type === "MetaModule") {
+    applyMetaModuleUserControllerValues(controllers, values);
   }
   if (controllers.extra && typeof controllers.extra === "object") {
     for (const [indexText, value] of Object.entries(controllers.extra)) {
@@ -1212,6 +1291,7 @@ function makeModule(chunks) {
   const controllerValues = chunksOf(chunks, "CVAL").map((chunk) => chunk.value);
   const type = chunkText(chunks, "STYP");
   const module = {};
+  const dataChunkModule = {};
   const used = new Set();
   consumeScopeFields("module", chunks, module, used);
   chunks.forEach((chunk, index) => {
@@ -1219,7 +1299,8 @@ function makeModule(chunks) {
       used.add(index);
     }
   });
-  const controllers = decodeModuleControllers(type, controllerValues);
+  consumeModuleDataChunks(chunks, dataChunkModule, used, type);
+  const controllers = decodeModuleControllers(type, controllerValues, dataChunkModule);
   if (controllers !== undefined) {
     module.controllers = controllers;
   }
@@ -1228,7 +1309,12 @@ function makeModule(chunks) {
     module.midiBindings = chunks[midiIndex].midiBindings;
     used.add(midiIndex);
   }
-  consumeModuleDataChunks(chunks, module, used, type);
+  if (dataChunkModule.dataChunkCount !== undefined) {
+    module.dataChunkCount = dataChunkModule.dataChunkCount;
+  }
+  if (dataChunkModule.dataChunks) {
+    module.dataChunks = dataChunkModule.dataChunks;
+  }
   consumeTerminator("module", chunks, used);
   const extraChunks = remainingChunks(chunks, used);
   if (extraChunks.length) {

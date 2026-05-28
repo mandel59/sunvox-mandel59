@@ -25,11 +25,13 @@ as an embedded SunVox container, allowing the codec to recurse into it instead
 of keeping that payload as opaque base64. Additional `MetaModule` data chunk
 definitions describe user controller links, options, and custom controller
 names through reusable layout types such as `packedUInt32Array`, `struct`,
-`recordArray`, and `string`. Controller metadata now covers common generators
-and effects including FMX, Analog generator, Filter Pro, Delay, Echo, Glide,
-Modulator, WaveShaper, MultiSynth, MultiCtl, Sound2Ctl, and several utility
-modules. FMX uses a repeated operator template so the editable text contains an
-`operators` array instead of a long raw controller list.
+`recordArray`, and `string`; the codec joins that metadata with CVAL chunks so
+user controller values appear under `controllers.user`. Controller metadata now
+covers common generators and effects including FMX, Analog generator, Filter
+Pro, Delay, Echo, Glide, Modulator, WaveShaper, MultiSynth, MultiCtl,
+Sound2Ctl, and several utility modules. FMX uses a repeated operator template
+so the editable text contains an `operators` array instead of a long raw
+controller list.
 
 ## Round-Trip Policy
 
