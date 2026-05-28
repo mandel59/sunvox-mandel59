@@ -1,0 +1,6 @@
+/var/*
+!/var/.gitkeep
+
+*.log
+*.tmp
+*.bak
