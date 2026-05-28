@@ -12,9 +12,10 @@ const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 
 function usage() {
   console.error(`Usage:
-  node tools/sunvox-db-inspect.mjs coverage [--details] [sample-path ...]
-  node tools/sunvox-db-inspect.mjs report [source-root]
-  node tools/sunvox-db-inspect.mjs scaffold <module-name> [source-root]`);
+  node tools/sunvox-db-inspect.mjs coverage [--json] [--details] [sample-path ...]
+  node tools/sunvox-db-inspect.mjs report [--json] [source-root]
+  node tools/sunvox-db-inspect.mjs scaffold <module-name> [source-root]
+  node tools/sunvox-db-inspect.mjs check [--json] [source-root]`);
 }
 
 function compareText(a, b) {
@@ -62,6 +63,10 @@ function enumNameFromMacro(macro, fallback) {
 
 function enumValueName(label) {
   return identifierFromLabel(label).replace(/^value$/u, "unknown");
+}
+
+function withoutFlags(args, flags) {
+  return args.filter((arg) => !flags.includes(arg));
 }
 
 function safeStat(path) {
@@ -383,6 +388,35 @@ function extractRegisterCalls(text) {
   return calls;
 }
 
+function extractIndexedCalls(text, functionName) {
+  const calls = new Map();
+  const pattern = new RegExp(`${functionName}\\s*\\(([\\s\\S]*?)\\);`, "gu");
+  for (const match of text.matchAll(pattern)) {
+    const args = splitArguments(match[1]);
+    const index = parseNumberLike(args[1] ?? "");
+    if (Number.isInteger(index)) {
+      calls.set(index, args);
+    }
+  }
+  return calls;
+}
+
+function scaleFromFlags(expression) {
+  if (typeof expression !== "string") {
+    return undefined;
+  }
+  if (expression.includes("PSYNTH_CTL_FLAG_INVEXP3")) {
+    return "invExp3";
+  }
+  if (expression.includes("PSYNTH_CTL_FLAG_EXP3")) {
+    return "exp3";
+  }
+  if (expression.includes("PSYNTH_CTL_FLAG_EXP2")) {
+    return "exp2";
+  }
+  return undefined;
+}
+
 function resolveStringArg(arg, strings) {
   const literal = /^"((?:\\.|[^"])*)"$/u.exec(arg);
   if (literal) {
@@ -432,11 +466,13 @@ function enumValuesFromLabel(label) {
   return Object.fromEntries(label.split(";").map((entry, index) => [String(index), enumValueName(entry)]));
 }
 
-function scaffoldController(call, index, strings) {
+function scaffoldController(call, index, strings, metadata = {}) {
   const nameArg = resolveStringArg(call[1] ?? "", strings);
   const labelArg = resolveStringArg(call[2] ?? "", strings);
   const label = nameArg.text ?? titleFromMacro(`STR_PS_CTL_${index}`);
   const enumValues = enumValuesFromLabel(labelArg.text);
+  const displayOffset = metadata.showOffsets?.get(index);
+  const scale = scaleFromFlags(metadata.controlFlags?.get(index)?.[2]);
   const controller = {
     index,
     name: identifierFromLabel(label),
@@ -448,6 +484,8 @@ function scaffoldController(call, index, strings) {
     default: parseNumberLike(call[5] ?? "0"),
     normal: parseNumberLike(call[8] ?? "-1"),
     group: parseNumberLike(call[9] ?? "0"),
+    ...(displayOffset !== undefined ? { displayOffset: parseNumberLike(displayOffset[2] ?? "0") } : {}),
+    ...(scale ? { scale } : {}),
   };
 
   if (!enumValues && labelArg.text) {
@@ -471,10 +509,14 @@ export function collectScaffold(moduleName, sourceRoot = DEFAULT_SOURCE_ROOT) {
 
   const strings = loadStringTable();
   const text = readFileSync(module.file, "utf8");
+  const metadata = {
+    showOffsets: extractIndexedCalls(text, "psynth_set_ctl_show_offset"),
+    controlFlags: extractIndexedCalls(text, "psynth_set_ctl_flags"),
+  };
   const controllers = [];
   const enums = new Map();
   extractRegisterCalls(text).forEach((call, index) => {
-    const scaffolded = scaffoldController(call, index, strings);
+    const scaffolded = scaffoldController(call, index, strings, metadata);
     controllers.push(scaffolded.controller);
     if (scaffolded.enum) {
       enums.set(scaffolded.enum[0], scaffolded.enum[1]);
@@ -520,6 +562,81 @@ export function collectSourceReport(sourceRoot = DEFAULT_SOURCE_ROOT) {
         file: module.file,
       })),
     missingFromSource: dbRows.filter((module) => !module.inSource).map((module) => module.module),
+  };
+}
+
+function hasControllerRepeat(moduleDefinition) {
+  return (moduleDefinition?.controllers ?? []).some((controller) => controller.repeat);
+}
+
+function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
+  const errors = [];
+  const warnings = [];
+  const sourceReport = collectSourceReport(sourceRoot);
+  const sourceByName = new Map(sourceReport.sourceModules.map((module) => [module.module, module]));
+
+  for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
+    const controllers = expandControllerDefinitions(moduleDefinition.controllers);
+    const controllerIndexes = new Map();
+    for (const controller of controllers) {
+      if (!Number.isInteger(controller.index)) {
+        errors.push(`${moduleName}: controller ${controller.name ?? "(unnamed)"} has non-integer index`);
+        continue;
+      }
+      if (controllerIndexes.has(controller.index)) {
+        errors.push(`${moduleName}: duplicate controller index ${controller.index}`);
+      }
+      controllerIndexes.set(controller.index, controller);
+      if (controller.enum && !SUNVOX_DB.enums[controller.enum]) {
+        errors.push(`${moduleName}: controller ${controller.name} references missing enum ${controller.enum}`);
+      }
+    }
+
+    const dataChunkIndexes = new Set();
+    for (const dataChunk of moduleDefinition.dataChunks ?? []) {
+      if (!Number.isInteger(dataChunk.index)) {
+        errors.push(`${moduleName}: data chunk ${dataChunk.name ?? "(unnamed)"} has non-integer index`);
+        continue;
+      }
+      if (dataChunkIndexes.has(dataChunk.index)) {
+        errors.push(`${moduleName}: duplicate data chunk index ${dataChunk.index}`);
+      }
+      dataChunkIndexes.add(dataChunk.index);
+    }
+
+    for (const range of moduleDefinition.dataChunkRanges ?? []) {
+      if (!Number.isInteger(range.start) || !Number.isInteger(range.end) || range.end < range.start) {
+        errors.push(`${moduleName}: invalid data chunk range ${range.name ?? "(unnamed)"}`);
+      }
+    }
+
+    const source = sourceByName.get(moduleName);
+    if (
+      source &&
+      moduleName !== "MetaModule" &&
+      !hasControllerRepeat(moduleDefinition) &&
+      source.controllers !== controllers.length
+    ) {
+      errors.push(
+        `${moduleName}: source controller count ${source.controllers} does not match DB count ${controllers.length}`,
+      );
+    }
+  }
+
+  for (const moduleName of sourceReport.missingFromSource) {
+    warnings.push(`${moduleName}: DB module was not found in source scan`);
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+    summary: {
+      modules: Object.keys(SUNVOX_DB.modules).length,
+      enums: Object.keys(SUNVOX_DB.enums).length,
+      errors: errors.length,
+      warnings: warnings.length,
+    },
   };
 }
 
@@ -740,16 +857,39 @@ function formatScaffold(scaffold) {
   );
 }
 
+function formatCheck(check) {
+  const lines = [
+    "SunVox DB check",
+    "",
+    `Modules: ${check.summary.modules}`,
+    `Enums: ${check.summary.enums}`,
+    `Errors: ${check.summary.errors}`,
+    `Warnings: ${check.summary.warnings}`,
+    "",
+    "Errors:",
+    check.errors.length ? check.errors.map((error) => `  - ${error}`).join("\n") : "(none)",
+    "",
+    "Warnings:",
+    check.warnings.length ? check.warnings.map((warning) => `  - ${warning}`).join("\n") : "(none)",
+  ];
+  return lines.join("\n");
+}
+
 function main(argv) {
   const [command, ...args] = argv;
   if (command === "coverage") {
     const details = args.includes("--details");
-    const paths = args.filter((arg) => arg !== "--details");
-    console.log(formatCoverage(collectCoverage(paths.length ? paths : DEFAULT_SAMPLE_ROOTS), { details }));
+    const json = args.includes("--json");
+    const paths = withoutFlags(args, ["--details", "--json"]);
+    const coverage = collectCoverage(paths.length ? paths : DEFAULT_SAMPLE_ROOTS);
+    console.log(json ? JSON.stringify(coverage, null, 2) : formatCoverage(coverage, { details }));
     return;
   }
   if (command === "report") {
-    console.log(formatSourceReport(collectSourceReport(args[0] ?? DEFAULT_SOURCE_ROOT)));
+    const json = args.includes("--json");
+    const paths = withoutFlags(args, ["--json"]);
+    const report = collectSourceReport(paths[0] ?? DEFAULT_SOURCE_ROOT);
+    console.log(json ? JSON.stringify(report, null, 2) : formatSourceReport(report));
     return;
   }
   if (command === "scaffold") {
@@ -759,6 +899,16 @@ function main(argv) {
       return;
     }
     console.log(formatScaffold(collectScaffold(args[0], args[1] ?? DEFAULT_SOURCE_ROOT)));
+    return;
+  }
+  if (command === "check") {
+    const json = args.includes("--json");
+    const paths = withoutFlags(args, ["--json"]);
+    const check = collectDbCheck(paths[0] ?? DEFAULT_SOURCE_ROOT);
+    console.log(json ? JSON.stringify(check, null, 2) : formatCheck(check));
+    if (!check.ok) {
+      process.exitCode = 1;
+    }
     return;
   }
   usage();
