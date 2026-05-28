@@ -9,7 +9,8 @@
     "test": "node --test",
     "sunvox:encode": "node tools/sunvox-codec.mjs encode",
     "sunvox:decode": "node tools/sunvox-codec.mjs decode",
-    "sunvox:verify": "node tools/sunvox-codec.mjs verify"
+    "sunvox:verify": "node tools/sunvox-codec.mjs verify",
+    "sunvox:inspect": "node tools/sunvox-db-inspect.mjs"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",

@@ -33,6 +33,24 @@ Sound2Ctl, and several utility modules. FMX uses a repeated operator template
 so the editable text contains an `operators` array instead of a long raw
 controller list.
 
+## Inspection Tool
+
+Use `tools/sunvox-db-inspect.mjs` to make codec/DB coverage work repeatable.
+
+```sh
+npm run sunvox:inspect -- coverage
+npm run sunvox:inspect -- coverage --details
+npm run sunvox:inspect -- report
+```
+
+- `coverage` decodes checked-in sample `.sunvox` and `.sunsynth` files,
+  including embedded MetaModule projects, and reports module types, missing DB
+  module definitions, raw controller arrays, controller extras, extra chunks,
+  and opaque data chunks.
+- `coverage --details` includes per-module paths for raw or opaque data.
+- `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp` and compares
+  source module/controller declaration counts with the DB.
+
 ## Round-Trip Policy
 
 The database may add names and structure, but it must not be the only copy of
