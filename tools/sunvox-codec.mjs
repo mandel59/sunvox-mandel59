@@ -398,18 +398,6 @@ function chunkText(chunks, id) {
   return firstChunk(chunks, id)?.text;
 }
 
-function chunkValue(chunks, id) {
-  return firstChunk(chunks, id)?.value;
-}
-
-function chunkValues(chunks, id) {
-  return firstChunk(chunks, id)?.values;
-}
-
-function chunkRgb(chunks, id) {
-  return firstChunk(chunks, id)?.rgb;
-}
-
 function scopeGrammar(scopeName) {
   const grammar = SUNVOX_DB.grammar?.scopes?.[scopeName];
   if (!grammar) {
