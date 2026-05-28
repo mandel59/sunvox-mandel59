@@ -124,6 +124,97 @@
       "0": "off",
       "1": "on",
       "2": "improved"
+    },
+    "gen2_waveform": {
+      "0": "triangle",
+      "1": "saw",
+      "2": "square",
+      "3": "noiseSampler",
+      "4": "drawn",
+      "5": "sin",
+      "6": "hsin",
+      "7": "asin",
+      "8": "drawnSpline",
+      "9": "noiseSplineSampler",
+      "10": "whiteNoise",
+      "11": "pinkNoise",
+      "12": "redNoise",
+      "13": "blueNoise",
+      "14": "violetNoise",
+      "15": "greyNoise",
+      "16": "harmonics"
+    },
+    "gen2_filter_type": {
+      "0": "off",
+      "1": "lp12db",
+      "2": "hp12db",
+      "3": "bp12db",
+      "4": "br12db",
+      "5": "lp24db",
+      "6": "hp24db",
+      "7": "bp24db",
+      "8": "br24db"
+    },
+    "gen2_filter_envelope": {
+      "0": "off",
+      "1": "sustainOff",
+      "2": "sustainOn"
+    },
+    "gen2_osc2_mode": {
+      "0": "add",
+      "1": "sub",
+      "2": "mul",
+      "3": "min",
+      "4": "max",
+      "5": "bitwiseAnd",
+      "6": "bitwiseXor",
+      "7": "minAbs",
+      "8": "maxAbs"
+    },
+    "filter2_type": {
+      "0": "lp",
+      "1": "hp",
+      "2": "bpConstSkirtGain",
+      "3": "bpConstPeakGain",
+      "4": "notch",
+      "5": "allpass",
+      "6": "peaking",
+      "7": "lowShelf",
+      "8": "highShelf",
+      "9": "lp6db",
+      "10": "hp6db"
+    },
+    "filter_rolloff": {
+      "0": "db12",
+      "1": "db24",
+      "2": "db36",
+      "3": "db48",
+      "4": "db60",
+      "5": "db72",
+      "6": "db84",
+      "7": "db96"
+    },
+    "filter2_mode": {
+      "0": "stereo",
+      "1": "mono",
+      "2": "stereoSmoothing",
+      "3": "monoSmoothing"
+    },
+    "filter_lfo_waveform": {
+      "0": "sin",
+      "1": "saw",
+      "2": "saw2",
+      "3": "square",
+      "4": "random"
+    },
+    "filter_lfo_freq_unit": {
+      "0": "hz002",
+      "1": "ms",
+      "2": "hz",
+      "3": "tick",
+      "4": "line",
+      "5": "line2",
+      "6": "line3"
     }
   },
   "bitfields": {
@@ -309,6 +400,32 @@
         { "index": 8, "name": "bipolarDcOffset", "label": "Bipolar DC offset", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 1, "displayOffset": -16384 }
       ]
     },
+    "Analog generator": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 80, "normal": -1, "group": 0 },
+        { "index": 1, "name": "waveform", "label": "Waveform", "type": "enum", "enum": "gen2_waveform", "min": 0, "max": 16, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 3, "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 1 },
+        { "index": 4, "name": "release", "label": "Release", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 1 },
+        { "index": 5, "name": "sustain", "label": "Sustain", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
+        { "index": 6, "name": "expEnvelope", "label": "Exponential envelope", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
+        { "index": 7, "name": "dutyCycle", "label": "Duty cycle", "type": "int32", "min": 0, "max": 1024, "default": 512, "normal": 512, "group": 0 },
+        { "index": 8, "name": "osc2Pitch", "label": "Osc2 pitch", "type": "int32", "min": 0, "max": 2000, "default": 1000, "normal": 1000, "group": 0, "displayOffset": -1000, "unit": "semitone/64" },
+        { "index": 9, "name": "filter", "label": "Filter", "type": "enum", "enum": "gen2_filter_type", "min": 0, "max": 8, "default": 0, "normal": 0, "group": 2 },
+        { "index": 10, "name": "filterFreq", "label": "Filter frequency", "type": "int32", "min": 0, "max": 14000, "default": 14000, "normal": -1, "group": 2, "unit": "Hz", "scale": "exp3" },
+        { "index": 11, "name": "filterResonance", "label": "Filter resonance", "type": "int32", "min": 0, "max": 1530, "default": 0, "normal": -1, "group": 2 },
+        { "index": 12, "name": "filterExpFreq", "label": "Filter exponential frequency", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 2 },
+        { "index": 13, "name": "filterAttack", "label": "Filter attack", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
+        { "index": 14, "name": "filterRelease", "label": "Filter release", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
+        { "index": 15, "name": "filterEnvelope", "label": "Filter envelope", "type": "enum", "enum": "gen2_filter_envelope", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 2 },
+        { "index": 16, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 32, "default": 16, "normal": -1, "group": 3 },
+        { "index": 17, "name": "mode", "label": "Mode", "type": "enum", "enum": "reverb_mode", "min": 0, "max": 3, "default": 1, "normal": -1, "group": 3 },
+        { "index": 18, "name": "noise", "label": "Noise", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 3 },
+        { "index": 19, "name": "osc2Volume", "label": "Osc2 volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 0 },
+        { "index": 20, "name": "osc2Mode", "label": "Osc2 mode", "type": "enum", "enum": "gen2_osc2_mode", "min": 0, "max": 8, "default": 0, "normal": -1, "group": 0 },
+        { "index": 21, "name": "osc2Phase", "label": "Osc2 phase", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 0 }
+      ]
+    },
     "Compressor": {
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
@@ -337,6 +454,27 @@
         { "index": 12, "name": "bassPan", "label": "Bass pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 1, "displayOffset": -128 },
         { "index": 13, "name": "hihatPan", "label": "HiHat pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 2, "displayOffset": -128 },
         { "index": 14, "name": "snarePan", "label": "Snare pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 3, "displayOffset": -128 }
+      ]
+    },
+    "Filter Pro": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 0 },
+        { "index": 1, "name": "type", "label": "Type", "type": "enum", "enum": "filter2_type", "min": 0, "max": 10, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "freq", "label": "Frequency", "type": "int32", "min": 0, "max": 22000, "default": 22000, "normal": -1, "group": 0, "unit": "Hz", "scale": "exp3" },
+        { "index": 3, "name": "freqFinetune", "label": "Frequency finetune", "type": "int32", "min": 0, "max": 2000, "default": 1000, "normal": 1000, "group": 0, "displayOffset": -1000, "unit": "Hz/1000" },
+        { "index": 4, "name": "freqScale", "label": "Frequency scale", "type": "int32", "min": 0, "max": 200, "default": 100, "normal": 100, "group": 0, "unit": "%" },
+        { "index": 5, "name": "expFreq", "label": "Exponential frequency", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 6, "name": "q", "label": "Q", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 0 },
+        { "index": 7, "name": "gain", "label": "Gain", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 0, "displayOffset": -16384 },
+        { "index": 8, "name": "rolloff", "label": "Rolloff", "type": "enum", "enum": "filter_rolloff", "min": 0, "max": 7, "default": 0, "normal": -1, "group": 0 },
+        { "index": 9, "name": "response", "label": "Response", "type": "int32", "min": 0, "max": 1000, "default": 250, "normal": -1, "group": 1 },
+        { "index": 10, "name": "mode", "label": "Mode", "type": "enum", "enum": "filter2_mode", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 1 },
+        { "index": 11, "name": "mix", "label": "Mix", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 1 },
+        { "index": 12, "name": "lfoFreq", "label": "LFO frequency", "type": "int32", "min": 0, "max": 1024, "default": 8, "normal": -1, "group": 2 },
+        { "index": 13, "name": "lfoAmp", "label": "LFO amplitude", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 2 },
+        { "index": 14, "name": "lfoWaveform", "label": "LFO waveform", "type": "enum", "enum": "filter_lfo_waveform", "min": 0, "max": 4, "default": 0, "normal": -1, "group": 2 },
+        { "index": 15, "name": "setLfoPhase", "label": "Set LFO phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
+        { "index": 16, "name": "lfoFreqUnit", "label": "LFO frequency unit", "type": "enum", "enum": "filter_lfo_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 2 }
       ]
     },
     "MetaModule": {

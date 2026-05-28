@@ -219,6 +219,23 @@ test("decodes common effect and generator controllers", async () => {
   assert.equal(reverb.controllers.allpassFilter, "on");
 });
 
+test("decodes Analog generator and Filter Pro controllers", async () => {
+  const buffer = await readFile("instruments/mandel59 shepard.sunsynth");
+  const document = parseContainer(buffer);
+  const embedded = document.module.dataChunks[0].container;
+  const generator = embedded.modules.find((module) => module.type === "Analog generator");
+  const filter = embedded.modules.find((module) => module.type === "Filter Pro");
+
+  assert.equal(generator.controllers.waveform, "sin");
+  assert.equal(generator.controllers.sustain, "on");
+  assert.equal(generator.controllers.filter, "off");
+  assert.equal(generator.controllers.osc2Mode, "add");
+  assert.equal(filter.controllers.type, "bpConstSkirtGain");
+  assert.equal(filter.controllers.rolloff, "db12");
+  assert.equal(filter.controllers.mode, "stereo");
+  assert.equal(filter.controllers.lfoFreqUnit, "hz002");
+});
+
 test("decodes Sound2Ctl controllers and options", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
