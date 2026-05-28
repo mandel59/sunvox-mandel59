@@ -2,6 +2,18 @@
 
 ## Licenses
 
+## SunVox text codec
+
+The repository includes a reversible JSON codec for `.sunvox` and `.sunsynth`
+files. It preserves the binary container as `SVOX` or `SSYN` chunks with
+base64-encoded payloads and SHA-256 checksums.
+
+```sh
+npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json
+npm run sunvox:decode -- var/2022-04-17.sunvox.json var/2022-04-17.sunvox
+npm run sunvox:verify -- music/2022-04-17.sunvox
+```
+
 ### Instruments under [instruments/](instruments/)
 
 Created by Ryusei Yamaguchi (@mandel59).

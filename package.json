@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "vite --config tools/vite.config.mjs",
     "build": "node tools/build.mjs",
-    "preview": "vite preview --config tools/vite.config.mjs"
+    "preview": "vite preview --config tools/vite.config.mjs",
+    "sunvox:encode": "node tools/sunvox-codec.mjs encode",
+    "sunvox:decode": "node tools/sunvox-codec.mjs decode",
+    "sunvox:verify": "node tools/sunvox-codec.mjs verify"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",
