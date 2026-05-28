@@ -7,12 +7,14 @@ import { parseContainer, SUNVOX_DB } from "./sunvox-codec.mjs";
 
 const DEFAULT_SAMPLE_ROOTS = ["music", "instruments"];
 const DEFAULT_SOURCE_ROOT = "var/sunvox_lib/lib_sunvox/psynth";
+const DEFAULT_STRINGS_FILE = "var/sunvox_lib/lib_sunvox/psynth/psynth_strings.cpp";
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 
 function usage() {
   console.error(`Usage:
   node tools/sunvox-db-inspect.mjs coverage [--details] [sample-path ...]
-  node tools/sunvox-db-inspect.mjs report [source-root]`);
+  node tools/sunvox-db-inspect.mjs report [source-root]
+  node tools/sunvox-db-inspect.mjs scaffold <module-name> [source-root]`);
 }
 
 function compareText(a, b) {
@@ -21,6 +23,45 @@ function compareText(a, b) {
 
 function increment(map, key, count = 1) {
   map.set(key, (map.get(key) ?? 0) + count);
+}
+
+function lowerCamel(words) {
+  const cleanWords = words.filter(Boolean);
+  if (cleanWords.length === 0) {
+    return "value";
+  }
+  const [first, ...rest] = cleanWords;
+  return [
+    first.toLowerCase(),
+    ...rest.map((word) => `${word.slice(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`),
+  ].join("");
+}
+
+function identifierFromLabel(label) {
+  const normalized = label
+    .replace(/([a-z])([A-Z])/gu, "$1 $2")
+    .replace(/=0/gu, " 0")
+    .replace(/[^0-9A-Za-z]+/gu, " ")
+    .trim();
+  return lowerCamel(normalized.split(/\s+/u));
+}
+
+function titleFromMacro(macro) {
+  const text = macro.replace(/^STR_PS_/u, "").replace(/_/gu, " ").toLowerCase();
+  return text.replace(/\b[a-z]/gu, (letter) => letter.toUpperCase());
+}
+
+function enumNameFromMacro(macro, fallback) {
+  if (!macro) {
+    return identifierFromLabel(fallback ?? "enum");
+  }
+  let name = macro.replace(/^STR_PS_/u, "").toLowerCase();
+  name = name.replace(/_types$/u, "_type").replace(/_modes$/u, "_mode");
+  return name;
+}
+
+function enumValueName(label) {
+  return identifierFromLabel(label).replace(/^value$/u, "unknown");
 }
 
 function safeStat(path) {
@@ -241,6 +282,31 @@ function countMatches(text, pattern) {
   return [...text.matchAll(pattern)].length;
 }
 
+function decodeCStringLiteral(raw) {
+  try {
+    return JSON.parse(`"${raw}"`);
+  } catch {
+    return raw;
+  }
+}
+
+function loadStringTable(stringsFile = DEFAULT_STRINGS_FILE) {
+  const stat = safeStat(stringsFile);
+  if (!stat?.isFile()) {
+    return new Map();
+  }
+  const text = readFileSync(stringsFile, "utf8");
+  const strings = new Map();
+  const pattern = /((?:\s*case\s+STR_PS_[A-Z0-9_]+\s*:\s*)+)str\s*=\s*"((?:\\.|[^"])*)";/gu;
+  for (const match of text.matchAll(pattern)) {
+    const textValue = decodeCStringLiteral(match[2]);
+    for (const caseMatch of match[1].matchAll(/case\s+(STR_PS_[A-Z0-9_]+)\s*:/gu)) {
+      strings.set(caseMatch[1], textValue);
+    }
+  }
+  return strings;
+}
+
 function scanSourceFile(file) {
   const text = readFileSync(file, "utf8");
   const fallbackName = file
@@ -258,6 +324,172 @@ function scanSourceFile(file) {
     outputs: extractCaseReturnExpression(text, "PS_CMD_GET_OUTPUTS_NUM"),
     flags: extractCaseReturnExpression(text, "PS_CMD_GET_FLAGS"),
     flags2: extractCaseReturnExpression(text, "PS_CMD_GET_FLAGS2"),
+  };
+}
+
+function splitArguments(text) {
+  const args = [];
+  let current = "";
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (const char of text) {
+    if (inString) {
+      current += char;
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = true;
+      current += char;
+      continue;
+    }
+    if (char === "(") {
+      parenDepth += 1;
+    } else if (char === ")") {
+      parenDepth -= 1;
+    } else if (char === "[") {
+      bracketDepth += 1;
+    } else if (char === "]") {
+      bracketDepth -= 1;
+    } else if (char === "," && parenDepth === 0 && bracketDepth === 0) {
+      args.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  if (current.trim()) {
+    args.push(current.trim());
+  }
+  return args;
+}
+
+function extractRegisterCalls(text) {
+  const calls = [];
+  const pattern = /psynth_register_ctl\s*\(([\s\S]*?)\);/gu;
+  for (const match of text.matchAll(pattern)) {
+    calls.push(splitArguments(match[1]));
+  }
+  return calls;
+}
+
+function resolveStringArg(arg, strings) {
+  const literal = /^"((?:\\.|[^"])*)"$/u.exec(arg);
+  if (literal) {
+    return {
+      text: decodeCStringLiteral(literal[1]),
+      macro: undefined,
+    };
+  }
+
+  const macro = /ps_get_string\s*\(\s*(STR_PS_[A-Z0-9_]+)\s*\)/u.exec(arg)?.[1];
+  if (macro) {
+    return {
+      text: strings.get(macro) ?? titleFromMacro(macro),
+      macro,
+    };
+  }
+
+  return {
+    text: undefined,
+    macro: undefined,
+    raw: arg,
+  };
+}
+
+function parseNumberLike(expression) {
+  const trimmed = expression.trim();
+  if (/^-?\d+$/u.test(trimmed)) {
+    return Number(trimmed);
+  }
+  if (/^[\d\s()+\-*/]+$/u.test(trimmed)) {
+    try {
+      const value = Function(`"use strict"; return (${trimmed});`)();
+      if (Number.isFinite(value) && Number.isInteger(value)) {
+        return value;
+      }
+    } catch {
+      return trimmed;
+    }
+  }
+  return trimmed;
+}
+
+function enumValuesFromLabel(label) {
+  if (!label?.includes(";")) {
+    return undefined;
+  }
+  return Object.fromEntries(label.split(";").map((entry, index) => [String(index), enumValueName(entry)]));
+}
+
+function scaffoldController(call, index, strings) {
+  const nameArg = resolveStringArg(call[1] ?? "", strings);
+  const labelArg = resolveStringArg(call[2] ?? "", strings);
+  const label = nameArg.text ?? titleFromMacro(`STR_PS_CTL_${index}`);
+  const enumValues = enumValuesFromLabel(labelArg.text);
+  const controller = {
+    index,
+    name: identifierFromLabel(label),
+    label,
+    type: enumValues ? "enum" : "int32",
+    ...(enumValues ? { enum: enumNameFromMacro(labelArg.macro, label) } : {}),
+    min: parseNumberLike(call[3] ?? "0"),
+    max: parseNumberLike(call[4] ?? "0"),
+    default: parseNumberLike(call[5] ?? "0"),
+    normal: parseNumberLike(call[8] ?? "-1"),
+    group: parseNumberLike(call[9] ?? "0"),
+  };
+
+  if (!enumValues && labelArg.text) {
+    controller.unit = labelArg.text;
+  }
+
+  return {
+    controller,
+    enum: enumValues ? [controller.enum, enumValues] : undefined,
+  };
+}
+
+export function collectScaffold(moduleName, sourceRoot = DEFAULT_SOURCE_ROOT) {
+  const report = collectSourceReport(sourceRoot);
+  const module = report.sourceModules.find(
+    (candidate) => candidate.module.toLowerCase() === moduleName.toLowerCase(),
+  );
+  if (!module) {
+    throw new Error(`Module not found in source scan: ${moduleName}`);
+  }
+
+  const strings = loadStringTable();
+  const text = readFileSync(module.file, "utf8");
+  const controllers = [];
+  const enums = new Map();
+  extractRegisterCalls(text).forEach((call, index) => {
+    const scaffolded = scaffoldController(call, index, strings);
+    controllers.push(scaffolded.controller);
+    if (scaffolded.enum) {
+      enums.set(scaffolded.enum[0], scaffolded.enum[1]);
+    }
+  });
+
+  return {
+    module: module.module,
+    file: module.file,
+    enums: Object.fromEntries(enums),
+    modules: {
+      [module.module]: {
+        controllers,
+      },
+    },
   };
 }
 
@@ -315,6 +547,9 @@ function formatCoverage(coverage, options = {}) {
   const rawControllerSummary = aggregateRows(coverage.rawControllers, (row) => row.type, (group, row) => {
     group.controllers = (group.controllers ?? 0) + row.count;
   });
+  rawControllerSummary.sort(
+    (a, b) => b.count - a.count || (b.controllers ?? 0) - (a.controllers ?? 0) || compareText(a.key, b.key),
+  );
   const controllerExtraSummary = aggregateRows(coverage.controllerExtras, (row) => row.type, (group, row) => {
     group.indexes ??= new Set();
     for (const index of row.indexes) {
@@ -343,6 +578,13 @@ function formatCoverage(coverage, options = {}) {
     `Decoded modules including embedded containers: ${coverage.moduleCount}`,
     `Unique module types in samples: ${coverage.moduleTypes.length}`,
     `DB module types: ${coverage.dbModuleTypes.length}`,
+    "",
+    "Next raw-controller targets:",
+    formatTable(rawControllerSummary.slice(0, 8), [
+      { header: "type", value: (row) => row.key },
+      { header: "modules", value: (row) => row.count },
+      { header: "controllerValues", value: (row) => row.controllers },
+    ]),
     "",
     "Module types in samples:",
     formatTable(
@@ -482,6 +724,22 @@ function formatSourceReport(report) {
   ].join("\n");
 }
 
+function formatScaffold(scaffold) {
+  return JSON.stringify(
+    {
+      _source: {
+        module: scaffold.module,
+        file: scaffold.file,
+        note: "Best-effort scaffold. Review unresolved string expressions and enum names before inserting into database.json.",
+      },
+      ...(Object.keys(scaffold.enums).length ? { enums: scaffold.enums } : {}),
+      modules: scaffold.modules,
+    },
+    null,
+    2,
+  );
+}
+
 function main(argv) {
   const [command, ...args] = argv;
   if (command === "coverage") {
@@ -492,6 +750,15 @@ function main(argv) {
   }
   if (command === "report") {
     console.log(formatSourceReport(collectSourceReport(args[0] ?? DEFAULT_SOURCE_ROOT)));
+    return;
+  }
+  if (command === "scaffold") {
+    if (!args[0]) {
+      usage();
+      process.exitCode = 1;
+      return;
+    }
+    console.log(formatScaffold(collectScaffold(args[0], args[1] ?? DEFAULT_SOURCE_ROOT)));
     return;
   }
   usage();

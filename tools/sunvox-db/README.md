@@ -41,6 +41,7 @@ Use `tools/sunvox-db-inspect.mjs` to make codec/DB coverage work repeatable.
 npm run sunvox:inspect -- coverage
 npm run sunvox:inspect -- coverage --details
 npm run sunvox:inspect -- report
+npm run sunvox:inspect -- scaffold "Distortion"
 ```
 
 - `coverage` decodes checked-in sample `.sunvox` and `.sunsynth` files,
@@ -50,6 +51,26 @@ npm run sunvox:inspect -- report
 - `coverage --details` includes per-module paths for raw or opaque data.
 - `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp` and compares
   source module/controller declaration counts with the DB.
+- `scaffold <module>` emits a best-effort DB JSON draft for direct
+  `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
+  expressions and enum names before inserting the output into `database.json`.
+
+## Local Quality Loop
+
+Run this loop before committing codec or DB changes:
+
+```sh
+npm test
+npm run sunvox:inspect -- coverage
+npm run sunvox:inspect -- report
+npm run sunvox:verify -- music/2022-04-16.sunvox
+npm run sunvox:verify -- music/2022-04-17.sunvox
+npm run sunvox:verify -- music/2022-04-18.sunvox
+npm run sunvox:verify -- music/2022-04-20.sunvox
+npm run sunvox:verify -- "instruments/mandel59 shepard.sunsynth"
+npm run sunvox:verify -- "instruments/mandel59 SuperSaw.sunsynth"
+git diff --check
+```
 
 ## Round-Trip Policy
 
