@@ -160,6 +160,23 @@ function moduleLabel(module, fallbackIndex) {
   return parts.join(" ");
 }
 
+function moduleCoverageType(module) {
+  if (module.type) {
+    return module.type;
+  }
+  if (Object.keys(module).length === 0) {
+    return "(empty slot)";
+  }
+  if (module.flags?.output || module.name === "Output") {
+    return "(output slot)";
+  }
+  return "(missing STYP)";
+}
+
+function isSyntheticModuleType(type) {
+  return type.startsWith("(") && type.endsWith(")");
+}
+
 function collectDocumentModules(document, source, path, modules) {
   const documentModules =
     document.magic === "SSYN" ? (document.module ? [document.module] : []) : document.modules ?? [];
@@ -201,12 +218,21 @@ export function collectCoverage(sampleRoots = DEFAULT_SAMPLE_ROOTS) {
   const controllerExtras = [];
   const moduleExtraChunks = [];
   const opaqueDataChunks = [];
+  const modulesWithoutType = [];
 
   for (const { source, path, module } of modules) {
-    const type = module.type ?? "(missing type)";
+    const type = moduleCoverageType(module);
     increment(moduleTypes, type);
     if (module.type && !SUNVOX_DB.modules[module.type]) {
       increment(missingDbTypes, module.type);
+    }
+    if (!module.type) {
+      modulesWithoutType.push({
+        source,
+        path,
+        kind: type,
+        keys: Object.keys(module),
+      });
     }
 
     if (Array.isArray(module.controllers)) {
@@ -253,6 +279,7 @@ export function collectCoverage(sampleRoots = DEFAULT_SAMPLE_ROOTS) {
     controllerExtras,
     moduleExtraChunks,
     opaqueDataChunks,
+    modulesWithoutType,
   };
 }
 
@@ -676,6 +703,7 @@ function formatCoverage(coverage, options = {}) {
   const extraChunkSummary = aggregateRows(coverage.moduleExtraChunks, (row) => row.type, (group, row) => {
     group.chunks = (group.chunks ?? 0) + row.count;
   });
+  const moduleWithoutTypeSummary = aggregateRows(coverage.modulesWithoutType, (row) => row.kind);
   const opaqueDataSummary = aggregateRows(
     coverage.opaqueDataChunks,
     (row) => `${row.type} ${row.index} ${row.name ?? ""}`.trim(),
@@ -693,7 +721,7 @@ function formatCoverage(coverage, options = {}) {
     ...coverage.files.map((file) => `  - ${file}`),
     "",
     `Decoded modules including embedded containers: ${coverage.moduleCount}`,
-    `Unique module types in samples: ${coverage.moduleTypes.length}`,
+    `Unique module types/kinds in samples: ${coverage.moduleTypes.length}`,
     `DB module types: ${coverage.dbModuleTypes.length}`,
     "",
     "Next raw-controller targets:",
@@ -703,13 +731,13 @@ function formatCoverage(coverage, options = {}) {
       { header: "controllerValues", value: (row) => row.controllers },
     ]),
     "",
-    "Module types in samples:",
+    "Module types/kinds in samples:",
     formatTable(
       coverage.moduleTypes.map(([type, count]) => ({
         type,
         count,
-        db: SUNVOX_DB.modules[type] ? "yes" : "no",
-        dbControllers: dbControllerCount(type),
+        db: isSyntheticModuleType(type) ? "n/a" : SUNVOX_DB.modules[type] ? "yes" : "no",
+        dbControllers: isSyntheticModuleType(type) ? "" : dbControllerCount(type),
       })),
       [
         { header: "type", value: (row) => row.type },
@@ -718,6 +746,12 @@ function formatCoverage(coverage, options = {}) {
         { header: "dbControllers", value: (row) => row.dbControllers },
       ],
     ),
+    "",
+    "Module slots without STYP:",
+    formatTable(moduleWithoutTypeSummary, [
+      { header: "kind", value: (row) => row.key },
+      { header: "modules", value: (row) => row.count },
+    ]),
     "",
     "Missing DB module types in samples:",
     formatTable(
@@ -781,6 +815,14 @@ function formatCoverage(coverage, options = {}) {
       formatTable(coverage.moduleExtraChunks, [
         { header: "type", value: (row) => row.type },
         { header: "count", value: (row) => row.count },
+        { header: "source", value: (row) => row.source },
+        { header: "path", value: (row) => row.path },
+      ]),
+      "",
+      "Module slot details without STYP:",
+      formatTable(coverage.modulesWithoutType, [
+        { header: "kind", value: (row) => row.kind },
+        { header: "keys", value: (row) => row.keys.join(",") },
         { header: "source", value: (row) => row.source },
         { header: "path", value: (row) => row.path },
       ]),

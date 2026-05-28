@@ -52,8 +52,8 @@ npm run sunvox:inspect -- check
 
 - `coverage` decodes checked-in sample `.sunvox` and `.sunsynth` files,
   including embedded MetaModule projects, and reports module types, missing DB
-  module definitions, raw controller arrays, controller extras, extra chunks,
-  and opaque data chunks.
+  module definitions, STYP-less output/empty module slots, raw controller
+  arrays, controller extras, extra chunks, and opaque data chunks.
 - `coverage --details` includes per-module paths for raw or opaque data.
 - `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp` and compares
   source module/controller declaration counts with the DB.
