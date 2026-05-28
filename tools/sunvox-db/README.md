@@ -17,24 +17,26 @@ can either interpret it directly or generate conversion code from it later.
   layouts. Controller definitions can use `path` for nested semantic output and
   `repeat` for repeated layouts such as FMX operators.
 
-The initial database covers the chunk labels already used by the codec,
+The database covers the chunk labels already used by the codec,
 project/pattern/module chunk order, project/pattern/module flag bits, `CMID`
-MIDI binding bitfields, and the core
-`MetaModule` controllers. It also identifies the first `MetaModule` data chunk
-as an embedded SunVox container, allowing the codec to recurse into it instead
-of keeping that payload as opaque base64. Additional `MetaModule` data chunk
-definitions describe user controller links, options, and custom controller
-names through reusable layout types such as `packedUInt32Array`, `struct`,
-`recordArray`, and `string`; the codec joins that metadata with CVAL chunks so
-user controller values appear under `controllers.user`. Controller metadata now
-covers common generators and effects including FMX, Analog generator, Filter
-Pro, Delay, Echo, Glide, Modulator, WaveShaper, MultiSynth, MultiCtl,
-Sound2Ctl, and several utility modules. FMX uses a repeated operator template
-so the editable text contains an `operators` array instead of a long raw
-controller list. Module data chunk layouts now cover sampled curves and compact
-option structures for MultiSynth, WaveShaper, SpectraVoice, Generator, and
-Analog generator; Analog generator options also record the original chunk byte
-length as `dataSize` so SunVox's trailing-zero trimming can round-trip exactly.
+MIDI binding bitfields, and all 42 module controller layouts currently detected
+from `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`. It also identifies the
+first `MetaModule` data chunk as an embedded SunVox container, allowing the
+codec to recurse into it instead of keeping that payload as opaque base64.
+Additional `MetaModule` data chunk definitions describe user controller links,
+options, and custom controller names through reusable layout types such as
+`packedUInt32Array`, `struct`, `recordArray`, and `string`; the codec joins
+that metadata with CVAL chunks so user controller values appear under
+`controllers.user`. FMX uses a repeated operator template so the editable text
+contains an `operators` array instead of a long raw controller list. Module data
+chunk layouts now cover sampled curves and compact option structures for
+MultiSynth, WaveShaper, SpectraVoice, Generator, and Analog generator; Analog
+generator options also record the original chunk byte length as `dataSize` so
+SunVox's trailing-zero trimming can round-trip exactly.
+
+Remaining DB expansion work is concentrated in module data payloads whose
+formats are larger than controller metadata, especially the Sampler sample,
+loop, envelope, and recording-related chunks.
 
 ## Inspection Tool
 

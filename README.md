@@ -15,10 +15,11 @@ generated binary.
 The codec uses the machine-readable database under
 [tools/sunvox-db](tools/sunvox-db/) to translate module controllers, enums, and
 packed bitfields into editable names, and to emit chunks in the canonical order
-for each structured scope. MetaModule project payloads are decoded recursively
-when they contain an embedded SunVox container; MetaModule user controller
-links, options, custom controller names, and user controller values are decoded
-into named fields.
+for each structured scope. The database currently covers all module controller
+layouts detected from the bundled SunVox source. MetaModule project payloads
+are decoded recursively when they contain an embedded SunVox container;
+MetaModule user controller links, options, custom controller names, and user
+controller values are decoded into named fields.
 Repeated controller layouts can be represented as nested structures; for
 example, FMX operators are decoded into an `operators` array instead of a raw
 controller list. MultiCtl output slots and response curves are also decoded
