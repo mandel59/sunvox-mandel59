@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { collectCoverage, collectDbCheck } from "../tools/sunvox-db-inspect.mjs";
+import { collectControllerDiff, collectCoverage, collectDbCheck } from "../tools/sunvox-db-inspect.mjs";
 import { SUNVOX_DB } from "../tools/sunvox-codec.mjs";
 
 test("coverage reports DB module types not exercised by samples", () => {
@@ -13,6 +13,13 @@ test("coverage reports DB module types not exercised by samples", () => {
   for (const moduleType of Object.keys(SUNVOX_DB.modules)) {
     assert.equal(coverage.unusedDbModuleTypes.includes(moduleType), !sampledDbTypes.has(moduleType), moduleType);
   }
+});
+
+test("controller diff has no scalar metadata mismatches", () => {
+  const diff = collectControllerDiff();
+  const scalarMismatches = diff.mismatches.filter((mismatch) => mismatch.field !== "enumValues");
+
+  assert.deepEqual(scalarMismatches, []);
 });
 
 test("DB check validates data chunk ranges and metadata references", () => {

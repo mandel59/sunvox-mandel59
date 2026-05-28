@@ -14,6 +14,7 @@ function usage() {
   console.error(`Usage:
   node tools/sunvox-db-inspect.mjs coverage [--json] [--details] [--check] [sample-path ...]
   node tools/sunvox-db-inspect.mjs report [--json] [source-root]
+  node tools/sunvox-db-inspect.mjs controller-diff [--json] [source-root]
   node tools/sunvox-db-inspect.mjs scaffold <module-name> [source-root]
   node tools/sunvox-db-inspect.mjs check [--json] [source-root]`);
 }
@@ -528,16 +529,7 @@ function scaffoldController(call, index, strings, metadata = {}) {
   };
 }
 
-export function collectScaffold(moduleName, sourceRoot = DEFAULT_SOURCE_ROOT) {
-  const report = collectSourceReport(sourceRoot);
-  const module = report.sourceModules.find(
-    (candidate) => candidate.module.toLowerCase() === moduleName.toLowerCase(),
-  );
-  if (!module) {
-    throw new Error(`Module not found in source scan: ${moduleName}`);
-  }
-
-  const strings = loadStringTable();
+function collectSourceModuleControllers(module, strings) {
   const text = readFileSync(module.file, "utf8");
   const metadata = {
     showOffsets: extractIndexedCalls(text, "psynth_set_ctl_show_offset"),
@@ -556,10 +548,30 @@ export function collectScaffold(moduleName, sourceRoot = DEFAULT_SOURCE_ROOT) {
   return {
     module: module.module,
     file: module.file,
+    controllers,
     enums: Object.fromEntries(enums),
+  };
+}
+
+export function collectScaffold(moduleName, sourceRoot = DEFAULT_SOURCE_ROOT) {
+  const report = collectSourceReport(sourceRoot);
+  const module = report.sourceModules.find(
+    (candidate) => candidate.module.toLowerCase() === moduleName.toLowerCase(),
+  );
+  if (!module) {
+    throw new Error(`Module not found in source scan: ${moduleName}`);
+  }
+
+  const strings = loadStringTable();
+  const scaffold = collectSourceModuleControllers(module, strings);
+
+  return {
+    module: module.module,
+    file: module.file,
+    enums: scaffold.enums,
     modules: {
       [module.module]: {
-        controllers,
+        controllers: scaffold.controllers,
       },
     },
   };
@@ -597,6 +609,137 @@ export function collectSourceReport(sourceRoot = DEFAULT_SOURCE_ROOT) {
 
 function hasControllerRepeat(moduleDefinition) {
   return (moduleDefinition?.controllers ?? []).some((controller) => controller.repeat);
+}
+
+const CONTROLLER_STRING_COMPARE_FIELDS = new Set(["type", "unit", "scale"]);
+const CONTROLLER_NUMBER_COMPARE_FIELDS = new Set(["min", "max", "default", "normal", "group", "displayOffset"]);
+const CONTROLLER_COMPARE_FIELDS = [
+  ...CONTROLLER_STRING_COMPARE_FIELDS,
+  ...CONTROLLER_NUMBER_COMPARE_FIELDS,
+];
+
+function controllerFieldIsComparable(field, value) {
+  if (CONTROLLER_STRING_COMPARE_FIELDS.has(field)) {
+    return value !== undefined;
+  }
+  return CONTROLLER_NUMBER_COMPARE_FIELDS.has(field) && Number.isInteger(value);
+}
+
+function enumValuesEqual(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+  const leftKeys = Object.keys(left).sort((a, b) => Number(a) - Number(b));
+  const rightKeys = Object.keys(right).sort((a, b) => Number(a) - Number(b));
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+  return leftKeys.every((key, index) => key === rightKeys[index] && left[key] === right[key]);
+}
+
+export function collectControllerDiff(sourceRoot = DEFAULT_SOURCE_ROOT) {
+  const report = collectSourceReport(sourceRoot);
+  const strings = loadStringTable();
+  const mismatches = [];
+  const skippedModules = [];
+  let comparedModules = 0;
+
+  for (const sourceModule of report.sourceModules) {
+    const moduleDefinition = SUNVOX_DB.modules[sourceModule.module];
+    if (!moduleDefinition) {
+      continue;
+    }
+    if (sourceModule.module === "MetaModule") {
+      skippedModules.push({
+        module: sourceModule.module,
+        reason: "custom user controllers are represented from data chunks",
+      });
+      continue;
+    }
+    if (hasControllerRepeat(moduleDefinition)) {
+      skippedModules.push({
+        module: sourceModule.module,
+        reason: "DB uses repeated controller templates",
+      });
+      continue;
+    }
+
+    comparedModules += 1;
+    const sourceScaffold = collectSourceModuleControllers(sourceModule, strings);
+    const sourceControllers = sourceScaffold.controllers;
+    const dbControllers = expandControllerDefinitions(moduleDefinition.controllers);
+    const sourceByIndex = new Map(sourceControllers.map((controller) => [controller.index, controller]));
+    const dbByIndex = new Map(dbControllers.map((controller) => [controller.index, controller]));
+
+    for (const sourceController of sourceControllers) {
+      const dbController = dbByIndex.get(sourceController.index);
+      if (!dbController) {
+        mismatches.push({
+          module: sourceModule.module,
+          index: sourceController.index,
+          controller: sourceController.name,
+          field: "(missing DB controller)",
+          source: sourceController.label,
+          db: undefined,
+        });
+        continue;
+      }
+      for (const field of CONTROLLER_COMPARE_FIELDS) {
+        if (!controllerFieldIsComparable(field, sourceController[field])) {
+          continue;
+        }
+        if (sourceController[field] !== dbController[field]) {
+          mismatches.push({
+            module: sourceModule.module,
+            index: sourceController.index,
+            controller: dbController.name ?? sourceController.name,
+            field,
+            source: sourceController[field],
+            db: dbController[field],
+          });
+        }
+      }
+      if (sourceController.type === "enum") {
+        const sourceEnumValues = sourceScaffold.enums[sourceController.enum];
+        const dbEnumValues = SUNVOX_DB.enums[dbController.enum];
+        if (sourceEnumValues && dbEnumValues && !enumValuesEqual(sourceEnumValues, dbEnumValues)) {
+          mismatches.push({
+            module: sourceModule.module,
+            index: sourceController.index,
+            controller: dbController.name ?? sourceController.name,
+            field: "enumValues",
+            source: sourceController.enum,
+            db: dbController.enum,
+          });
+        }
+      }
+    }
+
+    for (const dbController of dbControllers) {
+      if (!sourceByIndex.has(dbController.index)) {
+        mismatches.push({
+          module: sourceModule.module,
+          index: dbController.index,
+          controller: dbController.name,
+          field: "(extra DB controller)",
+          source: undefined,
+          db: dbController.label,
+        });
+      }
+    }
+  }
+
+  return {
+    sourceRoot,
+    comparedModules,
+    skippedModules,
+    mismatches,
+    summary: {
+      comparedModules,
+      skippedModules: skippedModules.length,
+      mismatches: mismatches.length,
+    },
+  };
 }
 
 function dataDefinitionLabel(definition) {
@@ -967,6 +1110,33 @@ function formatSourceReport(report) {
   ].join("\n");
 }
 
+function formatControllerDiff(diff) {
+  return [
+    "SunVox controller source / DB diff",
+    "",
+    `Source root: ${diff.sourceRoot}`,
+    `Compared modules: ${diff.summary.comparedModules}`,
+    `Skipped modules: ${diff.summary.skippedModules}`,
+    `Mismatches: ${diff.summary.mismatches}`,
+    "",
+    "Skipped modules:",
+    formatTable(diff.skippedModules, [
+      { header: "module", value: (row) => row.module },
+      { header: "reason", value: (row) => row.reason },
+    ]),
+    "",
+    "Controller metadata mismatches:",
+    formatTable(diff.mismatches, [
+      { header: "module", value: (row) => row.module },
+      { header: "index", value: (row) => row.index },
+      { header: "controller", value: (row) => row.controller },
+      { header: "field", value: (row) => row.field },
+      { header: "source", value: (row) => row.source },
+      { header: "db", value: (row) => row.db },
+    ]),
+  ].join("\n");
+}
+
 function formatScaffold(scaffold) {
   return JSON.stringify(
     {
@@ -1025,6 +1195,13 @@ function main(argv) {
     const paths = withoutFlags(args, ["--json"]);
     const report = collectSourceReport(paths[0] ?? DEFAULT_SOURCE_ROOT);
     console.log(json ? JSON.stringify(report, null, 2) : formatSourceReport(report));
+    return;
+  }
+  if (command === "controller-diff") {
+    const json = args.includes("--json");
+    const paths = withoutFlags(args, ["--json"]);
+    const diff = collectControllerDiff(paths[0] ?? DEFAULT_SOURCE_ROOT);
+    console.log(json ? JSON.stringify(diff, null, 2) : formatControllerDiff(diff));
     return;
   }
   if (command === "scaffold") {

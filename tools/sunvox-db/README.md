@@ -48,6 +48,8 @@ npm run sunvox:inspect -- coverage --json
 npm run sunvox:coverage:check
 npm run sunvox:inspect -- report
 npm run sunvox:inspect -- report --json
+npm run sunvox:inspect -- controller-diff
+npm run sunvox:inspect -- controller-diff --json
 npm run sunvox:inspect -- scaffold "Distortion"
 npm run sunvox:inspect -- check
 npm run sunvox:verify:all
@@ -61,8 +63,11 @@ npm run sunvox:verify:all
 - `coverage --details` includes per-module paths for raw or opaque data.
 - `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp` and compares
   source module/controller declaration counts with the DB.
-- `coverage --json` and `report --json` emit machine-readable metrics for
-  future CI or frontend tooling.
+- `controller-diff` compares controller ranges, units, scales, display offsets,
+  and source enum value sets against the DB. It is a triage report for deciding
+  which declarative source facts should be copied into `database.json`.
+- `coverage --json`, `report --json`, and `controller-diff --json` emit
+  machine-readable metrics for future CI or frontend tooling.
 - `sunvox:coverage:check` runs the coverage report as a CI gate. It fails on
   parse errors, missing DB module types, unexpected missing-STYP modules, raw
   controller arrays, controller extras, module extra chunks, or opaque data
