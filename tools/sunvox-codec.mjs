@@ -849,6 +849,21 @@ function encodeMultiCtlOutputSlots(dataChunk) {
   return buffer;
 }
 
+function decodeSound2CtlOptions(data) {
+  return {
+    recordValues: Boolean(data.readUInt8(0)),
+    sendChangesOnly: Boolean(data.readUInt8(1)),
+  };
+}
+
+function encodeSound2CtlOptions(dataChunk) {
+  const options = dataChunk.options ?? {};
+  const buffer = Buffer.alloc(2);
+  buffer.writeUInt8(options.recordValues ? 1 : 0, 0);
+  buffer.writeUInt8(options.sendChangesOnly ? 1 : 0, 1);
+  return buffer;
+}
+
 function decodeModuleDataChunk(type, index, chunk) {
   const definition = moduleDataDefinition(type, index);
   const dataChunk = { index };
@@ -884,6 +899,8 @@ function decodeModuleDataChunk(type, index, chunk) {
     } else if (definition?.type === "uint16Array" && data.length % 2 === 0) {
       dataChunk.count = definition.count ?? data.length / 2;
       dataChunk.values = readUInt16Array(data);
+    } else if (definition?.type === "sound2ctlOptions" && data.length >= 2) {
+      dataChunk.options = decodeSound2CtlOptions(data);
     } else {
       dataChunk.base64 = chunk.base64;
     }
@@ -1065,6 +1082,7 @@ function makeModuleDataChunks(module) {
 
   const chunks = [makeSemanticChunk("CHNK", "value", declaredCount ?? 0)];
   for (const dataChunk of dataChunks ?? []) {
+    const definition = moduleDataDefinition(module?.type, dataChunk.index);
     chunks.push(makeSemanticChunk("CHNM", "value", dataChunk.index ?? 0));
     if (dataChunk.chunk) {
       chunks.push(cloneJson(dataChunk.chunk));
@@ -1080,12 +1098,17 @@ function makeModuleDataChunks(module) {
         _label: chunkLabel("CHDT"),
         base64: encodeMetaModuleControllerLinks(dataChunk).toString("base64"),
       });
-    } else if (dataChunk.options) {
-      const definition = moduleDataDefinition(module?.type, dataChunk.index);
+    } else if (dataChunk.options && definition?.type === "metamoduleOptions") {
       chunks.push({
         id: "CHDT",
         _label: chunkLabel("CHDT"),
         base64: encodeMetaModuleOptions(dataChunk, definition?.flags).toString("base64"),
+      });
+    } else if (dataChunk.options && definition?.type === "sound2ctlOptions") {
+      chunks.push({
+        id: "CHDT",
+        _label: chunkLabel("CHDT"),
+        base64: encodeSound2CtlOptions(dataChunk).toString("base64"),
       });
     } else if (dataChunk.label !== undefined || dataChunk.text !== undefined) {
       chunks.push({

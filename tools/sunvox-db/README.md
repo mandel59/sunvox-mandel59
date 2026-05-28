@@ -19,7 +19,8 @@ as an embedded SunVox container, allowing the codec to recurse into it instead
 of keeping that payload as opaque base64. Additional `MetaModule` data chunk
 definitions describe user controller links, options, and custom controller
 names. `MultiCtl` definitions cover its named controllers, output slots, and
-16-bit response curve.
+16-bit response curve. `Sound2Ctl` definitions cover its named controllers and
+two-byte options chunk.
 
 ## Round-Trip Policy
 

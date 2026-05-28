@@ -92,6 +92,18 @@
       "3": "spline",
       "4": "trigger",
       "5": "toggle"
+    },
+    "off_on": {
+      "0": "off",
+      "1": "on"
+    },
+    "mono_stereo": {
+      "0": "mono",
+      "1": "stereo"
+    },
+    "sound2ctl_mode": {
+      "0": "lq",
+      "1": "hq"
     }
   },
   "bitfields": {
@@ -227,6 +239,22 @@
         { "index": 3, "name": "outOffset", "label": "OUT offset", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 0 },
         { "index": 4, "name": "response", "label": "Response", "type": "int32", "min": 0, "max": 1000, "default": 1000, "normal": -1, "group": 1 },
         { "index": 5, "name": "sampleRate", "label": "Sample rate", "type": "int32", "min": 1, "max": 32768, "default": 150, "normal": 50, "group": 1 }
+      ]
+    },
+    "Sound2Ctl": {
+      "dataChunks": [
+        { "index": 0, "name": "options", "type": "sound2ctlOptions" }
+      ],
+      "controllers": [
+        { "index": 0, "name": "sampleRate", "label": "Sample rate", "type": "int32", "min": 1, "max": 32768, "default": 50, "normal": 50, "group": 0 },
+        { "index": 1, "name": "channels", "label": "Channels", "type": "enum", "enum": "mono_stereo", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "absolute", "label": "Absolute", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
+        { "index": 3, "name": "gain", "label": "Gain", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
+        { "index": 4, "name": "smooth", "label": "Smooth", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
+        { "index": 5, "name": "mode", "label": "Mode", "type": "enum", "enum": "sound2ctl_mode", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
+        { "index": 6, "name": "outMin", "label": "OUT min", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1 },
+        { "index": 7, "name": "outMax", "label": "OUT max", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 1 },
+        { "index": 8, "name": "outController", "label": "OUT controller", "type": "int32", "min": 0, "max": 255, "default": 0, "normal": -1, "group": 1 }
       ]
     }
   }

@@ -184,6 +184,24 @@ test("decodes MultiCtl controllers, output slots, and curve", async () => {
   assert.deepEqual(curve.values.slice(0, 4), [0, 128, 256, 384]);
 });
 
+test("decodes Sound2Ctl controllers and options", async () => {
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const document = parseContainer(buffer);
+  const sound2Ctl = document.modules.find((module) => module.type === "Sound2Ctl");
+
+  assert.equal(sound2Ctl.controllers.channels, "mono");
+  assert.equal(sound2Ctl.controllers.absolute, "off");
+  assert.equal(sound2Ctl.controllers.mode, "hq");
+  assert.deepEqual(sound2Ctl.dataChunks[0], {
+    index: 0,
+    name: "options",
+    options: {
+      recordValues: false,
+      sendChangesOnly: true,
+    },
+  });
+});
+
 test("decodes primitive chunk payloads", () => {
   const intData = Buffer.alloc(4);
   intData.writeInt32LE(-12);
