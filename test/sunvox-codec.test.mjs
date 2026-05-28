@@ -261,6 +261,24 @@ test("decodes utility and delay-style effect controllers", async () => {
   assert.equal(waveShaper.controllers.dcBlocker, "on");
 });
 
+test("decodes FMX controllers as operator structures", async () => {
+  const buffer = await readFile("music/2022-04-18.sunvox");
+  const document = parseContainer(buffer);
+  const fmx = document.modules.find((module) => module.type === "FMX");
+
+  assert.equal(fmx.controllers.sampleRate, "native");
+  assert.equal(fmx.controllers.channels, "stereo");
+  assert.equal(fmx.controllers.inputToCustomWave, "off");
+  assert.equal(fmx.controllers.adsrSmoothTransitions, "restartVolumeChange");
+  assert.equal(fmx.controllers.operators.length, 5);
+  assert.equal(fmx.controllers.operators[0].attackCurve, "negExp1");
+  assert.equal(fmx.controllers.operators[0].waveform, "sin");
+  assert.equal(fmx.controllers.operators[0].modulationType, "phase");
+  assert.equal(fmx.controllers.operators[4].noise, 267);
+  assert.equal(fmx.controllers.operators[4].outputMode, undefined);
+  assert.equal(fmx.controllers.envelopeGain, 1000);
+});
+
 test("decodes Sound2Ctl controllers and options", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);

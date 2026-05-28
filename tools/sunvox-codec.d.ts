@@ -36,9 +36,13 @@ export interface MidiBinding {
 
 export type PackedMidiBinding = [midiPars1: number, midiPars2: number];
 export type EditableMidiBinding = PackedMidiBinding | MidiBinding | { midiPars1: number; midiPars2: number };
-export type ModuleControllers =
-  | number[]
-  | ({ extra?: Record<string, number> } & Record<string, number | string | Record<string, number> | undefined>);
+export type ModuleControllerValue =
+  | number
+  | string
+  | ModuleControllerValue[]
+  | { [key: string]: ModuleControllerValue }
+  | undefined;
+export type ModuleControllers = number[] | ({ extra?: Record<string, number> } & Record<string, ModuleControllerValue>);
 
 export interface ModuleDataChunk {
   index: number;

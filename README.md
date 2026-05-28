@@ -18,8 +18,11 @@ packed bitfields into editable names, and to emit chunks in the canonical order
 for each structured scope. MetaModule project payloads are decoded recursively
 when they contain an embedded SunVox container; MetaModule user controller
 links, options, and custom controller names are decoded into named fields.
-MultiCtl output slots and response curves are also decoded when present.
-Sound2Ctl controller values and options are decoded into named fields.
+Repeated controller layouts can be represented as nested structures; for
+example, FMX operators are decoded into an `operators` array instead of a raw
+controller list. MultiCtl output slots and response curves are also decoded
+when present. Sound2Ctl controller values and options are decoded into named
+fields.
 
 ```sh
 npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json

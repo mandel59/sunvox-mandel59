@@ -275,6 +275,71 @@
       "0": "off",
       "1": "linear",
       "2": "spline"
+    },
+    "fmx_sample_rate": {
+      "0": "hz8000",
+      "1": "hz11025",
+      "2": "hz16000",
+      "3": "hz22050",
+      "4": "hz32000",
+      "5": "hz44100",
+      "6": "native"
+    },
+    "capture_mode": {
+      "0": "off",
+      "1": "singleCycle",
+      "2": "continuous"
+    },
+    "adsr_smooth_transition": {
+      "0": "off",
+      "1": "restartVolumeChange",
+      "2": "restartSmootherVolumeChange",
+      "3": "volumeChange"
+    },
+    "adsr_curve": {
+      "0": "linear",
+      "1": "exp1",
+      "2": "exp2",
+      "3": "negExp1",
+      "4": "negExp2",
+      "5": "sin",
+      "6": "rect",
+      "7": "smoothRect",
+      "8": "bit2",
+      "9": "bit3",
+      "10": "bit4",
+      "11": "bit5"
+    },
+    "adsr_sustain": {
+      "0": "off",
+      "1": "on",
+      "2": "repeat"
+    },
+    "fm2_waveform": {
+      "0": "custom",
+      "1": "triangle",
+      "2": "triangleCubed",
+      "3": "saw",
+      "4": "sawCubed",
+      "5": "square",
+      "6": "sin",
+      "7": "hsin",
+      "8": "asin",
+      "9": "sinCubed"
+    },
+    "modulation_type2": {
+      "0": "phase",
+      "1": "frequency",
+      "2": "amplitudeMul",
+      "3": "add",
+      "4": "sub",
+      "5": "min",
+      "6": "max",
+      "7": "bitwiseAnd",
+      "8": "bitwiseXor",
+      "9": "phasePlus",
+      "10": "minAbs",
+      "11": "maxAbs"
     }
   },
   "bitfields": {
@@ -570,6 +635,52 @@
         { "index": 14, "name": "lfoWaveform", "label": "LFO waveform", "type": "enum", "enum": "filter_lfo_waveform", "min": 0, "max": 4, "default": 0, "normal": -1, "group": 2 },
         { "index": 15, "name": "setLfoPhase", "label": "Set LFO phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
         { "index": 16, "name": "lfoFreqUnit", "label": "LFO frequency unit", "type": "enum", "enum": "filter_lfo_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
+    "FMX": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 0 },
+        { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 2, "name": "sampleRate", "label": "Sample rate", "type": "enum", "enum": "fmx_sample_rate", "min": 0, "max": 6, "default": 5, "normal": -1, "group": 1 },
+        { "index": 3, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 32, "default": 4, "normal": -1, "group": 1 },
+        { "index": 4, "name": "channels", "label": "Channels", "type": "enum", "enum": "mono_stereo", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 1 },
+        { "index": 5, "name": "inputToOperator", "label": "Input to operator", "type": "int32", "min": 0, "max": 5, "default": 0, "normal": -1, "group": 2 },
+        { "index": 6, "name": "inputToCustomWave", "label": "Input to custom waveform", "type": "enum", "enum": "capture_mode", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 2 },
+        { "index": 7, "name": "adsrSmoothTransitions", "label": "ADSR smooth transitions", "type": "enum", "enum": "adsr_smooth_transition", "min": 0, "max": 3, "default": 2, "normal": -1, "group": 3 },
+        { "index": 8, "name": "noiseFilter", "label": "Noise filter", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 3 },
+        {
+          "repeat": {
+            "count": 5,
+            "startIndex": 9,
+            "idTemplate": "operator{n}.{name}",
+            "pathTemplate": "operators.{i}.{name}",
+            "items": [
+              { "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 4 },
+              { "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 10000, "default": 100, "normal": -1, "group": 4, "unit": "ms", "scale": "exp3" },
+              { "name": "decay", "label": "Decay", "type": "int32", "min": 0, "max": 10000, "default": 100, "normal": -1, "group": 4, "unit": "ms", "scale": "exp3" },
+              { "name": "sustainLevel", "label": "Sustain level", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 4 },
+              { "name": "release", "label": "Release", "type": "int32", "min": 0, "max": 10000, "default": 100, "normal": -1, "group": 4, "unit": "ms", "scale": "exp3" },
+              { "name": "attackCurve", "label": "Attack curve", "type": "enum", "enum": "adsr_curve", "min": 0, "max": 11, "default": 0, "normal": -1, "group": 4 },
+              { "name": "decayCurve", "label": "Decay curve", "type": "enum", "enum": "adsr_curve", "min": 0, "max": 11, "default": 0, "normal": -1, "group": 4 },
+              { "name": "releaseCurve", "label": "Release curve", "type": "enum", "enum": "adsr_curve", "min": 0, "max": 11, "default": 0, "normal": -1, "group": 4 },
+              { "name": "sustain", "label": "Sustain", "type": "enum", "enum": "adsr_sustain", "min": 0, "max": 2, "default": [0, 0, 0, 0, 1], "normal": -1, "group": 4 },
+              { "name": "sustainPedal", "label": "Sustain pedal", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 4 },
+              { "name": "envScaling", "label": "Envelope scaling", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 4, "displayOffset": -128 },
+              { "name": "volumeScaling", "label": "Volume scaling", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 4, "displayOffset": -128 },
+              { "name": "velocitySensitivity", "label": "Velocity sensitivity", "type": "int32", "min": 0, "max": 256, "default": 192, "normal": 192, "group": 4, "displayOffset": -128 },
+              { "name": "waveform", "label": "Waveform", "type": "enum", "enum": "fm2_waveform", "min": 0, "max": 9, "default": 6, "normal": -1, "group": 5 },
+              { "name": "noise", "label": "Noise", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 5 },
+              { "name": "phase", "label": "Phase", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 5 },
+              { "name": "freqMul", "label": "Frequency multiplier", "type": "int32", "min": 0, "max": 32000, "default": 1000, "normal": 1000, "group": 5, "unit": "1/1000", "scale": "exp3" },
+              { "name": "constPitch", "label": "Constant pitch", "type": "int32", "min": 0, "max": 16384, "default": 8192, "normal": 8192, "group": 5, "displayOffset": -8192, "unit": "semitone/64" },
+              { "name": "selfMod", "label": "Self-modulation", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 5 },
+              { "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 5, "scale": "exp3" },
+              { "name": "modulationType", "label": "Modulation type", "type": "enum", "enum": "modulation_type2", "min": 0, "max": 11, "default": 0, "normal": -1, "group": 5 },
+              { "name": "outputMode", "label": "Output mode", "type": "int32", "min": 0, "max": [15, 7, 3, 1], "default": [0, 0, 0, 2], "normal": -1, "group": 5, "repeatCount": 4 }
+            ]
+          }
+        },
+        { "index": 118, "name": "envelopeGain", "label": "Envelope gain", "type": "int32", "min": 0, "max": 8000, "default": 1000, "normal": 1000, "group": 3, "unit": "1/1000" }
       ]
     },
     "Glide": {

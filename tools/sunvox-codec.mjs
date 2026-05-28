@@ -17,6 +17,7 @@ const CHUNKS_BY_ID = new Map(SUNVOX_DB.chunks.map((chunk) => [chunk.id, chunk]))
 const CHUNK_DESCRIPTIONS = Object.fromEntries(
   SUNVOX_DB.chunks.map((chunk) => [chunk.id, chunk.label]),
 );
+const MODULE_CONTROLLER_CACHE = new Map();
 const PATTERN_CHUNKS = scopedChunkSet("pattern");
 const MODULE_CHUNKS = scopedChunkSet("module");
 
@@ -431,8 +432,9 @@ function setPath(object, path, value) {
   }
   const segments = path.split(".");
   let current = object;
-  for (const segment of segments.slice(0, -1)) {
-    current[segment] ??= {};
+  for (const [index, segment] of segments.slice(0, -1).entries()) {
+    const nextSegment = segments[index + 1];
+    current[segment] ??= /^\d+$/u.test(nextSegment) ? [] : {};
     current = current[segment];
   }
   current[segments.at(-1)] = value;
@@ -526,6 +528,69 @@ function moduleDataDefinition(type, index) {
     definition?.dataChunks?.find((chunk) => chunk.index === index) ??
     definition?.dataChunkRanges?.find((chunk) => index >= chunk.start && index <= chunk.end)
   );
+}
+
+function expandControllerTemplate(template, context) {
+  if (typeof template !== "string") {
+    return template;
+  }
+  return template
+    .replaceAll("{i}", String(context.index))
+    .replaceAll("{n}", String(context.number))
+    .replaceAll("{name}", context.name ?? "");
+}
+
+function repeatValue(value, index) {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+  return value[index] ?? value.at(-1);
+}
+
+function expandControllerDefinitions(controllers) {
+  const expanded = [];
+  for (const controller of controllers ?? []) {
+    if (!controller.repeat) {
+      expanded.push(controller);
+      continue;
+    }
+
+    const repeat = controller.repeat;
+    const items = repeat.items ?? [];
+    let chunkIndex = repeat.startIndex ?? 0;
+    for (const item of items) {
+      const count = item.repeatCount ?? repeat.count ?? 0;
+      for (let repeatIndex = 0; repeatIndex < count; repeatIndex += 1) {
+        const context = { index: repeatIndex, number: repeatIndex + 1, name: item.name };
+        const definition = { ...item, index: chunkIndex };
+        delete definition.repeatCount;
+        definition.name = expandControllerTemplate(item.idTemplate ?? repeat.idTemplate, context) ?? item.name;
+        definition.path =
+          expandControllerTemplate(item.pathTemplate ?? repeat.pathTemplate, context) ??
+          definition.name;
+        for (const key of ["label", "min", "max", "default", "normal", "group"]) {
+          definition[key] = repeatValue(definition[key], repeatIndex);
+        }
+        expanded.push(definition);
+        chunkIndex += 1;
+      }
+    }
+  }
+  return expanded;
+}
+
+function moduleControllers(type) {
+  if (!type) {
+    return [];
+  }
+  if (!MODULE_CONTROLLER_CACHE.has(type)) {
+    MODULE_CONTROLLER_CACHE.set(type, expandControllerDefinitions(moduleDefinition(type)?.controllers));
+  }
+  return MODULE_CONTROLLER_CACHE.get(type);
+}
+
+function controllerPath(controller) {
+  return controller.path ?? controller.name;
 }
 
 function decodeMetaModuleControllerName(text) {
@@ -951,16 +1016,16 @@ function encodeControllerValue(definition, value) {
 }
 
 function decodeModuleControllers(type, controllerValues) {
-  const definition = moduleDefinition(type);
-  if (!definition?.controllers || controllerValues.length === 0) {
+  const definitions = moduleControllers(type);
+  if (definitions.length === 0 || controllerValues.length === 0) {
     return controllerValues.length ? controllerValues : undefined;
   }
   const controllers = {};
   const knownIndexes = new Set();
-  for (const controller of definition.controllers) {
+  for (const controller of definitions) {
     knownIndexes.add(controller.index);
     if (controllerValues[controller.index] !== undefined) {
-      controllers[controller.name] = decodeControllerValue(controller, controllerValues[controller.index]);
+      setPath(controllers, controllerPath(controller), decodeControllerValue(controller, controllerValues[controller.index]));
     }
   }
   for (let index = 0; index < controllerValues.length; index += 1) {
@@ -981,12 +1046,12 @@ function syncModuleControllers(type, controllers, controllerChunks) {
     });
     return;
   }
-  const definition = moduleDefinition(type);
-  if (!definition?.controllers || !controllers || typeof controllers !== "object") {
+  const definitions = moduleControllers(type);
+  if (definitions.length === 0 || !controllers || typeof controllers !== "object") {
     return;
   }
-  for (const controller of definition.controllers) {
-    const value = controllers[controller.name];
+  for (const controller of definitions) {
+    const value = getPath(controllers, controllerPath(controller));
     const chunk = controllerChunks[controller.index];
     if (value !== undefined && chunk) {
       chunk.value = encodeControllerValue(controller, value);
@@ -1007,13 +1072,13 @@ function controllerValuesFromObject(type, controllers) {
   if (Array.isArray(controllers)) {
     return controllers;
   }
-  const definition = moduleDefinition(type);
-  if (!definition?.controllers || !controllers || typeof controllers !== "object") {
+  const definitions = moduleControllers(type);
+  if (definitions.length === 0 || !controllers || typeof controllers !== "object") {
     return undefined;
   }
   const values = [];
-  for (const controller of definition.controllers) {
-    const value = controllers[controller.name];
+  for (const controller of definitions) {
+    const value = getPath(controllers, controllerPath(controller));
     if (value !== undefined) {
       values[controller.index] = encodeControllerValue(controller, value);
     }

@@ -14,7 +14,8 @@ can either interpret it directly or generate conversion code from it later.
   bindings.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
 - `modules`: describes module-specific controller layouts and data chunk
-  layouts.
+  layouts. Controller definitions can use `path` for nested semantic output and
+  `repeat` for repeated layouts such as FMX operators.
 
 The initial database covers the chunk labels already used by the codec,
 project/pattern/module chunk order, project/pattern/module flag bits, `CMID`
@@ -24,9 +25,11 @@ as an embedded SunVox container, allowing the codec to recurse into it instead
 of keeping that payload as opaque base64. Additional `MetaModule` data chunk
 definitions describe user controller links, options, and custom controller
 names through reusable layout types such as `packedUInt32Array`, `struct`,
-`recordArray`, and `string`. `MultiCtl` definitions cover its named
-controllers, output slots, and 16-bit response curve. `Sound2Ctl` definitions
-cover its named controllers and two-byte options chunk.
+`recordArray`, and `string`. Controller metadata now covers common generators
+and effects including FMX, Analog generator, Filter Pro, Delay, Echo, Glide,
+Modulator, WaveShaper, MultiSynth, MultiCtl, Sound2Ctl, and several utility
+modules. FMX uses a repeated operator template so the editable text contains an
+`operators` array instead of a long raw controller list.
 
 ## Round-Trip Policy
 

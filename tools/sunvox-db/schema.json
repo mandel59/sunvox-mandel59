@@ -210,10 +210,11 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["index", "name", "type"],
+              "anyOf": [{ "required": ["index", "name", "type"] }, { "required": ["repeat"] }],
               "properties": {
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
+                "path": { "type": "string" },
                 "label": { "type": "string" },
                 "type": { "enum": ["int32", "enum"] },
                 "enum": { "type": "string" },
@@ -221,7 +222,43 @@
                 "max": { "type": "integer" },
                 "default": { "type": "integer" },
                 "normal": { "type": "integer" },
-                "group": { "type": "integer" }
+                "group": { "type": "integer" },
+                "repeat": {
+                  "type": "object",
+                  "required": ["count", "startIndex", "items"],
+                  "properties": {
+                    "count": { "type": "integer", "minimum": 1 },
+                    "startIndex": { "type": "integer", "minimum": 0 },
+                    "idTemplate": { "type": "string" },
+                    "pathTemplate": { "type": "string" },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["name", "type"],
+                        "properties": {
+                          "name": { "type": "string" },
+                          "label": { "type": "string" },
+                          "type": { "enum": ["int32", "enum"] },
+                          "enum": { "type": "string" },
+                          "min": {},
+                          "max": {},
+                          "default": {},
+                          "normal": {},
+                          "group": {},
+                          "unit": { "type": "string" },
+                          "scale": { "type": "string" },
+                          "displayOffset": {},
+                          "repeatCount": { "type": "integer", "minimum": 1 },
+                          "pathTemplate": { "type": "string" },
+                          "idTemplate": { "type": "string" }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  "additionalProperties": true
+                }
               },
               "additionalProperties": true
             }
