@@ -4,3 +4,6 @@
 *.log
 *.tmp
 *.bak
+
+node_modules/
+dist/

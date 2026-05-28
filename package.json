@@ -1,0 +1,14 @@
+{
+  "name": "sunvox-mandel59",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config tools/vite.config.mjs",
+    "build": "node tools/build.mjs",
+    "preview": "vite preview --config tools/vite.config.mjs"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "vite": "^7.0.0"
+  }
+}
