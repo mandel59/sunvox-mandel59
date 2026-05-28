@@ -39,6 +39,9 @@ test("parses synth into a structured module", async () => {
   assert.equal(document.module.type, "MetaModule");
   assert.match(document.module.color ?? "", /^#[0-9a-f]{6}$/);
   assert.equal(document.module.chunks, undefined);
+  assert.equal(document.module.dataChunks[0].name, "embeddedProject");
+  assert.equal(document.module.dataChunks[0].container.magic, "SVOX");
+  assert.equal(document.module.dataChunks[0].container.project.name, "Shepard tone");
   assert.deepEqual(document.module.midi, {
     inputIndex: 0,
     inputChannel: 0,

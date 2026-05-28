@@ -42,7 +42,9 @@ export type ModuleControllers =
 
 export interface ModuleDataChunk {
   index: number;
+  name?: string;
   base64?: string;
+  container?: StructuredSunVoxTextDocument;
   flags?: number;
   sampleRate?: number;
   chunk?: EditableSunVoxChunk;

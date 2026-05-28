@@ -665,6 +665,36 @@ function moduleDefinition(type) {
   return type ? SUNVOX_DB.modules[type] : undefined;
 }
 
+function moduleDataDefinition(type, index) {
+  return moduleDefinition(type)?.dataChunks?.find((chunk) => chunk.index === index);
+}
+
+function decodeModuleDataChunk(type, index, chunk) {
+  const definition = moduleDataDefinition(type, index);
+  const dataChunk = { index };
+  if (definition?.name) {
+    dataChunk.name = definition.name;
+  }
+
+  if (chunk.base64 !== undefined) {
+    const data = decodeBase64(chunk.base64, `module data chunk ${index}`);
+    const magic = data.length >= 4 ? toAscii(data.subarray(0, 4)) : undefined;
+    if (
+      definition?.type === "container" &&
+      SUPPORTED_MAGICS.has(magic) &&
+      (!definition.magic || definition.magic.includes(magic))
+    ) {
+      dataChunk.container = parseContainer(data);
+    } else {
+      dataChunk.base64 = chunk.base64;
+    }
+    return dataChunk;
+  }
+
+  dataChunk.chunk = cloneJson(chunk);
+  return dataChunk;
+}
+
 function decodeControllerValue(definition, value) {
   if (definition?.type === "enum") {
     return enumToName(definition.enum, value);
@@ -778,7 +808,7 @@ function setChunkField(chunks, id, field, value) {
   chunk[field] = value;
 }
 
-function consumeModuleDataChunks(chunks, target, used) {
+function consumeModuleDataChunks(chunks, target, used, type) {
   const dataChunks = [];
   for (let index = 0; index < chunks.length; index += 1) {
     const chunk = chunks[index];
@@ -801,11 +831,7 @@ function consumeModuleDataChunks(chunks, target, used) {
 
     const data = chunks[index + 1];
     if (data?.id === "CHDT" && !used.has(index + 1)) {
-      if (data.base64 !== undefined) {
-        dataChunk.base64 = data.base64;
-      } else {
-        dataChunk.chunk = cloneJson(data);
-      }
+      Object.assign(dataChunk, decodeModuleDataChunk(type, dataChunk.index, data));
       used.add(index + 1);
       index += 1;
     }
@@ -843,6 +869,12 @@ function makeModuleDataChunks(module) {
     chunks.push(makeSemanticChunk("CHNM", "value", dataChunk.index ?? 0));
     if (dataChunk.chunk) {
       chunks.push(cloneJson(dataChunk.chunk));
+    } else if (dataChunk.container) {
+      chunks.push({
+        id: "CHDT",
+        _label: chunkLabel("CHDT"),
+        base64: buildContainer(dataChunk.container).toString("base64"),
+      });
     } else {
       chunks.push({
         id: "CHDT",
@@ -903,13 +935,32 @@ function makeModule(chunks) {
     module.midiBindings = chunks[midiIndex].midiBindings;
     used.add(midiIndex);
   }
-  consumeModuleDataChunks(chunks, module, used);
+  consumeModuleDataChunks(chunks, module, used, type);
   consumeTerminator("module", chunks, used);
   const extraChunks = remainingChunks(chunks, used);
   if (extraChunks.length) {
     module.extraChunks = extraChunks;
   }
   return module;
+}
+
+function isPatternStart(chunks, index) {
+  const id = chunks[index]?.id;
+  if (!PATTERN_CHUNKS.has(id)) {
+    return false;
+  }
+  if (id !== "PATT" && id !== "PATL") {
+    return true;
+  }
+  for (let cursor = index; cursor < chunks.length; cursor += 1) {
+    if (chunks[cursor].id === "PEND") {
+      return true;
+    }
+    if (cursor > index && MODULE_CHUNKS.has(chunks[cursor].id)) {
+      return false;
+    }
+  }
+  return false;
 }
 
 function groupStructuredDocument(document) {
@@ -938,7 +989,7 @@ function groupStructuredDocument(document) {
 
   for (let index = 0; index < chunks.length; ) {
     const chunk = chunks[index];
-    if (PATTERN_CHUNKS.has(chunk.id)) {
+    if (isPatternStart(chunks, index)) {
       const patternChunks = [];
       while (index < chunks.length) {
         const current = chunks[index++];

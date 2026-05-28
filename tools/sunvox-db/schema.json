@@ -94,6 +94,23 @@
       "additionalProperties": {
         "type": "object",
         "properties": {
+          "dataChunks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["index", "name", "type"],
+              "properties": {
+                "index": { "type": "integer", "minimum": 0 },
+                "name": { "type": "string" },
+                "type": { "enum": ["container"] },
+                "magic": {
+                  "type": "array",
+                  "items": { "enum": ["SVOX", "SSYN"] }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
           "controllers": {
             "type": "array",
             "items": {

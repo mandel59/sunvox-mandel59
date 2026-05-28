@@ -152,13 +152,13 @@
           { "chunk": "PICO", "path": "iconBase64", "field": "base64" },
           { "chunk": "PFGC", "path": "foreground", "field": "rgb" },
           { "chunk": "PBGC", "path": "background", "field": "rgb" },
-          { "chunk": "PNME", "path": "name", "field": "text", "textSize": 32 },
+          { "chunk": "PNME", "path": "name", "field": "text" },
           { "chunk": "PPAR", "path": "parent", "field": "value" },
           { "chunk": "PFFF", "path": "flags", "field": "value" },
           { "chunk": "PXXX", "path": "position.x", "field": "value" },
           { "chunk": "PYYY", "path": "position.y", "field": "value" }
         ],
-        "order": ["PATT", "PATL", "PDTA", "PCHN", "PLIN", "PYSZ", "PFLG", "PICO", "PFGC", "PBGC", "PNME", "PPAR", "PFFF", "PXXX", "PYYY", "extraChunks", "PEND"]
+        "order": ["PATT", "PATL", "PDTA", "PNME", "PCHN", "PLIN", "PYSZ", "PFLG", "PICO", "PFGC", "PBGC", "PPAR", "PFFF", "PXXX", "PYYY", "extraChunks", "PEND"]
       },
       "module": {
         "terminator": "SEND",
@@ -190,6 +190,9 @@
   },
   "modules": {
     "MetaModule": {
+      "dataChunks": [
+        { "index": 0, "name": "embeddedProject", "type": "container", "magic": ["SVOX"] }
+      ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "inputModule", "label": "Input module", "type": "int32", "min": 1, "max": 256, "default": 1, "normal": -1, "group": 1 },
