@@ -202,6 +202,23 @@ test("decodes MultiSynth controllers", async () => {
   });
 });
 
+test("decodes common effect and generator controllers", async () => {
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const document = parseContainer(buffer);
+  const compressor = document.modules.find((module) => module.type === "Compressor");
+  const drumSynth = document.modules.find((module) => module.type === "DrumSynth");
+  const amplifier = document.modules.find((module) => module.type === "Amplifier");
+  const reverb = document.modules.find((module) => module.type === "Reverb");
+
+  assert.equal(compressor.controllers.mode, "peak");
+  assert.equal(compressor.controllers.sideChainInput, 1);
+  assert.equal(drumSynth.controllers.bassVolume, 200);
+  assert.equal(amplifier.controllers.inverse, "off");
+  assert.equal(amplifier.controllers.fineVolume, 32768);
+  assert.equal(reverb.controllers.mode, "hq");
+  assert.equal(reverb.controllers.allpassFilter, "on");
+});
+
 test("decodes Sound2Ctl controllers and options", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);

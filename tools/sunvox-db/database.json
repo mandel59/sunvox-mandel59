@@ -108,6 +108,22 @@
     "sound2ctl_mode": {
       "0": "lq",
       "1": "hq"
+    },
+    "compressor_mode": {
+      "0": "peak",
+      "1": "rms",
+      "2": "peakZeroLatency"
+    },
+    "reverb_mode": {
+      "0": "hq",
+      "1": "hqMono",
+      "2": "lq",
+      "3": "lqMono"
+    },
+    "allpass_filter": {
+      "0": "off",
+      "1": "on",
+      "2": "improved"
     }
   },
   "bitfields": {
@@ -280,6 +296,49 @@
     }
   },
   "modules": {
+    "Amplifier": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "balance", "label": "Balance", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 2, "name": "dcOffset", "label": "DC offset", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 1, "displayOffset": -128 },
+        { "index": 3, "name": "inverse", "label": "Inverse", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": 1, "group": 1 },
+        { "index": 4, "name": "stereoWidth", "label": "Stereo width", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 1 },
+        { "index": 5, "name": "absolute", "label": "Absolute", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": 1, "group": 1 },
+        { "index": 6, "name": "fineVolume", "label": "Fine volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 0 },
+        { "index": 7, "name": "gain", "label": "Gain", "type": "int32", "min": 0, "max": 5000, "default": 1, "normal": 1, "group": 0 },
+        { "index": 8, "name": "bipolarDcOffset", "label": "Bipolar DC offset", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 1, "displayOffset": -16384 }
+      ]
+    },
+    "Compressor": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "threshold", "label": "Threshold", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 1 },
+        { "index": 2, "name": "slope", "label": "Slope", "type": "int32", "min": 0, "max": 200, "default": 100, "normal": 100, "group": 1, "unit": "%" },
+        { "index": 3, "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 500, "default": 1, "normal": -1, "group": 1, "unit": "ms" },
+        { "index": 4, "name": "release", "label": "Release", "type": "int32", "min": 1, "max": 1000, "default": 300, "normal": -1, "group": 1, "unit": "ms" },
+        { "index": 5, "name": "mode", "label": "Mode", "type": "enum", "enum": "compressor_mode", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 2 },
+        { "index": 6, "name": "sideChainInput", "label": "Side chain input", "type": "int32", "min": 0, "max": 32, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
+    "DrumSynth": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 2, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 8, "default": 4, "normal": -1, "group": 0 },
+        { "index": 3, "name": "bassVolume", "label": "Bass volume", "type": "int32", "min": 0, "max": 512, "default": 200, "normal": 256, "group": 1 },
+        { "index": 4, "name": "bassPower", "label": "Bass power", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": 256, "group": 1 },
+        { "index": 5, "name": "bassTone", "label": "Bass tone", "type": "int32", "min": 0, "max": 256, "default": 64, "normal": 256, "group": 1 },
+        { "index": 6, "name": "bassLength", "label": "Bass length", "type": "int32", "min": 0, "max": 256, "default": 64, "normal": 256, "group": 1 },
+        { "index": 7, "name": "hihatVolume", "label": "HiHat volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 2 },
+        { "index": 8, "name": "hihatLength", "label": "HiHat length", "type": "int32", "min": 0, "max": 256, "default": 64, "normal": 256, "group": 2 },
+        { "index": 9, "name": "snareVolume", "label": "Snare volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 3 },
+        { "index": 10, "name": "snareTone", "label": "Snare tone", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 256, "group": 3 },
+        { "index": 11, "name": "snareLength", "label": "Snare length", "type": "int32", "min": 0, "max": 256, "default": 64, "normal": 256, "group": 3 },
+        { "index": 12, "name": "bassPan", "label": "Bass pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 1, "displayOffset": -128 },
+        { "index": 13, "name": "hihatPan", "label": "HiHat pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 2, "displayOffset": -128 },
+        { "index": 14, "name": "snarePan", "label": "Snare pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 3, "displayOffset": -128 }
+      ]
+    },
     "MetaModule": {
       "dataChunks": [
         { "index": 0, "name": "embeddedProject", "type": "container", "magic": ["SVOX"] },
@@ -387,6 +446,20 @@
         { "index": 6, "name": "outMin", "label": "OUT min", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1 },
         { "index": 7, "name": "outMax", "label": "OUT max", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 1 },
         { "index": 8, "name": "outController", "label": "OUT controller", "type": "int32", "min": 0, "max": 255, "default": 0, "normal": -1, "group": 1 }
+      ]
+    },
+    "Reverb": {
+      "controllers": [
+        { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 256, "default": 40, "normal": -1, "group": 0 },
+        { "index": 2, "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1 },
+        { "index": 3, "name": "damp", "label": "Damp", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 1 },
+        { "index": 4, "name": "stereoWidth", "label": "Stereo width", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1 },
+        { "index": 5, "name": "freeze", "label": "Freeze", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 2 },
+        { "index": 6, "name": "mode", "label": "Mode", "type": "enum", "enum": "reverb_mode", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 2 },
+        { "index": 7, "name": "allpassFilter", "label": "All-pass filter", "type": "enum", "enum": "allpass_filter", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 2 },
+        { "index": 8, "name": "roomSize", "label": "Room size", "type": "int32", "min": 0, "max": 128, "default": 16, "normal": -1, "group": 2 },
+        { "index": 9, "name": "randomSeed", "label": "Random seed", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 2 }
       ]
     }
   }
