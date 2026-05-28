@@ -1,5 +1,6 @@
 /var/*
 !/var/.gitkeep
+/sunvox_lib/lib_sunvox/
 
 *.log
 *.tmp

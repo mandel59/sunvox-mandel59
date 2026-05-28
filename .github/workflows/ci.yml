@@ -26,6 +26,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache SunVox library
+        uses: actions/cache@v4
+        with:
+          path: |
+            var/sunvox_lib-2.1.4d.zip
+            var/sunvox_lib
+          key: sunvox-lib-2.1.4d-abe851de9d65a10e06673bf33257154591a2ff63ad2bb298488a5941cc5f4057
+
+      - name: Install SunVox library
+        run: sh scripts/install_sunvox_lib.sh
+
       - name: Test
         run: npm test
 
