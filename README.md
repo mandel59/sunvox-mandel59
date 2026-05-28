@@ -16,7 +16,8 @@ The codec uses the machine-readable database under
 [tools/sunvox-db](tools/sunvox-db/) to translate module controllers, enums, and
 packed bitfields into editable names, and to emit chunks in the canonical order
 for each structured scope. MetaModule project payloads are decoded recursively
-when they contain an embedded SunVox container.
+when they contain an embedded SunVox container; MetaModule user controller
+links, options, and custom controller names are decoded into named fields.
 
 ```sh
 npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json

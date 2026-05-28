@@ -112,6 +112,15 @@
       ]
     }
   },
+  "bitflags": {
+    "metamodule_option_flags": [
+      { "name": "forceGenerator", "bit": 0 },
+      { "name": "forceNotGenerator", "bit": 1 },
+      { "name": "autoBpmTpl", "bit": 2 },
+      { "name": "ignoreEffect31AfterLastNoteOff", "bit": 3 },
+      { "name": "jumpToReleasePatternAfterLastNoteOff", "bit": 4 }
+    ]
+  },
   "grammar": {
     "scopes": {
       "project": {
@@ -191,7 +200,12 @@
   "modules": {
     "MetaModule": {
       "dataChunks": [
-        { "index": 0, "name": "embeddedProject", "type": "container", "magic": ["SVOX"] }
+        { "index": 0, "name": "embeddedProject", "type": "container", "magic": ["SVOX"] },
+        { "index": 1, "name": "controllerLinks", "type": "metamoduleControllerLinks", "count": 96 },
+        { "index": 2, "name": "options", "type": "metamoduleOptions", "flags": "metamodule_option_flags" }
+      ],
+      "dataChunkRanges": [
+        { "start": 8, "end": 103, "name": "userControllerName", "type": "metamoduleControllerName", "indexOffset": 8 }
       ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },

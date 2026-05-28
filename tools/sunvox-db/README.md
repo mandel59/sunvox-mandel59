@@ -16,7 +16,9 @@ The initial database covers the chunk labels already used by the codec,
 project/pattern/module chunk order, `CMID` MIDI binding bitfields, and the core
 `MetaModule` controllers. It also identifies the first `MetaModule` data chunk
 as an embedded SunVox container, allowing the codec to recurse into it instead
-of keeping that payload as opaque base64.
+of keeping that payload as opaque base64. Additional `MetaModule` data chunk
+definitions describe user controller links, options, and custom controller
+names.
 
 ## Round-Trip Policy
 

@@ -149,6 +149,25 @@ test("encodes named MetaModule controller and MIDI binding values", async () => 
   });
 });
 
+test("decodes MetaModule controller link and option data chunks", async () => {
+  const buffer = await readFile("instruments/mandel59 SuperSaw.sunsynth");
+  const document = parseContainer(buffer);
+  const links = document.module.dataChunks.find((chunk) => chunk.name === "controllerLinks");
+  const options = document.module.dataChunks.find((chunk) => chunk.name === "options");
+  const firstName = document.module.dataChunks.find((chunk) => chunk.name === "userControllerName");
+
+  assert.deepEqual(links.links[0], { index: 0, module: 16, controller: 0 });
+  assert.equal(options.options.userControllers, 9);
+  assert.equal(options.options.eventOutput, true);
+  assert.deepEqual(firstName, {
+    index: 8,
+    name: "userControllerName",
+    controller: 0,
+    group: 2,
+    label: "Detune 1",
+  });
+});
+
 test("decodes primitive chunk payloads", () => {
   const intData = Buffer.alloc(4);
   intData.writeInt32LE(-12);

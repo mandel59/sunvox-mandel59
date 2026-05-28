@@ -229,6 +229,29 @@ function packBitfield(bitfieldName, value) {
   return packed >>> 0;
 }
 
+function decodeBitflags(bitflagName, value) {
+  const definition = SUNVOX_DB.bitflags?.[bitflagName] ?? [];
+  const result = {};
+  for (const flag of definition) {
+    result[flag.name] = Boolean(value & (1 << flag.bit));
+  }
+  return result;
+}
+
+function encodeBitflags(bitflagName, value) {
+  if (typeof value === "number") {
+    return value >>> 0;
+  }
+  const definition = SUNVOX_DB.bitflags?.[bitflagName] ?? [];
+  let result = 0;
+  for (const flag of definition) {
+    if (value?.[flag.name]) {
+      result |= 1 << flag.bit;
+    }
+  }
+  return result >>> 0;
+}
+
 function decodeMidiBinding(midiPars1, midiPars2) {
   return {
     ...unpackBitfield("midi_pars1", midiPars1),
@@ -666,7 +689,85 @@ function moduleDefinition(type) {
 }
 
 function moduleDataDefinition(type, index) {
-  return moduleDefinition(type)?.dataChunks?.find((chunk) => chunk.index === index);
+  const definition = moduleDefinition(type);
+  return (
+    definition?.dataChunks?.find((chunk) => chunk.index === index) ??
+    definition?.dataChunkRanges?.find((chunk) => index >= chunk.start && index <= chunk.end)
+  );
+}
+
+function decodeMetaModuleControllerLinks(data, count) {
+  const links = [];
+  for (let offset = 0, index = 0; offset + 4 <= data.length; offset += 4, index += 1) {
+    const value = data.readUInt32LE(offset);
+    if (value === 0) {
+      continue;
+    }
+    links.push({
+      index,
+      module: value & 0xffff,
+      controller: (value >>> 16) & 0xffff,
+    });
+  }
+  return {
+    count: count ?? Math.floor(data.length / 4),
+    links,
+  };
+}
+
+function encodeMetaModuleControllerLinks(dataChunk) {
+  const count = dataChunk.count ?? 96;
+  const buffer = Buffer.alloc(count * 4);
+  for (const link of dataChunk.links ?? []) {
+    const index = link.index;
+    if (!Number.isInteger(index) || index < 0 || index >= count) {
+      throw new Error(`Invalid MetaModule controller link index: ${index}`);
+    }
+    const value = ((link.controller ?? 0) << 16) | (link.module ?? 0);
+    buffer.writeUInt32LE(value >>> 0, index * 4);
+  }
+  return buffer;
+}
+
+function decodeMetaModuleOptions(data, flagsName) {
+  return {
+    userControllers: data.readUInt8(0),
+    arpeggiator: Boolean(data.readUInt8(1)),
+    useVelocity: Boolean(data.readUInt8(2)),
+    eventOutput: !Boolean(data.readUInt8(3)),
+    flags: decodeBitflags(flagsName, data.length >= 8 ? data.readUInt32LE(4) : 0),
+  };
+}
+
+function encodeMetaModuleOptions(dataChunk, flagsName) {
+  const options = dataChunk.options ?? {};
+  const buffer = Buffer.alloc(8);
+  buffer.writeUInt8(options.userControllers ?? 0, 0);
+  buffer.writeUInt8(options.arpeggiator ? 1 : 0, 1);
+  buffer.writeUInt8(options.useVelocity ? 1 : 0, 2);
+  buffer.writeUInt8(options.eventOutput === false ? 1 : 0, 3);
+  buffer.writeUInt32LE(encodeBitflags(flagsName, options.flags ?? 0), 4);
+  return buffer;
+}
+
+function decodeMetaModuleControllerName(text) {
+  const match = /^@([0-9a-fA-F])(.*)$/u.exec(text);
+  if (match) {
+    return {
+      group: Number.parseInt(match[1], 16),
+      label: match[2],
+    };
+  }
+  return { label: text };
+}
+
+function encodeMetaModuleControllerName(dataChunk) {
+  const text =
+    dataChunk.text ??
+    (dataChunk.group !== undefined
+      ? `@${Number(dataChunk.group).toString(16)}${dataChunk.label ?? ""}`
+      : dataChunk.label ?? "");
+  return Buffer.from(`${text}\0`, "utf8");
 }
 
 function decodeModuleDataChunk(type, index, chunk) {
@@ -674,6 +775,9 @@ function decodeModuleDataChunk(type, index, chunk) {
   const dataChunk = { index };
   if (definition?.name) {
     dataChunk.name = definition.name;
+  }
+  if (definition?.indexOffset !== undefined) {
+    dataChunk.controller = index - definition.indexOffset;
   }
 
   if (chunk.base64 !== undefined) {
@@ -685,6 +789,17 @@ function decodeModuleDataChunk(type, index, chunk) {
       (!definition.magic || definition.magic.includes(magic))
     ) {
       dataChunk.container = parseContainer(data);
+    } else if (definition?.type === "metamoduleControllerLinks" && data.length % 4 === 0) {
+      Object.assign(dataChunk, decodeMetaModuleControllerLinks(data, definition.count));
+    } else if (definition?.type === "metamoduleOptions" && data.length >= 4) {
+      dataChunk.options = decodeMetaModuleOptions(data, definition.flags);
+    } else if (definition?.type === "metamoduleControllerName") {
+      const text = decodeCString(data);
+      if (text !== undefined) {
+        Object.assign(dataChunk, decodeMetaModuleControllerName(text));
+      } else {
+        dataChunk.base64 = chunk.base64;
+      }
     } else {
       dataChunk.base64 = chunk.base64;
     }
@@ -874,6 +989,25 @@ function makeModuleDataChunks(module) {
         id: "CHDT",
         _label: chunkLabel("CHDT"),
         base64: buildContainer(dataChunk.container).toString("base64"),
+      });
+    } else if (dataChunk.links) {
+      chunks.push({
+        id: "CHDT",
+        _label: chunkLabel("CHDT"),
+        base64: encodeMetaModuleControllerLinks(dataChunk).toString("base64"),
+      });
+    } else if (dataChunk.options) {
+      const definition = moduleDataDefinition(module?.type, dataChunk.index);
+      chunks.push({
+        id: "CHDT",
+        _label: chunkLabel("CHDT"),
+        base64: encodeMetaModuleOptions(dataChunk, definition?.flags).toString("base64"),
+      });
+    } else if (dataChunk.label !== undefined || dataChunk.text !== undefined) {
+      chunks.push({
+        id: "CHDT",
+        _label: chunkLabel("CHDT"),
+        base64: encodeMetaModuleControllerName(dataChunk).toString("base64"),
       });
     } else {
       chunks.push({

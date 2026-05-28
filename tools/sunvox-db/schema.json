@@ -53,6 +53,21 @@
         "additionalProperties": false
       }
     },
+    "bitflags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["name", "bit"],
+          "properties": {
+            "name": { "type": "string" },
+            "bit": { "type": "integer", "minimum": 0, "maximum": 31 }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
     "grammar": {
       "type": "object",
       "required": ["scopes"],
@@ -102,11 +117,28 @@
               "properties": {
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["container"] },
+                "type": { "enum": ["container", "metamoduleControllerLinks", "metamoduleOptions"] },
+                "count": { "type": "integer", "minimum": 0 },
+                "flags": { "type": "string" },
                 "magic": {
                   "type": "array",
                   "items": { "enum": ["SVOX", "SSYN"] }
                 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "dataChunkRanges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["start", "end", "name", "type"],
+              "properties": {
+                "start": { "type": "integer", "minimum": 0 },
+                "end": { "type": "integer", "minimum": 0 },
+                "name": { "type": "string" },
+                "type": { "enum": ["metamoduleControllerName"] },
+                "indexOffset": { "type": "integer", "minimum": 0 }
               },
               "additionalProperties": false
             }

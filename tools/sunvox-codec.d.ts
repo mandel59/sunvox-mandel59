@@ -43,6 +43,19 @@ export type ModuleControllers =
 export interface ModuleDataChunk {
   index: number;
   name?: string;
+  controller?: number;
+  count?: number;
+  links?: Array<{ index: number; module: number; controller: number }>;
+  options?: {
+    userControllers?: number;
+    arpeggiator?: boolean;
+    useVelocity?: boolean;
+    eventOutput?: boolean;
+    flags?: Record<string, boolean>;
+  };
+  group?: number;
+  label?: string;
+  text?: string;
   base64?: string;
   container?: StructuredSunVoxTextDocument;
   flags?: number;
