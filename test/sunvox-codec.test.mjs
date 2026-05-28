@@ -339,6 +339,53 @@ test("decodes Distortion controllers", async () => {
   });
 });
 
+test("decodes EQ and Velocity2Ctl controllers", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const eqs = [];
+  const velocity2Ctls = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "EQ") {
+        eqs.push(module);
+      } else if (module.type === "Velocity2Ctl") {
+        velocity2Ctls.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  assert.equal(eqs.length, 1);
+  assert.equal(velocity2Ctls.length, 2);
+  assert.deepEqual(eqs[0].controllers, {
+    low: 256,
+    middle: 142,
+    high: 256,
+    channels: "stereo",
+  });
+  assert.deepEqual(velocity2Ctls[0].controllers, {
+    onNoteOff: "doNothing",
+    outMin: 10920,
+    outMax: 32768,
+    outOffset: 16384,
+    outController: 1,
+  });
+  assert.deepEqual(velocity2Ctls[1].controllers, {
+    onNoteOff: "doNothing",
+    outMin: 1728,
+    outMax: 5016,
+    outOffset: 16384,
+    outController: 2,
+  });
+});
+
 test("decodes FMX controllers as operator structures", async () => {
   const buffer = await readFile("music/2022-04-18.sunvox");
   const document = parseContainer(buffer);
