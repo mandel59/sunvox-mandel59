@@ -105,6 +105,10 @@
       "0": "mono",
       "1": "stereo"
     },
+    "stereo_mono": {
+      "0": "stereo",
+      "1": "mono"
+    },
     "sound2ctl_mode": {
       "0": "lq",
       "1": "hq"
@@ -215,6 +219,62 @@
       "4": "line",
       "5": "line2",
       "6": "line3"
+    },
+    "delay_unit": {
+      "0": "sec16384",
+      "1": "ms",
+      "2": "hz",
+      "3": "tick",
+      "4": "line",
+      "5": "line2",
+      "6": "line3",
+      "7": "sec44100",
+      "8": "sec48000",
+      "9": "sample"
+    },
+    "echo_delay_unit": {
+      "0": "sec256",
+      "1": "ms",
+      "2": "hz",
+      "3": "tick",
+      "4": "line",
+      "5": "line2",
+      "6": "line3"
+    },
+    "echo_filter": {
+      "0": "off",
+      "1": "lp6db",
+      "2": "hp6db"
+    },
+    "modulation_type": {
+      "0": "amplitudeMul",
+      "1": "phase",
+      "2": "phaseAbsolute",
+      "3": "add",
+      "4": "sub",
+      "5": "min",
+      "6": "max",
+      "7": "bitwiseAnd",
+      "8": "bitwiseXor",
+      "9": "minAbs",
+      "10": "maxAbs"
+    },
+    "pm_delay_len": {
+      "0": "sec004",
+      "1": "sec008",
+      "2": "sec02",
+      "3": "sec05",
+      "4": "sec1",
+      "5": "sec2",
+      "6": "sec4",
+      "7": "sec8",
+      "8": "sec16",
+      "9": "sec32"
+    },
+    "sample_interp": {
+      "0": "off",
+      "1": "linear",
+      "2": "spline"
     }
   },
   "bitfields": {
@@ -437,6 +497,28 @@
         { "index": 6, "name": "sideChainInput", "label": "Side chain input", "type": "int32", "min": 0, "max": 32, "default": 0, "normal": -1, "group": 2 }
       ]
     },
+    "DC Blocker": {
+      "controllers": [
+        { "index": 0, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
+      ]
+    },
+    "Delay": {
+      "controllers": [
+        { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 2, "name": "delayL", "label": "Delay L", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 1 },
+        { "index": 3, "name": "delayR", "label": "Delay R", "type": "int32", "min": 0, "max": 256, "default": 160, "normal": -1, "group": 1 },
+        { "index": 4, "name": "volumeL", "label": "Volume L", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 2 },
+        { "index": 5, "name": "volumeR", "label": "Volume R", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 2 },
+        { "index": 6, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 },
+        { "index": 7, "name": "inverse", "label": "Inverse", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 },
+        { "index": 8, "name": "delayUnit", "label": "Delay unit", "type": "enum", "enum": "delay_unit", "min": 0, "max": 9, "default": 0, "normal": -1, "group": 1 },
+        { "index": 9, "name": "delayMultiplier", "label": "Delay multiplier", "type": "int32", "min": 1, "max": 15, "default": 1, "normal": 1, "group": 1 },
+        { "index": 10, "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 3 },
+        { "index": 11, "name": "negativeFeedback", "label": "Negative feedback", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 },
+        { "index": 12, "name": "allpassFilter", "label": "All-pass filter", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 }
+      ]
+    },
     "DrumSynth": {
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
@@ -454,6 +536,19 @@
         { "index": 12, "name": "bassPan", "label": "Bass pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 1, "displayOffset": -128 },
         { "index": 13, "name": "hihatPan", "label": "HiHat pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 2, "displayOffset": -128 },
         { "index": 14, "name": "snarePan", "label": "Snare pan", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 3, "displayOffset": -128 }
+      ]
+    },
+    "Echo": {
+      "controllers": [
+        { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 256, "default": 40, "normal": -1, "group": 0 },
+        { "index": 2, "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 1 },
+        { "index": 3, "name": "delay", "label": "Delay", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1 },
+        { "index": 4, "name": "rightChannelOffset", "label": "Right channel offset", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
+        { "index": 5, "name": "delayUnit", "label": "Delay unit", "type": "enum", "enum": "echo_delay_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 1 },
+        { "index": 6, "name": "rightChannelOffsetValue", "label": "Right channel offset value", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 1, "unit": "delay/32768" },
+        { "index": 7, "name": "filter", "label": "Filter", "type": "enum", "enum": "echo_filter", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 1 },
+        { "index": 8, "name": "filterFreq", "label": "Filter frequency", "type": "int32", "min": 0, "max": 22000, "default": 2000, "normal": -1, "group": 1, "unit": "Hz" }
       ]
     },
     "Filter Pro": {
@@ -475,6 +570,20 @@
         { "index": 14, "name": "lfoWaveform", "label": "LFO waveform", "type": "enum", "enum": "filter_lfo_waveform", "min": 0, "max": 4, "default": 0, "normal": -1, "group": 2 },
         { "index": 15, "name": "setLfoPhase", "label": "Set LFO phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
         { "index": 16, "name": "lfoFreqUnit", "label": "LFO frequency unit", "type": "enum", "enum": "filter_lfo_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
+    "Glide": {
+      "controllers": [
+        { "index": 0, "name": "response", "label": "Response", "type": "int32", "min": 0, "max": 1000, "default": 500, "normal": -1, "group": 0 },
+        { "index": 1, "name": "sampleRate", "label": "Sample rate", "type": "int32", "min": 1, "max": 32768, "default": 150, "normal": 150, "group": 0, "unit": "Hz" },
+        { "index": 2, "name": "resetOnFirstNote", "label": "Reset on first note", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 3, "name": "polyphony", "label": "Polyphony", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
+        { "index": 4, "name": "pitch", "label": "Pitch", "type": "int32", "min": 0, "max": 1200, "default": 600, "normal": 600, "group": 1, "displayOffset": -600, "unit": "semitone/10" },
+        { "index": 5, "name": "pitchScale", "label": "Pitch scale", "type": "int32", "min": 0, "max": 200, "default": 100, "normal": 100, "group": 1, "unit": "%" },
+        { "index": 6, "name": "reset", "label": "Reset", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 2 },
+        { "index": 7, "name": "octave", "label": "Octave", "type": "int32", "min": 0, "max": 20, "default": 10, "normal": 10, "group": 1 },
+        { "index": 8, "name": "freqMul", "label": "Frequency multiplier", "type": "int32", "min": 1, "max": 256, "default": 1, "normal": 1, "group": 1 },
+        { "index": 9, "name": "freqDiv", "label": "Frequency divider", "type": "int32", "min": 1, "max": 256, "default": 1, "normal": 1, "group": 1 }
       ]
     },
     "MetaModule": {
@@ -516,6 +625,15 @@
         { "index": 2, "name": "playPatterns", "label": "Play patterns", "type": "enum", "enum": "metamodule_play_patterns", "min": 0, "max": 4, "default": 0, "normal": -1, "group": 1 },
         { "index": 3, "name": "bpm", "label": "BPM", "type": "int32", "min": 1, "max": 1000, "default": 125, "normal": 125, "group": 1 },
         { "index": 4, "name": "tpl", "label": "TPL", "type": "int32", "min": 1, "max": 31, "default": 6, "normal": 6, "group": 1 }
+      ]
+    },
+    "Modulator": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "modulationType", "label": "Modulation type", "type": "enum", "enum": "modulation_type", "min": 0, "max": 10, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 3, "name": "maxPmDelayLen", "label": "Max PM delay length", "type": "enum", "enum": "pm_delay_len", "min": 0, "max": 9, "default": 0, "normal": -1, "group": 0 },
+        { "index": 4, "name": "pmInterpolation", "label": "PM interpolation", "type": "enum", "enum": "sample_interp", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 0 }
       ]
     },
     "MultiSynth": {
@@ -598,6 +716,16 @@
         { "index": 7, "name": "allpassFilter", "label": "All-pass filter", "type": "enum", "enum": "allpass_filter", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 2 },
         { "index": 8, "name": "roomSize", "label": "Room size", "type": "int32", "min": 0, "max": 128, "default": 16, "normal": -1, "group": 2 },
         { "index": 9, "name": "randomSeed", "label": "Random seed", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
+    "WaveShaper": {
+      "controllers": [
+        { "index": 0, "name": "inputVolume", "label": "Input volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "mix", "label": "Mix", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 2, "name": "outputVolume", "label": "Output volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 3, "name": "symmetric", "label": "Symmetric", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
+        { "index": 4, "name": "mode", "label": "Mode", "type": "enum", "enum": "reverb_mode", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 0 },
+        { "index": 5, "name": "dcBlocker", "label": "DC blocker", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 }
       ]
     }
   }

@@ -236,6 +236,31 @@ test("decodes Analog generator and Filter Pro controllers", async () => {
   assert.equal(filter.controllers.lfoFreqUnit, "hz002");
 });
 
+test("decodes utility and delay-style effect controllers", async () => {
+  const buffer = await readFile("music/2022-04-18.sunvox");
+  const document = parseContainer(buffer);
+  const dcBlocker = document.modules.find((module) => module.type === "DC Blocker");
+  const metaModule = document.modules.find((module) => module.name === "Vox NOT-09");
+  const embedded = metaModule.dataChunks[0].container;
+  const glide = embedded.modules.find((module) => module.type === "Glide");
+  const modulator = embedded.modules.find((module) => module.type === "Modulator");
+  const delay = embedded.modules.find((module) => module.type === "Delay");
+  const echo = embedded.modules.find((module) => module.type === "Echo");
+  const waveShaper = embedded.modules.find((module) => module.type === "WaveShaper");
+
+  assert.equal(dcBlocker.controllers.channels, "stereo");
+  assert.equal(glide.controllers.polyphony, "on");
+  assert.equal(glide.controllers.resetOnFirstNote, "off");
+  assert.equal(modulator.controllers.modulationType, "phase");
+  assert.equal(modulator.controllers.channels, "mono");
+  assert.equal(delay.controllers.channels, "mono");
+  assert.equal(delay.controllers.delayUnit, "ms");
+  assert.equal(echo.controllers.delayUnit, "ms");
+  assert.equal(echo.controllers.filter, "off");
+  assert.equal(waveShaper.controllers.symmetric, "on");
+  assert.equal(waveShaper.controllers.dcBlocker, "on");
+});
+
 test("decodes Sound2Ctl controllers and options", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
