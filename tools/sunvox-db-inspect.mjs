@@ -274,6 +274,9 @@ export function collectCoverage(sampleRoots = DEFAULT_SAMPLE_ROOTS) {
     moduleCount: modules.length,
     moduleTypes: [...moduleTypes.entries()].sort(([a], [b]) => compareText(a, b)),
     dbModuleTypes: Object.keys(SUNVOX_DB.modules).sort(compareText),
+    unusedDbModuleTypes: Object.keys(SUNVOX_DB.modules)
+      .filter((moduleType) => !moduleTypes.has(moduleType))
+      .sort(compareText),
     missingDbTypes: [...missingDbTypes.entries()].sort(([a], [b]) => compareText(a, b)),
     rawControllers,
     controllerExtras,
@@ -812,6 +815,12 @@ function formatCoverage(coverage, options = {}) {
         { header: "type", value: (row) => row.type },
         { header: "count", value: (row) => row.count },
       ],
+    ),
+    "",
+    "DB module types not covered by samples:",
+    formatTable(
+      coverage.unusedDbModuleTypes.map((type) => ({ type })),
+      [{ header: "type", value: (row) => row.type }],
     ),
     "",
     "Raw controller arrays by type:",

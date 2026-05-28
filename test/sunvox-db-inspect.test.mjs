@@ -1,8 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { collectDbCheck } from "../tools/sunvox-db-inspect.mjs";
+import { collectCoverage, collectDbCheck } from "../tools/sunvox-db-inspect.mjs";
 import { SUNVOX_DB } from "../tools/sunvox-codec.mjs";
+
+test("coverage reports DB module types not exercised by samples", () => {
+  const coverage = collectCoverage(["instruments/mandel59 shepard.sunsynth"]);
+  const sampledDbTypes = new Set(
+    coverage.moduleTypes.map(([moduleType]) => moduleType).filter((moduleType) => SUNVOX_DB.modules[moduleType]),
+  );
+
+  for (const moduleType of Object.keys(SUNVOX_DB.modules)) {
+    assert.equal(coverage.unusedDbModuleTypes.includes(moduleType), !sampledDbTypes.has(moduleType), moduleType);
+  }
+});
 
 test("DB check validates data chunk ranges and metadata references", () => {
   const moduleName = "__BrokenDbCheckFixture";

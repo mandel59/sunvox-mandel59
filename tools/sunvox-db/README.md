@@ -56,7 +56,8 @@ npm run sunvox:verify:all
 - `coverage` decodes checked-in sample `.sunvox` and `.sunsynth` files,
   including embedded MetaModule projects, and reports module types, missing DB
   module definitions, STYP-less output/empty module slots, raw controller
-  arrays, controller extras, extra chunks, and opaque data chunks.
+  arrays, controller extras, extra chunks, opaque data chunks, plus DB module
+  definitions that are not exercised by the current sample corpus.
 - `coverage --details` includes per-module paths for raw or opaque data.
 - `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp` and compares
   source module/controller declaration counts with the DB.
@@ -73,8 +74,9 @@ npm run sunvox:verify:all
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
 - `check` validates structural DB mistakes such as duplicate controller
-  indexes, missing enum references, duplicate data chunk indexes, and simple
-  source/DB controller-count mismatches.
+  indexes, missing enum/bitfield/bitflags references, data chunk index
+  collisions across explicit chunks and ranges, and simple source/DB
+  controller-count mismatches.
 
 ## Local Quality Loop
 
