@@ -288,6 +288,34 @@
       "2": "middle",
       "3": "high"
     },
+    "spectravoice_mode": {
+      "0": "hq",
+      "1": "hqMono",
+      "2": "lq",
+      "3": "lqMono",
+      "4": "hqSpline"
+    },
+    "spectravoice_harmonic_type": {
+      "0": "hsin",
+      "1": "rect",
+      "2": "org1",
+      "3": "org2",
+      "4": "org3",
+      "5": "org4",
+      "6": "sin",
+      "7": "random",
+      "8": "triangle1",
+      "9": "triangle2",
+      "10": "overtones1",
+      "11": "overtones2",
+      "12": "overtones3",
+      "13": "overtones4",
+      "14": "overtones1Wide",
+      "15": "overtones2Wide",
+      "16": "overtones3Wide",
+      "17": "overtones4Wide",
+      "18": "metal"
+    },
     "flanger_lfo_waveform": {
       "0": "hsin",
       "1": "sin"
@@ -1022,6 +1050,23 @@
         { "index": 6, "name": "outMin", "label": "OUT min", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1 },
         { "index": 7, "name": "outMax", "label": "OUT max", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 1 },
         { "index": 8, "name": "outController", "label": "OUT controller", "type": "int32", "min": 0, "max": 255, "default": 0, "normal": -1, "group": 1 }
+      ]
+    },
+    "SpectraVoice": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
+        { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 2, "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 512, "default": 1, "normal": -1, "group": 1, "unit": "sec/256" },
+        { "index": 3, "name": "release", "label": "Release", "type": "int32", "min": 0, "max": 512, "default": 512, "normal": -1, "group": 1, "unit": "sec/256" },
+        { "index": 4, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 32, "default": 8, "normal": -1, "group": 1, "unit": "ch." },
+        { "index": 5, "name": "mode", "label": "Mode", "type": "enum", "enum": "spectravoice_mode", "min": 0, "max": 4, "default": 4, "normal": -1, "group": 1 },
+        { "index": 6, "name": "sustain", "label": "Sustain", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
+        { "index": 7, "name": "spectrumResolution", "label": "Spectrum resolution", "type": "int32", "min": 0, "max": 5, "default": 1, "normal": -5, "group": 2 },
+        { "index": 8, "name": "harmonic", "label": "Harmonic", "type": "int32", "min": 0, "max": 15, "default": 0, "normal": -1, "group": 3 },
+        { "index": 9, "name": "hFreq", "label": "H.freq", "type": "int32", "min": 0, "max": 22050, "default": 1098, "normal": 1098, "group": 3, "unit": "Hz" },
+        { "index": 10, "name": "hVolume", "label": "H.volume", "type": "int32", "min": 0, "max": 255, "default": 255, "normal": -1, "group": 3 },
+        { "index": 11, "name": "hWidth", "label": "H.width", "type": "int32", "min": 0, "max": 255, "default": 3, "normal": -1, "group": 3 },
+        { "index": 12, "name": "hType", "label": "H.type", "type": "enum", "enum": "spectravoice_harmonic_type", "min": 0, "max": 18, "default": 0, "normal": -1, "group": 3 }
       ]
     },
     "Velocity2Ctl": {

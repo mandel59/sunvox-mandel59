@@ -585,6 +585,48 @@ test("decodes FM controllers", async () => {
   });
 });
 
+test("decodes SpectraVoice controllers while preserving spectrum chunks", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const spectraVoices = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "SpectraVoice") {
+        spectraVoices.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  assert.equal(spectraVoices.length, 1);
+  assert.deepEqual(spectraVoices[0].controllers, {
+    volume: 117,
+    panning: 128,
+    attack: 72,
+    release: 34,
+    polyphony: 8,
+    mode: "hqSpline",
+    sustain: "on",
+    spectrumResolution: 1,
+    harmonic: 2,
+    hFreq: 3309,
+    hVolume: 78,
+    hWidth: 11,
+    hType: "hsin",
+  });
+  assert.deepEqual(
+    spectraVoices[0].dataChunks.map((chunk) => chunk.index),
+    [0, 1, 2, 3],
+  );
+});
+
 test("decodes FMX controllers as operator structures", async () => {
   const buffer = await readFile("music/2022-04-18.sunvox");
   const document = parseContainer(buffer);
