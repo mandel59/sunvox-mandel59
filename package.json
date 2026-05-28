@@ -12,6 +12,7 @@
     "sunvox:verify": "node tools/sunvox-codec.mjs verify",
     "sunvox:verify:all": "node tools/sunvox-verify-all.mjs",
     "sunvox:coverage:check": "node tools/sunvox-db-inspect.mjs coverage --check",
+    "sunvox:controller-diff": "node tools/sunvox-db-inspect.mjs controller-diff",
     "sunvox:inspect": "node tools/sunvox-db-inspect.mjs"
   },
   "devDependencies": {

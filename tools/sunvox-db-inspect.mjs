@@ -64,10 +64,22 @@ function enumNameFromMacro(macro, fallback) {
 
 function enumValueName(label) {
   const trimmed = label.trim();
+  if (/^-+$/u.test(trimmed)) {
+    return "none";
+  }
   const negative = /^-\s*(.+)$/u.exec(trimmed);
   if (negative) {
     const name = identifierFromLabel(negative[1]).replace(/^value$/u, "unknown");
     return `neg${name.slice(0, 1).toUpperCase()}${name.slice(1)}`;
+  }
+  const plusSuffix = /^(.+)\+$/u.exec(trimmed);
+  if (plusSuffix) {
+    const name = enumValueName(plusSuffix[1]);
+    return `${name}Wide`;
+  }
+  const leadingDecimalUnit = /^(\d+)[,.](\d+)\s*([A-Za-z]+)$/u.exec(trimmed);
+  if (leadingDecimalUnit) {
+    return `${leadingDecimalUnit[3].toLowerCase()}${leadingDecimalUnit[1]}${leadingDecimalUnit[2]}`;
   }
   const leadingNumberUnit = /^(\d+)\s*([A-Za-z]+)$/u.exec(trimmed);
   if (leadingNumberUnit) {
@@ -649,28 +661,46 @@ function enumValueUnitPrefix(enumName) {
   return "";
 }
 
+const ENUM_COMPARE_VALUE_ALIASES = new Map([
+  ["bufOverlap:0", "none"],
+  ["allpass_mode:onimproved", "improved"],
+]);
+
 function canonicalEnumValue(value, enumName) {
   const compact = String(value).replace(/[^0-9A-Za-z]+/gu, "");
+  const alias = ENUM_COMPARE_VALUE_ALIASES.get(`${enumName}:${compact}`) ??
+    ENUM_COMPARE_VALUE_ALIASES.get(`${enumName}:${compact.toLowerCase()}`);
+  if (alias) {
+    return alias;
+  }
   if (/^\d+$/u.test(compact)) {
     return `${enumValueUnitPrefix(enumName)}${compact}`.toLowerCase();
   }
   return compact.toLowerCase();
 }
 
-function enumValuesEqual(left, right, leftName = "", rightName = "") {
+function enumCompareKeys(left, right, leftController, rightController) {
+  const mins = [leftController?.min, rightController?.min].filter(Number.isInteger);
+  const maxes = [leftController?.max, rightController?.max].filter(Number.isInteger);
+  const min = mins.length > 0 ? Math.max(...mins) : Number.NEGATIVE_INFINITY;
+  const max = maxes.length > 0 ? Math.min(...maxes) : Number.POSITIVE_INFINITY;
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  return [...keys]
+    .map(Number)
+    .filter((key) => Number.isInteger(key) && key >= min && key <= max)
+    .sort((a, b) => a - b)
+    .map(String);
+}
+
+function enumValuesEqual(left, right, leftName = "", rightName = "", leftController, rightController) {
   if (!left || !right) {
     return false;
   }
-  const leftKeys = Object.keys(left).sort((a, b) => Number(a) - Number(b));
-  const rightKeys = Object.keys(right).sort((a, b) => Number(a) - Number(b));
-  if (leftKeys.length !== rightKeys.length) {
+  const keys = enumCompareKeys(left, right, leftController, rightController);
+  if (keys.some((key) => left[key] === undefined || right[key] === undefined)) {
     return false;
   }
-  return leftKeys.every(
-    (key, index) =>
-      key === rightKeys[index] &&
-      canonicalEnumValue(left[key], leftName) === canonicalEnumValue(right[key], rightName),
-  );
+  return keys.every((key) => canonicalEnumValue(left[key], leftName) === canonicalEnumValue(right[key], rightName));
 }
 
 export function collectControllerDiff(sourceRoot = DEFAULT_SOURCE_ROOT) {
@@ -741,7 +771,14 @@ export function collectControllerDiff(sourceRoot = DEFAULT_SOURCE_ROOT) {
         if (
           sourceEnumValues &&
           dbEnumValues &&
-          !enumValuesEqual(sourceEnumValues, dbEnumValues, sourceController.enum, dbController.enum)
+          !enumValuesEqual(
+            sourceEnumValues,
+            dbEnumValues,
+            sourceController.enum,
+            dbController.enum,
+            sourceController,
+            dbController,
+          )
         ) {
           mismatches.push({
             module: sourceModule.module,

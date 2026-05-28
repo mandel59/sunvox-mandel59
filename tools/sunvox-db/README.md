@@ -48,6 +48,7 @@ npm run sunvox:inspect -- coverage --json
 npm run sunvox:coverage:check
 npm run sunvox:inspect -- report
 npm run sunvox:inspect -- report --json
+npm run sunvox:controller-diff
 npm run sunvox:inspect -- controller-diff
 npm run sunvox:inspect -- controller-diff --json
 npm run sunvox:inspect -- scaffold "Distortion"
@@ -65,7 +66,8 @@ npm run sunvox:verify:all
   source module/controller declaration counts with the DB.
 - `controller-diff` compares controller ranges, units, scales, display offsets,
   and source enum value sets against the DB. It is a triage report for deciding
-  which declarative source facts should be copied into `database.json`.
+  which declarative source facts should be copied into `database.json`; CI
+  expects this report to have no mismatches.
 - `coverage --json`, `report --json`, and `controller-diff --json` emit
   machine-readable metrics for future CI or frontend tooling.
 - `sunvox:coverage:check` runs the coverage report as a CI gate. It fails on
@@ -92,6 +94,7 @@ npm test
 npm run sunvox:coverage:check
 npm run sunvox:inspect -- coverage
 npm run sunvox:inspect -- report
+npm run sunvox:controller-diff
 npm run sunvox:inspect -- check
 npm run sunvox:verify:all
 npm run build

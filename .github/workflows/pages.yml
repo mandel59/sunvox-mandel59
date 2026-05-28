@@ -48,6 +48,9 @@ jobs:
       - name: Check SunVox DB
         run: npm run sunvox:inspect -- check
 
+      - name: Check SunVox controller metadata
+        run: npm run sunvox:controller-diff
+
       - name: Check SunVox coverage
         run: npm run sunvox:coverage:check
 

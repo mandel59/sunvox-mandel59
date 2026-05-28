@@ -15,14 +15,13 @@ test("coverage reports DB module types not exercised by samples", () => {
   }
 });
 
-test("controller diff has no scalar metadata mismatches", () => {
+test("controller diff has no metadata mismatches", () => {
   const diff = collectControllerDiff();
-  const scalarMismatches = diff.mismatches.filter((mismatch) => mismatch.field !== "enumValues");
 
-  assert.deepEqual(scalarMismatches, []);
+  assert.deepEqual(diff.mismatches, []);
 });
 
-test("scaffold preserves signed and leading-number enum value names", () => {
+test("scaffold preserves signed, unit, empty, and suffix enum value names", () => {
   const scaffold = collectScaffold("ADSR");
 
   assert.deepEqual(scaffold.enums.adsr_curve_type, {
@@ -39,6 +38,26 @@ test("scaffold preserves signed and leading-number enum value names", () => {
     10: "bit4",
     11: "bit5",
   });
+
+  assert.deepEqual(collectScaffold("Ctl2Note").enums.noteon_mode, {
+    0: "none",
+    1: "onPitchChange",
+  });
+
+  assert.deepEqual(collectScaffold("Modulator").enums.pm_delay_lens, {
+    0: "sec004",
+    1: "sec008",
+    2: "sec02",
+    3: "sec05",
+    4: "sec1",
+    5: "sec2",
+    6: "sec4",
+    7: "sec8",
+    8: "sec16",
+    9: "sec32",
+  });
+
+  assert.equal(collectScaffold("SpectraVoice").enums.harmonic_type[14], "overtones1Wide");
 });
 
 test("DB check validates data chunk ranges and metadata references", () => {
