@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { collectControllerDiff, collectCoverage, collectDbCheck } from "../tools/sunvox-db-inspect.mjs";
+import { collectControllerDiff, collectCoverage, collectDbCheck, collectScaffold } from "../tools/sunvox-db-inspect.mjs";
 import { SUNVOX_DB } from "../tools/sunvox-codec.mjs";
 
 test("coverage reports DB module types not exercised by samples", () => {
@@ -20,6 +20,25 @@ test("controller diff has no scalar metadata mismatches", () => {
   const scalarMismatches = diff.mismatches.filter((mismatch) => mismatch.field !== "enumValues");
 
   assert.deepEqual(scalarMismatches, []);
+});
+
+test("scaffold preserves signed and leading-number enum value names", () => {
+  const scaffold = collectScaffold("ADSR");
+
+  assert.deepEqual(scaffold.enums.adsr_curve_type, {
+    0: "linear",
+    1: "exp1",
+    2: "exp2",
+    3: "negExp1",
+    4: "negExp2",
+    5: "sin",
+    6: "rect",
+    7: "smoothRect",
+    8: "bit2",
+    9: "bit3",
+    10: "bit4",
+    11: "bit5",
+  });
 });
 
 test("DB check validates data chunk ranges and metadata references", () => {

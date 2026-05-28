@@ -63,7 +63,17 @@ function enumNameFromMacro(macro, fallback) {
 }
 
 function enumValueName(label) {
-  return identifierFromLabel(label).replace(/^value$/u, "unknown");
+  const trimmed = label.trim();
+  const negative = /^-\s*(.+)$/u.exec(trimmed);
+  if (negative) {
+    const name = identifierFromLabel(negative[1]).replace(/^value$/u, "unknown");
+    return `neg${name.slice(0, 1).toUpperCase()}${name.slice(1)}`;
+  }
+  const leadingNumberUnit = /^(\d+)\s*([A-Za-z]+)$/u.exec(trimmed);
+  if (leadingNumberUnit) {
+    return `${leadingNumberUnit[2].toLowerCase()}${leadingNumberUnit[1]}`;
+  }
+  return identifierFromLabel(trimmed).replace(/^value$/u, "unknown");
 }
 
 function withoutFlags(args, flags) {
@@ -625,7 +635,29 @@ function controllerFieldIsComparable(field, value) {
   return CONTROLLER_NUMBER_COMPARE_FIELDS.has(field) && Number.isInteger(value);
 }
 
-function enumValuesEqual(left, right) {
+function enumValueUnitPrefix(enumName) {
+  const normalized = enumName.toLowerCase();
+  if (normalized.endsWith("hz") || normalized.includes("samplerate")) {
+    return "hz";
+  }
+  if (normalized.endsWith("ms")) {
+    return "ms";
+  }
+  if (normalized.includes("buffersamples")) {
+    return "samples";
+  }
+  return "";
+}
+
+function canonicalEnumValue(value, enumName) {
+  const compact = String(value).replace(/[^0-9A-Za-z]+/gu, "");
+  if (/^\d+$/u.test(compact)) {
+    return `${enumValueUnitPrefix(enumName)}${compact}`.toLowerCase();
+  }
+  return compact.toLowerCase();
+}
+
+function enumValuesEqual(left, right, leftName = "", rightName = "") {
   if (!left || !right) {
     return false;
   }
@@ -634,7 +666,11 @@ function enumValuesEqual(left, right) {
   if (leftKeys.length !== rightKeys.length) {
     return false;
   }
-  return leftKeys.every((key, index) => key === rightKeys[index] && left[key] === right[key]);
+  return leftKeys.every(
+    (key, index) =>
+      key === rightKeys[index] &&
+      canonicalEnumValue(left[key], leftName) === canonicalEnumValue(right[key], rightName),
+  );
 }
 
 export function collectControllerDiff(sourceRoot = DEFAULT_SOURCE_ROOT) {
@@ -702,7 +738,11 @@ export function collectControllerDiff(sourceRoot = DEFAULT_SOURCE_ROOT) {
       if (sourceController.type === "enum") {
         const sourceEnumValues = sourceScaffold.enums[sourceController.enum];
         const dbEnumValues = SUNVOX_DB.enums[dbController.enum];
-        if (sourceEnumValues && dbEnumValues && !enumValuesEqual(sourceEnumValues, dbEnumValues)) {
+        if (
+          sourceEnumValues &&
+          dbEnumValues &&
+          !enumValuesEqual(sourceEnumValues, dbEnumValues, sourceController.enum, dbController.enum)
+        ) {
           mismatches.push({
             module: sourceModule.module,
             index: sourceController.index,
