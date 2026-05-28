@@ -434,6 +434,62 @@ test("decodes Flanger and Vibrato controllers", async () => {
   });
 });
 
+test("decodes Generator and Filter controllers", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const generators = [];
+  const filters = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "Generator") {
+        generators.push(module);
+      } else if (module.type === "Filter") {
+        filters.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  assert.equal(generators.length, 6);
+  assert.equal(filters.length, 4);
+  assert.deepEqual(generators[0].controllers, {
+    volume: 128,
+    waveform: "saw",
+    panning: 44,
+    attack: 34,
+    release: 40,
+    polyphony: 16,
+    mode: "stereo",
+    sustain: "on",
+    freqModulationByInput: 0,
+    dutyCycle: 511,
+  });
+  assert.deepEqual(filters[0].controllers, {
+    volume: 256,
+    freq: 793,
+    resonance: 1325,
+    type: "lp",
+    response: 11,
+    mode: "hqMono",
+    impulse: 0,
+    mix: 256,
+    lfoFreq: 0,
+    lfoAmp: 0,
+    setLfoPhase: 0,
+    exponentialFreq: "off",
+    rolloff: "db12",
+    lfoFreqUnit: "hz002",
+    lfoWaveform: "sin",
+  });
+});
+
 test("decodes FMX controllers as operator structures", async () => {
   const buffer = await readFile("music/2022-04-18.sunvox");
   const document = parseContainer(buffer);

@@ -145,6 +145,17 @@
       "1": "on",
       "2": "improved"
     },
+    "gen_wave_type": {
+      "0": "triangle",
+      "1": "saw",
+      "2": "square",
+      "3": "noiseSampler",
+      "4": "drawn",
+      "5": "sin",
+      "6": "hsin",
+      "7": "asin",
+      "8": "psin"
+    },
     "gen2_waveform": {
       "0": "triangle",
       "1": "saw",
@@ -190,6 +201,12 @@
       "6": "bitwiseXor",
       "7": "minAbs",
       "8": "maxAbs"
+    },
+    "filter_type": {
+      "0": "lp",
+      "1": "hp",
+      "2": "bp",
+      "3": "notch"
     },
     "filter2_type": {
       "0": "lp",
@@ -686,6 +703,25 @@
         { "index": 8, "name": "filterFreq", "label": "Filter frequency", "type": "int32", "min": 0, "max": 22000, "default": 2000, "normal": -1, "group": 1, "unit": "Hz" }
       ]
     },
+    "Filter": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "freq", "label": "Freq", "type": "int32", "min": 0, "max": 14000, "default": 14000, "normal": -1, "group": 0, "scale": "exp3", "unit": "Hz" },
+        { "index": 2, "name": "resonance", "label": "Resonance", "type": "int32", "min": 0, "max": 1530, "default": 0, "normal": -1, "group": 0 },
+        { "index": 3, "name": "type", "label": "Type", "type": "enum", "enum": "filter_type", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 0 },
+        { "index": 4, "name": "response", "label": "Response", "type": "int32", "min": 0, "max": 256, "default": 8, "normal": -1, "group": 1 },
+        { "index": 5, "name": "mode", "label": "Mode", "type": "enum", "enum": "quality_mode", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 1 },
+        { "index": 6, "name": "impulse", "label": "Impulse", "type": "int32", "min": 0, "max": 14000, "default": 0, "normal": -1, "group": 1, "unit": "Hz" },
+        { "index": 7, "name": "mix", "label": "Mix", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1 },
+        { "index": 8, "name": "lfoFreq", "label": "LFO freq", "type": "int32", "min": 0, "max": 1024, "default": 8, "normal": -1, "group": 2 },
+        { "index": 9, "name": "lfoAmp", "label": "LFO amp", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
+        { "index": 10, "name": "setLfoPhase", "label": "Set LFO phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
+        { "index": 11, "name": "exponentialFreq", "label": "Exponential freq", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 12, "name": "rolloff", "label": "Roll-off", "type": "enum", "enum": "filter_rolloff", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 0 },
+        { "index": 13, "name": "lfoFreqUnit", "label": "LFO freq unit", "type": "enum", "enum": "filter_lfo_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 2 },
+        { "index": 14, "name": "lfoWaveform", "label": "LFO waveform", "type": "enum", "enum": "filter_lfo_waveform", "min": 0, "max": 4, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
     "Filter Pro": {
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 0 },
@@ -765,6 +801,20 @@
           }
         },
         { "index": 118, "name": "envelopeGain", "label": "Envelope gain", "type": "int32", "min": 0, "max": 8000, "default": 1000, "normal": 1000, "group": 3, "unit": "1/1000" }
+      ]
+    },
+    "Generator": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
+        { "index": 1, "name": "waveform", "label": "Waveform", "type": "enum", "enum": "gen_wave_type", "min": 0, "max": 8, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 3, "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 512, "default": 0, "normal": -1, "group": 1, "unit": "sec/256" },
+        { "index": 4, "name": "release", "label": "Release", "type": "int32", "min": 0, "max": 512, "default": 0, "normal": -1, "group": 1, "unit": "sec/256" },
+        { "index": 5, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 16, "default": 8, "normal": -1, "group": 2, "unit": "ch." },
+        { "index": 6, "name": "mode", "label": "Mode", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 2 },
+        { "index": 7, "name": "sustain", "label": "Sustain", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
+        { "index": 8, "name": "freqModulationByInput", "label": "Freq.modulation by input", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
+        { "index": 9, "name": "dutyCycle", "label": "Duty cycle", "type": "int32", "min": 0, "max": 1022, "default": 511, "normal": 511, "group": 2 }
       ]
     },
     "Glide": {
