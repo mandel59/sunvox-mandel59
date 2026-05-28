@@ -351,6 +351,19 @@
       "9": "phasePlus",
       "10": "minAbs",
       "11": "maxAbs"
+    },
+    "distortion_type": {
+      "0": "clipping",
+      "1": "foldback",
+      "2": "foldback2",
+      "3": "foldback3",
+      "4": "overflow",
+      "5": "overflow2",
+      "6": "saturationFoldback",
+      "7": "saturationFoldbackSin",
+      "8": "saturation3",
+      "9": "saturation4",
+      "10": "saturation5"
     }
   },
   "bitfields": {
@@ -593,6 +606,17 @@
         { "index": 10, "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 3 },
         { "index": 11, "name": "negativeFeedback", "label": "Negative feedback", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 },
         { "index": 12, "name": "allpassFilter", "label": "All-pass filter", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 }
+      ]
+    },
+    "Distortion": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0 },
+        { "index": 1, "name": "type", "label": "Type", "type": "enum", "enum": "distortion_type", "min": 0, "max": 10, "default": 0, "normal": -1, "group": 1 },
+        { "index": 2, "name": "power", "label": "Power", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 1 },
+        { "index": 3, "name": "bitDepth", "label": "Bit depth", "type": "int32", "min": 1, "max": 16, "default": 16, "normal": -1, "group": 2 },
+        { "index": 4, "name": "freq", "label": "Freq", "type": "int32", "min": 0, "max": 44100, "default": 44100, "normal": -1, "group": 2, "unit": "Hz", "scale": "exp3" },
+        { "index": 5, "name": "noise", "label": "Noise", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 3 },
+        { "index": 6, "name": "interpolation", "label": "Interpolation", "type": "enum", "enum": "sample_interp", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 2 }
       ]
     },
     "DrumSynth": {

@@ -308,6 +308,37 @@ test("decodes Pitch shifter controllers", async () => {
   });
 });
 
+test("decodes Distortion controllers", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const distortions = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "Distortion") {
+        distortions.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  assert.equal(distortions.length, 6);
+  assert.deepEqual(distortions[1].controllers, {
+    volume: 64,
+    type: "foldback",
+    power: 226,
+    bitDepth: 16,
+    freq: 44100,
+    noise: 0,
+  });
+});
+
 test("decodes FMX controllers as operator structures", async () => {
   const buffer = await readFile("music/2022-04-18.sunvox");
   const document = parseContainer(buffer);
