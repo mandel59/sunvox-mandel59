@@ -184,6 +184,24 @@ test("decodes MultiCtl controllers, output slots, and curve", async () => {
   assert.deepEqual(curve.values.slice(0, 4), [0, 128, 256, 384]);
 });
 
+test("decodes MultiSynth controllers", async () => {
+  const buffer = await readFile("instruments/mandel59 shepard.sunsynth");
+  const document = parseContainer(buffer);
+  const embedded = document.module.dataChunks[0].container;
+  const multiSynth = embedded.modules.find((module) => module.type === "MultiSynth");
+
+  assert.deepEqual(multiSynth.controllers, {
+    transpose: 128,
+    randomPitch: 0,
+    velocity: 256,
+    finetune: 256,
+    randomPhase: 0,
+    randomVelocity: 0,
+    phase: 0,
+    curve2Influence: 256,
+  });
+});
+
 test("decodes Sound2Ctl controllers and options", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);

@@ -321,6 +321,18 @@
         { "index": 4, "name": "tpl", "label": "TPL", "type": "int32", "min": 1, "max": 31, "default": 6, "normal": 6, "group": 1 }
       ]
     },
+    "MultiSynth": {
+      "controllers": [
+        { "index": 0, "name": "transpose", "label": "Transpose", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 1, "name": "randomPitch", "label": "Random pitch", "type": "int32", "min": 0, "max": 4096, "default": 0, "normal": -1, "group": 1 },
+        { "index": 2, "name": "velocity", "label": "Velocity", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 3, "name": "finetune", "label": "Finetune", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0, "displayOffset": -256 },
+        { "index": 4, "name": "randomPhase", "label": "Random phase", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1 },
+        { "index": 5, "name": "randomVelocity", "label": "Random velocity", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1 },
+        { "index": 6, "name": "phase", "label": "Phase", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 0 },
+        { "index": 7, "name": "curve2Influence", "label": "Curve2 influence", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 }
+      ]
+    },
     "MultiCtl": {
       "dataChunks": [
         {
