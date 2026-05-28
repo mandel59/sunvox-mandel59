@@ -236,6 +236,28 @@
       "5": "line2",
       "6": "line3"
     },
+    "flanger_lfo_waveform": {
+      "0": "hsin",
+      "1": "sin"
+    },
+    "flanger_lfo_freq_unit": {
+      "0": "hz005",
+      "1": "ms",
+      "2": "hz",
+      "3": "tick",
+      "4": "line",
+      "5": "line2",
+      "6": "line3"
+    },
+    "vibrato_freq_unit": {
+      "0": "hz64",
+      "1": "ms",
+      "2": "hz",
+      "3": "tick",
+      "4": "line",
+      "5": "line2",
+      "6": "line3"
+    },
     "delay_unit": {
       "0": "sec16384",
       "1": "ms",
@@ -685,6 +707,20 @@
         { "index": 16, "name": "lfoFreqUnit", "label": "LFO frequency unit", "type": "enum", "enum": "filter_lfo_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 2 }
       ]
     },
+    "Flanger": {
+      "controllers": [
+        { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
+        { "index": 2, "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 1 },
+        { "index": 3, "name": "delay", "label": "Delay", "type": "int32", "min": 8, "max": 1000, "default": 200, "normal": -1, "group": 1 },
+        { "index": 4, "name": "response", "label": "Response", "type": "int32", "min": 0, "max": 256, "default": 2, "normal": -1, "group": 1 },
+        { "index": 5, "name": "lfoFreq", "label": "LFO freq", "type": "int32", "min": 0, "max": 512, "default": 8, "normal": -1, "group": 2 },
+        { "index": 6, "name": "lfoAmp", "label": "LFO amp", "type": "int32", "min": 0, "max": 256, "default": 32, "normal": -1, "group": 2 },
+        { "index": 7, "name": "lfoWaveform", "label": "LFO waveform", "type": "enum", "enum": "flanger_lfo_waveform", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 2 },
+        { "index": 8, "name": "setLfoPhase", "label": "Set LFO phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
+        { "index": 9, "name": "lfoFreqUnit", "label": "LFO freq unit", "type": "enum", "enum": "flanger_lfo_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
     "FMX": {
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 0 },
@@ -870,6 +906,17 @@
         { "index": 2, "name": "outMax", "label": "OUT max", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 1 },
         { "index": 3, "name": "outOffset", "label": "OUT offset", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 1, "displayOffset": -16384 },
         { "index": 4, "name": "outController", "label": "OUT controller", "type": "int32", "min": 0, "max": 255, "default": 0, "normal": -1, "group": 1 }
+      ]
+    },
+    "Vibrato": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "amplitude", "label": "Amplitude", "type": "int32", "min": 0, "max": 256, "default": 16, "normal": -1, "group": 0 },
+        { "index": 2, "name": "freq", "label": "Freq", "type": "int32", "min": 1, "max": 2048, "default": 256, "normal": -1, "group": 0 },
+        { "index": 3, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 4, "name": "setPhase", "label": "Set phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 0 },
+        { "index": 5, "name": "frequencyUnit", "label": "Frequency unit", "type": "enum", "enum": "vibrato_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 0 },
+        { "index": 6, "name": "exponentialAmplitude", "label": "Exponential amplitude", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
       ]
     },
     "Pitch shifter": {

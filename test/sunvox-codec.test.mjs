@@ -386,6 +386,54 @@ test("decodes EQ and Velocity2Ctl controllers", async () => {
   });
 });
 
+test("decodes Flanger and Vibrato controllers", async () => {
+  const buffer = await readFile("music/2022-04-16.sunvox");
+  const document = parseContainer(buffer);
+  const flangers = [];
+  const vibratos = [];
+
+  function walk(container) {
+    for (const module of container.modules ?? []) {
+      if (module.type === "Flanger") {
+        flangers.push(module);
+      } else if (module.type === "Vibrato") {
+        vibratos.push(module);
+      }
+      for (const chunk of module.dataChunks ?? []) {
+        if (chunk.container) {
+          walk(chunk.container);
+        }
+      }
+    }
+  }
+
+  walk(document);
+
+  assert.equal(flangers.length, 1);
+  assert.equal(vibratos.length, 6);
+  assert.deepEqual(flangers[0].controllers, {
+    dry: 256,
+    wet: 128,
+    feedback: 128,
+    delay: 200,
+    response: 10,
+    lfoFreq: 8,
+    lfoAmp: 256,
+    lfoWaveform: "hsin",
+    setLfoPhase: 0,
+    lfoFreqUnit: "hz005",
+  });
+  assert.deepEqual(vibratos[0].controllers, {
+    volume: 256,
+    amplitude: 4,
+    freq: 396,
+    channels: "mono",
+    setPhase: 0,
+    frequencyUnit: "hz64",
+    exponentialAmplitude: "off",
+  });
+});
+
 test("decodes FMX controllers as operator structures", async () => {
   const buffer = await readFile("music/2022-04-18.sunvox");
   const document = parseContainer(buffer);
