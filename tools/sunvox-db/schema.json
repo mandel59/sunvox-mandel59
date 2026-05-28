@@ -151,7 +151,7 @@
               "properties": {
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["container", "packedUInt32Array", "recordArray", "string", "struct", "uint16Array"] },
+                "type": { "enum": ["container", "packedUInt32Array", "recordArray", "string", "struct", "uint8Array", "uint16Array"] },
                 "path": { "type": "string" },
                 "count": { "type": "integer", "minimum": 0 },
                 "size": { "type": "integer", "minimum": 0 },

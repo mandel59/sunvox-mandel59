@@ -471,6 +471,20 @@
       "8": "saturation3",
       "9": "saturation4",
       "10": "saturation5"
+    },
+    "multisynth_curve": {
+      "0": "velocityByPitch",
+      "1": "velocityRemap",
+      "2": "pitchRemap"
+    },
+    "multisynth_output_slot_mode": {
+      "0": "off",
+      "1": "note",
+      "2": "polyChannel",
+      "3": "roundRobin",
+      "4": "random",
+      "5": "random2",
+      "6": "random3"
     }
   },
   "bitfields": {
@@ -488,6 +502,17 @@
         { "name": "parameter", "shift": 0, "bits": 16 },
         { "name": "min", "shift": 16, "bits": 8 },
         { "name": "max", "shift": 24, "bits": 8 }
+      ]
+    },
+    "multisynth_options_flags": {
+      "type": "uint32",
+      "fields": [
+        { "name": "generateMissedNoteOff", "shift": 0, "bits": 1, "enum": "off_on" },
+        { "name": "roundPitch", "shift": 1, "bits": 1, "enum": "off_on" },
+        { "name": "roundPitch2", "shift": 2, "bits": 1, "enum": "off_on" },
+        { "name": "recordPitchCurve", "shift": 3, "bits": 1, "enum": "off_on" },
+        { "name": "noteDifference", "shift": 5, "bits": 1, "enum": "off_on" },
+        { "name": "outputSlotMode", "shift": 6, "bits": 4, "enum": "multisynth_output_slot_mode" }
       ]
     }
   },
@@ -985,6 +1010,25 @@
       ]
     },
     "MultiSynth": {
+      "dataChunks": [
+        { "index": 0, "name": "velocityByPitchCurve", "type": "uint8Array", "count": 128 },
+        {
+          "index": 1,
+          "name": "options",
+          "type": "struct",
+          "path": "options",
+          "size": 8,
+          "fields": [
+            { "name": "staticNoteC5", "type": "bool8", "offset": 0 },
+            { "name": "ignoreVelocity0", "type": "bool8", "offset": 1 },
+            { "name": "selectedCurve", "type": "uint8", "offset": 2, "enum": "multisynth_curve" },
+            { "name": "trigger", "type": "bool8", "offset": 3 },
+            { "name": "flags", "type": "uint32", "offset": 4, "bitfield": "multisynth_options_flags", "flatten": true }
+          ]
+        },
+        { "index": 2, "name": "velocityRemapCurve", "type": "uint8Array", "count": 257 },
+        { "index": 3, "name": "pitchRemapCurve", "type": "uint16Array", "count": 128 }
+      ],
       "controllers": [
         { "index": 0, "name": "transpose", "label": "Transpose", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
         { "index": 1, "name": "randomPitch", "label": "Random pitch", "type": "int32", "min": 0, "max": 4096, "default": 0, "normal": -1, "group": 1 },
@@ -1053,6 +1097,12 @@
       ]
     },
     "SpectraVoice": {
+      "dataChunks": [
+        { "index": 0, "name": "harmonicFrequencies", "type": "uint16Array", "count": 16 },
+        { "index": 1, "name": "harmonicVolumes", "type": "uint8Array", "count": 16 },
+        { "index": 2, "name": "harmonicWidths", "type": "uint8Array", "count": 16 },
+        { "index": 3, "name": "harmonicTypes", "type": "uint8Array", "count": 16 }
+      ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
         { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
@@ -1115,6 +1165,9 @@
       ]
     },
     "WaveShaper": {
+      "dataChunks": [
+        { "index": 0, "name": "curve", "type": "uint16Array", "count": 256 }
+      ],
       "controllers": [
         { "index": 0, "name": "inputVolume", "label": "Input volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "mix", "label": "Mix", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },

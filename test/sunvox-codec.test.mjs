@@ -204,6 +204,7 @@ test("decodes MultiSynth controllers", async () => {
   const document = parseContainer(buffer);
   const embedded = document.module.dataChunks[0].container;
   const multiSynth = embedded.modules.find((module) => module.type === "MultiSynth");
+  const options = multiSynth.dataChunks.find((chunk) => chunk.name === "options");
 
   assert.deepEqual(multiSynth.controllers, {
     transpose: 128,
@@ -214,6 +215,18 @@ test("decodes MultiSynth controllers", async () => {
     randomVelocity: 0,
     phase: 0,
     curve2Influence: 256,
+  });
+  assert.deepEqual(options.options, {
+    staticNoteC5: false,
+    ignoreVelocity0: false,
+    selectedCurve: "velocityByPitch",
+    trigger: false,
+    generateMissedNoteOff: "off",
+    roundPitch: "off",
+    roundPitch2: "off",
+    recordPitchCurve: "off",
+    noteDifference: "off",
+    outputSlotMode: "off",
   });
 });
 
@@ -274,6 +287,9 @@ test("decodes utility and delay-style effect controllers", async () => {
   assert.equal(echo.controllers.filter, "off");
   assert.equal(waveShaper.controllers.symmetric, "on");
   assert.equal(waveShaper.controllers.dcBlocker, "on");
+  assert.equal(waveShaper.dataChunks[0].name, "curve");
+  assert.equal(waveShaper.dataChunks[0].values.length, 256);
+  assert.deepEqual(waveShaper.dataChunks[0].values.slice(0, 4), [0, 1, 4, 9]);
 });
 
 test("decodes Pitch shifter controllers", async () => {
@@ -625,6 +641,14 @@ test("decodes SpectraVoice controllers while preserving spectrum chunks", async 
     spectraVoices[0].dataChunks.map((chunk) => chunk.index),
     [0, 1, 2, 3],
   );
+  assert.deepEqual(
+    spectraVoices[0].dataChunks.map((chunk) => chunk.name),
+    ["harmonicFrequencies", "harmonicVolumes", "harmonicWidths", "harmonicTypes"],
+  );
+  assert.deepEqual(spectraVoices[0].dataChunks[0].values.slice(0, 4), [1098, 2158, 3309, 0]);
+  assert.deepEqual(spectraVoices[0].dataChunks[1].values.slice(0, 4), [255, 108, 78, 0]);
+  assert.deepEqual(spectraVoices[0].dataChunks[2].values.slice(0, 4), [3, 0, 11, 0]);
+  assert.deepEqual(spectraVoices[0].dataChunks[3].values.slice(0, 4), [13, 0, 0, 0]);
 });
 
 test("decodes FMX controllers as operator structures", async () => {

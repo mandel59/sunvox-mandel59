@@ -84,10 +84,18 @@ function readUInt16Array(data) {
   return values;
 }
 
+function readUInt8Array(data) {
+  return [...data];
+}
+
 function writeInt32Array(values) {
   const buffer = Buffer.alloc(values.length * 4);
   values.forEach((value, index) => buffer.writeInt32LE(value, index * 4));
   return buffer;
+}
+
+function writeUInt8Array(values) {
+  return Buffer.from(values.map((value) => value & 0xff));
 }
 
 function writeUInt16Array(values) {
@@ -938,6 +946,17 @@ const MODULE_DATA_CODECS = {
   struct: {
     decode: decodeStructData,
     encode: encodeStructData,
+  },
+  uint8Array: {
+    decode(data, definition) {
+      return {
+        count: definition.count ?? data.length,
+        values: readUInt8Array(data),
+      };
+    },
+    encode(dataChunk) {
+      return Array.isArray(dataChunk.values) ? writeUInt8Array(dataChunk.values) : undefined;
+    },
   },
   uint16Array: {
     decode(data, definition) {
