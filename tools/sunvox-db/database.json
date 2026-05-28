@@ -465,6 +465,15 @@
       "1": "linear",
       "2": "spline"
     },
+    "envelope_interp": {
+      "0": "off",
+      "1": "linear"
+    },
+    "sampler_record_mode": {
+      "0": "stop",
+      "1": "pause",
+      "2": "start"
+    },
     "pitch_detector_algorithm": {
       "0": "fastZeroCrossing",
       "1": "autocorrelation",
@@ -1483,6 +1492,21 @@
         { "index": 7, "name": "allpassFilter", "label": "All-pass filter", "type": "enum", "enum": "allpass_filter", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 2 },
         { "index": 8, "name": "roomSize", "label": "Room size", "type": "int32", "min": 0, "max": 128, "default": 16, "normal": -1, "group": 2 },
         { "index": 9, "name": "randomSeed", "label": "Random seed", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
+    "Sampler": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 2, "name": "sampleInterpolation", "label": "Sample interpolation", "type": "enum", "enum": "sample_interp", "min": 0, "max": 2, "default": 2, "normal": -1, "group": 1 },
+        { "index": 3, "name": "envelopeInterpolation", "label": "Envelope interpolation", "type": "enum", "enum": "envelope_interp", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
+        { "index": 4, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 32, "default": 8, "normal": -1, "group": 2, "unit": "ch." },
+        { "index": 5, "name": "recordThreshold", "label": "Rec threshold", "type": "int32", "min": 0, "max": 10000, "default": 4, "normal": -1, "group": 3, "scale": "exp3" },
+        { "index": 6, "name": "tickLength", "label": "Tick length", "type": "int32", "min": 0, "max": 2048, "default": 128, "normal": 128, "group": 4, "scale": "exp3" },
+        { "index": 7, "name": "record", "label": "Record", "type": "enum", "enum": "sampler_record_mode", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 3 },
+        { "index": 8, "name": "reverse", "label": "Reverse", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 5 },
+        { "index": 9, "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 4, "scale": "invExp3" },
+        { "index": 10, "name": "release", "label": "Release", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 4, "scale": "invExp3" }
       ]
     },
     "WaveShaper": {
