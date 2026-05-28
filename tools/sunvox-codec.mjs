@@ -70,6 +70,8 @@ const UINT32_ARRAY_CHUNKS = new Set(["CMID", "STMT"]);
 const STRING_CHUNKS = new Set(["NAME", "PNME", "SNAM", "STYP", "SMIN"]);
 const RGB_CHUNKS = new Set(["PFGC", "PBGC", "SCOL"]);
 const PATTERN_CHUNKS = new Set([
+  "PATT",
+  "PATL",
   "PDTA",
   "PNME",
   "PLIN",
@@ -254,12 +256,17 @@ function decodeCString(data) {
   if (trimmed.length === 0) {
     return "";
   }
-  for (const byte of trimmed) {
-    if (byte < 0x20 || byte > 0x7e) {
+  const text = trimmed.toString("utf8");
+  if (text.includes("\ufffd")) {
+    return undefined;
+  }
+  for (const char of text) {
+    const code = char.charCodeAt(0);
+    if (code < 0x20) {
       return undefined;
     }
   }
-  return trimmed.toString("utf8");
+  return text;
 }
 
 function decodePatternNotes(data) {
@@ -321,11 +328,6 @@ export function decodeChunkData(id, data) {
     decoded._description = CHUNK_DESCRIPTIONS[id];
   }
 
-  if (data.length === 0) {
-    decoded.kind = "empty";
-    return decoded;
-  }
-
   if (STRING_CHUNKS.has(id)) {
     const text = decodeCString(data);
     if (text !== undefined) {
@@ -361,20 +363,25 @@ export function decodeChunkData(id, data) {
     return { ...decoded, kind: "midiBindings", value: bindings };
   }
 
-  if (INT32_CHUNKS.has(id) && data.length === 4) {
-    return { ...decoded, kind: "int32", value: data.readInt32LE(0) };
-  }
-
-  if (UINT32_CHUNKS.has(id) && data.length === 4) {
-    return { ...decoded, kind: "uint32", value: data.readUInt32LE(0) };
-  }
-
   if (INT32_ARRAY_CHUNKS.has(id) && data.length % 4 === 0) {
     return { ...decoded, kind: "int32Array", value: readInt32Array(data) };
   }
 
   if (UINT32_ARRAY_CHUNKS.has(id) && data.length % 4 === 0) {
     return { ...decoded, kind: "uint32Array", value: readUInt32Array(data) };
+  }
+
+  if (data.length === 0) {
+    decoded.kind = "empty";
+    return decoded;
+  }
+
+  if (INT32_CHUNKS.has(id) && data.length === 4) {
+    return { ...decoded, kind: "int32", value: data.readInt32LE(0) };
+  }
+
+  if (UINT32_CHUNKS.has(id) && data.length === 4) {
+    return { ...decoded, kind: "uint32", value: data.readUInt32LE(0) };
   }
 
   const text = decodeCString(data);
@@ -545,6 +552,115 @@ function chunkRgb(chunks, id) {
   return firstChunk(chunks, id)?.rgb;
 }
 
+function scopeGrammar(scopeName) {
+  const grammar = SUNVOX_DB.grammar?.scopes?.[scopeName];
+  if (!grammar) {
+    throw new Error(`Unknown grammar scope: ${scopeName}`);
+  }
+  return grammar;
+}
+
+function getPath(object, path) {
+  let current = object;
+  for (const segment of path.split(".")) {
+    if (current == null || typeof current !== "object") {
+      return undefined;
+    }
+    current = current[segment];
+  }
+  return current;
+}
+
+function setPath(object, path, value) {
+  if (value === undefined) {
+    return;
+  }
+  const segments = path.split(".");
+  let current = object;
+  for (const segment of segments.slice(0, -1)) {
+    current[segment] ??= {};
+    current = current[segment];
+  }
+  current[segments.at(-1)] = value;
+}
+
+function chunkSemanticValue(chunk, field) {
+  if (field === "pattern.events") {
+    return chunk.pattern?.events;
+  }
+  return chunk[field];
+}
+
+function assignChunkSemanticValue(chunk, field, value) {
+  if (field === "pattern.events") {
+    chunk.pattern = { events: value };
+  } else {
+    chunk[field] = value;
+  }
+}
+
+function chunkLabel(id) {
+  return CHUNK_DESCRIPTIONS[id];
+}
+
+function makeSemanticChunk(chunkId, field, value, options = {}) {
+  const chunk = { id: chunkId };
+  const label = chunkLabel(chunkId);
+  if (label) {
+    chunk._label = label;
+  }
+  assignChunkSemanticValue(chunk, field, value);
+  if (field === "text" && options.textSize !== undefined) {
+    chunk.textSize = options.textSize;
+  }
+  return chunk;
+}
+
+function consumeScopeFields(scopeName, chunks, target, used) {
+  const grammar = scopeGrammar(scopeName);
+  for (const field of grammar.fields) {
+    const index = chunks.findIndex((chunk, chunkIndex) => !used.has(chunkIndex) && chunk.id === field.chunk);
+    if (index < 0) {
+      continue;
+    }
+    const value = chunkSemanticValue(chunks[index], field.field);
+    if (value !== undefined) {
+      setPath(target, field.path, value);
+      used.add(index);
+    }
+  }
+}
+
+function consumeTerminator(scopeName, chunks, used) {
+  const terminator = scopeGrammar(scopeName).terminator;
+  if (!terminator) {
+    return;
+  }
+  chunks.forEach((chunk, index) => {
+    if (chunk.id === terminator) {
+      used.add(index);
+    }
+  });
+}
+
+function remainingChunks(chunks, used) {
+  return chunks
+    .filter((_, index) => !used.has(index))
+    .map(cloneJson);
+}
+
+function emitScopeField(scopeName, object, chunkId) {
+  const field = scopeGrammar(scopeName).fields.find((candidate) => candidate.chunk === chunkId);
+  if (!field) {
+    return undefined;
+  }
+  const value = getPath(object, field.path);
+  if (value === undefined) {
+    return undefined;
+  }
+  return makeSemanticChunk(chunkId, field.field, value, field);
+}
+
 function moduleDefinition(type) {
   return type ? SUNVOX_DB.modules[type] : undefined;
 }
@@ -569,9 +685,17 @@ function decodeModuleControllers(type, controllerValues) {
     return controllerValues.length ? controllerValues : undefined;
   }
   const controllers = {};
+  const knownIndexes = new Set();
   for (const controller of definition.controllers) {
+    knownIndexes.add(controller.index);
     if (controllerValues[controller.index] !== undefined) {
       controllers[controller.name] = decodeControllerValue(controller, controllerValues[controller.index]);
+    }
+  }
+  for (let index = 0; index < controllerValues.length; index += 1) {
+    if (!knownIndexes.has(index) && controllerValues[index] !== undefined) {
+      controllers.extra ??= {};
+      controllers.extra[index] = controllerValues[index];
     }
   }
   return Object.keys(controllers).length ? controllers : undefined;
@@ -597,6 +721,53 @@ function syncModuleControllers(type, controllers, controllerChunks) {
       chunk.value = encodeControllerValue(controller, value);
     }
   }
+  if (controllers.extra && typeof controllers.extra === "object") {
+    for (const [indexText, value] of Object.entries(controllers.extra)) {
+      const index = Number(indexText);
+      const chunk = controllerChunks[index];
+      if (Number.isInteger(index) && chunk) {
+        chunk.value = value;
+      }
+    }
+  }
+}
+
+function controllerValuesFromObject(type, controllers) {
+  if (Array.isArray(controllers)) {
+    return controllers;
+  }
+  const definition = moduleDefinition(type);
+  if (!definition?.controllers || !controllers || typeof controllers !== "object") {
+    return undefined;
+  }
+  const values = [];
+  for (const controller of definition.controllers) {
+    const value = controllers[controller.name];
+    if (value !== undefined) {
+      values[controller.index] = encodeControllerValue(controller, value);
+    }
+  }
+  if (controllers.extra && typeof controllers.extra === "object") {
+    for (const [indexText, value] of Object.entries(controllers.extra)) {
+      const index = Number(indexText);
+      if (Number.isInteger(index) && index >= 0) {
+        values[index] = value;
+      }
+    }
+  }
+  return values.length ? values : undefined;
+}
+
+function makeControllerChunks(type, controllers) {
+  const values = controllerValuesFromObject(type, controllers);
+  if (!values) {
+    return [];
+  }
+  const chunks = [];
+  for (let index = 0; index < values.length; index += 1) {
+    chunks.push(makeSemanticChunk("CVAL", "value", values[index] ?? 0));
+  }
+  return chunks;
 }
 
 function setChunkField(chunks, id, field, value) {
@@ -607,63 +778,138 @@ function setChunkField(chunks, id, field, value) {
   chunk[field] = value;
 }
 
+function consumeModuleDataChunks(chunks, target, used) {
+  const dataChunks = [];
+  for (let index = 0; index < chunks.length; index += 1) {
+    const chunk = chunks[index];
+    if (used.has(index)) {
+      continue;
+    }
+    if (chunk.id === "CHNK") {
+      if (chunk.value !== undefined) {
+        target.dataChunkCount = chunk.value;
+      }
+      used.add(index);
+      continue;
+    }
+    if (chunk.id !== "CHNM") {
+      continue;
+    }
+
+    const dataChunk = { index: chunk.value ?? dataChunks.length };
+    used.add(index);
+
+    const data = chunks[index + 1];
+    if (data?.id === "CHDT" && !used.has(index + 1)) {
+      if (data.base64 !== undefined) {
+        dataChunk.base64 = data.base64;
+      } else {
+        dataChunk.chunk = cloneJson(data);
+      }
+      used.add(index + 1);
+      index += 1;
+    }
+
+    while (index + 1 < chunks.length) {
+      const next = chunks[index + 1];
+      if (next.id === "CHFF" && !used.has(index + 1)) {
+        dataChunk.flags = next.value;
+        used.add(index + 1);
+        index += 1;
+      } else if (next.id === "CHFR" && !used.has(index + 1)) {
+        dataChunk.sampleRate = next.value;
+        used.add(index + 1);
+        index += 1;
+      } else {
+        break;
+      }
+    }
+    dataChunks.push(dataChunk);
+  }
+  if (dataChunks.length) {
+    target.dataChunks = dataChunks;
+  }
+}
+
+function makeModuleDataChunks(module) {
+  const dataChunks = module?.dataChunks;
+  const declaredCount = module?.dataChunkCount ?? dataChunks?.length;
+  if (declaredCount === undefined && !Array.isArray(dataChunks)) {
+    return [];
+  }
+
+  const chunks = [makeSemanticChunk("CHNK", "value", declaredCount ?? 0)];
+  for (const dataChunk of dataChunks ?? []) {
+    chunks.push(makeSemanticChunk("CHNM", "value", dataChunk.index ?? 0));
+    if (dataChunk.chunk) {
+      chunks.push(cloneJson(dataChunk.chunk));
+    } else {
+      chunks.push({
+        id: "CHDT",
+        _label: chunkLabel("CHDT"),
+        base64: dataChunk.base64 ?? "",
+      });
+    }
+    if (dataChunk.flags !== undefined) {
+      chunks.push(makeSemanticChunk("CHFF", "value", dataChunk.flags));
+    }
+    if (dataChunk.sampleRate !== undefined) {
+      chunks.push(makeSemanticChunk("CHFR", "value", dataChunk.sampleRate));
+    }
+  }
+  return chunks;
+}
+
 function makeProject(chunks) {
-  return {
-    name: chunkText(chunks, "NAME"),
-    bpm: chunkValue(chunks, "BPM "),
-    speed: chunkValue(chunks, "SPED"),
-    globalVolume: chunkValue(chunks, "GVOL"),
-    view: {
-      moduleScale: chunkValue(chunks, "MSCL"),
-      moduleZoom: chunkValue(chunks, "MZOO"),
-      xOffset: chunkValue(chunks, "MXOF"),
-      yOffset: chunkValue(chunks, "MYOF"),
-    },
-    chunks,
-  };
+  const project = {};
+  const used = new Set();
+  consumeScopeFields("project", chunks, project, used);
+  const extraChunks = remainingChunks(chunks, used);
+  if (extraChunks.length) {
+    project.extraChunks = extraChunks;
+  }
+  return project;
 }
 
 function makePattern(chunks) {
-  return {
-    name: chunkText(chunks, "PNME"),
-    position: {
-      x: chunkValue(chunks, "PXXX"),
-      y: chunkValue(chunks, "PYYY"),
-    },
-    tracks: chunkValue(chunks, "PCHN"),
-    lines: chunkValue(chunks, "PLIN"),
-    ySize: chunkValue(chunks, "PYSZ"),
-    foreground: chunkRgb(chunks, "PFGC"),
-    background: chunkRgb(chunks, "PBGC"),
-    parent: chunkValue(chunks, "PPAR"),
-    flags: chunkValue(chunks, "PFFF"),
-    events: firstChunk(chunks, "PDTA")?.pattern?.events,
-    chunks,
-  };
+  const pattern = {};
+  const used = new Set();
+  consumeScopeFields("pattern", chunks, pattern, used);
+  consumeTerminator("pattern", chunks, used);
+  const extraChunks = remainingChunks(chunks, used);
+  if (extraChunks.length) {
+    pattern.extraChunks = extraChunks;
+  }
+  return pattern;
 }
 
 function makeModule(chunks) {
   const controllerValues = chunksOf(chunks, "CVAL").map((chunk) => chunk.value);
   const type = chunkText(chunks, "STYP");
-  return {
-    name: chunkText(chunks, "SNAM"),
-    type,
-    position: {
-      x: chunkValue(chunks, "SXXX"),
-      y: chunkValue(chunks, "SYYY"),
-      z: chunkValue(chunks, "SZZZ"),
-    },
-    color: chunkRgb(chunks, "SCOL"),
-    flags: chunkValue(chunks, "SFFF"),
-    finetune: chunkValue(chunks, "SFIN"),
-    relativeNote: chunkValue(chunks, "SREL"),
-    scale: chunkValue(chunks, "SSCL"),
-    inputLinks: chunkValues(chunks, "SLNK"),
-    outputLinks: chunkValues(chunks, "SLNk"),
-    controllers: decodeModuleControllers(type, controllerValues),
-    midiBindings: firstChunk(chunks, "CMID")?.midiBindings,
-    chunks,
-  };
+  const module = {};
+  const used = new Set();
+  consumeScopeFields("module", chunks, module, used);
+  chunks.forEach((chunk, index) => {
+    if (chunk.id === "CVAL") {
+      used.add(index);
+    }
+  });
+  const controllers = decodeModuleControllers(type, controllerValues);
+  if (controllers !== undefined) {
+    module.controllers = controllers;
+  }
+  const midiIndex = chunks.findIndex((chunk, index) => !used.has(index) && chunk.id === "CMID");
+  if (midiIndex >= 0) {
+    module.midiBindings = chunks[midiIndex].midiBindings;
+    used.add(midiIndex);
+  }
+  consumeModuleDataChunks(chunks, module, used);
+  consumeTerminator("module", chunks, used);
+  const extraChunks = remainingChunks(chunks, used);
+  if (extraChunks.length) {
+    module.extraChunks = extraChunks;
+  }
+  return module;
 }
 
 function groupStructuredDocument(document) {
@@ -737,7 +983,7 @@ function groupStructuredDocument(document) {
   };
 }
 
-function syncProject(project) {
+function syncLegacyProject(project) {
   const chunks = project?.chunks?.map(cloneJson) ?? [];
   setChunkField(chunks, "NAME", "text", project?.name);
   setChunkField(chunks, "BPM ", "value", project?.bpm);
@@ -750,7 +996,7 @@ function syncProject(project) {
   return chunks;
 }
 
-function syncPattern(pattern) {
+function syncLegacyPattern(pattern) {
   const chunks = pattern?.chunks?.map(cloneJson) ?? [];
   setChunkField(chunks, "PNME", "text", pattern?.name);
   setChunkField(chunks, "PXXX", "value", pattern?.position?.x);
@@ -769,7 +1015,7 @@ function syncPattern(pattern) {
   return chunks;
 }
 
-function syncModule(module) {
+function syncLegacyModule(module) {
   const chunks = module?.chunks?.map(cloneJson) ?? [];
   setChunkField(chunks, "SNAM", "text", module?.name);
   setChunkField(chunks, "STYP", "text", module?.type);
@@ -788,6 +1034,92 @@ function syncModule(module) {
   const midi = firstChunk(chunks, "CMID");
   if (midi && module?.midiBindings) {
     midi.midiBindings = module.midiBindings;
+  }
+  return chunks;
+}
+
+function syncProject(project) {
+  if (Array.isArray(project?.chunks)) {
+    return syncLegacyProject(project);
+  }
+  const chunks = [];
+  for (const token of scopeGrammar("project").order) {
+    if (token === "extraChunks") {
+      chunks.push(...(project?.extraChunks ?? []).map(cloneJson));
+      continue;
+    }
+    const chunk = emitScopeField("project", project, token);
+    if (chunk) {
+      chunks.push(chunk);
+    }
+  }
+  return chunks;
+}
+
+function syncPattern(pattern) {
+  if (Array.isArray(pattern?.chunks)) {
+    return syncLegacyPattern(pattern);
+  }
+  const chunks = [];
+  const terminator = scopeGrammar("pattern").terminator;
+  for (const token of scopeGrammar("pattern").order) {
+    if (token === "extraChunks") {
+      chunks.push(...(pattern?.extraChunks ?? []).map(cloneJson));
+      continue;
+    }
+    if (token === terminator) {
+      chunks.push({ id: terminator, _label: chunkLabel(terminator) });
+      continue;
+    }
+    const chunk = emitScopeField("pattern", pattern, token);
+    if (chunk) {
+      chunks.push(chunk);
+    }
+  }
+  return chunks;
+}
+
+function makeMidiBindingsChunk(module) {
+  if (!Array.isArray(module?.midiBindings)) {
+    return undefined;
+  }
+  return makeSemanticChunk("CMID", "midiBindings", module.midiBindings);
+}
+
+function syncModule(module) {
+  if (Array.isArray(module?.chunks)) {
+    return syncLegacyModule(module);
+  }
+  const chunks = [];
+  const terminator = scopeGrammar("module").terminator;
+  for (const token of scopeGrammar("module").order) {
+    if (token === "controllers") {
+      chunks.push(...makeControllerChunks(module?.type, module?.controllers));
+      continue;
+    }
+    if (token === "midiBindings") {
+      const midi = makeMidiBindingsChunk(module);
+      if (midi) {
+        chunks.push(midi);
+      }
+      continue;
+    }
+    if (token === "dataChunks") {
+      chunks.push(...makeModuleDataChunks(module));
+      continue;
+    }
+    if (token === "extraChunks") {
+      chunks.push(...(module?.extraChunks ?? []).map(cloneJson));
+      continue;
+    }
+    if (token === terminator) {
+      chunks.push({ id: terminator, _label: chunkLabel(terminator) });
+      continue;
+    }
+    const chunk = emitScopeField("module", module, token);
+    if (chunk) {
+      chunks.push(chunk);
+    }
   }
   return chunks;
 }

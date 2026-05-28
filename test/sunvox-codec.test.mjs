@@ -20,10 +20,14 @@ test("parses project into structured metadata", async () => {
   assert.equal(document.magic, "SVOX");
   assert.equal(document.format, "sunvox-structured-text-v1");
   assert.equal(document.project.name, "2022-04-17 03-24");
+  assert.equal(document.project.version, 33554437);
   assert.equal(document.project.bpm, 125);
   assert.equal(document.project.speed, 6);
+  assert.equal(document.project.chunks, undefined);
   assert.ok(document.patterns.length > 0);
   assert.ok(document.modules.length > 0);
+  assert.equal(document.patterns.some((pattern) => Array.isArray(pattern.chunks)), false);
+  assert.equal(document.modules.some((module) => Array.isArray(module.chunks)), false);
 });
 
 test("parses synth into a structured module", async () => {
@@ -34,6 +38,14 @@ test("parses synth into a structured module", async () => {
   assert.equal(document.module.name, "Shepard tone");
   assert.equal(document.module.type, "MetaModule");
   assert.match(document.module.color ?? "", /^#[0-9a-f]{6}$/);
+  assert.equal(document.module.chunks, undefined);
+  assert.deepEqual(document.module.midi, {
+    inputIndex: 0,
+    inputChannel: 0,
+    inputBank: -1,
+    inputProgram: 4294967295,
+  });
+  assert.equal(document.module.dataChunks.length, 3);
   assert.deepEqual(document.module.controllers, {
     volume: 160,
     inputModule: 3,

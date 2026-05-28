@@ -36,7 +36,17 @@ export interface MidiBinding {
 
 export type PackedMidiBinding = [midiPars1: number, midiPars2: number];
 export type EditableMidiBinding = PackedMidiBinding | MidiBinding | { midiPars1: number; midiPars2: number };
-export type ModuleControllers = number[] | Record<string, number | string>;
+export type ModuleControllers =
+  | number[]
+  | ({ extra?: Record<string, number> } & Record<string, number | string | Record<string, number> | undefined>);
+
+export interface ModuleDataChunk {
+  index: number;
+  base64?: string;
+  flags?: number;
+  sampleRate?: number;
+  chunk?: EditableSunVoxChunk;
+}
 
 export interface PatternNote {
   note: number;
@@ -95,31 +105,51 @@ export interface EditableSunVoxTextDocument {
 }
 
 export interface StructuredProject {
+  version?: number;
+  baseVersion?: number;
+  flags?: number;
+  sessionFlags?: number;
   name?: string;
   bpm?: number;
   speed?: number;
   globalVolume?: number;
+  timeline?: {
+    grid?: number;
+    grid2?: number;
+  };
   view?: {
     moduleScale?: number;
     moduleZoom?: number;
     xOffset?: number;
     yOffset?: number;
   };
-  chunks: EditableSunVoxChunk[];
+  layerMask?: number;
+  currentLine?: number;
+  time?: number;
+  selectionStart?: number;
+  lastGenerator?: number;
+  patternCount?: number;
+  extraChunks?: EditableSunVoxChunk[];
+  chunks?: EditableSunVoxChunk[];
 }
 
 export interface StructuredPattern {
+  index?: number;
+  layer?: number;
   name?: string;
   position?: { x?: number; y?: number };
   tracks?: number;
   lines?: number;
   ySize?: number;
+  displayFlags?: number;
+  iconBase64?: string;
   foreground?: string;
   background?: string;
   parent?: number;
   flags?: number;
   events?: EditablePatternEvent[];
-  chunks: EditableSunVoxChunk[];
+  extraChunks?: EditableSunVoxChunk[];
+  chunks?: EditableSunVoxChunk[];
 }
 
 export interface StructuredModule {
@@ -131,11 +161,24 @@ export interface StructuredModule {
   finetune?: number;
   relativeNote?: number;
   scale?: number;
+  version?: number;
+  midi?: {
+    inputIndex?: number;
+    name?: string;
+    inputChannel?: number;
+    inputBank?: number;
+    inputProgram?: number;
+  };
   inputLinks?: number[];
+  auxInputLinks?: number[];
   outputLinks?: number[];
+  auxOutputLinks?: number[];
   controllers?: ModuleControllers;
   midiBindings?: EditableMidiBinding[];
-  chunks: EditableSunVoxChunk[];
+  dataChunkCount?: number;
+  dataChunks?: ModuleDataChunk[];
+  extraChunks?: EditableSunVoxChunk[];
+  chunks?: EditableSunVoxChunk[];
 }
 
 export interface StructuredSunVoxProjectDocument {
