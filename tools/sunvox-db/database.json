@@ -217,11 +217,35 @@
     "MetaModule": {
       "dataChunks": [
         { "index": 0, "name": "embeddedProject", "type": "container", "magic": ["SVOX"] },
-        { "index": 1, "name": "controllerLinks", "type": "metamoduleControllerLinks", "count": 96 },
-        { "index": 2, "name": "options", "type": "metamoduleOptions", "flags": "metamodule_option_flags" }
+        {
+          "index": 1,
+          "name": "controllerLinks",
+          "type": "packedUInt32Array",
+          "path": "links",
+          "count": 96,
+          "omitZero": true,
+          "fields": [
+            { "name": "module", "shift": 0, "bits": 16 },
+            { "name": "controller", "shift": 16, "bits": 16 }
+          ]
+        },
+        {
+          "index": 2,
+          "name": "options",
+          "type": "struct",
+          "path": "options",
+          "size": 8,
+          "fields": [
+            { "name": "userControllers", "type": "uint8", "offset": 0 },
+            { "name": "arpeggiator", "type": "bool8", "offset": 1 },
+            { "name": "useVelocity", "type": "bool8", "offset": 2 },
+            { "name": "eventOutput", "type": "bool8", "offset": 3, "invert": true },
+            { "name": "flags", "type": "uint32", "offset": 4, "bitflags": "metamodule_option_flags", "default": 0 }
+          ]
+        }
       ],
       "dataChunkRanges": [
-        { "start": 8, "end": 103, "name": "userControllerName", "type": "metamoduleControllerName", "indexOffset": 8 }
+        { "start": 8, "end": 103, "name": "userControllerName", "type": "string", "format": "metamoduleControllerName", "indexOffset": 8 }
       ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
@@ -233,7 +257,23 @@
     },
     "MultiCtl": {
       "dataChunks": [
-        { "index": 0, "name": "outputSlots", "type": "multictlOutputSlots", "count": 16 },
+        {
+          "index": 0,
+          "name": "outputSlots",
+          "type": "recordArray",
+          "path": "slots",
+          "count": 16,
+          "recordSize": 32,
+          "omitDefaults": true,
+          "omitDefaultRecords": true,
+          "fields": [
+            { "name": "min", "type": "int32", "offset": 0, "default": 0 },
+            { "name": "max", "type": "int32", "offset": 4, "default": 32768 },
+            { "name": "controller", "type": "int32", "offset": 8, "default": 0 },
+            { "name": "flags", "type": "uint32", "offset": 12, "default": 0 },
+            { "name": "futureUse", "type": "int32", "offset": 16, "count": 4, "default": [0, 0, 0, 0] }
+          ]
+        },
         { "index": 1, "name": "curve", "type": "uint16Array", "count": 257 }
       ],
       "controllers": [
@@ -247,7 +287,17 @@
     },
     "Sound2Ctl": {
       "dataChunks": [
-        { "index": 0, "name": "options", "type": "sound2ctlOptions" }
+        {
+          "index": 0,
+          "name": "options",
+          "type": "struct",
+          "path": "options",
+          "size": 2,
+          "fields": [
+            { "name": "recordValues", "type": "bool8", "offset": 0 },
+            { "name": "sendChangesOnly", "type": "bool8", "offset": 1 }
+          ]
+        }
       ],
       "controllers": [
         { "index": 0, "name": "sampleRate", "label": "Sample rate", "type": "int32", "min": 1, "max": 32768, "default": 50, "normal": 50, "group": 0 },

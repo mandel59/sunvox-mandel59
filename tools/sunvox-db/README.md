@@ -10,7 +10,8 @@ can either interpret it directly or generate conversion code from it later.
 - `enums`: maps stored numeric values to editable names.
 - `bitfields`: describes packed integer fields such as `CMID`.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
-- `modules`: describes module-specific controller layouts.
+- `modules`: describes module-specific controller layouts and data chunk
+  layouts.
 
 The initial database covers the chunk labels already used by the codec,
 project/pattern/module chunk order, `CMID` MIDI binding bitfields, and the core
@@ -18,9 +19,10 @@ project/pattern/module chunk order, `CMID` MIDI binding bitfields, and the core
 as an embedded SunVox container, allowing the codec to recurse into it instead
 of keeping that payload as opaque base64. Additional `MetaModule` data chunk
 definitions describe user controller links, options, and custom controller
-names. `MultiCtl` definitions cover its named controllers, output slots, and
-16-bit response curve. `Sound2Ctl` definitions cover its named controllers and
-two-byte options chunk.
+names through reusable layout types such as `packedUInt32Array`, `struct`,
+`recordArray`, and `string`. `MultiCtl` definitions cover its named
+controllers, output slots, and 16-bit response curve. `Sound2Ctl` definitions
+cover its named controllers and two-byte options chunk.
 
 ## Round-Trip Policy
 

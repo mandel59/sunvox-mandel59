@@ -117,12 +117,38 @@
               "properties": {
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["container", "metamoduleControllerLinks", "metamoduleOptions", "multictlOutputSlots", "sound2ctlOptions", "uint16Array"] },
+                "type": { "enum": ["container", "packedUInt32Array", "recordArray", "string", "struct", "uint16Array"] },
+                "path": { "type": "string" },
                 "count": { "type": "integer", "minimum": 0 },
-                "flags": { "type": "string" },
+                "size": { "type": "integer", "minimum": 0 },
+                "recordSize": { "type": "integer", "minimum": 0 },
+                "format": { "type": "string" },
+                "omitZero": { "type": "boolean" },
+                "omitDefaults": { "type": "boolean" },
+                "omitDefaultRecords": { "type": "boolean" },
                 "magic": {
                   "type": "array",
                   "items": { "enum": ["SVOX", "SSYN"] }
+                },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name"],
+                    "properties": {
+                      "name": { "type": "string" },
+                      "type": { "enum": ["bool8", "int32", "uint8", "uint16", "uint32"] },
+                      "offset": { "type": "integer", "minimum": 0 },
+                      "count": { "type": "integer", "minimum": 1 },
+                      "default": {},
+                      "invert": { "type": "boolean" },
+                      "enum": { "type": "string" },
+                      "bitflags": { "type": "string" },
+                      "shift": { "type": "integer", "minimum": 0 },
+                      "bits": { "type": "integer", "minimum": 1, "maximum": 32 }
+                    },
+                    "additionalProperties": false
+                  }
                 }
               },
               "additionalProperties": false
@@ -137,7 +163,8 @@
                 "start": { "type": "integer", "minimum": 0 },
                 "end": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["metamoduleControllerName"] },
+                "type": { "enum": ["string"] },
+                "format": { "type": "string" },
                 "indexOffset": { "type": "integer", "minimum": 0 }
               },
               "additionalProperties": false

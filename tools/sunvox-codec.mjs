@@ -617,60 +617,6 @@ function moduleDataDefinition(type, index) {
   );
 }
 
-function decodeMetaModuleControllerLinks(data, count) {
-  const links = [];
-  for (let offset = 0, index = 0; offset + 4 <= data.length; offset += 4, index += 1) {
-    const value = data.readUInt32LE(offset);
-    if (value === 0) {
-      continue;
-    }
-    links.push({
-      index,
-      module: value & 0xffff,
-      controller: (value >>> 16) & 0xffff,
-    });
-  }
-  return {
-    count: count ?? Math.floor(data.length / 4),
-    links,
-  };
-}
-
-function encodeMetaModuleControllerLinks(dataChunk) {
-  const count = dataChunk.count ?? 96;
-  const buffer = Buffer.alloc(count * 4);
-  for (const link of dataChunk.links ?? []) {
-    const index = link.index;
-    if (!Number.isInteger(index) || index < 0 || index >= count) {
-      throw new Error(`Invalid MetaModule controller link index: ${index}`);
-    }
-    const value = ((link.controller ?? 0) << 16) | (link.module ?? 0);
-    buffer.writeUInt32LE(value >>> 0, index * 4);
-  }
-  return buffer;
-}
-
-function decodeMetaModuleOptions(data, flagsName) {
-  return {
-    userControllers: data.readUInt8(0),
-    arpeggiator: Boolean(data.readUInt8(1)),
-    useVelocity: Boolean(data.readUInt8(2)),
-    eventOutput: !Boolean(data.readUInt8(3)),
-    flags: decodeBitflags(flagsName, data.length >= 8 ? data.readUInt32LE(4) : 0),
-  };
-}
-
-function encodeMetaModuleOptions(dataChunk, flagsName) {
-  const options = dataChunk.options ?? {};
-  const buffer = Buffer.alloc(8);
-  buffer.writeUInt8(options.userControllers ?? 0, 0);
-  buffer.writeUInt8(options.arpeggiator ? 1 : 0, 1);
-  buffer.writeUInt8(options.useVelocity ? 1 : 0, 2);
-  buffer.writeUInt8(options.eventOutput === false ? 1 : 0, 3);
-  buffer.writeUInt32LE(encodeBitflags(flagsName, options.flags ?? 0), 4);
-  return buffer;
-}
-
 function decodeMetaModuleControllerName(text) {
   const match = /^@([0-9a-fA-F])(.*)$/u.exec(text);
   if (match) {
@@ -691,84 +637,312 @@ function encodeMetaModuleControllerName(dataChunk) {
   return Buffer.from(`${text}\0`, "utf8");
 }
 
-function decodeMultiCtlOutputSlots(data, count) {
-  const slots = [];
-  const slotCount = Math.floor(data.length / 32);
-  for (let index = 0; index < slotCount; index += 1) {
-    const offset = index * 32;
-    const slot = {
-      index,
-      min: data.readInt32LE(offset),
-      max: data.readInt32LE(offset + 4),
-      controller: data.readInt32LE(offset + 8),
-      flags: data.readUInt32LE(offset + 12),
-      futureUse: [
-        data.readInt32LE(offset + 16),
-        data.readInt32LE(offset + 20),
-        data.readInt32LE(offset + 24),
-        data.readInt32LE(offset + 28),
-      ],
-    };
-    const isDefault =
-      slot.min === 0 &&
-      slot.max === 32768 &&
-      slot.controller === 0 &&
-      slot.flags === 0 &&
-      slot.futureUse.every((value) => value === 0);
-    if (!isDefault) {
-      if (slot.min === 0) delete slot.min;
-      if (slot.max === 32768) delete slot.max;
-      if (slot.controller === 0) delete slot.controller;
-      if (slot.flags === 0) delete slot.flags;
-      if (slot.futureUse.every((value) => value === 0)) delete slot.futureUse;
-      slots.push(slot);
+const BINARY_TYPES = {
+  bool8: { size: 1, read: "readUInt8", write: "writeUInt8" },
+  int32: { size: 4, read: "readInt32LE", write: "writeInt32LE" },
+  uint8: { size: 1, read: "readUInt8", write: "writeUInt8" },
+  uint16: { size: 2, read: "readUInt16LE", write: "writeUInt16LE" },
+  uint32: { size: 4, read: "readUInt32LE", write: "writeUInt32LE" },
+};
+
+function binaryType(field) {
+  const type = BINARY_TYPES[field.type];
+  if (!type) {
+    throw new Error(`Unsupported binary field type: ${field.type}`);
+  }
+  return type;
+}
+
+function binaryFieldSize(field) {
+  return binaryType(field).size * (field.count ?? 1);
+}
+
+function readBinaryScalar(data, field, offset) {
+  let value = data[binaryType(field).read](offset);
+  if (field.type === "bool8") {
+    value = Boolean(value);
+    return field.invert ? !value : value;
+  }
+  if (field.bitflags) {
+    return decodeBitflags(field.bitflags, value);
+  }
+  if (field.enum) {
+    return enumToName(field.enum, value);
+  }
+  return value;
+}
+
+function writeBinaryScalar(buffer, field, offset, value) {
+  let binaryValue = value;
+  if (field.type === "bool8") {
+    binaryValue = field.invert ? !Boolean(value) : Boolean(value);
+  } else if (field.bitflags) {
+    binaryValue = encodeBitflags(field.bitflags, value ?? 0);
+  } else if (field.enum) {
+    binaryValue = enumToValue(field.enum, value ?? 0);
+  }
+
+  buffer[binaryType(field).write](field.type === "bool8" ? (binaryValue ? 1 : 0) : (binaryValue ?? 0), offset);
+}
+
+function readBinaryField(data, field, baseOffset = 0) {
+  const offset = baseOffset + field.offset;
+  if (offset + binaryFieldSize(field) > data.length) {
+    return cloneJson(field.default);
+  }
+  if (!field.count) {
+    return readBinaryScalar(data, field, offset);
+  }
+  const values = [];
+  const itemSize = binaryFieldSize({ ...field, count: 1 });
+  for (let index = 0; index < field.count; index += 1) {
+    values.push(readBinaryScalar(data, field, offset + index * itemSize));
+  }
+  return values;
+}
+
+function writeBinaryField(buffer, field, object, baseOffset = 0) {
+  const offset = baseOffset + field.offset;
+  const value = object?.[field.name] ?? cloneJson(field.default);
+  if (!field.count) {
+    writeBinaryScalar(buffer, field, offset, value);
+    return;
+  }
+  const values = Array.isArray(value) ? value : [];
+  const defaults = Array.isArray(field.default) ? field.default : [];
+  const itemSize = binaryFieldSize({ ...field, count: 1 });
+  for (let index = 0; index < field.count; index += 1) {
+    writeBinaryScalar(buffer, field, offset + index * itemSize, values[index] ?? defaults[index] ?? 0);
+  }
+}
+
+function binaryLayoutSize(fields) {
+  return Math.max(0, ...fields.map((field) => field.offset + binaryFieldSize(field)));
+}
+
+function valuesEqual(left, right) {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return JSON.stringify(left ?? []) === JSON.stringify(right ?? []);
+  }
+  return left === right;
+}
+
+function decodeStructData(data, definition) {
+  const object = {};
+  for (const field of definition.fields ?? []) {
+    const value = readBinaryField(data, field);
+    if (value !== undefined) {
+      object[field.name] = value;
     }
   }
+  if (!definition.path) {
+    return object;
+  }
+  const result = {};
+  setPath(result, definition.path, object);
+  return result;
+}
+
+function encodeStructData(dataChunk, definition) {
+  const object = definition.path ? getPath(dataChunk, definition.path) : dataChunk;
+  if (!object || typeof object !== "object") {
+    return undefined;
+  }
+  const buffer = Buffer.alloc(definition.size ?? binaryLayoutSize(definition.fields ?? []));
+  for (const field of definition.fields ?? []) {
+    writeBinaryField(buffer, field, object);
+  }
+  return buffer;
+}
+
+function decodePackedUInt32Array(data, definition) {
+  if (data.length % 4 !== 0) {
+    return undefined;
+  }
+  const values = [];
+  for (let offset = 0, index = 0; offset + 4 <= data.length; offset += 4, index += 1) {
+    const packed = data.readUInt32LE(offset);
+    if (definition.omitZero && packed === 0) {
+      continue;
+    }
+    const value = { [definition.indexField ?? "index"]: index };
+    for (const field of definition.fields ?? []) {
+      value[field.name] = (packed >>> field.shift) & bitMask(field.bits);
+    }
+    values.push(value);
+  }
   return {
-    count: count ?? slotCount,
-    slots,
+    count: definition.count ?? Math.floor(data.length / 4),
+    [definition.path]: values,
   };
 }
 
-function encodeMultiCtlOutputSlots(dataChunk) {
-  const count = dataChunk.count ?? 16;
-  const buffer = Buffer.alloc(count * 32);
-  for (let index = 0; index < count; index += 1) {
-    const offset = index * 32;
-    buffer.writeInt32LE(0, offset);
-    buffer.writeInt32LE(32768, offset + 4);
+function encodePackedUInt32Array(dataChunk, definition) {
+  const values = getPath(dataChunk, definition.path);
+  if (!Array.isArray(values)) {
+    return undefined;
   }
-  for (const slot of dataChunk.slots ?? []) {
-    const index = slot.index;
+  const count = dataChunk.count ?? definition.count ?? values.length;
+  const buffer = Buffer.alloc(count * 4);
+  for (const value of values) {
+    const index = value[definition.indexField ?? "index"];
     if (!Number.isInteger(index) || index < 0 || index >= count) {
-      throw new Error(`Invalid MultiCtl output slot index: ${index}`);
+      throw new Error(`Invalid ${definition.name} index: ${index}`);
     }
-    const offset = index * 32;
-    buffer.writeInt32LE(slot.min ?? 0, offset);
-    buffer.writeInt32LE(slot.max ?? 32768, offset + 4);
-    buffer.writeInt32LE(slot.controller ?? 0, offset + 8);
-    buffer.writeUInt32LE(slot.flags ?? 0, offset + 12);
-    const futureUse = slot.futureUse ?? [];
-    for (let futureIndex = 0; futureIndex < 4; futureIndex += 1) {
-      buffer.writeInt32LE(futureUse[futureIndex] ?? 0, offset + 16 + futureIndex * 4);
+    let packed = 0;
+    for (const field of definition.fields ?? []) {
+      packed |= ((value[field.name] ?? 0) & bitMask(field.bits)) << field.shift;
+    }
+    buffer.writeUInt32LE(packed >>> 0, index * 4);
+  }
+  return buffer;
+}
+
+function decodeRecordArray(data, definition) {
+  const recordSize = definition.recordSize ?? binaryLayoutSize(definition.fields ?? []);
+  if (recordSize <= 0 || data.length % recordSize !== 0) {
+    return undefined;
+  }
+  const records = [];
+  const count = Math.floor(data.length / recordSize);
+  for (let index = 0; index < count; index += 1) {
+    const record = { [definition.indexField ?? "index"]: index };
+    let hasNonDefault = false;
+    for (const field of definition.fields ?? []) {
+      const value = readBinaryField(data, field, index * recordSize);
+      const defaultValue = cloneJson(field.default);
+      if (!valuesEqual(value, defaultValue)) {
+        hasNonDefault = true;
+        record[field.name] = value;
+      } else if (!definition.omitDefaults) {
+        record[field.name] = value;
+      }
+    }
+    if (!definition.omitDefaultRecords || hasNonDefault) {
+      records.push(record);
+    }
+  }
+  return {
+    count: definition.count ?? count,
+    [definition.path]: records,
+  };
+}
+
+function encodeRecordArray(dataChunk, definition) {
+  const records = getPath(dataChunk, definition.path);
+  if (!Array.isArray(records)) {
+    return undefined;
+  }
+  const count = dataChunk.count ?? definition.count ?? records.length;
+  const recordSize = definition.recordSize ?? binaryLayoutSize(definition.fields ?? []);
+  const buffer = Buffer.alloc(count * recordSize);
+  const emptyRecord = {};
+  for (const field of definition.fields ?? []) {
+    emptyRecord[field.name] = cloneJson(field.default);
+  }
+  for (let index = 0; index < count; index += 1) {
+    for (const field of definition.fields ?? []) {
+      writeBinaryField(buffer, field, emptyRecord, index * recordSize);
+    }
+  }
+  for (const record of records) {
+    const index = record[definition.indexField ?? "index"];
+    if (!Number.isInteger(index) || index < 0 || index >= count) {
+      throw new Error(`Invalid ${definition.name} index: ${index}`);
+    }
+    for (const field of definition.fields ?? []) {
+      writeBinaryField(buffer, field, record, index * recordSize);
     }
   }
   return buffer;
 }
 
-function decodeSound2CtlOptions(data) {
-  return {
-    recordValues: Boolean(data.readUInt8(0)),
-    sendChangesOnly: Boolean(data.readUInt8(1)),
-  };
+function decodeStringData(data, definition) {
+  const text = decodeCString(data);
+  if (text === undefined) {
+    return undefined;
+  }
+  if (definition.format === "metamoduleControllerName") {
+    return decodeMetaModuleControllerName(text);
+  }
+  return { [definition.path ?? "text"]: text };
 }
 
-function encodeSound2CtlOptions(dataChunk) {
-  const options = dataChunk.options ?? {};
-  const buffer = Buffer.alloc(2);
-  buffer.writeUInt8(options.recordValues ? 1 : 0, 0);
-  buffer.writeUInt8(options.sendChangesOnly ? 1 : 0, 1);
-  return buffer;
+function encodeStringData(dataChunk, definition) {
+  if (definition.format === "metamoduleControllerName") {
+    if (dataChunk.text === undefined && dataChunk.label === undefined) {
+      return undefined;
+    }
+    return encodeMetaModuleControllerName(dataChunk);
+  }
+  const text = getPath(dataChunk, definition.path ?? "text");
+  return text === undefined ? undefined : Buffer.from(`${text}\0`, "utf8");
+}
+
+const MODULE_DATA_CODECS = {
+  container: {
+    decode(data, definition) {
+      const magic = data.length >= 4 ? toAscii(data.subarray(0, 4)) : undefined;
+      if (!SUPPORTED_MAGICS.has(magic) || (definition.magic && !definition.magic.includes(magic))) {
+        return undefined;
+      }
+      return { container: parseContainer(data) };
+    },
+    encode(dataChunk) {
+      return dataChunk.container ? buildContainer(dataChunk.container) : undefined;
+    },
+  },
+  packedUInt32Array: {
+    decode: decodePackedUInt32Array,
+    encode: encodePackedUInt32Array,
+  },
+  recordArray: {
+    decode: decodeRecordArray,
+    encode: encodeRecordArray,
+  },
+  string: {
+    decode: decodeStringData,
+    encode: encodeStringData,
+  },
+  struct: {
+    decode: decodeStructData,
+    encode: encodeStructData,
+  },
+  uint16Array: {
+    decode(data, definition) {
+      if (data.length % 2 !== 0) {
+        return undefined;
+      }
+      return {
+        count: definition.count ?? data.length / 2,
+        values: readUInt16Array(data),
+      };
+    },
+    encode(dataChunk) {
+      return Array.isArray(dataChunk.values) ? writeUInt16Array(dataChunk.values) : undefined;
+    },
+  },
+};
+
+function decodeModuleDataPayload(definition, data) {
+  return definition ? MODULE_DATA_CODECS[definition.type]?.decode?.(data, definition) : undefined;
+}
+
+function encodeModuleDataPayload(dataChunk, definition) {
+  const encoded = definition ? MODULE_DATA_CODECS[definition.type]?.encode?.(dataChunk, definition) : undefined;
+  if (encoded !== undefined) {
+    return encoded;
+  }
+  if (dataChunk.container) {
+    return buildContainer(dataChunk.container);
+  }
+  if (dataChunk.label !== undefined || dataChunk.text !== undefined) {
+    return encodeMetaModuleControllerName(dataChunk);
+  }
+  if (Array.isArray(dataChunk.values)) {
+    return writeUInt16Array(dataChunk.values);
+  }
+  return dataChunk.base64 === undefined ? Buffer.alloc(0) : decodeBase64(dataChunk.base64, "module data chunk");
 }
 
 function decodeModuleDataChunk(type, index, chunk) {
@@ -783,31 +957,9 @@ function decodeModuleDataChunk(type, index, chunk) {
 
   if (chunk.base64 !== undefined) {
     const data = decodeBase64(chunk.base64, `module data chunk ${index}`);
-    const magic = data.length >= 4 ? toAscii(data.subarray(0, 4)) : undefined;
-    if (
-      definition?.type === "container" &&
-      SUPPORTED_MAGICS.has(magic) &&
-      (!definition.magic || definition.magic.includes(magic))
-    ) {
-      dataChunk.container = parseContainer(data);
-    } else if (definition?.type === "metamoduleControllerLinks" && data.length % 4 === 0) {
-      Object.assign(dataChunk, decodeMetaModuleControllerLinks(data, definition.count));
-    } else if (definition?.type === "metamoduleOptions" && data.length >= 4) {
-      dataChunk.options = decodeMetaModuleOptions(data, definition.flags);
-    } else if (definition?.type === "metamoduleControllerName") {
-      const text = decodeCString(data);
-      if (text !== undefined) {
-        Object.assign(dataChunk, decodeMetaModuleControllerName(text));
-      } else {
-        dataChunk.base64 = chunk.base64;
-      }
-    } else if (definition?.type === "multictlOutputSlots" && data.length % 32 === 0) {
-      Object.assign(dataChunk, decodeMultiCtlOutputSlots(data, definition.count));
-    } else if (definition?.type === "uint16Array" && data.length % 2 === 0) {
-      dataChunk.count = definition.count ?? data.length / 2;
-      dataChunk.values = readUInt16Array(data);
-    } else if (definition?.type === "sound2ctlOptions" && data.length >= 2) {
-      dataChunk.options = decodeSound2CtlOptions(data);
+    const decoded = decodeModuleDataPayload(definition, data);
+    if (decoded) {
+      Object.assign(dataChunk, decoded);
     } else {
       dataChunk.base64 = chunk.base64;
     }
@@ -993,53 +1145,11 @@ function makeModuleDataChunks(module) {
     chunks.push(makeSemanticChunk("CHNM", "value", dataChunk.index ?? 0));
     if (dataChunk.chunk) {
       chunks.push(cloneJson(dataChunk.chunk));
-    } else if (dataChunk.container) {
-      chunks.push({
-        id: "CHDT",
-        _label: chunkLabel("CHDT"),
-        base64: buildContainer(dataChunk.container).toString("base64"),
-      });
-    } else if (dataChunk.links) {
-      chunks.push({
-        id: "CHDT",
-        _label: chunkLabel("CHDT"),
-        base64: encodeMetaModuleControllerLinks(dataChunk).toString("base64"),
-      });
-    } else if (dataChunk.options && definition?.type === "metamoduleOptions") {
-      chunks.push({
-        id: "CHDT",
-        _label: chunkLabel("CHDT"),
-        base64: encodeMetaModuleOptions(dataChunk, definition?.flags).toString("base64"),
-      });
-    } else if (dataChunk.options && definition?.type === "sound2ctlOptions") {
-      chunks.push({
-        id: "CHDT",
-        _label: chunkLabel("CHDT"),
-        base64: encodeSound2CtlOptions(dataChunk).toString("base64"),
-      });
-    } else if (dataChunk.label !== undefined || dataChunk.text !== undefined) {
-      chunks.push({
-        id: "CHDT",
-        _label: chunkLabel("CHDT"),
-        base64: encodeMetaModuleControllerName(dataChunk).toString("base64"),
-      });
-    } else if (dataChunk.slots) {
-      chunks.push({
-        id: "CHDT",
-        _label: chunkLabel("CHDT"),
-        base64: encodeMultiCtlOutputSlots(dataChunk).toString("base64"),
-      });
-    } else if (dataChunk.values) {
-      chunks.push({
-        id: "CHDT",
-        _label: chunkLabel("CHDT"),
-        base64: writeUInt16Array(dataChunk.values).toString("base64"),
-      });
     } else {
       chunks.push({
         id: "CHDT",
         _label: chunkLabel("CHDT"),
-        base64: dataChunk.base64 ?? "",
+        base64: encodeModuleDataPayload(dataChunk, definition).toString("base64"),
       });
     }
     if (dataChunk.flags !== undefined) {
