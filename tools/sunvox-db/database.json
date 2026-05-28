@@ -275,6 +275,33 @@
       "6": "db84",
       "7": "db96"
     },
+    "fft_sample_rate": {
+      "0": "hz8000",
+      "1": "hz11025",
+      "2": "hz16000",
+      "3": "hz22050",
+      "4": "hz32000",
+      "5": "hz44100",
+      "6": "hz48000",
+      "7": "hz88200",
+      "8": "hz96000",
+      "9": "hz192000"
+    },
+    "fft_buffer_samples": {
+      "0": "samples64",
+      "1": "samples128",
+      "2": "samples256",
+      "3": "samples512",
+      "4": "samples1024",
+      "5": "samples2048",
+      "6": "samples4096",
+      "7": "samples8192"
+    },
+    "fft_buffer_overlap": {
+      "0": "none",
+      "1": "x2",
+      "2": "x4"
+    },
     "filter2_mode": {
       "0": "stereo",
       "1": "mono",
@@ -438,6 +465,24 @@
       "1": "linear",
       "2": "spline"
     },
+    "pitch_detector_algorithm": {
+      "0": "fastZeroCrossing",
+      "1": "autocorrelation",
+      "2": "cepstrum",
+      "3": "spectralPeak"
+    },
+    "pitch_detector_sample_rate": {
+      "0": "hz12000",
+      "1": "hz24000",
+      "2": "hz44100"
+    },
+    "pitch_detector_buffer_ms": {
+      "0": "ms5",
+      "1": "ms10",
+      "2": "ms21",
+      "3": "ms42",
+      "4": "ms85"
+    },
     "fmx_sample_rate": {
       "0": "hz8000",
       "1": "hz11025",
@@ -476,6 +521,38 @@
       "0": "off",
       "1": "on",
       "2": "repeat"
+    },
+    "stop_start": {
+      "0": "stop",
+      "1": "start"
+    },
+    "adsr_noteon_action": {
+      "0": "doNothing",
+      "1": "startOnFirstNote",
+      "2": "start"
+    },
+    "adsr_noteoff_action": {
+      "0": "doNothing",
+      "1": "stopOnLastNote",
+      "2": "stop"
+    },
+    "adsr_mode": {
+      "0": "generator",
+      "1": "ampModulatorMono",
+      "2": "ampModulatorStereo"
+    },
+    "vocal_filter_voice_type": {
+      "0": "soprano",
+      "1": "alto",
+      "2": "tenor",
+      "3": "bass"
+    },
+    "vowel_type": {
+      "0": "a",
+      "1": "e",
+      "2": "i",
+      "3": "o",
+      "4": "u"
     },
     "fm2_waveform": {
       "0": "custom",
@@ -725,6 +802,25 @@
         { "index": 8, "name": "bipolarDcOffset", "label": "Bipolar DC offset", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 1, "displayOffset": -16384 }
       ]
     },
+    "ADSR": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 0 },
+        { "index": 1, "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 10000, "default": 100, "normal": -1, "group": 1, "scale": "exp3", "unit": "ms" },
+        { "index": 2, "name": "decay", "label": "Decay", "type": "int32", "min": 0, "max": 10000, "default": 100, "normal": -1, "group": 1, "scale": "exp3", "unit": "ms" },
+        { "index": 3, "name": "sustainLevel", "label": "Sustain level", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 1 },
+        { "index": 4, "name": "release", "label": "Release", "type": "int32", "min": 0, "max": 10000, "default": 100, "normal": -1, "group": 1, "scale": "exp3", "unit": "ms" },
+        { "index": 5, "name": "attackCurve", "label": "Attack curve", "type": "enum", "enum": "adsr_curve", "min": 0, "max": 11, "default": 0, "normal": -1, "group": 2 },
+        { "index": 6, "name": "decayCurve", "label": "Decay curve", "type": "enum", "enum": "adsr_curve", "min": 0, "max": 11, "default": 0, "normal": -1, "group": 2 },
+        { "index": 7, "name": "releaseCurve", "label": "Release curve", "type": "enum", "enum": "adsr_curve", "min": 0, "max": 11, "default": 0, "normal": -1, "group": 2 },
+        { "index": 8, "name": "sustain", "label": "Sustain", "type": "enum", "enum": "adsr_sustain", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 3 },
+        { "index": 9, "name": "sustainPedal", "label": "Sustain pedal", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 },
+        { "index": 10, "name": "state", "label": "State", "type": "enum", "enum": "stop_start", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 4 },
+        { "index": 11, "name": "onNoteOn", "label": "On NoteON", "type": "enum", "enum": "adsr_noteon_action", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 5 },
+        { "index": 12, "name": "onNoteOff", "label": "On NoteOFF", "type": "enum", "enum": "adsr_noteoff_action", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 5 },
+        { "index": 13, "name": "mode", "label": "Mode", "type": "enum", "enum": "adsr_mode", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 5 },
+        { "index": 14, "name": "smoothTransitions", "label": "Smooth transitions", "type": "enum", "enum": "adsr_smooth_transition", "min": 0, "max": 3, "default": 2, "normal": -1, "group": 5 }
+      ]
+    },
     "Analog generator": {
       "dataChunks": [
         { "index": 0, "name": "drawnWaveform", "type": "int8Array", "count": 32 },
@@ -935,6 +1031,27 @@
         { "index": 7, "name": "lfoWaveform", "label": "LFO waveform", "type": "enum", "enum": "flanger_lfo_waveform", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 2 },
         { "index": 8, "name": "setLfoPhase", "label": "Set LFO phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 2 },
         { "index": 9, "name": "lfoFreqUnit", "label": "LFO freq unit", "type": "enum", "enum": "flanger_lfo_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 2 }
+      ]
+    },
+    "FFT": {
+      "controllers": [
+        { "index": 0, "name": "sampleRate", "label": "Sample rate", "type": "enum", "enum": "fft_sample_rate", "min": 0, "max": 9, "default": 5, "normal": -1, "group": 0 },
+        { "index": 1, "name": "channels", "label": "Channels", "type": "enum", "enum": "mono_stereo", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
+        { "index": 2, "name": "bufferSamples", "label": "Buffer (samples)", "type": "enum", "enum": "fft_buffer_samples", "min": 0, "max": 7, "default": 4, "normal": -1, "group": 0 },
+        { "index": 3, "name": "bufferOverlap", "label": "Buf overlap", "type": "enum", "enum": "fft_buffer_overlap", "min": 0, "max": 2, "default": 1, "normal": -1, "group": 0 },
+        { "index": 4, "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 0 },
+        { "index": 5, "name": "noiseReduction", "label": "Noise reduction", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1, "scale": "exp3" },
+        { "index": 6, "name": "phaseGain", "label": "Phase gain", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": 16384, "group": 1 },
+        { "index": 7, "name": "allPassFilter", "label": "All-pass filter", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1 },
+        { "index": 8, "name": "randomFrequencySpread", "label": "Frequency spread", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 2, "scale": "exp3" },
+        { "index": 9, "name": "randomPhase", "label": "Random phase", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 2, "scale": "exp3" },
+        { "index": 10, "name": "randomPhaseLite", "label": "Random phase (lite)", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 2, "scale": "exp3" },
+        { "index": 11, "name": "freqShift", "label": "Freq shift", "type": "int32", "min": 0, "max": 8192, "default": 4096, "normal": 4096, "group": 3, "displayOffset": -4096 },
+        { "index": 12, "name": "deform1", "label": "Deform1", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 3 },
+        { "index": 13, "name": "deform2", "label": "Deform2", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 3 },
+        { "index": 14, "name": "hpCutoff", "label": "HP cutoff", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 3, "scale": "exp3" },
+        { "index": 15, "name": "lpCutoff", "label": "LP cutoff", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 3, "scale": "exp3" },
+        { "index": 16, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 4 }
       ]
     },
     "FM": {
@@ -1286,6 +1403,36 @@
         { "index": 6, "name": "exponentialAmplitude", "label": "Exponential amplitude", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
       ]
     },
+    "Vocal filter": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "formantWidth", "label": "Formant width", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "unit": "Hz" },
+        { "index": 2, "name": "intensity", "label": "Intensity", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0 },
+        { "index": 3, "name": "formants", "label": "Formants", "type": "int32", "min": 1, "max": 5, "default": 5, "normal": -1, "group": 0 },
+        { "index": 4, "name": "vowelPosition", "label": "Vowel (a,e,i,o,u)", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 1 },
+        { "index": 5, "name": "voiceType", "label": "Voice type", "type": "enum", "enum": "vocal_filter_voice_type", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 1 },
+        { "index": 6, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 2 },
+        { "index": 7, "name": "randomFrequency", "label": "Random frequency", "type": "int32", "min": 0, "max": 1024, "default": 0, "normal": -1, "group": 3 },
+        { "index": 8, "name": "randomSeed", "label": "Random seed", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 3 },
+        { "index": 9, "name": "vowel1", "label": "Vowel1", "type": "enum", "enum": "vowel_type", "min": 0, "max": 4, "default": 0, "normal": -1, "group": 1 },
+        { "index": 10, "name": "vowel2", "label": "Vowel2", "type": "enum", "enum": "vowel_type", "min": 0, "max": 4, "default": 1, "normal": -1, "group": 1 },
+        { "index": 11, "name": "vowel3", "label": "Vowel3", "type": "enum", "enum": "vowel_type", "min": 0, "max": 4, "default": 2, "normal": -1, "group": 1 },
+        { "index": 12, "name": "vowel4", "label": "Vowel4", "type": "enum", "enum": "vowel_type", "min": 0, "max": 4, "default": 3, "normal": -1, "group": 1 },
+        { "index": 13, "name": "vowel5", "label": "Vowel5", "type": "enum", "enum": "vowel_type", "min": 0, "max": 4, "default": 4, "normal": -1, "group": 1 }
+      ]
+    },
+    "Vorbis player": {
+      "controllers": [
+        { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 1, "name": "originalSpeed", "label": "Original speed", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
+        { "index": 2, "name": "finetune", "label": "Finetune", "type": "int32", "min": -128, "max": 128, "default": 0, "normal": 0, "group": 0 },
+        { "index": 3, "name": "transpose", "label": "Transpose", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
+        { "index": 4, "name": "interpolation", "label": "Interpolation", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
+        { "index": 5, "name": "polyphony", "label": "Polyphony", "type": "int32", "min": 1, "max": 4, "default": 1, "normal": -1, "group": 1, "unit": "ch." },
+        { "index": 6, "name": "repeat", "label": "Repeat", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 1 },
+        { "index": 7, "name": "ignoreNoteOff", "label": "Ignore Note OFF", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 1 }
+      ]
+    },
     "Pitch2Ctl": {
       "controllers": [
         { "index": 0, "name": "mode", "label": "Mode", "type": "enum", "enum": "pitch2ctl_mode", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
@@ -1306,6 +1453,22 @@
         { "index": 4, "name": "grainSize", "label": "Grain size", "type": "int32", "min": 0, "max": 256, "default": 64, "normal": -1, "group": 0 },
         { "index": 5, "name": "mode", "label": "Mode", "type": "enum", "enum": "quality_mode", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 1 },
         { "index": 6, "name": "bypassIfPitch0", "label": "Bypass if pitch=0", "type": "enum", "enum": "pitch_shifter_bypass", "min": 0, "max": 2, "default": 0, "normal": 0, "group": 1 }
+      ]
+    },
+    "Pitch Detector": {
+      "controllers": [
+        { "index": 0, "name": "algorithm", "label": "Algorithm", "type": "enum", "enum": "pitch_detector_algorithm", "min": 0, "max": 3, "default": 1, "normal": 1, "group": 0 },
+        { "index": 1, "name": "threshold", "label": "Threshold", "type": "int32", "min": 0, "max": 10000, "default": 80, "normal": -1, "group": 0, "scale": "exp3" },
+        { "index": 2, "name": "gain", "label": "Gain", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": 0, "group": 0, "scale": "exp3" },
+        { "index": 3, "name": "microtones", "label": "Microtones", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
+        { "index": 4, "name": "detectorFinetune", "label": "Detector finetune", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
+        { "index": 5, "name": "lpFilterFreq", "label": "LP filter freq (0 - OFF)", "type": "int32", "min": 0, "max": 4000, "default": 1000, "normal": 1000, "group": 1, "unit": "Hz", "scale": "exp3" },
+        { "index": 6, "name": "lpFilterRolloff", "label": "LP filter roll-off", "type": "enum", "enum": "filter_rolloff", "min": 0, "max": 3, "default": 0, "normal": -1, "group": 1 },
+        { "index": 7, "name": "alg12SampleRate", "label": "Alg1-2 Sample rate (Hz)", "type": "enum", "enum": "pitch_detector_sample_rate", "min": 0, "max": 2, "default": 0, "normal": 0, "group": 2 },
+        { "index": 8, "name": "alg12Buffer", "label": "Alg1-2 Buffer (ms)", "type": "enum", "enum": "pitch_detector_buffer_ms", "min": 0, "max": 4, "default": 2, "normal": 2, "group": 2 },
+        { "index": 9, "name": "alg12BufferOverlap", "label": "Alg1-2 Buf overlap", "type": "int32", "min": 0, "max": 100, "default": 50, "normal": 50, "group": 2, "unit": "%" },
+        { "index": 10, "name": "alg1AbsoluteThreshold", "label": "Alg1 Sensitivity (absolute threshold)", "type": "int32", "min": 0, "max": 100, "default": 10, "normal": 10, "group": 2 },
+        { "index": 11, "name": "recordNotes", "label": "Record notes", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 }
       ]
     },
     "Reverb": {
