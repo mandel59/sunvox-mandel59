@@ -1032,14 +1032,6 @@ function makeControllerChunks(type, controllers) {
   return chunks;
 }
 
-function setChunkField(chunks, id, field, value) {
-  const chunk = firstChunk(chunks, id);
-  if (!chunk || value === undefined) {
-    return;
-  }
-  chunk[field] = value;
-}
-
 function consumeModuleDataChunks(chunks, target, used, type) {
   const dataChunks = [];
   for (let index = 0; index < chunks.length; index += 1) {
@@ -1261,52 +1253,28 @@ function groupStructuredDocument(document) {
   };
 }
 
-function syncLegacyProject(project) {
-  const chunks = project?.chunks?.map(cloneJson) ?? [];
-  setChunkField(chunks, "NAME", "text", project?.name);
-  setChunkField(chunks, "BPM ", "value", project?.bpm);
-  setChunkField(chunks, "SPED", "value", project?.speed);
-  setChunkField(chunks, "GVOL", "value", project?.globalVolume);
-  setChunkField(chunks, "MSCL", "value", project?.view?.moduleScale);
-  setChunkField(chunks, "MZOO", "value", project?.view?.moduleZoom);
-  setChunkField(chunks, "MXOF", "value", project?.view?.xOffset);
-  setChunkField(chunks, "MYOF", "value", project?.view?.yOffset);
-  return chunks;
-}
-
-function syncLegacyPattern(pattern) {
-  const chunks = pattern?.chunks?.map(cloneJson) ?? [];
-  setChunkField(chunks, "PNME", "text", pattern?.name);
-  setChunkField(chunks, "PXXX", "value", pattern?.position?.x);
-  setChunkField(chunks, "PYYY", "value", pattern?.position?.y);
-  setChunkField(chunks, "PCHN", "value", pattern?.tracks);
-  setChunkField(chunks, "PLIN", "value", pattern?.lines);
-  setChunkField(chunks, "PYSZ", "value", pattern?.ySize);
-  setChunkField(chunks, "PFGC", "rgb", pattern?.foreground);
-  setChunkField(chunks, "PBGC", "rgb", pattern?.background);
-  setChunkField(chunks, "PPAR", "value", pattern?.parent);
-  setChunkField(chunks, "PFFF", "value", pattern?.flags);
-  const data = firstChunk(chunks, "PDTA");
-  if (data && pattern?.events) {
-    data.pattern = { events: pattern.events };
+function syncLegacyScope(scopeName, object) {
+  const chunks = object?.chunks?.map(cloneJson) ?? [];
+  for (const field of scopeGrammar(scopeName).fields) {
+    const chunk = firstChunk(chunks, field.chunk);
+    const value = getPath(object, field.path);
+    if (chunk && value !== undefined) {
+      assignChunkSemanticValue(chunk, field.field, value);
+    }
   }
   return chunks;
 }
 
+function syncLegacyProject(project) {
+  return syncLegacyScope("project", project);
+}
+
+function syncLegacyPattern(pattern) {
+  return syncLegacyScope("pattern", pattern);
+}
+
 function syncLegacyModule(module) {
-  const chunks = module?.chunks?.map(cloneJson) ?? [];
-  setChunkField(chunks, "SNAM", "text", module?.name);
-  setChunkField(chunks, "STYP", "text", module?.type);
-  setChunkField(chunks, "SXXX", "value", module?.position?.x);
-  setChunkField(chunks, "SYYY", "value", module?.position?.y);
-  setChunkField(chunks, "SZZZ", "value", module?.position?.z);
-  setChunkField(chunks, "SCOL", "rgb", module?.color);
-  setChunkField(chunks, "SFFF", "value", module?.flags);
-  setChunkField(chunks, "SFIN", "value", module?.finetune);
-  setChunkField(chunks, "SREL", "value", module?.relativeNote);
-  setChunkField(chunks, "SSCL", "value", module?.scale);
-  setChunkField(chunks, "SLNK", "values", module?.inputLinks);
-  setChunkField(chunks, "SLNk", "values", module?.outputLinks);
+  const chunks = syncLegacyScope("module", module);
   const controllerChunks = chunksOf(chunks, "CVAL");
   syncModuleControllers(module?.type, module?.controllers, controllerChunks);
   const midi = firstChunk(chunks, "CMID");
