@@ -13,6 +13,7 @@
     "sunvox:decode": "node tools/sunvox-codec.mjs decode",
     "sunvox:fixtures:generate": "node tools/generate-sunvox-coverage-fixtures.mjs",
     "sunvox:lib:check": "node tools/check-sunvox-lib-compat.mjs",
+    "sunvox:diff": "node tools/sunvox-diff.mjs",
     "sunvox:outline": "node tools/sunvox-outline.mjs",
     "sunvox:validate": "node tools/sunvox-codec.mjs validate",
     "sunvox:validate:all": "node tools/sunvox-validate-all.mjs",

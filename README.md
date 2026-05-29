@@ -43,6 +43,7 @@ npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json
 npm run sunvox:decode -- var/2022-04-17.sunvox.json var/2022-04-17.sunvox
 npm run sunvox:verify -- music/2022-04-17.sunvox
 npm run sunvox:outline -- music/2022-04-17.sunvox
+npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 ```
@@ -53,6 +54,12 @@ containers. Link slot metadata is shown as `fromSlot` / `toSlot` so SunVox's
 peer slot chunks are not mistaken for extra edges. Use `--json` for
 machine-readable output, `--events <count>` to control pattern event previews,
 or `--no-embedded` to keep the report shallow.
+
+`sunvox:diff` compares two SunVox binaries or decoded JSON documents at the
+structured text level. By default it ignores `_...` auxiliary helper fields so
+the output focuses on round-trip-relevant edits; use `--json` for
+machine-readable change records or `--include-aux` when helper text should be
+included.
 
 Run the local quality gate before committing codec, DB, or frontend changes:
 

@@ -103,6 +103,7 @@ npm run sunvox:inspect -- coverage --json
 npm run sunvox:coverage:check
 npm run sunvox:fixtures:generate
 npm run sunvox:lib:check
+npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunvox:metrics
 npm run sunvox:inspect -- metrics --json
 npm run sunvox:inspect -- report
@@ -170,6 +171,9 @@ npm run sunvox:verify:all
   verify that out-of-range controller values are preserved when SunVox Lib does
   not clamp them on load/save. The command prints a compact coverage summary so
   missing edit-behavior checks are visible in the local and CI logs.
+- `sunvox:diff` compares two SunVox binaries or decoded JSON documents after
+  converting them to structured text. `_...` auxiliary helper fields are ignored
+  by default so the output focuses on round-trip-relevant edits.
 - `sunvox:validate` reports DB-driven runtime compatibility warnings for a
   binary SunVox file or decoded JSON document, including embedded MetaModule
   containers. The first rules cover positive project tempo values, module name
