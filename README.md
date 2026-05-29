@@ -19,7 +19,9 @@ for each structured scope. The database currently covers all module controller
 layouts detected from the bundled SunVox source. MetaModule project payloads
 are decoded recursively when they contain an embedded SunVox container;
 MetaModule user controller links, options, custom controller names, and user
-controller values are decoded into named fields.
+controller values are decoded into named fields. Those controller links keep
+their numeric module/controller references and add auxiliary target module and
+controller names when the embedded project makes them available.
 Repeated controller layouts can be represented as nested structures; for
 example, FMX operators are decoded into an `operators` array instead of a raw
 controller list. MultiCtl output slots and response curves are also decoded

@@ -451,7 +451,15 @@ test("decodes MetaModule controller link and option data chunks", async () => {
   const options = document.module.dataChunks.find((chunk) => chunk.name === "options");
   const firstName = document.module.dataChunks.find((chunk) => chunk.name === "userControllerName");
 
-  assert.deepEqual(links.links[0], { index: 0, module: 16, controller: 0 });
+  assert.deepEqual(links.links[0], {
+    index: 0,
+    module: 16,
+    controller: 0,
+    _moduleName: "Detune 1",
+    _moduleType: "MultiCtl",
+    _controllerName: "value",
+    _controllerLabel: "Value",
+  });
   assert.equal(options.options.userControllers, 9);
   assert.equal(options.options.eventOutput, true);
   assert.deepEqual(firstName, {
@@ -469,7 +477,14 @@ test("decodes and encodes MetaModule user controller values", async () => {
 
   assert.equal(document.module.controllers.user[0].value, 8192);
   assert.equal(document.module.controllers.user[0]._label, "Detune 1");
-  assert.deepEqual(document.module.controllers.user[0]._link, { module: 16, controller: 0 });
+  assert.deepEqual(document.module.controllers.user[0]._link, {
+    module: 16,
+    controller: 0,
+    _moduleName: "Detune 1",
+    _moduleType: "MultiCtl",
+    _controllerName: "value",
+    _controllerLabel: "Value",
+  });
 
   document.module.controllers.user[0].value = 4096;
   const reparsed = parseContainer(buildContainer(document));

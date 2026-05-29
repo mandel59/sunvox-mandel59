@@ -158,13 +158,23 @@ export interface ModuleLink {
   _moduleType?: string;
 }
 
+export interface MetaModuleControllerLink {
+  index: number;
+  module: number;
+  controller: number;
+  _moduleName?: string;
+  _moduleType?: string;
+  _controllerName?: string;
+  _controllerLabel?: string;
+}
+
 export interface ModuleDataChunk {
   index: number;
   name?: string;
   dataSize?: number;
   controller?: number;
   count?: number;
-  links?: Array<{ index: number; module: number; controller: number }>;
+  links?: MetaModuleControllerLink[];
   slots?: Array<{
     index: number;
     min?: number;

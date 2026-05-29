@@ -34,7 +34,9 @@ Additional `MetaModule` data chunk definitions describe user controller links,
 options, and custom controller names through reusable layout types such as
 `packedUInt32Array`, `struct`, `recordArray`, and `string`; the codec joins
 that metadata with CVAL chunks so user controller values appear under
-`controllers.user`. FMX uses a repeated operator template so the editable text
+`controllers.user`, with auxiliary target module/controller names resolved
+from embedded MetaModule projects when possible. FMX uses a repeated operator
+template so the editable text
 contains an `operators` array instead of a long raw controller list. Module data
 chunk layouts now cover sampled curves, compact option structures, and Sampler
 instrument/sample/envelope records. Analog generator and Sampler option chunks

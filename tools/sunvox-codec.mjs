@@ -1084,6 +1084,10 @@ function moduleControllers(type) {
   return MODULE_CONTROLLER_CACHE.get(type);
 }
 
+function moduleControllerDefinition(type, index) {
+  return moduleControllers(type).find((controller) => controller.index === index);
+}
+
 function controllerPath(controller) {
   return controller.path ?? controller.name;
 }
@@ -1671,6 +1675,45 @@ function metaModuleUserControllerMetadata(module) {
   return { count, links, names };
 }
 
+function annotateMetaModuleControllerLinks(module) {
+  if (module?.type !== "MetaModule") {
+    return;
+  }
+  const dataChunks = module?.dataChunks ?? [];
+  const embedded = dataChunks.find((chunk) => chunk.name === "embeddedProject")?.container;
+  const links = dataChunks.find((chunk) => chunk.name === "controllerLinks")?.links;
+  if (!Array.isArray(links) || !Array.isArray(embedded?.modules)) {
+    return;
+  }
+  for (const link of links) {
+    const target = embedded.modules[link.module];
+    if (target?.name) {
+      link._moduleName = target.name;
+    }
+    if (target?.type) {
+      link._moduleType = target.type;
+    }
+    const controller = moduleControllerDefinition(target?.type, link.controller);
+    if (controller?.name) {
+      link._controllerName = controller.name;
+    }
+    if (controller?.label) {
+      link._controllerLabel = controller.label;
+    }
+  }
+}
+
+function metaModuleControllerLinkReference(link) {
+  return {
+    module: link.module,
+    controller: link.controller,
+    ...(link._moduleName !== undefined ? { _moduleName: link._moduleName } : {}),
+    ...(link._moduleType !== undefined ? { _moduleType: link._moduleType } : {}),
+    ...(link._controllerName !== undefined ? { _controllerName: link._controllerName } : {}),
+    ...(link._controllerLabel !== undefined ? { _controllerLabel: link._controllerLabel } : {}),
+  };
+}
+
 function decodeMetaModuleUserControllers(controllers, module) {
   const extra = controllers.extra;
   if (!extra) {
@@ -1691,7 +1734,7 @@ function decodeMetaModuleUserControllers(controllers, module) {
       value,
       ...(name?.label !== undefined ? { _label: name.label } : {}),
       ...(name?.group !== undefined ? { _group: name.group } : {}),
-      ...(link ? { _link: { module: link.module, controller: link.controller } } : {}),
+      ...(link ? { _link: metaModuleControllerLinkReference(link) } : {}),
     });
     delete extra[controllerIndex];
   }
@@ -1941,6 +1984,7 @@ function makeModule(chunks) {
     }
   });
   consumeModuleDataChunks(chunks, dataChunkModule, used, type);
+  annotateMetaModuleControllerLinks({ type, dataChunks: dataChunkModule.dataChunks });
   const controllers = decodeModuleControllers(type, controllerValues, dataChunkModule);
   if (controllers !== undefined) {
     module.controllers = controllers;
