@@ -1101,10 +1101,65 @@ function validateRuntimeConstraint(document, rule) {
   return [validationIssue(rule, rule.path, undefined, `Unsupported runtime constraint scope: ${rule.scope}`)];
 }
 
-export function validateContainer(document) {
-  const issues = (SUNVOX_DB.runtimeConstraints ?? []).flatMap((rule) =>
-    validateRuntimeConstraint(document, rule),
+function controllerValidationIssue(moduleEntry, controller, path, value, message) {
+  return {
+    severity: "warning",
+    rule: "module.controller.range",
+    path,
+    value,
+    message,
+    source: controller.sourceSymbol ?? "psynth_register_ctl",
+    moduleType: moduleEntry.module.type,
+    controller: controller.name,
+    controllerIndex: controller.index,
+  };
+}
+
+function controllerStoredValue(controller, value) {
+  if (controller.type !== "enum") {
+    return value;
+  }
+  return tryEnumToValue(controller.enum, value);
+}
+
+function validateControllerValue(moduleEntry, controller) {
+  const controllers = moduleEntry.module?.controllers;
+  if (!controllers || typeof controllers !== "object" || Array.isArray(controllers)) {
+    return [];
+  }
+  const path = `${moduleEntry.path}.controllers.${controllerPath(controller)}`;
+  const value = getPath(controllers, controllerPath(controller));
+  if (value === undefined) {
+    return [];
+  }
+  const storedValue = controllerStoredValue(controller, value);
+  if (!Number.isInteger(storedValue)) {
+    return [
+      controllerValidationIssue(
+        moduleEntry,
+        controller,
+        path,
+        value,
+        `${path} must be a known ${controller.enum ?? "controller"} value`,
+      ),
+    ];
+  }
+  return validateIntegerRange(storedValue, controller, path).map((issue) =>
+    controllerValidationIssue(moduleEntry, controller, path, value, issue.message),
   );
+}
+
+function validateModuleControllers(document) {
+  return documentModuleEntries(document).flatMap((entry) =>
+    moduleControllers(entry.module?.type).flatMap((controller) => validateControllerValue(entry, controller)),
+  );
+}
+
+export function validateContainer(document) {
+  const issues = [
+    ...(SUNVOX_DB.runtimeConstraints ?? []).flatMap((rule) => validateRuntimeConstraint(document, rule)),
+    ...validateModuleControllers(document),
+  ];
   return {
     ok: !issues.some((issue) => issue.severity === "error"),
     issues,
@@ -2615,7 +2670,7 @@ export async function validate(inputPath) {
   const document = await readDocument(inputPath);
   const result = validateContainer(document);
   if (result.issues.length === 0) {
-    console.log(`${inputPath}: no runtime constraint issues`);
+    console.log(`${inputPath}: no validation issues`);
     return;
   }
   for (const issue of result.issues) {
@@ -2623,7 +2678,7 @@ export async function validate(inputPath) {
     console.log(`${issue.severity}: ${issue.path}: ${issue.message} (${issue.rule})${source}`);
   }
   if (!result.ok) {
-    throw new Error(`${inputPath}: runtime constraint validation failed`);
+    throw new Error(`${inputPath}: validation failed`);
   }
 }
 

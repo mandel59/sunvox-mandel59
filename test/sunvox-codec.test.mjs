@@ -94,6 +94,33 @@ test("reports DB-driven runtime constraint warnings", () => {
   assert.equal(result.issues[3].path, "modules[0].inputs[0].module");
 });
 
+test("reports DB-driven controller value warnings", () => {
+  const result = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [
+      {
+        type: "Amplifier",
+        name: "Amp",
+        controllers: {
+          volume: -1,
+          inverse: "definitelyNotAnEnumValue",
+        },
+      },
+    ],
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.issues.map((issue) => issue.rule),
+    ["module.controller.range", "module.controller.range"],
+  );
+  assert.match(result.issues[0].message, /expected >= 0/u);
+  assert.equal(result.issues[0].controller, "volume");
+  assert.match(result.issues[1].message, /known off_on value/u);
+  assert.equal(result.issues[1].path, "modules[0].controllers.inverse");
+});
+
 test("decodes project supertrack mute and jump address state", () => {
   const document = {
     format: TEXT_FORMAT,

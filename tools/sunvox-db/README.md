@@ -160,7 +160,8 @@ npm run sunvox:verify:all
   summary so missing edit-behavior checks are visible in the local and CI logs.
 - `sunvox:validate` reports DB-driven runtime compatibility warnings for a
   binary SunVox file or decoded JSON document. The first rules cover positive
-  project tempo values, module name byte budgets, and semantic link targets.
+  project tempo values, module name byte budgets, semantic link targets, and
+  controller values outside DB-declared ranges or enum values.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
