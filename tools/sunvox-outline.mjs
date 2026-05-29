@@ -38,6 +38,34 @@ function moduleName(module, fallback = "(unnamed)") {
   return module?.name || fallback;
 }
 
+function userControllerSummary(module) {
+  const controllers = module?.controllers?.user;
+  if (!Array.isArray(controllers)) {
+    return [];
+  }
+  return controllers.map((controller, arrayIndex) => {
+    const link = controller?._link;
+    return {
+      index: Number.isInteger(controller?.index) ? controller.index : arrayIndex,
+      ...(controller?._label !== undefined ? { label: controller._label } : {}),
+      ...(controller?._group !== undefined ? { group: controller._group } : {}),
+      ...(controller?.value !== undefined ? { value: controller.value } : {}),
+      ...(link
+        ? {
+            link: {
+              module: link.module,
+              controller: link.controller,
+              ...(link._moduleName !== undefined ? { _moduleName: link._moduleName } : {}),
+              ...(link._moduleType !== undefined ? { _moduleType: link._moduleType } : {}),
+              ...(link._controllerName !== undefined ? { _controllerName: link._controllerName } : {}),
+              ...(link._controllerLabel !== undefined ? { _controllerLabel: link._controllerLabel } : {}),
+            },
+          }
+        : {}),
+    };
+  });
+}
+
 function moduleSummary(module, index) {
   const dataChunks = module?.dataChunks ?? [];
   return {
@@ -51,6 +79,7 @@ function moduleSummary(module, index) {
     inputs: compactModuleLinks(module, "inputs", "inputLinks", "inputLinkSlots"),
     outputs: compactModuleLinks(module, "outputs", "outputLinks", "outputLinkSlots"),
     controllerCount: countControllers(module?.controllers),
+    userControllers: userControllerSummary(module),
     dataChunkCount: module?.dataChunkCount ?? dataChunks.length,
     embeddedCount: dataChunks.filter((chunk) => chunk.container).length,
   };
@@ -276,10 +305,34 @@ function formatModule(module, modules, level) {
   ].join("");
   const chunks = module.dataChunkCount ? ` dataChunks=${module.dataChunkCount}` : "";
   const embedded = module.embeddedCount ? ` embedded=${module.embeddedCount}` : "";
+  const userControllers = module.userControllers?.length ? ` userControllers=${module.userControllers.length}` : "";
   return indent(
-    `#${module.index} ${module.name} [${module.type ?? module.kind}]${formatPosition(module.position)}${flags}${links}${chunks}${embedded}`,
+    `#${module.index} ${module.name} [${module.type ?? module.kind}]${formatPosition(module.position)}${flags}${links}${chunks}${embedded}${userControllers}`,
     level,
   );
+}
+
+function formatUserController(controller) {
+  const label = controller.label ? ` "${controller.label}"` : "";
+  const group = controller.group !== undefined ? ` group=${controller.group}` : "";
+  const value = controller.value !== undefined ? ` value=${controller.value}` : "";
+  const link = controller.link;
+  const targetModuleName = link?._moduleName ? ` ${link._moduleName}` : "";
+  const targetModuleType = link?._moduleType ? ` [${link._moduleType}]` : "";
+  const targetController = link?._controllerName ?? link?.controller;
+  const target = link ? ` -> #${link.module}${targetModuleName}${targetModuleType} controller=${targetController}` : "";
+  return `user#${controller.index}${label}${group}${value}${target}`;
+}
+
+function formatModuleDetails(module, level) {
+  const lines = [];
+  if (module.userControllers?.length) {
+    lines.push(indent("User controllers", level));
+    for (const controller of module.userControllers) {
+      lines.push(indent(formatUserController(controller), level + 2));
+    }
+  }
+  return lines;
 }
 
 function formatEvent(event) {
@@ -351,12 +404,14 @@ function formatOutlineNode(outline, options, level = 0) {
   if (outline.synth) {
     lines.push("", indent("Synth Module", level));
     lines.push(formatModule(outline.synth, outline.modules, level + 2));
+    lines.push(...formatModuleDetails(outline.synth, level + 4));
   }
 
   if (outline.modules?.length && !outline.synth) {
     lines.push("", indent("Modules", level));
     for (const module of outline.modules) {
       lines.push(formatModule(module, outline.modules, level + 2));
+      lines.push(...formatModuleDetails(module, level + 4));
     }
   }
 
@@ -436,7 +491,7 @@ async function main() {
   console.log(options.json ? JSON.stringify(outline, null, 2) : formatOutline(outline, options));
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     console.error(error.message);
     process.exitCode = 1;

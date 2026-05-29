@@ -43,3 +43,30 @@ test("builds a readable outline for SunSynth modules and embedded containers", a
   assert.match(text, /Synth Module/u);
   assert.match(text, /Embedded Containers/u);
 });
+
+test("summarizes MetaModule user controllers in outlines", async () => {
+  const outline = await buildOutlineFromFile("instruments/mandel59 SuperSaw.sunsynth", {
+    embedded: false,
+    eventLimit: 0,
+  });
+  const text = formatOutline(outline, { eventLimit: 0 });
+
+  assert.equal(outline.synth.userControllers.length, 9);
+  assert.deepEqual(outline.synth.userControllers[0], {
+    index: 0,
+    label: "Detune 1",
+    group: 2,
+    value: 8192,
+    link: {
+      module: 16,
+      controller: 0,
+      _moduleName: "Detune 1",
+      _moduleType: "MultiCtl",
+      _controllerName: "value",
+      _controllerLabel: "Value",
+    },
+  });
+  assert.match(text, /userControllers=9/u);
+  assert.match(text, /user#0 "Detune 1" group=2 value=8192 -> #16 Detune 1 \[MultiCtl\] controller=value/u);
+  assert.doesNotMatch(text, /Embedded Containers/u);
+});
