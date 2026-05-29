@@ -1336,6 +1336,18 @@ function collectDataChunkLayoutMetrics() {
   };
 }
 
+function collectModuleCatalogMetrics(report) {
+  const fields = report.moduleCatalogGaps ?? [];
+  const sourceFields = fields.reduce((total, field) => total + field.sourceModules, 0);
+  const dbFields = fields.reduce((total, field) => total + field.dbModules, 0);
+  return {
+    sourceFields,
+    dbFields,
+    missingFields: fields.reduce((total, field) => total + field.missingDbModules, 0),
+    coveragePercent: sourceFields === 0 ? 100 : Number(((dbFields / sourceFields) * 100).toFixed(1)),
+  };
+}
+
 export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, sourceRoot = DEFAULT_SOURCE_ROOT) {
   const coverage = collectCoverage(sampleRoots);
   const report = collectSourceReport(sourceRoot);
@@ -1343,6 +1355,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
   const dbCheck = collectDbCheck(sourceRoot);
   const chunkStorage = collectChunkStorageMetrics();
   const dataChunkLayouts = collectDataChunkLayoutMetrics();
+  const moduleCatalog = collectModuleCatalogMetrics(report);
   const coverageGateFailures = coverageFailures(coverage);
   const sampledDbModuleTypes = coverage.moduleTypes
     .map(([moduleType]) => moduleType)
@@ -1363,6 +1376,10 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       sourceModules: report.sourceModules.length,
       sourceModulesMissingFromDb: report.missingFromDb.length,
       dbModulesMissingFromSource: report.missingFromSource.length,
+      moduleCatalogFields: moduleCatalog.sourceFields,
+      dbModuleCatalogFields: moduleCatalog.dbFields,
+      moduleCatalogCoveragePercent: moduleCatalog.coveragePercent,
+      missingModuleCatalogFields: moduleCatalog.missingFields,
       controllerMetadataMismatches: controllerDiff.summary.mismatches,
       dbCheckErrors: dbCheck.summary.errors,
       dbCheckWarnings: dbCheck.summary.warnings,
@@ -1393,6 +1410,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
     },
     sampledDbModuleTypes,
     unsampledDbModuleTypes: coverage.unusedDbModuleTypes,
+    moduleCatalog,
     chunkStorage,
     dataChunkLayouts,
     coverageGateFailures,
@@ -1751,6 +1769,10 @@ function formatProjectMetrics(metrics) {
     { metric: "Source modules", value: metrics.summary.sourceModules },
     { metric: "Source modules missing from DB", value: metrics.summary.sourceModulesMissingFromDb },
     { metric: "DB modules missing from source", value: metrics.summary.dbModulesMissingFromSource },
+    { metric: "Module catalog fields", value: metrics.summary.moduleCatalogFields },
+    { metric: "DB module catalog fields", value: metrics.summary.dbModuleCatalogFields },
+    { metric: "Module catalog coverage", value: formatPercent(metrics.summary.moduleCatalogCoveragePercent) },
+    { metric: "Missing module catalog fields", value: metrics.summary.missingModuleCatalogFields },
     { metric: "Controller metadata mismatches", value: metrics.summary.controllerMetadataMismatches },
     { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
     { metric: "Chunks", value: metrics.summary.chunks },

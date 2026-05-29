@@ -30,6 +30,10 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.dbModules, Object.keys(SUNVOX_DB.modules).length);
   assert.equal(metrics.summary.sourceModulesMissingFromDb, 0);
   assert.equal(metrics.summary.dbModulesMissingFromSource, 0);
+  assert.equal(metrics.summary.moduleCatalogFields, 182);
+  assert.equal(metrics.summary.dbModuleCatalogFields, 182);
+  assert.equal(metrics.summary.moduleCatalogCoveragePercent, 100);
+  assert.equal(metrics.summary.missingModuleCatalogFields, 0);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.moduleLinkIssues, 0);
