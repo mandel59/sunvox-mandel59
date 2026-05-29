@@ -883,19 +883,24 @@ function collectSourceBlockIds(sourceRoot) {
   return { sourcePath, ids };
 }
 
-const CHUNK_SOURCE_TYPES = new Set(["int32", "uint32", "uint16", "bytes", "string", "empty"]);
+const CHUNK_SOURCE_TYPES = new Set(["int32", "uint32", "uint16", "uint8", "bytes", "string", "empty"]);
 const CHUNK_VALUE_KINDS = new Set([
   "bitset",
   "bytes",
   "color",
+  "controller",
   "count",
   "enum",
   "events",
   "flags",
+  "grid",
   "index",
+  "level",
   "position",
   "rate",
+  "scale",
   "state",
+  "tempo",
   "terminator",
   "text",
   "version",

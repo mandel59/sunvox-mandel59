@@ -35,9 +35,14 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.unsampledDbModules, 0);
   assert.equal(metrics.summary.sampleCoveragePercent, 100);
   assert.ok(metrics.summary.scalarChunks > 0);
-  assert.ok(metrics.summary.reviewedScalarChunks > 0);
-  assert.ok(metrics.summary.chunkStorageReviewPercent > 0);
-  assert.deepEqual(metrics.chunkStorage.reviewedChunkIds, ["CHFR", "PPAR", "SMIB", "SMIC", "SMIP"]);
+  assert.ok(metrics.summary.reviewedScalarChunks >= 25);
+  assert.ok(metrics.summary.chunkStorageReviewPercent >= 50);
+  assert.deepEqual(
+    ["CHFR", "PPAR", "SMIB", "SMIC", "SMIP"].every((chunkId) =>
+      metrics.chunkStorage.reviewedChunkIds.includes(chunkId),
+    ),
+    true,
+  );
   assert.equal(metrics.gates.ok, true);
   assert.deepEqual(metrics.unsampledDbModuleTypes, []);
 });
