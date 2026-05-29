@@ -720,7 +720,7 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
 
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
-  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 3);
+  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 7);
   assert.ok(patternIndex >= 0);
   const pattern = document.patterns[patternIndex];
 
@@ -737,12 +737,40 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
       effect: "velocitySlide",
       parameter: { up: 5, down: 6 },
     },
+    {
+      line: 4,
+      track: 0,
+      effect: "arpeggio",
+      parameter: { firstOffset: 7, secondOffset: 12 },
+    },
+    {
+      line: 5,
+      track: 0,
+      effect: "noteCut",
+      parameter: { ticks: 4, mode: 1 },
+    },
+    {
+      line: 6,
+      track: 0,
+      effect: "randomControllerValueRange",
+      parameter: { from: 20, to: 40 },
+    },
+    {
+      line: 7,
+      track: 0,
+      effect: "sampleOffset",
+      parameter: { offset256: 3 },
+    },
   ];
 
   const reparsed = parseContainer(buildContainer(document));
 
   assert.deepEqual(reparsed.patterns[patternIndex].events[0].parameter, { speed: 3, amplitude: 4 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[1].parameter, { up: 5, down: 6 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[2].parameter, { firstOffset: 7, secondOffset: 12 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[3].parameter, { ticks: 4, mode: 1 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[4].parameter, { from: 20, to: 40 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[5].parameter, { offset256: 3 });
 });
 
 test("can still build editable chunk documents", async () => {

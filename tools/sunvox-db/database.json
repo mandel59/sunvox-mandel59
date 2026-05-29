@@ -814,11 +814,194 @@
         { "name": "down", "shift": 0, "bits": 8 }
       ]
     },
+    "sampleOffsetFine": {
+      "description": "Fine sample offset in samples.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x07",
+      "packedFields": [
+        { "name": "offset", "shift": 0, "bits": 16 }
+      ]
+    },
+    "arpeggio": {
+      "description": "0xAABB where AA and BB are the two semitone offsets used by the arpeggio cycle.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x08",
+      "packedFields": [
+        { "name": "firstOffset", "shift": 8, "bits": 8 },
+        { "name": "secondOffset", "shift": 0, "bits": 8 }
+      ]
+    },
+    "sampleOffset": {
+      "description": "Coarse sample offset; SunVox multiplies this stored value by 256 samples.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x09",
+      "packedFields": [
+        { "name": "offset256", "shift": 0, "bits": 16 }
+      ]
+    },
+    "fineVelocitySlide": {
+      "description": "0xUUDD where UU slides velocity up and DD slides velocity down immediately.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x1A",
+      "packedFields": [
+        { "name": "up", "shift": 8, "bits": 8 },
+        { "name": "down", "shift": 0, "bits": 8 }
+      ]
+    },
+    "retrigger": {
+      "description": "Low five bits hold the retrigger timer in ticks; values with other bits set remain numeric for round-trip safety.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x19",
+      "packedFields": [
+        { "name": "ticks", "shift": 0, "bits": 5 }
+      ]
+    },
+    "noteCut": {
+      "description": "Low five bits hold the cut timer in ticks; the high nibble selects the alternate cut timer flag when it is 1.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x1C",
+      "packedFields": [
+        { "name": "ticks", "shift": 0, "bits": 5 },
+        { "name": "mode", "shift": 12, "bits": 4 }
+      ]
+    },
     "noteDelay": {
       "description": "Low five bits hold the note delay in ticks; values with other bits set remain numeric for round-trip safety.",
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x1D",
       "packedFields": [
         { "name": "ticks", "shift": 0, "bits": 5 }
+      ]
+    },
+    "noteProbability": {
+      "description": "Random threshold used to decide whether the note should be played.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x20",
+      "packedFields": [
+        { "name": "threshold", "shift": 0, "bits": 16 }
+      ]
+    },
+    "noteProbabilityRandomVelocity": {
+      "description": "Random threshold used to decide whether the note should be played; accepted notes get randomized velocity.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x21",
+      "packedFields": [
+        { "name": "threshold", "shift": 0, "bits": 16 }
+      ]
+    },
+    "randomControllerValue": {
+      "description": "Maximum value used when randomizing the current pattern controller value.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x22",
+      "packedFields": [
+        { "name": "max", "shift": 0, "bits": 16 }
+      ]
+    },
+    "randomControllerValueRange": {
+      "description": "0xAABB where AA and BB define the randomized controller value range.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x23",
+      "packedFields": [
+        { "name": "from", "shift": 8, "bits": 8 },
+        { "name": "to", "shift": 0, "bits": 8 }
+      ]
+    },
+    "takeNoteFromCurrentTrackLine": {
+      "description": "Line index to read from the current track.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x24",
+      "packedFields": [
+        { "name": "line", "shift": 0, "bits": 16 }
+      ]
+    },
+    "takeNoteFromRandomCurrentTrackLine": {
+      "description": "0xAABB where AA and BB define the random line range in the current track.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x25",
+      "packedFields": [
+        { "name": "fromLine", "shift": 8, "bits": 8 },
+        { "name": "toLine", "shift": 0, "bits": 8 }
+      ]
+    },
+    "takeNoteFromCurrentLineTrack": {
+      "description": "Track index to read from the current line.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x26",
+      "packedFields": [
+        { "name": "track", "shift": 0, "bits": 16 }
+      ]
+    },
+    "takeNoteFromCurrentLineRandomTrack": {
+      "description": "0xAABB where AA and BB define the random track range in the current line.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x27",
+      "packedFields": [
+        { "name": "fromTrack", "shift": 8, "bits": 8 },
+        { "name": "toTrack", "shift": 0, "bits": 8 }
+      ]
+    },
+    "takeNoteFromTrack0Line": {
+      "description": "Line index to read from track 0.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x28",
+      "packedFields": [
+        { "name": "line", "shift": 0, "bits": 16 }
+      ]
+    },
+    "takeNoteFromTrack0RandomLine": {
+      "description": "0xAABB where AA and BB define the random line range in track 0.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x29",
+      "packedFields": [
+        { "name": "fromLine", "shift": 8, "bits": 8 },
+        { "name": "toLine", "shift": 0, "bits": 8 }
+      ]
+    },
+    "setRuntimeFlags": {
+      "description": "0xSSRR where SS names runtime flags to set and RR names runtime flags to reset.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x34",
+      "packedFields": [
+        { "name": "set", "shift": 8, "bits": 8 },
+        { "name": "reset", "shift": 0, "bits": 8 }
+      ]
+    },
+    "midiMessageSupport": {
+      "description": "0xMMCC where MM is the MIDI message and CC is the controller byte passed to the module.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x35",
+      "packedFields": [
+        { "name": "message", "shift": 8, "bits": 8 },
+        { "name": "controller", "shift": 0, "bits": 8 }
+      ]
+    },
+    "clearTrackEventByProbability": {
+      "description": "0xTTPP where TT is the target track and PP is the probability threshold.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x38",
+      "packedFields": [
+        { "name": "track", "shift": 8, "bits": 8 },
+        { "name": "probability", "shift": 0, "bits": 8 }
+      ]
+    },
+    "shiftTrack": {
+      "description": "0xTTLL where TT is the target track and LL is the shift amount in lines.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x39",
+      "packedFields": [
+        { "name": "track", "shift": 8, "bits": 8 },
+        { "name": "lines", "shift": 0, "bits": 8 }
+      ]
+    },
+    "alignTrackToLength": {
+      "description": "0xTTLL where TT is the target track and LL is the alignment length.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x3A",
+      "packedFields": [
+        { "name": "track", "shift": 8, "bits": 8 },
+        { "name": "length", "shift": 0, "bits": 8 }
+      ]
+    },
+    "copyTrackToNamedPattern": {
+      "description": "0xTTNN where TT is the target track and NN is the two-hex-character pattern name code.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x3B",
+      "packedFields": [
+        { "name": "track", "shift": 8, "bits": 8 },
+        { "name": "patternNameCode", "shift": 0, "bits": 8 }
+      ]
+    },
+    "copyTrackFromNamedPattern": {
+      "description": "0xTTNN where TT is the target track and NN is the two-hex-character pattern name code.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x3C",
+      "packedFields": [
+        { "name": "track", "shift": 8, "bits": 8 },
+        { "name": "patternNameCode", "shift": 0, "bits": 8 }
+      ]
+    },
+    "randomizePatternColumn": {
+      "description": "0xPPTT where PP is the parameter line and TT is the target track.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x3D",
+      "packedFields": [
+        { "name": "parameterLine", "shift": 8, "bits": 8 },
+        { "name": "track", "shift": 0, "bits": 8 }
       ]
     }
   },
