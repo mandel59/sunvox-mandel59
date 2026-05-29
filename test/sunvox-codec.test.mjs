@@ -170,6 +170,44 @@ test("applies DB-driven dynamic controller limits", () => {
   );
 });
 
+test("reports DB-driven pattern event encoding errors", () => {
+  const result = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [],
+    patterns: [
+      {
+        tracks: 1,
+        lines: 1,
+        events: [{ line: 2, track: 0, note: "C4" }],
+      },
+      {
+        tracks: 1,
+        lines: 1,
+        events: [{ line: 0, track: 0, note: "H9" }],
+      },
+      {
+        tracks: 1,
+        lines: 1,
+        events: [{ line: 0, track: 0, velocity: 300 }],
+      },
+    ],
+  });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(
+    result.issues.map((issue) => issue.rule),
+    ["pattern.event.encoding", "pattern.event.encoding", "pattern.event.fieldRange"],
+  );
+  assert.equal(result.issues[0].path, "patterns[0].events");
+  assert.match(result.issues[0].message, /outside the event grid/u);
+  assert.equal(result.issues[1].path, "patterns[1].events");
+  assert.match(result.issues[1].message, /Invalid pattern note name/u);
+  assert.equal(result.issues[2].path, "patterns[2].events[0].velocity");
+  assert.match(result.issues[2].message, /expected 0\.\.255 for uint8/u);
+  assert.deepEqual(result.issues.map((issue) => issue.trackingIssue), [1, 1, 1]);
+});
+
 test("recursively validates embedded MetaModule containers", () => {
   const result = validateContainer({
     magic: "SSYN",

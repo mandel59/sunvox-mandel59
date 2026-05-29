@@ -1298,6 +1298,93 @@ function validateModuleControllers(document, basePath = "") {
   );
 }
 
+function documentPatternEntries(document, basePath = "") {
+  return (document?.patterns ?? []).map((pattern, index) => ({
+    pattern,
+    path: joinValidationPath(basePath, `patterns[${index}]`),
+  }));
+}
+
+function patternValidationIssue(rule, path, value, message) {
+  return {
+    severity: "error",
+    rule,
+    path,
+    value,
+    message,
+    source: "tools/sunvox-db/database.json",
+    trackingIssue: 1,
+  };
+}
+
+const STRUCT_FIELD_RANGES = {
+  int8: { min: -128, max: 127 },
+  uint8: { min: 0, max: 255 },
+  uint16: { min: 0, max: 65535 },
+  uint32: { min: 0, max: 4294967295 },
+};
+
+function structFieldRange(field) {
+  return STRUCT_FIELD_RANGES[field?.type];
+}
+
+function validatePatternRecordField(record, field, path) {
+  const range = structFieldRange(field);
+  if (!range) {
+    return [];
+  }
+  const value = record?.[field.name];
+  if (value === undefined) {
+    return [];
+  }
+  if (!Number.isInteger(value)) {
+    return [
+      patternValidationIssue("pattern.event.fieldRange", path, value, `${path} must store an integer ${field.type}`),
+    ];
+  }
+  if (value < range.min || value > range.max) {
+    return [
+      patternValidationIssue(
+        "pattern.event.fieldRange",
+        path,
+        value,
+        `${path} is ${value}; expected ${range.min}..${range.max} for ${field.type}`,
+      ),
+    ];
+  }
+  return [];
+}
+
+function validatePatternEvents(document, basePath = "") {
+  const definition = SUNVOX_DB.structs.sunvox_note;
+  if (!definition) {
+    return [];
+  }
+  return documentPatternEntries(document, basePath).flatMap(({ pattern, path }) => {
+    if (!Array.isArray(pattern?.events)) {
+      return [];
+    }
+    let records;
+    try {
+      records = patternEventRecords(pattern, document?.modules ?? []);
+    } catch (error) {
+      return [
+        patternValidationIssue(
+          "pattern.event.encoding",
+          `${path}.events`,
+          pattern.events,
+          error instanceof Error ? error.message : String(error),
+        ),
+      ];
+    }
+    return (records ?? []).flatMap((record, index) =>
+      (definition.fields ?? []).flatMap((field) =>
+        validatePatternRecordField(record, field, `${path}.events[${index}].${field.name}`),
+      ),
+    );
+  });
+}
+
 function nestedContainerEntries(document, basePath = "") {
   return documentModuleEntries(document, basePath).flatMap((entry) =>
     (entry.module?.dataChunks ?? [])
@@ -1317,6 +1404,7 @@ function validateContainerAtPath(document, basePath = "", seen = new Set()) {
   return [
     ...(SUNVOX_DB.runtimeConstraints ?? []).flatMap((rule) => validateRuntimeConstraint(document, rule, basePath)),
     ...validateModuleControllers(document, basePath),
+    ...validatePatternEvents(document, basePath),
     ...nestedContainerEntries(document, basePath).flatMap((entry) =>
       validateContainerAtPath(entry.container, entry.path, seen),
     ),

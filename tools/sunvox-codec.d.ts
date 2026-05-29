@@ -65,6 +65,8 @@ export interface SunVoxStructTextLayout {
   path: string;
   columnsPath?: string;
   rowsPath?: string;
+  columnsOverridePath?: string;
+  rowsOverridePath?: string;
   positionFields?: string[];
   tupleFields: string[];
   emptyTuple?: number[];
@@ -73,8 +75,19 @@ export interface SunVoxStructTextLayout {
     {
       description?: string;
       encoding?: string;
+      reference?: string;
       zero?: string;
       range?: string;
+      aliases?: string[];
+      packedFields?: Array<{
+        name: string;
+        shift: number;
+        bits: number;
+        offset?: number;
+        min?: number;
+        max?: number;
+        reference?: string;
+      }>;
     }
   >;
 }
