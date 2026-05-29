@@ -708,6 +708,22 @@ function patternSemanticEventToRecord(event, modules, definition) {
   );
 }
 
+function sparsePatternEventEntries(pattern, definition) {
+  if (!Array.isArray(pattern?.events)) {
+    return [];
+  }
+  const positionFields = Object.values(structTextPositionFields(definition));
+  return pattern.events
+    .map((event, index) => ({ event, index }))
+    .filter(
+      ({ event }) =>
+        event &&
+        typeof event === "object" &&
+        !Array.isArray(event) &&
+        positionFields.some((fieldName) => event[fieldName] !== undefined),
+    );
+}
+
 function patternEventRecords(pattern, modules) {
   if (!Array.isArray(pattern?.events)) {
     return undefined;
@@ -1388,6 +1404,55 @@ function validatePatternRecordSemantics(record, definition, modules, path) {
   );
 }
 
+function validateSparsePatternSourceEvents(pattern, definition, modules, path) {
+  const sparseEvents = sparsePatternEventEntries(pattern, definition);
+  if (sparseEvents.length === 0) {
+    return [];
+  }
+  const columns = patternEventColumns(pattern, definition);
+  const rows = patternEventRows(pattern, definition, columns);
+  const { lineField, trackField } = structTextPositionFields(definition);
+  return sparseEvents.flatMap(({ event, index }) => {
+    const eventPath = `${path}.events[${index}]`;
+    const line = event[lineField] ?? 0;
+    const track = event[trackField] ?? 0;
+    if (!Number.isInteger(line) || !Number.isInteger(track)) {
+      return [
+        patternValidationIssue(
+          "pattern.event.encoding",
+          eventPath,
+          event,
+          `${eventPath} must use integer ${lineField}/${trackField} positions`,
+        ),
+      ];
+    }
+    const recordIndex = line * columns + track;
+    if (recordIndex < 0 || recordIndex >= columns * rows) {
+      return [
+        patternValidationIssue(
+          "pattern.event.encoding",
+          eventPath,
+          event,
+          `Pattern event is outside the event grid: ${lineField} ${line}, ${trackField} ${track}`,
+        ),
+      ];
+    }
+    try {
+      patternSemanticEventToRecord(event, modules, definition);
+      return [];
+    } catch (error) {
+      return [
+        patternValidationIssue(
+          "pattern.event.encoding",
+          eventPath,
+          event,
+          error instanceof Error ? error.message : String(error),
+        ),
+      ];
+    }
+  });
+}
+
 function validatePatternEvents(document, basePath = "") {
   const definition = SUNVOX_DB.structs.sunvox_note;
   if (!definition) {
@@ -1396,6 +1461,10 @@ function validatePatternEvents(document, basePath = "") {
   return documentPatternEntries(document, basePath).flatMap(({ pattern, path }) => {
     if (!Array.isArray(pattern?.events)) {
       return [];
+    }
+    const sourceIssues = validateSparsePatternSourceEvents(pattern, definition, document?.modules ?? [], path);
+    if (sourceIssues.length) {
+      return sourceIssues;
     }
     let records;
     try {
