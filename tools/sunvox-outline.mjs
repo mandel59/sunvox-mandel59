@@ -82,13 +82,22 @@ function linkName(modules, index) {
 }
 
 function addEdges(edges, modules, sourceModule, links, direction, kind) {
-  for (const linkedModule of compactLinks(links)) {
+  for (const [linkIndex, linkedModule] of (links ?? []).entries()) {
+    if (!Number.isInteger(linkedModule) || linkedModule < 0) {
+      continue;
+    }
     const from = direction === "input" ? linkedModule : sourceModule;
     const to = direction === "input" ? sourceModule : linkedModule;
+    const slot =
+      direction === "input"
+        ? modules[sourceModule]?.inputLinkSlots?.[linkIndex]
+        : modules[sourceModule]?.outputLinkSlots?.[linkIndex];
     edges.push({
       from,
       to,
       kind,
+      ...(Number.isInteger(slot) ? { slot } : {}),
+      valid: Boolean(modules[from]) && Boolean(modules[to]) && moduleKind(modules[from]) !== "empty" && moduleKind(modules[to]) !== "empty",
       _fromName: moduleName(modules[from], moduleKind(modules[from])),
       _toName: moduleName(modules[to], moduleKind(modules[to])),
     });
@@ -111,6 +120,17 @@ function moduleEdges(modules) {
     seen.add(key);
     return true;
   });
+}
+
+function graphSummary(modules, edges) {
+  return {
+    modules: modules.length,
+    activeModules: modules.filter((module) => moduleKind(module) !== "empty").length,
+    edges: edges.length,
+    inputEdges: edges.filter((edge) => edge.kind === "input").length,
+    outputEdges: edges.filter((edge) => edge.kind === "output").length,
+    danglingEdges: edges.filter((edge) => !edge.valid).length,
+  };
 }
 
 function patternSummary(pattern, index) {
@@ -152,18 +172,22 @@ export function buildOutline(document, options = {}) {
   const sourceName = options.sourceName ?? document._sourceName ?? basename(options.filePath ?? "SunVox document");
   if (document.magic === "SSYN") {
     const rootModule = moduleSummary(document.module, 0);
+    const modules = [rootModule];
+    const links = [];
     return {
       sourceName,
       magic: document.magic,
       synth: rootModule,
-      modules: [rootModule],
-      links: [],
+      modules,
+      links,
+      graph: graphSummary(modules, links),
       patterns: [],
       embedded: embeddedOutlines(document.module, 0, options, "#0 root"),
     };
   }
 
   const modules = document.modules ?? [];
+  const links = moduleEdges(modules);
   return {
     sourceName,
     magic: document.magic,
@@ -176,7 +200,8 @@ export function buildOutline(document, options = {}) {
       moduleCount: modules.length,
     },
     modules: modules.map(moduleSummary),
-    links: moduleEdges(modules),
+    links,
+    graph: graphSummary(modules, links),
     patterns: (document.patterns ?? []).map(patternSummary),
     embedded: modules.flatMap((module, index) => embeddedOutlines(module, index, options, linkName(modules, index))),
   };
@@ -295,6 +320,9 @@ function formatOutlineNode(outline, options, level = 0) {
     lines.push(indent(`Global volume: ${formatValue(outline.project.globalVolume)}`, level + 2));
     lines.push(indent(`Patterns: ${outline.project.patternCount}`, level + 2));
     lines.push(indent(`Modules: ${outline.project.moduleCount}`, level + 2));
+    if (outline.graph) {
+      lines.push(indent(`Graph: active=${outline.graph.activeModules} edges=${outline.graph.edges} dangling=${outline.graph.danglingEdges}`, level + 2));
+    }
   }
 
   if (outline.synth) {
@@ -312,7 +340,9 @@ function formatOutlineNode(outline, options, level = 0) {
   if (outline.links?.length) {
     lines.push("", indent("Links", level));
     for (const edge of outline.links) {
-      lines.push(indent(`#${edge.from} ${edge._fromName} -> #${edge.to} ${edge._toName} (${edge.kind})`, level + 2));
+      const slot = edge.slot !== undefined ? ` slot=${edge.slot}` : "";
+      const validity = edge.valid === false ? " invalid" : "";
+      lines.push(indent(`#${edge.from} ${edge._fromName} -> #${edge.to} ${edge._toName} (${edge.kind}${slot}${validity})`, level + 2));
     }
   }
 
