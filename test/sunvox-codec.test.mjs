@@ -196,6 +196,32 @@ test("preserves signed pattern parent and data chunk sample rate values", () => 
   assert.equal(sha256(buildContainer(parsedProject)), sha256(projectBuffer));
 });
 
+test("preserves signed module MIDI output settings", () => {
+  const document = {
+    format: TEXT_FORMAT,
+    magic: "SSYN",
+    headerTailHex: "00000000",
+    module: {
+      name: "MIDI output",
+      midi: {
+        outputChannel: -1,
+        outputBank: -1,
+        outputProgram: -1,
+      },
+    },
+  };
+
+  const buffer = buildContainer(document);
+  const parsed = parseContainer(buffer);
+
+  assert.deepEqual(parsed.module.midi, {
+    outputChannel: -1,
+    outputBank: -1,
+    outputProgram: -1,
+  });
+  assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
+});
+
 test("decodes module MIDI input flag bitfields", () => {
   const document = {
     format: TEXT_FORMAT,

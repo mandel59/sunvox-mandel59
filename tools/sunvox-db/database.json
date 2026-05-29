@@ -52,7 +52,7 @@
     { "id": "SCOL", "scope": "module", "name": "color", "type": "rgb24", "label": "module color" },
     { "id": "SMII", "scope": "module", "name": "midiInputFlags", "type": "uint32", "label": "module MIDI input flags" },
     { "id": "SMIN", "scope": "module", "name": "midiOutputName", "type": "string", "label": "module MIDI output device name" },
-    { "id": "SMIC", "scope": "module", "name": "midiOutputChannel", "type": "uint32", "label": "module MIDI output channel" },
+    { "id": "SMIC", "scope": "module", "name": "midiOutputChannel", "type": "int32", "label": "module MIDI output channel" },
     { "id": "SMIB", "scope": "module", "name": "midiOutputBank", "type": "int32", "label": "module MIDI output bank" },
     { "id": "SMIP", "scope": "module", "name": "midiOutputProgram", "type": "int32", "label": "module MIDI output program" },
     { "id": "SLNK", "scope": "module", "name": "inputLinks", "type": "int32Array", "label": "module input links" },
