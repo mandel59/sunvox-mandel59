@@ -19,7 +19,7 @@
           "label": { "type": "string" },
           "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "bytes", "string", "empty"] },
           "valueKind": {
-            "enum": ["bitset", "bytes", "color", "controller", "count", "enum", "events", "flags", "grid", "index", "level", "position", "rate", "scale", "state", "tempo", "terminator", "text", "version"]
+            "enum": ["bitset", "bytes", "color", "controller", "count", "enum", "events", "flags", "grid", "icon", "index", "level", "linkSlots", "links", "midi", "position", "rate", "scale", "state", "tempo", "terminator", "text", "version"]
           },
           "sourceSymbol": { "type": "string" },
           "signedRoundTrip": { "type": "boolean" }

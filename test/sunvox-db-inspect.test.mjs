@@ -34,11 +34,14 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.coverageGateFailures, 0);
   assert.equal(metrics.summary.unsampledDbModules, 0);
   assert.equal(metrics.summary.sampleCoveragePercent, 100);
+  assert.equal(metrics.summary.chunks, SUNVOX_DB.chunks.length);
+  assert.equal(metrics.summary.reviewedChunks, metrics.summary.chunks);
+  assert.equal(metrics.summary.chunkStorageReviewPercent, 100);
   assert.ok(metrics.summary.scalarChunks > 0);
-  assert.ok(metrics.summary.reviewedScalarChunks >= 25);
-  assert.ok(metrics.summary.chunkStorageReviewPercent >= 50);
+  assert.equal(metrics.summary.reviewedScalarChunks, metrics.summary.scalarChunks);
+  assert.equal(metrics.summary.scalarChunkStorageReviewPercent, 100);
   assert.deepEqual(
-    ["CHFR", "PPAR", "SMIB", "SMIC", "SMIP"].every((chunkId) =>
+    ["CHFR", "PDTA", "PPAR", "SLnK", "SMIB", "SMIC", "SMIP"].every((chunkId) =>
       metrics.chunkStorage.reviewedChunkIds.includes(chunkId),
     ),
     true,

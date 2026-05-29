@@ -894,8 +894,12 @@ const CHUNK_VALUE_KINDS = new Set([
   "events",
   "flags",
   "grid",
+  "icon",
   "index",
   "level",
+  "linkSlots",
+  "links",
+  "midi",
   "position",
   "rate",
   "scale",
@@ -1064,15 +1068,21 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
 const SCALAR_CHUNK_TYPES = new Set(["int32", "uint32"]);
 
 function collectChunkStorageMetrics() {
+  const chunks = SUNVOX_DB.chunks;
+  const reviewedChunks = chunks.filter((chunk) => chunk.sourceType);
   const scalarChunks = SUNVOX_DB.chunks.filter((chunk) => SCALAR_CHUNK_TYPES.has(chunk.type));
   const reviewedScalarChunks = scalarChunks.filter((chunk) => chunk.sourceType);
   const signedRoundTripChunks = scalarChunks.filter((chunk) => chunk.signedRoundTrip);
   return {
+    chunks: chunks.length,
+    reviewedChunks: reviewedChunks.length,
+    reviewPercent: Number(((reviewedChunks.length / chunks.length) * 100).toFixed(1)),
+    reviewedChunkIds: reviewedChunks.map((chunk) => chunk.id).sort(compareText),
     scalarChunks: scalarChunks.length,
     reviewedScalarChunks: reviewedScalarChunks.length,
     signedRoundTripChunks: signedRoundTripChunks.length,
-    reviewPercent: Number(((reviewedScalarChunks.length / scalarChunks.length) * 100).toFixed(1)),
-    reviewedChunkIds: reviewedScalarChunks.map((chunk) => chunk.id).sort(compareText),
+    scalarReviewPercent: Number(((reviewedScalarChunks.length / scalarChunks.length) * 100).toFixed(1)),
+    reviewedScalarChunkIds: reviewedScalarChunks.map((chunk) => chunk.id).sort(compareText),
   };
 }
 
@@ -1105,10 +1115,13 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       controllerMetadataMismatches: controllerDiff.summary.mismatches,
       dbCheckErrors: dbCheck.summary.errors,
       dbCheckWarnings: dbCheck.summary.warnings,
+      chunks: chunkStorage.chunks,
+      reviewedChunks: chunkStorage.reviewedChunks,
       scalarChunks: chunkStorage.scalarChunks,
       reviewedScalarChunks: chunkStorage.reviewedScalarChunks,
       signedRoundTripChunks: chunkStorage.signedRoundTripChunks,
       chunkStorageReviewPercent: chunkStorage.reviewPercent,
+      scalarChunkStorageReviewPercent: chunkStorage.scalarReviewPercent,
       coverageGateFailures: coverageGateFailures.length,
     },
     gates: {
@@ -1457,9 +1470,12 @@ function formatProjectMetrics(metrics) {
     { metric: "DB modules missing from source", value: metrics.summary.dbModulesMissingFromSource },
     { metric: "Controller metadata mismatches", value: metrics.summary.controllerMetadataMismatches },
     { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
+    { metric: "Chunks", value: metrics.summary.chunks },
+    { metric: "Reviewed chunks", value: metrics.summary.reviewedChunks },
+    { metric: "Chunk storage review", value: formatPercent(metrics.summary.chunkStorageReviewPercent) },
     { metric: "Scalar chunks", value: metrics.summary.scalarChunks },
     { metric: "Reviewed scalar chunks", value: metrics.summary.reviewedScalarChunks },
-    { metric: "Chunk storage review", value: formatPercent(metrics.summary.chunkStorageReviewPercent) },
+    { metric: "Scalar chunk storage review", value: formatPercent(metrics.summary.scalarChunkStorageReviewPercent) },
     { metric: "Signed round-trip chunks", value: metrics.summary.signedRoundTripChunks },
     { metric: "Coverage gate failures", value: metrics.summary.coverageGateFailures },
   ];
@@ -1495,7 +1511,7 @@ function formatProjectMetrics(metrics) {
       ? metrics.unsampledDbModuleTypes.map((moduleType) => `  - ${moduleType}`).join("\n")
       : "(none)",
     "",
-    "Reviewed scalar chunk storage:",
+    "Reviewed chunk storage:",
     metrics.chunkStorage.reviewedChunkIds.length
       ? metrics.chunkStorage.reviewedChunkIds.map((chunkId) => `  - ${chunkId}`).join("\n")
       : "(none)",
