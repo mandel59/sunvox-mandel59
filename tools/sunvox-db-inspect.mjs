@@ -883,6 +883,36 @@ function collectSourceBlockIds(sourceRoot) {
   return { sourcePath, ids };
 }
 
+const CHUNK_SOURCE_TYPES = new Set(["int32", "uint32", "uint16", "bytes", "string", "empty"]);
+const CHUNK_VALUE_KINDS = new Set([
+  "bitset",
+  "bytes",
+  "color",
+  "count",
+  "enum",
+  "events",
+  "flags",
+  "index",
+  "position",
+  "rate",
+  "state",
+  "terminator",
+  "text",
+  "version",
+]);
+
+function checkChunkStorageMetadata(errors, chunk) {
+  if (chunk.sourceType && !CHUNK_SOURCE_TYPES.has(chunk.sourceType)) {
+    errors.push(`chunk ${chunk.id} has invalid sourceType ${chunk.sourceType}`);
+  }
+  if (chunk.valueKind && !CHUNK_VALUE_KINDS.has(chunk.valueKind)) {
+    errors.push(`chunk ${chunk.id} has invalid valueKind ${chunk.valueKind}`);
+  }
+  if (chunk.signedRoundTrip && chunk.type !== "int32") {
+    errors.push(`chunk ${chunk.id} is marked signedRoundTrip but uses ${chunk.type} payload type`);
+  }
+}
+
 function checkChunkDefinitions(errors, warnings, sourceRoot) {
   const chunkIds = new Set();
   for (const chunk of SUNVOX_DB.chunks) {
@@ -890,6 +920,7 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
       errors.push(`duplicate chunk id ${chunk.id}`);
     }
     chunkIds.add(chunk.id);
+    checkChunkStorageMetadata(errors, chunk);
   }
   for (const chunk of SUNVOX_DB.chunks) {
     if (chunk.linkSlots?.linkChunk && !chunkIds.has(chunk.linkSlots.linkChunk)) {

@@ -7,6 +7,9 @@ can either interpret it directly or generate conversion code from it later.
 ## MVP Scope
 
 - `chunks`: maps chunk IDs to labels, scopes, and payload types.
+  Reviewed chunks may also include `sourceType`, `valueKind`, `sourceSymbol`,
+  and `signedRoundTrip` so source-code storage details do not disappear during
+  codec work.
 - `enums`: maps stored numeric values to editable names.
 - `bitfields`: describes packed integer fields such as `CMID`.
 - `bitflags`: maps stored flag bits to sparse named objects.

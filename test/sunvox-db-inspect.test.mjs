@@ -96,6 +96,12 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousLinkSlots = linkSlotChunk.linkSlots;
   const bitfield = SUNVOX_DB.bitfields.psynth_midi_input_flags;
   const previousBitfieldFields = bitfield.fields;
+  const storageChunk = SUNVOX_DB.chunks.find((chunk) => chunk.id === "SMIC");
+  const previousStorageMetadata = {
+    sourceType: storageChunk.sourceType,
+    valueKind: storageChunk.valueKind,
+    signedRoundTrip: storageChunk.signedRoundTrip,
+  };
   SUNVOX_DB.modules[moduleName] = {
     controllers: [],
     dataChunks: [
@@ -128,6 +134,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
   });
   linkSlotChunk.linkSlots = { linkChunk: "NOPE" };
   bitfield.fields = [...bitfield.fields, { name: "broken", shift: 7, bits: 1, bitflags: "__missing_bitfield_bitflags" }];
+  storageChunk.sourceType = "__missing_source_type";
+  storageChunk.valueKind = "__missing_value_kind";
+  storageChunk.signedRoundTrip = true;
+  storageChunk.type = "uint32";
 
   try {
     const check = collectDbCheck("__missing_source_root__");
@@ -160,10 +170,14 @@ test("DB check validates data chunk ranges and metadata references", () => {
       errors,
       /bitfield:psynth_midi_input_flags: packed field field broken references missing bitflags __missing_bitfield_bitflags/u,
     );
+    assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
+    assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);
+    assert.match(errors, /chunk SMIC is marked signedRoundTrip but uses uint32 payload type/u);
   } finally {
     projectFields.length = previousProjectFieldCount;
     linkSlotChunk.linkSlots = previousLinkSlots;
     bitfield.fields = previousBitfieldFields;
+    Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     if (previousModule) {
       SUNVOX_DB.modules[moduleName] = previousModule;
     } else {

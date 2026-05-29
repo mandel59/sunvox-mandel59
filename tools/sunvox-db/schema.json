@@ -16,7 +16,13 @@
           "scope": { "enum": ["project", "pattern", "module"] },
           "name": { "type": "string" },
           "type": { "type": "string" },
-          "label": { "type": "string" }
+          "label": { "type": "string" },
+          "sourceType": { "enum": ["int32", "uint32", "uint16", "bytes", "string", "empty"] },
+          "valueKind": {
+            "enum": ["bitset", "bytes", "color", "count", "enum", "events", "flags", "index", "position", "rate", "state", "terminator", "text", "version"]
+          },
+          "sourceSymbol": { "type": "string" },
+          "signedRoundTrip": { "type": "boolean" }
         },
         "additionalProperties": true
       }
