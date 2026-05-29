@@ -173,6 +173,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
   };
   const packedFields = SUNVOX_DB.structs.sunvox_note.textLayout.fieldSemantics.controller.packedFields;
   const previousPackedFields = packedFields.slice();
+  const textLayout = SUNVOX_DB.structs.sunvox_note.textLayout;
+  const previousTupleFields = textLayout.tupleFields.slice();
+  const previousEmptyTuple = textLayout.emptyTuple.slice();
+  const previousPositionFields = textLayout.positionFields.slice();
   const amplifier = SUNVOX_DB.modules.Amplifier;
   const previousAmplifierColor = amplifier.color;
   SUNVOX_DB.modules[moduleName] = {
@@ -248,6 +252,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
     { name: "brokenPacked", shift: 8, bits: 8, min: 127, max: 200, reference: "__missing_packed_reference" },
     { name: "badRange", shift: 0, bits: 2, min: 0, max: 4 },
   );
+  textLayout.tupleFields = [...textLayout.tupleFields, "missingTuple"];
+  textLayout.emptyTuple = [0];
+  textLayout.positionFields = ["line"];
+  textLayout.fieldSemantics.broken = { encoding: "__missing_encoding", reference: "__missing_reference" };
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
   storageChunk.signedRoundTrip = true;
@@ -322,6 +330,15 @@ test("DB check validates data chunk ranges and metadata references", () => {
       /struct sunvox_note field controller packed field brokenPacked stored range 127\.\.200 overlaps controller 1\.\.127/u,
     );
     assert.match(errors, /struct sunvox_note field controller packed field badRange has invalid stored range 0\.\.4/u);
+    assert.match(errors, /struct sunvox_note textLayout tuple field missingTuple is not in fields/u);
+    assert.match(errors, /struct sunvox_note textLayout emptyTuple length 1 does not match tupleFields length 6/u);
+    assert.match(
+      errors,
+      /struct sunvox_note textLayout positionFields must contain exactly 2 fields for sparsePatternEvents/u,
+    );
+    assert.match(errors, /struct sunvox_note field broken has semantics but is not in tupleFields/u);
+    assert.match(errors, /struct sunvox_note field broken has invalid encoding __missing_encoding/u);
+    assert.match(errors, /struct sunvox_note field broken has invalid reference __missing_reference/u);
     assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
     assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);
     assert.match(errors, /chunk SMIC is marked signedRoundTrip but uses uint32 payload type/u);
@@ -335,6 +352,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
     bitfield.fields = previousBitfieldFields;
     packedFields.length = 0;
     packedFields.push(...previousPackedFields);
+    textLayout.tupleFields = previousTupleFields;
+    textLayout.emptyTuple = previousEmptyTuple;
+    textLayout.positionFields = previousPositionFields;
+    delete textLayout.fieldSemantics.broken;
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     amplifier.color = previousAmplifierColor;
     if (previousModule) {

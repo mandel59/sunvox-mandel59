@@ -1145,11 +1145,45 @@ function checkTextLayoutPackedFields(errors, subject, packedFields = []) {
   }
 }
 
+function checkTextLayoutDefinition(errors, structName, definition) {
+  const layout = definition.textLayout;
+  if (!layout) {
+    return;
+  }
+  const subject = `struct ${structName} textLayout`;
+  const binaryFields = new Set((definition.fields ?? []).map((field) => field.name));
+  const tupleFields = layout.tupleFields ?? [];
+  for (const fieldName of tupleFields) {
+    if (!binaryFields.has(fieldName)) {
+      errors.push(`${subject} tuple field ${fieldName} is not in fields`);
+    }
+  }
+  if (layout.emptyTuple && layout.emptyTuple.length !== tupleFields.length) {
+    errors.push(`${subject} emptyTuple length ${layout.emptyTuple.length} does not match tupleFields length ${tupleFields.length}`);
+  }
+  if (layout.kind === "sparsePatternEvents" && (layout.positionFields?.length ?? 0) !== 2) {
+    errors.push(`${subject} positionFields must contain exactly 2 fields for sparsePatternEvents`);
+  }
+
+  const tupleFieldSet = new Set(tupleFields);
+  for (const [fieldName, semantics] of Object.entries(layout.fieldSemantics ?? {})) {
+    const fieldSubject = `struct ${structName} field ${fieldName}`;
+    if (!tupleFieldSet.has(fieldName)) {
+      errors.push(`${fieldSubject} has semantics but is not in tupleFields`);
+    }
+    if (semantics.encoding && !TEXT_LAYOUT_FIELD_ENCODINGS.has(semantics.encoding)) {
+      errors.push(`${fieldSubject} has invalid encoding ${semantics.encoding}`);
+    }
+    if (semantics.reference && !TEXT_LAYOUT_FIELD_REFERENCES.has(semantics.reference)) {
+      errors.push(`${fieldSubject} has invalid reference ${semantics.reference}`);
+    }
+    checkTextLayoutPackedFields(errors, fieldSubject, semantics.packedFields);
+  }
+}
+
 function checkStructDefinitions(errors) {
   for (const [structName, definition] of Object.entries(SUNVOX_DB.structs ?? {})) {
-    for (const [fieldName, semantics] of Object.entries(definition.textLayout?.fieldSemantics ?? {})) {
-      checkTextLayoutPackedFields(errors, `struct ${structName} field ${fieldName}`, semantics.packedFields);
-    }
+    checkTextLayoutDefinition(errors, structName, definition);
   }
 }
 
@@ -1236,6 +1270,14 @@ const CHUNK_VALUE_KINDS = new Set([
 const RUNTIME_CONSTRAINT_SCOPES = new Set(["project", "module", "moduleLink"]);
 const RUNTIME_CONSTRAINT_KINDS = new Set(["integerRange", "maxUtf8Bytes"]);
 const RUNTIME_CONSTRAINT_SEVERITIES = new Set(["warning", "error"]);
+const TEXT_LAYOUT_FIELD_ENCODINGS = new Set([
+  "packedPatternControllerEffect",
+  "oneBasedModuleIndex",
+  "sunvoxNote",
+  "uint16",
+  "uint8",
+]);
+const TEXT_LAYOUT_FIELD_REFERENCES = new Set(["modules"]);
 const PACKED_FIELD_REFERENCES = new Set(["module.controllers"]);
 
 function checkStorageMetadata(errors, subject, definition) {

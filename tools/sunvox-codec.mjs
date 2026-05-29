@@ -369,6 +369,11 @@ function compactPatternNotes(pattern, definition) {
   };
 }
 
+function structTextPositionFields(definition) {
+  const [lineField = "line", trackField = "track"] = definition?.textLayout?.positionFields ?? [];
+  return { lineField, trackField };
+}
+
 function patternNoteValueToText(value) {
   if (value === 0) {
     return undefined;
@@ -609,9 +614,10 @@ function patternRecordIsEmpty(record, definition) {
 
 function patternRecordToSemanticEvent(record, index, columns, modules, definition) {
   const object = tupleRecordToObject(record, definition);
+  const { lineField, trackField } = structTextPositionFields(definition);
   const event = {
-    line: Math.floor(index / columns),
-    track: index % columns,
+    [lineField]: Math.floor(index / columns),
+    [trackField]: index % columns,
   };
   const context = { definition, modules, rawRecord: object };
   for (const fieldName of structTextTupleFields(definition)) {
@@ -670,7 +676,8 @@ function patternSemanticEventToRecord(event, modules, definition) {
   if (!event || typeof event !== "object") {
     return tupleRecordToObject(event, definition);
   }
-  if (event.line === undefined && event.track === undefined) {
+  const positionFields = Object.values(structTextPositionFields(definition));
+  if (positionFields.every((fieldName) => event[fieldName] === undefined)) {
     return tupleRecordToObject(event, definition);
   }
   const context = { definition, modules, module: modules?.[event.module] };
@@ -684,6 +691,7 @@ function patternEventRecords(pattern, modules) {
     return undefined;
   }
   const definition = SUNVOX_DB.structs.sunvox_note;
+  const positionFields = Object.values(structTextPositionFields(definition));
   const sparse =
     pattern.events.length === 0
       ? pattern.eventColumns !== undefined ||
@@ -691,7 +699,11 @@ function patternEventRecords(pattern, modules) {
         pattern.tracks !== undefined ||
         pattern.lines !== undefined
       : pattern.events.some(
-          (event) => event && typeof event === "object" && !Array.isArray(event) && (event.line !== undefined || event.track !== undefined),
+          (event) =>
+            event &&
+            typeof event === "object" &&
+            !Array.isArray(event) &&
+            positionFields.some((fieldName) => event[fieldName] !== undefined),
         );
   if (!sparse) {
     return pattern.events.map((event) => tupleRecordToObject(event, definition));
@@ -699,12 +711,13 @@ function patternEventRecords(pattern, modules) {
   const columns = patternEventColumns(pattern);
   const rows = patternEventRows(pattern, columns);
   const records = Array.from({ length: columns * rows }, () => emptyPatternRecord(definition));
+  const { lineField, trackField } = structTextPositionFields(definition);
   for (const event of pattern.events) {
-    const line = event.line ?? 0;
-    const track = event.track ?? 0;
+    const line = event[lineField] ?? 0;
+    const track = event[trackField] ?? 0;
     const index = line * columns + track;
     if (index < 0 || index >= records.length) {
-      throw new Error(`Pattern event is outside the event grid: line ${line}, track ${track}`);
+      throw new Error(`Pattern event is outside the event grid: ${lineField} ${line}, ${trackField} ${track}`);
     }
     records[index] = patternSemanticEventToRecord(event, modules, definition);
   }

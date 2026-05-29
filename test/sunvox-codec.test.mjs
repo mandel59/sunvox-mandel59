@@ -534,6 +534,26 @@ test("decodes pattern note data", async () => {
   assert.equal(sha256(buildContainer(document)), sha256(buffer));
 });
 
+test("uses DB text layout position field names for pattern events", async () => {
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const layout = SUNVOX_DB.structs.sunvox_note.textLayout;
+  const previousPositionFields = layout.positionFields.slice();
+  layout.positionFields = ["row", "column"];
+
+  try {
+    const document = parseContainer(buffer);
+    const pattern = document.patterns.find((candidate) => candidate.events);
+
+    assert.equal(pattern.events[0].row, 0);
+    assert.equal(pattern.events[0].column, 0);
+    assert.equal(pattern.events[0].line, undefined);
+    assert.equal(pattern.events[0].track, undefined);
+    assert.equal(sha256(buildContainer(document)), sha256(buffer));
+  } finally {
+    layout.positionFields = previousPositionFields;
+  }
+});
+
 test("encodes named pattern controller events", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);

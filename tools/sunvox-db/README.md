@@ -190,9 +190,10 @@ npm run sunvox:verify:all
   expressions and enum names before inserting the output into `database.json`.
 - `check` validates structural DB mistakes such as duplicate controller
   indexes, missing enum/bitfield/bitflags references, bitfield field references,
-  grammar references to
-  missing chunks, source/DB chunk ID drift, data chunk index collisions across
-  explicit chunks and ranges, and simple source/DB controller-count mismatches.
+  grammar references to missing chunks, invalid text layout tuple/position
+  fields, packed text field range overlap, source/DB chunk ID drift, data chunk
+  index collisions across explicit chunks and ranges, and simple source/DB
+  controller-count mismatches.
 
 ## Local Quality Loop
 
