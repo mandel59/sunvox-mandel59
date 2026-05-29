@@ -26,7 +26,7 @@ test("builds a readable outline for SunVox projects", async () => {
   assert.match(text, /SunVox Outline: music[\\/]2022-04-17\.sunvox/u);
   assert.match(text, /Graph: active=9 edges=10 dangling=0/u);
   assert.match(text, /#2 DrumSynth \[DrumSynth\]/u);
-  assert.match(text, /#8 MultiCtl -> #1 SuperSaw \(input slot=1\)/u);
+  assert.match(text, /#8 MultiCtl -> #1 SuperSaw \(input fromSlot=1 toSlot=0\)/u);
   assert.match(text, /L000 T0 note=C4 module=#2 DrumSynth/u);
 });
 

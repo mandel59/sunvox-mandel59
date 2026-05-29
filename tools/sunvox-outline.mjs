@@ -49,9 +49,9 @@ function moduleSummary(module, index) {
     position: module?.position,
     color: module?.color,
     inputLinks: compactLinks(module?.inputLinks),
-    inputLinkSlots: compactSlots(module?.inputLinkSlots),
+    inputLinkSlots: compactSlots(module?.inputLinks, module?.inputLinkSlots),
     outputLinks: compactLinks(module?.outputLinks),
-    outputLinkSlots: compactSlots(module?.outputLinkSlots),
+    outputLinkSlots: compactSlots(module?.outputLinks, module?.outputLinkSlots),
     controllerCount: countControllers(module?.controllers),
     dataChunkCount: module?.dataChunkCount ?? dataChunks.length,
     embeddedCount: dataChunks.filter((chunk) => chunk.container).length,
@@ -72,8 +72,14 @@ function compactLinks(links) {
   return (links ?? []).filter((link) => Number.isInteger(link) && link >= 0);
 }
 
-function compactSlots(slots) {
-  return (slots ?? []).filter((slot) => Number.isInteger(slot));
+function compactSlots(links, slots) {
+  const compact = [];
+  for (const [index, link] of (links ?? []).entries()) {
+    if (Number.isInteger(link) && link >= 0) {
+      compact.push(Number.isInteger(slots?.[index]) ? slots[index] : null);
+    }
+  }
+  return compact;
 }
 
 function linkName(modules, index) {
@@ -88,15 +94,18 @@ function addEdges(edges, modules, sourceModule, links, direction, kind) {
     }
     const from = direction === "input" ? linkedModule : sourceModule;
     const to = direction === "input" ? sourceModule : linkedModule;
-    const slot =
+    const peerSlot =
       direction === "input"
         ? modules[sourceModule]?.inputLinkSlots?.[linkIndex]
         : modules[sourceModule]?.outputLinkSlots?.[linkIndex];
+    const fromSlot = direction === "input" ? peerSlot : linkIndex;
+    const toSlot = direction === "input" ? linkIndex : peerSlot;
     edges.push({
       from,
       to,
       kind,
-      ...(Number.isInteger(slot) ? { slot } : {}),
+      ...(Number.isInteger(fromSlot) ? { fromSlot } : {}),
+      ...(Number.isInteger(toSlot) ? { toSlot } : {}),
       valid: Boolean(modules[from]) && Boolean(modules[to]) && moduleKind(modules[from]) !== "empty" && moduleKind(modules[to]) !== "empty",
       _fromName: moduleName(modules[from], moduleKind(modules[from])),
       _toName: moduleName(modules[to], moduleKind(modules[to])),
@@ -113,7 +122,7 @@ function moduleEdges(modules) {
 
   const seen = new Set();
   return edges.filter((edge) => {
-    const key = `${edge.from}:${edge.to}:${edge.kind}`;
+    const key = `${edge.from}:${edge.to}:${edge.kind}:${edge.fromSlot ?? ""}:${edge.toSlot ?? ""}`;
     if (seen.has(key)) {
       return false;
     }
@@ -240,7 +249,7 @@ function formatLinkList(title, links, slots, modules) {
   return ` ${title}=[${links
     .map((index, linkIndex) => {
       const slot = slots?.[linkIndex];
-      return `${linkName(modules, index)}${slot !== undefined ? ` slot=${slot}` : ""}`;
+      return `${linkName(modules, index)}${Number.isInteger(slot) ? ` peerSlot=${slot}` : ""}`;
     })
     .join(", ")}]`;
 }
@@ -340,9 +349,15 @@ function formatOutlineNode(outline, options, level = 0) {
   if (outline.links?.length) {
     lines.push("", indent("Links", level));
     for (const edge of outline.links) {
-      const slot = edge.slot !== undefined ? ` slot=${edge.slot}` : "";
+      const slots = [
+        Number.isInteger(edge.fromSlot) ? `fromSlot=${edge.fromSlot}` : "",
+        Number.isInteger(edge.toSlot) ? `toSlot=${edge.toSlot}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const slotSuffix = slots ? ` ${slots}` : "";
       const validity = edge.valid === false ? " invalid" : "";
-      lines.push(indent(`#${edge.from} ${edge._fromName} -> #${edge.to} ${edge._toName} (${edge.kind}${slot}${validity})`, level + 2));
+      lines.push(indent(`#${edge.from} ${edge._fromName} -> #${edge.to} ${edge._toName} (${edge.kind}${slotSuffix}${validity})`, level + 2));
     }
   }
 

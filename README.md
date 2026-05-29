@@ -43,8 +43,10 @@ npm run sunvox:metrics
 
 `sunvox:outline` prints a human-readable outline of a SunVox/SunSynth file:
 project settings, module slots, graph links, patterns, and embedded MetaModule
-containers. Use `--json` for machine-readable output, `--events <count>` to
-control pattern event previews, or `--no-embedded` to keep the report shallow.
+containers. Link slot metadata is shown as `fromSlot` / `toSlot` so SunVox's
+peer slot chunks are not mistaken for extra edges. Use `--json` for
+machine-readable output, `--events <count>` to control pattern event previews,
+or `--no-embedded` to keep the report shallow.
 
 Run the local quality gate before committing codec, DB, or frontend changes:
 
