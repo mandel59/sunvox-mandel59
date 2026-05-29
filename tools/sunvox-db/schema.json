@@ -416,6 +416,34 @@
                 "default": { "type": "integer" },
                 "normal": { "type": "integer" },
                 "group": { "type": "integer" },
+                "dynamicLimits": {
+                  "type": "object",
+                  "required": ["controller"],
+                  "properties": {
+                    "controller": { "type": "string" },
+                    "source": { "type": "string" },
+                    "default": {
+                      "type": "object",
+                      "properties": {
+                        "min": { "type": "integer" },
+                        "max": { "type": "integer" }
+                      },
+                      "additionalProperties": false
+                    },
+                    "cases": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "min": { "type": "integer" },
+                          "max": { "type": "integer" }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
                 "repeat": {
                   "type": "object",
                   "required": ["count", "startIndex", "items"],

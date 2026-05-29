@@ -1279,6 +1279,47 @@ function checkRuntimeConstraints(errors) {
   }
 }
 
+function controllerKey(controller) {
+  return controller.path ?? controller.name;
+}
+
+function checkControllerDynamicLimits(errors, moduleName, controller, controllersByKey) {
+  const dynamicLimits = controller.dynamicLimits;
+  if (!dynamicLimits) {
+    return;
+  }
+  const dependency = controllersByKey.get(dynamicLimits.controller);
+  if (!dependency) {
+    errors.push(`${moduleName}: controller ${controller.name} dynamicLimits references missing controller ${dynamicLimits.controller}`);
+  }
+  const limitSets = [
+    ...(dynamicLimits.default ? [["default", dynamicLimits.default]] : []),
+    ...Object.entries(dynamicLimits.cases ?? {}),
+  ];
+  if (limitSets.length === 0) {
+    errors.push(`${moduleName}: controller ${controller.name} dynamicLimits has no default or cases`);
+  }
+  for (const [caseName, limit] of limitSets) {
+    if (limit.min === undefined && limit.max === undefined) {
+      errors.push(`${moduleName}: controller ${controller.name} dynamicLimits ${caseName} is missing min or max`);
+    }
+    for (const field of ["min", "max"]) {
+      if (limit[field] !== undefined && !Number.isInteger(limit[field])) {
+        errors.push(`${moduleName}: controller ${controller.name} dynamicLimits ${caseName}.${field} is not an integer`);
+      }
+    }
+  }
+  if (dependency?.enum && dynamicLimits.cases) {
+    const enumValues = SUNVOX_DB.enums[dependency.enum] ?? {};
+    const allowedCases = new Set([...Object.keys(enumValues), ...Object.values(enumValues)]);
+    for (const caseName of Object.keys(dynamicLimits.cases)) {
+      if (!allowedCases.has(caseName)) {
+        errors.push(`${moduleName}: controller ${controller.name} dynamicLimits case ${caseName} is not in ${dependency.enum}`);
+      }
+    }
+  }
+}
+
 export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const errors = [];
   const warnings = [];
@@ -1292,6 +1333,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
     const controllers = expandControllerDefinitions(moduleDefinition.controllers);
     const controllerIndexes = new Map();
+    const controllersByKey = new Map(controllers.map((controller) => [controllerKey(controller), controller]));
     for (const controller of controllers) {
       if (!Number.isInteger(controller.index)) {
         errors.push(`${moduleName}: controller ${controller.name ?? "(unnamed)"} has non-integer index`);
@@ -1304,6 +1346,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
       if (controller.enum && !SUNVOX_DB.enums[controller.enum]) {
         errors.push(`${moduleName}: controller ${controller.name} references missing enum ${controller.enum}`);
       }
+      checkControllerDynamicLimits(errors, moduleName, controller, controllersByKey);
     }
 
     const dataChunkOwners = new Map();

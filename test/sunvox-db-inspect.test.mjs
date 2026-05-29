@@ -152,7 +152,19 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const amplifier = SUNVOX_DB.modules.Amplifier;
   const previousAmplifierColor = amplifier.color;
   SUNVOX_DB.modules[moduleName] = {
-    controllers: [],
+    controllers: [
+      {
+        index: 0,
+        name: "brokenCtl",
+        type: "int32",
+        min: 0,
+        max: 1,
+        default: 0,
+        normal: 0,
+        group: 0,
+        dynamicLimits: { controller: "missingCtl", cases: { nope: {} } },
+      },
+    ],
     dataChunks: [
       {
         index: 0,
@@ -260,6 +272,11 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /runtime constraint broken\.runtime has invalid module link relation sideways/u);
     assert.match(errors, /runtime constraint broken\.runtime maxUtf8Bytes is missing maxBytes/u);
     assert.match(errors, /runtime constraint broken\.runtime observedBehavior is missing savedValue/u);
+    assert.match(
+      errors,
+      /__BrokenDbCheckFixture: controller brokenCtl dynamicLimits references missing controller missingCtl/u,
+    );
+    assert.match(errors, /__BrokenDbCheckFixture: controller brokenCtl dynamicLimits nope is missing min or max/u);
     assert.match(
       errors,
       /bitfield:psynth_midi_input_flags: packed field field broken references missing bitflags __missing_bitfield_bitflags/u,

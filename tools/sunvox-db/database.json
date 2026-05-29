@@ -1581,7 +1581,7 @@
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "type", "label": "Type", "type": "enum", "enum": "lfo_type", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
         { "index": 2, "name": "amplitude", "label": "Amplitude", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1 },
-        { "index": 3, "name": "freq", "label": "Freq", "type": "int32", "min": 1, "max": 2048, "default": 256, "normal": -1, "group": 1 },
+        { "index": 3, "name": "freq", "label": "Freq", "type": "int32", "min": 1, "max": 2048, "default": 256, "normal": -1, "group": 1, "dynamicLimits": { "controller": "frequencyUnit", "source": "lfo_change_ctl_limits", "default": { "min": 1, "max": 256 }, "cases": { "ms": { "max": 4000 }, "hz": { "max": 16384 }, "semitone": { "min": 0, "max": 256 }, "semitone100": { "min": 0, "max": 25600 } } } },
         { "index": 4, "name": "waveform", "label": "Waveform", "type": "enum", "enum": "lfo_waveform", "min": 0, "max": 7, "default": 2, "normal": -1, "group": 1 },
         { "index": 5, "name": "setPhase", "label": "Set phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 1 },
         { "index": 6, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
@@ -1893,7 +1893,7 @@
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "amplitude", "label": "Amplitude", "type": "int32", "min": 0, "max": 256, "default": 16, "normal": -1, "group": 0 },
-        { "index": 2, "name": "freq", "label": "Freq", "type": "int32", "min": 1, "max": 2048, "default": 256, "normal": -1, "group": 0 },
+        { "index": 2, "name": "freq", "label": "Freq", "type": "int32", "min": 1, "max": 2048, "default": 256, "normal": -1, "group": 0, "dynamicLimits": { "controller": "frequencyUnit", "source": "vibrato_change_ctl_limits", "cases": { "ms": { "max": 4000 }, "hz": { "max": 16384 } } } },
         { "index": 3, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
         { "index": 4, "name": "setPhase", "label": "Set phase", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 0 },
         { "index": 5, "name": "frequencyUnit", "label": "Frequency unit", "type": "enum", "enum": "vibrato_freq_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 0 },

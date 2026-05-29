@@ -131,6 +131,10 @@ npm run sunvox:verify:all
   and source enum value sets against the DB. It is a triage report for deciding
   which declarative source facts should be copied into `database.json`; CI
   expects this report to have no mismatches.
+- Controller metadata may include `dynamicLimits` when SunVox source changes a
+  controller range based on another controller value, such as LFO/Vibrato
+  frequency limits by frequency unit. Static `min`/`max` remain aligned with
+  `psynth_register_ctl()`; validation applies the dynamic effective range.
 - `coverage --json`, `report --json`, and `controller-diff --json` emit
   machine-readable metrics for future CI or frontend tooling.
 - `metrics` summarizes coverage, source/DB consistency, controller metadata
@@ -163,11 +167,12 @@ npm run sunvox:verify:all
   not clamp them on load/save. The command prints a compact coverage summary so
   missing edit-behavior checks are visible in the local and CI logs.
 - `sunvox:validate` reports DB-driven runtime compatibility warnings for a
-  binary SunVox file or decoded JSON document. The first rules cover positive
-  project tempo values, module name byte budgets, semantic link targets, and
-  controller values outside DB-declared ranges or enum values. Validation
-  issues also carry a `trackingIssue` number so newly detected warnings can be
-  routed back to the relevant source/DB gap or quality tracking issue.
+  binary SunVox file or decoded JSON document, including embedded MetaModule
+  containers. The first rules cover positive project tempo values, module name
+  byte budgets, semantic link targets, and controller values outside DB-declared
+  ranges or enum values. Validation issues also carry a `trackingIssue` number
+  so newly detected warnings can be routed back to the relevant source/DB gap or
+  quality tracking issue.
 - `sunvox:validate:all` applies the same validation to every checked-in
   `.sunvox` and `.sunsynth` sample, and treats any warning or error as a quality
   gate failure.

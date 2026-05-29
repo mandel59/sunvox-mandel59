@@ -126,6 +126,46 @@ test("reports DB-driven controller value warnings", () => {
   assert.match(formatValidationIssue(result.issues[1]), /source=psynth_register_ctl issue=#2/u);
 });
 
+test("recursively validates embedded MetaModule containers", () => {
+  const result = validateContainer({
+    magic: "SSYN",
+    module: {
+      type: "MetaModule",
+      dataChunks: [
+        {
+          index: 0,
+          container: {
+            magic: "SVOX",
+            project: { bpm: 0, speed: 6 },
+            modules: [
+              {
+                type: "Amplifier",
+                controllers: {
+                  volume: -1,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.issues.map((issue) => issue.path),
+    [
+      "module.dataChunks[0].container.project.bpm",
+      "module.dataChunks[0].container.modules[0].controllers.volume",
+    ],
+  );
+  assert.deepEqual(
+    result.issues.map((issue) => issue.rule),
+    ["project.bpm.positive", "module.controller.range"],
+  );
+  assert.match(formatValidationIssue(result.issues[0]), /issue=#2/u);
+});
+
 test("decodes project supertrack mute and jump address state", () => {
   const document = {
     format: TEXT_FORMAT,

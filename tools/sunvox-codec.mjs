@@ -1078,24 +1078,35 @@ function validateRuntimeValue(value, rule, path) {
   return [validationIssue(rule, path, value, `Unsupported runtime constraint kind: ${rule.kind}`)];
 }
 
-function documentModuleEntries(document) {
-  if (document?.module) {
-    return [{ module: document.module, path: "module" }];
-  }
-  return (document?.modules ?? []).map((module, index) => ({ module, path: `modules[${index}]` }));
+function joinValidationPath(basePath, path) {
+  return basePath ? `${basePath}.${path}` : path;
 }
 
-function validateRuntimeConstraint(document, rule) {
+function documentModuleEntries(document, basePath = "") {
+  if (document?.module) {
+    return [{ module: document.module, path: joinValidationPath(basePath, "module") }];
+  }
+  return (document?.modules ?? []).map((module, index) => ({
+    module,
+    path: joinValidationPath(basePath, `modules[${index}]`),
+  }));
+}
+
+function validateRuntimeConstraint(document, rule, basePath = "") {
   if (rule.scope === "project") {
-    return validateRuntimeValue(getPath(document.project, rule.path), rule, `project.${rule.path}`);
+    return validateRuntimeValue(
+      getPath(document.project, rule.path),
+      rule,
+      joinValidationPath(basePath, `project.${rule.path}`),
+    );
   }
   if (rule.scope === "module") {
-    return documentModuleEntries(document).flatMap((entry) =>
+    return documentModuleEntries(document, basePath).flatMap((entry) =>
       validateRuntimeValue(getPath(entry.module, rule.path), rule, `${entry.path}.${rule.path}`),
     );
   }
   if (rule.scope === "moduleLink") {
-    return documentModuleEntries(document).flatMap((entry) => {
+    return documentModuleEntries(document, basePath).flatMap((entry) => {
       const links = entry.module?.[rule.relation];
       if (!Array.isArray(links)) {
         return [];
@@ -1130,44 +1141,87 @@ function controllerStoredValue(controller, value) {
   return tryEnumToValue(controller.enum, value);
 }
 
+function controllerEffectiveLimits(controller, controllers) {
+  const dynamicLimits = controller.dynamicLimits;
+  if (!dynamicLimits) {
+    return controller;
+  }
+  const dependencyValue = getPath(controllers, dynamicLimits.controller);
+  const limit =
+    dynamicLimits.cases?.[String(dependencyValue)] ??
+    (dependencyValue === undefined ? undefined : dynamicLimits.cases?.[String(controllerStoredValue(controller, dependencyValue))]) ??
+    dynamicLimits.default;
+  if (!limit) {
+    return controller;
+  }
+  return {
+    ...controller,
+    min: limit.min ?? controller.min,
+    max: limit.max ?? controller.max,
+  };
+}
+
 function validateControllerValue(moduleEntry, controller) {
   const controllers = moduleEntry.module?.controllers;
   if (!controllers || typeof controllers !== "object" || Array.isArray(controllers)) {
     return [];
   }
+  const effectiveController = controllerEffectiveLimits(controller, controllers);
   const path = `${moduleEntry.path}.controllers.${controllerPath(controller)}`;
   const value = getPath(controllers, controllerPath(controller));
   if (value === undefined) {
     return [];
   }
-  const storedValue = controllerStoredValue(controller, value);
+  const storedValue = controllerStoredValue(effectiveController, value);
   if (!Number.isInteger(storedValue)) {
     return [
       controllerValidationIssue(
         moduleEntry,
-        controller,
+        effectiveController,
         path,
         value,
-        `${path} must be a known ${controller.enum ?? "controller"} value`,
+        `${path} must be a known ${effectiveController.enum ?? "controller"} value`,
       ),
     ];
   }
-  return validateIntegerRange(storedValue, controller, path).map((issue) =>
-    controllerValidationIssue(moduleEntry, controller, path, value, issue.message),
+  return validateIntegerRange(storedValue, effectiveController, path).map((issue) =>
+    controllerValidationIssue(moduleEntry, effectiveController, path, value, issue.message),
   );
 }
 
-function validateModuleControllers(document) {
-  return documentModuleEntries(document).flatMap((entry) =>
+function validateModuleControllers(document, basePath = "") {
+  return documentModuleEntries(document, basePath).flatMap((entry) =>
     moduleControllers(entry.module?.type).flatMap((controller) => validateControllerValue(entry, controller)),
   );
 }
 
-export function validateContainer(document) {
-  const issues = [
-    ...(SUNVOX_DB.runtimeConstraints ?? []).flatMap((rule) => validateRuntimeConstraint(document, rule)),
-    ...validateModuleControllers(document),
+function nestedContainerEntries(document, basePath = "") {
+  return documentModuleEntries(document, basePath).flatMap((entry) =>
+    (entry.module?.dataChunks ?? [])
+      .map((chunk, index) => ({
+        container: chunk.container,
+        path: `${entry.path}.dataChunks[${index}].container`,
+      }))
+      .filter((entry) => entry.container),
+  );
+}
+
+function validateContainerAtPath(document, basePath = "", seen = new Set()) {
+  if (!document || seen.has(document)) {
+    return [];
+  }
+  seen.add(document);
+  return [
+    ...(SUNVOX_DB.runtimeConstraints ?? []).flatMap((rule) => validateRuntimeConstraint(document, rule, basePath)),
+    ...validateModuleControllers(document, basePath),
+    ...nestedContainerEntries(document, basePath).flatMap((entry) =>
+      validateContainerAtPath(entry.container, entry.path, seen),
+    ),
   ];
+}
+
+export function validateContainer(document) {
+  const issues = validateContainerAtPath(document);
   return {
     ok: !issues.some((issue) => issue.severity === "error"),
     issues,
