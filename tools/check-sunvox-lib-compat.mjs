@@ -144,6 +144,27 @@ function readPatternEvent(module, pattern, line, track) {
   };
 }
 
+function saveSlotToMemory(module) {
+  const sizePointer = module._malloc(16);
+  if (!sizePointer) {
+    throw new Error("malloc failed for SunVox save size pointer");
+  }
+  let savedPointer;
+  try {
+    savedPointer = module._sv_save_to_memory(SLOT, sizePointer);
+    const size = module.HEAP32[sizePointer >> 2];
+    if (!savedPointer || size <= 0) {
+      throw new Error(`sv_save_to_memory failed with pointer ${savedPointer} and size ${size}`);
+    }
+    return Buffer.from(module.HEAPU8.subarray(savedPointer, savedPointer + size));
+  } finally {
+    if (savedPointer) {
+      module._free(savedPointer);
+    }
+    module._free(sizePointer);
+  }
+}
+
 function inspectLoadedState(module, moduleCount, magic, options = {}) {
   const modules = [];
   for (let index = 0; index < moduleCount; index += 1) {
@@ -213,6 +234,7 @@ export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
           : module._sv_load_from_memory(SLOT, dataPointer, buffer.length);
       const moduleCount = module._sv_get_number_of_modules(SLOT);
       const state = inspectLoadedState(module, moduleCount, magic, options);
+      const savedBuffer = options.saveToMemory && magic === "SVOX" ? saveSlotToMemory(module) : undefined;
       return {
         filePath: options.filePath ? resolve(options.filePath) : undefined,
         label: options.label,
@@ -228,6 +250,8 @@ export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
         songName: readCString(module, module._sv_get_song_name(SLOT)),
         bpm: magic === "SVOX" ? module._sv_get_song_bpm(SLOT) : undefined,
         tpl: magic === "SVOX" ? module._sv_get_song_tpl(SLOT) : undefined,
+        savedBuffer,
+        savedBytes: savedBuffer?.length,
       };
     } finally {
       if (dataPointer !== undefined) {
@@ -563,9 +587,10 @@ function resolveLoadedModuleExpectations(report, expectations) {
 }
 
 function printReport(report) {
+  const saved = report.savedBytes === undefined ? "" : `, saved=${report.savedBytes}`;
   console.log(
     `${report.label ?? relative(process.cwd(), report.filePath)}: engine=0x${report.engineVersion.toString(16)}, ` +
-      `magic=${report.magic}, api=${report.loadApi}, load=${report.loadResult}, modules=${report.moduleCount}`,
+      `magic=${report.magic}, api=${report.loadApi}, load=${report.loadResult}, modules=${report.moduleCount}${saved}`,
   );
 }
 
@@ -591,9 +616,20 @@ async function main() {
           filePath: edited.filePath,
           label: edited.label,
           patternEventProbes: edited.patternEventProbes,
+          saveToMemory: true,
         });
         validateEditedCompatibility(editedReport, resolveLoadedModuleExpectations(editedReport, edited.expectations));
         printReport(editedReport);
+
+        if (editedReport.savedBuffer) {
+          const savedReport = await inspectBufferWithSunVoxLib(editedReport.savedBuffer, {
+            filePath: edited.filePath,
+            label: `${relative(process.cwd(), file)} (SunVox save/reload)`,
+            patternEventProbes: edited.patternEventProbes,
+          });
+          validateEditedCompatibility(savedReport, resolveLoadedModuleExpectations(savedReport, edited.expectations));
+          printReport(savedReport);
+        }
       }
     } catch (error) {
       failures += 1;
