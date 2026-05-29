@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { readdir, stat } from "node:fs/promises";
+import { dirname, extname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import vm from "node:vm";
 
 import { COVERAGE_MODULE_TYPES } from "./generate-sunvox-coverage-fixtures.mjs";
 
 const DEFAULT_INPUT_PATH = "test/fixtures/sunvox/unsampled-modules.sunvox";
+const DEFAULT_INPUTS = ["music", "instruments", "test/fixtures/sunvox"];
+const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const SUNVOX_JS_PATH = "sunvox_lib/sunvox_lib/js/lib/sunvox.js";
 const SLOT = 0;
 const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
@@ -50,6 +53,28 @@ async function loadSunVoxLib() {
 
 function readCString(module, pointer) {
   return pointer ? module.UTF8ToString(pointer) : undefined;
+}
+
+async function findFiles(paths) {
+  const files = [];
+  for (const input of paths) {
+    const path = resolve(input);
+    let info;
+    try {
+      info = await stat(path);
+    } catch {
+      continue;
+    }
+    if (info.isDirectory()) {
+      const entries = await readdir(path, { withFileTypes: true });
+      files.push(...(await findFiles(entries.map((entry) => join(path, entry.name)))));
+      continue;
+    }
+    if (info.isFile() && SAMPLE_EXTENSIONS.has(extname(path).toLowerCase())) {
+      files.push(path);
+    }
+  }
+  return files.sort((a, b) => a.localeCompare(b, "en"));
 }
 
 export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {
@@ -124,21 +149,52 @@ function validateDefaultCoverageFixture(report) {
   }
 }
 
-async function main() {
-  const inputPath = process.argv[2] ?? DEFAULT_INPUT_PATH;
-  const report = await inspectWithSunVoxLib(inputPath);
-
-  if (resolve(inputPath) === resolve(DEFAULT_INPUT_PATH)) {
+function validateLoad(report) {
+  if (resolve(report.filePath) === resolve(DEFAULT_INPUT_PATH)) {
     validateDefaultCoverageFixture(report);
-  } else if (report.loadResult !== 0) {
+    return;
+  }
+  if (report.loadResult !== 0) {
     throw new Error(`SunVox lib rejected ${report.filePath}: sv_load_from_memory returned ${report.loadResult}`);
   }
+  if (report.moduleCount < 1) {
+    throw new Error(`SunVox lib exposed no modules for ${report.filePath}`);
+  }
+}
 
+function printReport(report) {
   console.log(
-    `SunVox lib loaded ${inputPath}: engine=0x${report.engineVersion.toString(16)}, ` +
+    `${relative(process.cwd(), report.filePath)}: engine=0x${report.engineVersion.toString(16)}, ` +
       `load=${report.loadResult}, modules=${report.moduleCount}`,
   );
-  console.log(`Module types: ${report.modules.map((candidate) => candidate.type ?? "<empty>").join(", ")}`);
+}
+
+async function main() {
+  const inputs = process.argv.slice(2);
+  const files = await findFiles(inputs.length ? inputs : DEFAULT_INPUTS);
+  if (files.length === 0) {
+    console.error("No SunVox sample files found.");
+    process.exitCode = 1;
+    return;
+  }
+
+  let failures = 0;
+  for (const file of files) {
+    try {
+      const report = await inspectWithSunVoxLib(file);
+      validateLoad(report);
+      printReport(report);
+    } catch (error) {
+      failures += 1;
+      console.error(`${relative(process.cwd(), file)}: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  if (failures > 0) {
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`SunVox lib compatibility passed for ${files.length} files.`);
 }
 
 if (import.meta.url === pathToFileURL(resolve(process.argv[1] ?? "")).href) {

@@ -86,9 +86,10 @@ npm run sunvox:verify:all
   `test/fixtures/sunvox/`.
 - `sunvox:fixtures:generate` regenerates the synthetic coverage fixture used to
   keep every DB module type represented in the default coverage corpus.
-- `sunvox:lib:check` loads the synthetic fixture through the bundled SunVox
-  JS/WASM library and verifies that SunVox exposes the expected module slots and
-  types, not just that the codec can round-trip the bytes.
+- `sunvox:lib:check` loads checked-in `.sunvox` and `.sunsynth` samples through
+  the bundled SunVox JS/WASM library. The synthetic fixture also verifies that
+  SunVox exposes the expected module slots and types, not just that the codec can
+  round-trip the bytes.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
