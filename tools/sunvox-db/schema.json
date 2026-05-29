@@ -34,7 +34,7 @@
         "type": "object",
         "required": ["type", "fields"],
         "properties": {
-          "type": { "enum": ["uint32"] },
+          "type": { "enum": ["uint8", "uint32"] },
           "fields": {
             "type": "array",
             "items": {
@@ -159,7 +159,9 @@
                     "path": { "type": "string" },
                     "field": { "enum": ["value", "text", "rgb", "values", "base64", "pattern.events"] },
                     "enum": { "type": "string" },
+                    "bitfield": { "type": "string" },
                     "bitflags": { "type": "string" },
+                    "omitDefaults": { "type": "boolean" },
                     "textSize": { "type": "integer", "minimum": 0 }
                   },
                   "additionalProperties": false

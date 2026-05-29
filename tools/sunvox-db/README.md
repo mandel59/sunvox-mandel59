@@ -37,7 +37,8 @@ also record the original chunk byte length as `dataSize` so SunVox's
 trailing-zero trimming can round-trip exactly. Sampler PCM payloads are treated
 as known byte payloads with decoded chunk flags and sample rates; the raw bytes
 remain in `bytesBase64` until a higher-level audio sample representation is
-added.
+added. Module link slot chunks (`SLnK` and `SLnk`) declare which link array they
+annotate so graph tooling can avoid treating slot arrays as separate links.
 
 ## Inspection Tool
 
@@ -97,9 +98,9 @@ npm run sunvox:verify:all
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
 - `check` validates structural DB mistakes such as duplicate controller
-  indexes, missing enum/bitfield/bitflags references, data chunk index
-  collisions across explicit chunks and ranges, and simple source/DB
-  controller-count mismatches.
+  indexes, missing enum/bitfield/bitflags references, grammar references to
+  missing chunks, source/DB chunk ID drift, data chunk index collisions across
+  explicit chunks and ranges, and simple source/DB controller-count mismatches.
 
 ## Local Quality Loop
 

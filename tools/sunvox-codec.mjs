@@ -153,7 +153,7 @@ function bitMask(bits) {
   return bits === 32 ? 0xffffffff : (2 ** bits) - 1;
 }
 
-function unpackBitfield(bitfieldName, value) {
+function unpackBitfield(bitfieldName, value, options = {}) {
   const definition = SUNVOX_DB.bitfields[bitfieldName];
   if (!definition) {
     throw new Error(`Unknown bitfield: ${bitfieldName}`);
@@ -161,7 +161,14 @@ function unpackBitfield(bitfieldName, value) {
   const result = {};
   for (const field of definition.fields) {
     const rawValue = (value >>> field.shift) & bitMask(field.bits);
-    result[field.name] = field.enum ? enumToName(field.enum, rawValue) : rawValue;
+    const decodedValue = field.enum ? enumToName(field.enum, rawValue) : rawValue;
+    if (options.omitDefaults) {
+      const defaultValue = field.enum ? enumToName(field.enum, 0) : 0;
+      if (decodedValue === defaultValue) {
+        continue;
+      }
+    }
+    result[field.name] = decodedValue;
   }
   return result;
 }
@@ -722,6 +729,9 @@ function chunkSemanticValue(chunk, field) {
   if (field.bitflags) {
     return decodeBitflags(field.bitflags, value);
   }
+  if (field.bitfield) {
+    return unpackBitfield(field.bitfield, value, { omitDefaults: field.omitDefaults });
+  }
   if (field.enum) {
     return enumToName(field.enum, value);
   }
@@ -733,6 +743,8 @@ function assignChunkSemanticValue(chunk, field, value) {
   let chunkValue = value;
   if (field.bitflags) {
     chunkValue = encodeBitflags(field.bitflags, value);
+  } else if (field.bitfield) {
+    chunkValue = packBitfield(field.bitfield, value);
   } else if (field.enum) {
     chunkValue = enumToValue(field.enum, value);
   }

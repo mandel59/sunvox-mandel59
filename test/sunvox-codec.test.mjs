@@ -39,6 +39,10 @@ test("parses project into structured metadata", async () => {
   assert.equal(document.project.version, 33554437);
   assert.equal(document.project.bpm, 125);
   assert.equal(document.project.speed, 6);
+  assert.deepEqual(document.project.syncFlags, {
+    midiStartStopContinue: true,
+    otherStartStopContinue: true,
+  });
   assert.equal(document.project.currentLayer, 0);
   assert.equal(document.project.lineCounter, 17);
   assert.equal(document.project.selectedModule, 2);
@@ -60,6 +64,13 @@ test("decodes project supertrack mute and jump address state", () => {
     magic: "SVOX",
     headerTailHex: "00000000",
     project: {
+      flags: {
+        midiOut7bit: true,
+      },
+      syncFlags: {
+        midiClock: true,
+        otherPosition: true,
+      },
       supertrackMuteWords: [1, 2],
       jumpAddressMode: "nextLineMinus",
     },
@@ -70,6 +81,11 @@ test("decodes project supertrack mute and jump address state", () => {
   const buffer = buildContainer(document);
   const parsed = parseContainer(buffer);
 
+  assert.deepEqual(parsed.project.flags, { midiOut7bit: true });
+  assert.deepEqual(parsed.project.syncFlags, {
+    midiClock: true,
+    otherPosition: true,
+  });
   assert.deepEqual(parsed.project.supertrackMuteWords, [1, 2]);
   assert.equal(parsed.project.jumpAddressMode, "nextLineMinus");
   assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
@@ -100,6 +116,34 @@ test("decodes clone pattern parent numbers and stable parent ids", () => {
   assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
 });
 
+test("decodes module MIDI input flag bitfields", () => {
+  const document = {
+    format: TEXT_FORMAT,
+    magic: "SSYN",
+    headerTailHex: "00000000",
+    module: {
+      name: "MIDI flags",
+      midi: {
+        inputFlags: {
+          alwaysActive: "on",
+          channel: "channel3",
+          never: "on",
+        },
+      },
+    },
+  };
+
+  const buffer = buildContainer(document);
+  const parsed = parseContainer(buffer);
+
+  assert.deepEqual(parsed.module.midi.inputFlags, {
+    alwaysActive: "on",
+    channel: "channel3",
+    never: "on",
+  });
+  assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
+});
+
 test("parses synth into a structured module", async () => {
   const buffer = await readFile("instruments/mandel59 shepard.sunsynth");
   const document = parseContainer(buffer);
@@ -113,7 +157,7 @@ test("parses synth into a structured module", async () => {
   assert.equal(document.module.dataChunks[0].container.magic, "SVOX");
   assert.equal(document.module.dataChunks[0].container.project.name, "Shepard tone");
   assert.deepEqual(document.module.midi, {
-    inputFlags: 0,
+    inputFlags: {},
     outputChannel: 0,
     outputBank: -1,
     outputProgram: 4294967295,

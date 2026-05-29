@@ -4,7 +4,7 @@
     { "id": "VERS", "scope": "project", "name": "version", "type": "uint32", "label": "SunVox engine version" },
     { "id": "BVER", "scope": "project", "name": "baseVersion", "type": "uint32", "label": "base engine version" },
     { "id": "FLGS", "scope": "project", "name": "flags", "type": "uint32", "label": "project flags" },
-    { "id": "SFGS", "scope": "project", "name": "sessionFlags", "type": "uint32", "label": "project session flags" },
+    { "id": "SFGS", "scope": "project", "name": "syncFlags", "type": "uint32", "label": "project sync flags" },
     { "id": "BPM ", "scope": "project", "name": "bpm", "type": "uint32", "label": "project bpm" },
     { "id": "SPED", "scope": "project", "name": "speed", "type": "uint32", "label": "project speed" },
     { "id": "TGRD", "scope": "project", "name": "timelineGrid", "type": "uint32", "label": "timeline grid" },
@@ -56,9 +56,37 @@
     { "id": "SMIB", "scope": "module", "name": "midiOutputBank", "type": "int32", "label": "module MIDI output bank" },
     { "id": "SMIP", "scope": "module", "name": "midiOutputProgram", "type": "uint32", "label": "module MIDI output program" },
     { "id": "SLNK", "scope": "module", "name": "inputLinks", "type": "int32Array", "label": "module input links" },
-    { "id": "SLnK", "scope": "module", "name": "inputLinkSlots", "type": "int32Array", "label": "module input link slots" },
+    {
+      "id": "SLnK",
+      "scope": "module",
+      "name": "inputLinkSlots",
+      "type": "int32Array",
+      "label": "module input link slots",
+      "linkSlots": {
+        "linkChunk": "SLNK",
+        "localLinksPath": "inputLinks",
+        "remoteLinksPath": "outputLinks",
+        "slotSide": "remoteOutput",
+        "default": -1,
+        "omittedWhenAllSlotsNonPositive": true
+      }
+    },
     { "id": "SLNk", "scope": "module", "name": "outputLinks", "type": "int32Array", "label": "module output links" },
-    { "id": "SLnk", "scope": "module", "name": "outputLinkSlots", "type": "int32Array", "label": "module output link slots" },
+    {
+      "id": "SLnk",
+      "scope": "module",
+      "name": "outputLinkSlots",
+      "type": "int32Array",
+      "label": "module output link slots",
+      "linkSlots": {
+        "linkChunk": "SLNk",
+        "localLinksPath": "outputLinks",
+        "remoteLinksPath": "inputLinks",
+        "slotSide": "remoteInput",
+        "default": -1,
+        "omittedWhenAllSlotsNonPositive": true
+      }
+    },
     { "id": "CVAL", "scope": "module", "name": "controllerValue", "type": "int32", "label": "module controller value" },
     { "id": "CMID", "scope": "module", "name": "midiBindings", "type": "structArray:midi_binding", "label": "module controller MIDI bindings" },
     { "id": "STMT", "scope": "project", "name": "supertrackMuteWords", "type": "uint32Array", "label": "supertrack mute bitset words" },
@@ -658,6 +686,25 @@
       "4": "effect2",
       "5": "effect3",
       "6": "effect4"
+    },
+    "midi_channel_selector": {
+      "0": "any",
+      "1": "channel1",
+      "2": "channel2",
+      "3": "channel3",
+      "4": "channel4",
+      "5": "channel5",
+      "6": "channel6",
+      "7": "channel7",
+      "8": "channel8",
+      "9": "channel9",
+      "10": "channel10",
+      "11": "channel11",
+      "12": "channel12",
+      "13": "channel13",
+      "14": "channel14",
+      "15": "channel15",
+      "16": "channel16"
     }
   },
   "bitfields": {
@@ -675,6 +722,14 @@
         { "name": "parameter", "shift": 0, "bits": 16 },
         { "name": "min", "shift": 16, "bits": 8 },
         { "name": "max", "shift": 24, "bits": 8 }
+      ]
+    },
+    "psynth_midi_input_flags": {
+      "type": "uint32",
+      "fields": [
+        { "name": "alwaysActive", "shift": 0, "bits": 1, "enum": "off_on" },
+        { "name": "channel", "shift": 1, "bits": 5, "enum": "midi_channel_selector" },
+        { "name": "never", "shift": 6, "bits": 1, "enum": "off_on" }
       ]
     },
     "multisynth_options_flags": {
@@ -790,7 +845,16 @@
       { "name": "supertracks", "bit": 0 },
       { "name": "noTonePortaOnTick0", "bit": 1 },
       { "name": "noVolSlideOnTick0", "bit": 2 },
-      { "name": "keyboardRoundRobin", "bit": 3 }
+      { "name": "keyboardRoundRobin", "bit": 3 },
+      { "name": "midiOut7bit", "bit": 4 }
+    ],
+    "sunvox_sync_flags": [
+      { "name": "midiStartStopContinue", "bit": 0 },
+      { "name": "midiClock", "bit": 1 },
+      { "name": "midiPosition", "bit": 2 },
+      { "name": "otherStartStopContinue", "bit": 3 },
+      { "name": "otherClock", "bit": 4 },
+      { "name": "otherPosition", "bit": 5 }
     ],
     "sunvox_pattern_flags": [
       { "name": "noIcon", "bit": 0 },
@@ -823,7 +887,7 @@
           { "chunk": "VERS", "path": "version", "field": "value" },
           { "chunk": "BVER", "path": "baseVersion", "field": "value" },
           { "chunk": "FLGS", "path": "flags", "field": "value", "bitflags": "sunvox_project_flags" },
-          { "chunk": "SFGS", "path": "sessionFlags", "field": "value" },
+          { "chunk": "SFGS", "path": "syncFlags", "field": "value", "bitflags": "sunvox_sync_flags" },
           { "chunk": "BPM ", "path": "bpm", "field": "value" },
           { "chunk": "SPED", "path": "speed", "field": "value" },
           { "chunk": "TGRD", "path": "timeline.grid", "field": "value" },
@@ -882,7 +946,7 @@
           { "chunk": "SSCL", "path": "scale", "field": "value" },
           { "chunk": "SVPR", "path": "visualizerParameters", "field": "value" },
           { "chunk": "SCOL", "path": "color", "field": "rgb" },
-          { "chunk": "SMII", "path": "midi.inputFlags", "field": "value" },
+          { "chunk": "SMII", "path": "midi.inputFlags", "field": "value", "bitfield": "psynth_midi_input_flags", "omitDefaults": true },
           { "chunk": "SMIN", "path": "midi.outputName", "field": "text" },
           { "chunk": "SMIC", "path": "midi.outputChannel", "field": "value" },
           { "chunk": "SMIB", "path": "midi.outputBank", "field": "value" },

@@ -90,6 +90,10 @@ test("scaffold preserves signed, unit, empty, and suffix enum value names", () =
 test("DB check validates data chunk ranges and metadata references", () => {
   const moduleName = "__BrokenDbCheckFixture";
   const previousModule = SUNVOX_DB.modules[moduleName];
+  const projectFields = SUNVOX_DB.grammar.scopes.project.fields;
+  const previousProjectFieldCount = projectFields.length;
+  const linkSlotChunk = SUNVOX_DB.chunks.find((chunk) => chunk.id === "SLnK");
+  const previousLinkSlots = linkSlotChunk.linkSlots;
   SUNVOX_DB.modules[moduleName] = {
     controllers: [],
     dataChunks: [
@@ -112,6 +116,15 @@ test("DB check validates data chunk ranges and metadata references", () => {
       },
     ],
   };
+  projectFields.push({
+    chunk: "NOPE",
+    path: "brokenGrammarField",
+    field: "value",
+    enum: "__missing_grammar_enum",
+    bitfield: "__missing_grammar_bitfield",
+    bitflags: "__missing_grammar_bitflags",
+  });
+  linkSlotChunk.linkSlots = { linkChunk: "NOPE" };
 
   try {
     const check = collectDbCheck("__missing_source_root__");
@@ -135,7 +148,14 @@ test("DB check validates data chunk ranges and metadata references", () => {
       errors,
       /__BrokenDbCheckFixture: data chunk index 0 is defined by both data chunk brokenChunk#0 and data chunk range brokenRange#0-1/u,
     );
+    assert.match(errors, /grammar scope project references missing chunk NOPE/u);
+    assert.match(errors, /grammar:project: field brokenGrammarField references missing enum __missing_grammar_enum/u);
+    assert.match(errors, /grammar:project: field brokenGrammarField references missing bitfield __missing_grammar_bitfield/u);
+    assert.match(errors, /grammar:project: field brokenGrammarField references missing bitflags __missing_grammar_bitflags/u);
+    assert.match(errors, /chunk SLnK linkSlots references missing link chunk NOPE/u);
   } finally {
+    projectFields.length = previousProjectFieldCount;
+    linkSlotChunk.linkSlots = previousLinkSlots;
     if (previousModule) {
       SUNVOX_DB.modules[moduleName] = previousModule;
     } else {

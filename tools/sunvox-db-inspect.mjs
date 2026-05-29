@@ -885,6 +885,11 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
     }
     chunkIds.add(chunk.id);
   }
+  for (const chunk of SUNVOX_DB.chunks) {
+    if (chunk.linkSlots?.linkChunk && !chunkIds.has(chunk.linkSlots.linkChunk)) {
+      errors.push(`chunk ${chunk.id} linkSlots references missing link chunk ${chunk.linkSlots.linkChunk}`);
+    }
+  }
 
   for (const [scopeName, scope] of Object.entries(SUNVOX_DB.grammar.scopes ?? {})) {
     for (const field of scope.fields ?? []) {
@@ -892,6 +897,14 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
         errors.push(`grammar scope ${scopeName} references missing chunk ${field.chunk}`);
       }
       checkNamedReference(errors, `grammar:${scopeName}`, `field ${field.path}`, "enum", field.enum, SUNVOX_DB.enums);
+      checkNamedReference(
+        errors,
+        `grammar:${scopeName}`,
+        `field ${field.path}`,
+        "bitfield",
+        field.bitfield,
+        SUNVOX_DB.bitfields,
+      );
       checkNamedReference(
         errors,
         `grammar:${scopeName}`,

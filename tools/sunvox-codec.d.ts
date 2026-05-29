@@ -10,6 +10,33 @@ export type SunVoxJumpAddressMode =
   | "patternPositionMinus"
   | "nextLinePlus"
   | "nextLineMinus";
+export type SunVoxSyncFlags = Partial<Record<
+  "midiStartStopContinue" | "midiClock" | "midiPosition" | "otherStartStopContinue" | "otherClock" | "otherPosition" | "unknown",
+  boolean | number | undefined
+>>;
+export type ModuleMidiInputFlags = {
+  alwaysActive?: "off" | "on";
+  channel?:
+    | "any"
+    | "channel1"
+    | "channel2"
+    | "channel3"
+    | "channel4"
+    | "channel5"
+    | "channel6"
+    | "channel7"
+    | "channel8"
+    | "channel9"
+    | "channel10"
+    | "channel11"
+    | "channel12"
+    | "channel13"
+    | "channel14"
+    | "channel15"
+    | "channel16"
+    | number;
+  never?: "off" | "on";
+};
 
 export interface SunVoxStructTextLayout {
   kind: "lineMajorTupleArray" | "sparsePatternEvents";
@@ -211,8 +238,8 @@ export interface EditableSunVoxTextDocument {
 export interface StructuredProject {
   version?: number;
   baseVersion?: number;
-  flags?: number;
-  sessionFlags?: number;
+  flags?: number | Record<string, boolean>;
+  syncFlags?: number | SunVoxSyncFlags;
   name?: string;
   bpm?: number;
   speed?: number;
@@ -273,7 +300,7 @@ export interface StructuredModule {
   scale?: number;
   visualizerParameters?: number;
   midi?: {
-    inputFlags?: number;
+    inputFlags?: number | ModuleMidiInputFlags;
     outputName?: string;
     outputChannel?: number;
     outputBank?: number;
