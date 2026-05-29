@@ -66,7 +66,15 @@ test("parses project into structured metadata", async () => {
   assert.equal(document.modules[1].inputLinkSlots, undefined);
 });
 
-test("reports DB-driven runtime constraint warnings", () => {
+test("reports DB-driven runtime constraint issues", () => {
+  const boundary = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [{ type: "Amplifier", name: "01234567890123456789012345678901" }],
+  });
+  assert.equal(boundary.ok, true);
+  assert.deepEqual(boundary.issues, []);
+
   const result = validateContainer({
     magic: "SVOX",
     project: { bpm: 0, speed: 0 },
@@ -80,7 +88,7 @@ test("reports DB-driven runtime constraint warnings", () => {
     ],
   });
 
-  assert.equal(result.ok, true);
+  assert.equal(result.ok, false);
   assert.deepEqual(
     result.issues.map((issue) => issue.rule),
     [
@@ -90,6 +98,10 @@ test("reports DB-driven runtime constraint warnings", () => {
       "module.inputs.target.nonNegative",
       "module.outputs.target.nonNegative",
     ],
+  );
+  assert.deepEqual(
+    result.issues.map((issue) => issue.severity),
+    ["warning", "warning", "error", "warning", "warning"],
   );
   assert.match(result.issues[2].message, /33 UTF-8 bytes/u);
   assert.equal(result.issues[3].path, "modules[0].inputs[0].module");

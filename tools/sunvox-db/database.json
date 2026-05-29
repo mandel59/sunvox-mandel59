@@ -1097,10 +1097,10 @@
       "path": "name",
       "kind": "maxUtf8Bytes",
       "maxBytes": 32,
-      "severity": "warning",
+      "severity": "error",
       "source": "psynth_module::name",
       "trackingIssue": 2,
-      "description": "SunVox stores module names in a fixed-size name buffer; warn when editable text exceeds the known saved name budget."
+      "description": "SunVox stores module names in a fixed-size name buffer; reject editable semantic names that cannot be encoded into the fixed SNAM chunk."
     },
     {
       "id": "module.inputs.target.nonNegative",
