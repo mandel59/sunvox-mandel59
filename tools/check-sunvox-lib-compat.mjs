@@ -132,6 +132,10 @@ function controllerIndex(type, name) {
   return moduleControllerDefinitions(type).find((controller) => controller.name === name)?.index;
 }
 
+function controllerPath(controller) {
+  return controller.path ?? controller.name;
+}
+
 function moduleLinkSlotCount(flags, offset) {
   return (flags >>> offset) & 0xff;
 }
@@ -608,6 +612,25 @@ function projectRuntimeNormalizationRules() {
   );
 }
 
+function firstControllerRangeProbe(document) {
+  for (const [moduleIndex, module] of (document.modules ?? []).entries()) {
+    if (!module?.type || !module.controllers || typeof module.controllers !== "object") {
+      continue;
+    }
+    const controller = moduleControllerDefinitions(module.type).find((candidate) => {
+      if (!Number.isInteger(candidate.index) || !Number.isInteger(candidate.min) || !Number.isInteger(candidate.max)) {
+        return false;
+      }
+      const value = getPath(module.controllers, controllerPath(candidate));
+      return typeof value === "number" && candidate.min > -0x80000000 && candidate.max < 0x7fffffff;
+    });
+    if (controller) {
+      return { moduleIndex, module, controller };
+    }
+  }
+  return undefined;
+}
+
 async function validateRuntimeNormalizationProbes(filePath, buffer) {
   if (readMagic(buffer) !== "SVOX") {
     return [];
@@ -647,6 +670,57 @@ async function validateRuntimeNormalizationProbes(filePath, buffer) {
   return probes;
 }
 
+async function validateControllerRangeProbes(filePath, buffer) {
+  if (readMagic(buffer) !== "SVOX") {
+    return [];
+  }
+  const base = parseContainer(buffer);
+  const target = firstControllerRangeProbe(base);
+  if (!target) {
+    return [];
+  }
+  const { moduleIndex, module, controller } = target;
+  const path = controllerPath(controller);
+  const probes = [
+    { label: "belowMin", value: controller.min - 1 },
+    { label: "aboveMax", value: controller.max + 1 },
+  ];
+  const results = [];
+  for (const probe of probes) {
+    const document = cloneJson(base);
+    setPath(document.modules[moduleIndex].controllers, path, probe.value);
+    const report = await inspectBufferWithSunVoxLib(buildContainer(document), {
+      filePath,
+      label: `${relative(process.cwd(), filePath)} (${module.type}.${path} ${probe.label} preservation)`,
+      saveToMemory: true,
+    });
+    validateLoad(report);
+    const loaded = controllerValue(report, moduleIndex, controller.index);
+    if (loaded !== probe.value) {
+      throw new Error(
+        `SunVox lib exposed ${module.type}.${path}=${loaded} for ${probe.label} range probe; expected ${probe.value}`,
+      );
+    }
+    if (!report.savedBuffer) {
+      throw new Error(`SunVox lib did not save controller range probe ${module.type}.${path}`);
+    }
+    const savedDocument = parseContainer(report.savedBuffer);
+    const saved = getPath(savedDocument.modules?.[moduleIndex]?.controllers, path);
+    if (saved !== probe.value) {
+      throw new Error(
+        `SunVox lib saved ${module.type}.${path}=${saved} for ${probe.label} range probe; expected ${probe.value}`,
+      );
+    }
+    results.push({
+      moduleType: module.type,
+      controller: path,
+      label: probe.label,
+      value: probe.value,
+    });
+  }
+  return results;
+}
+
 function resolveLoadedModuleExpectations(report, expectations) {
   const resolved = cloneJson(expectations);
   if (resolved.moduleName?.index === "$loaded") {
@@ -672,6 +746,7 @@ function makeSummary() {
     codecEditLoads: 0,
     saveReloadLoads: 0,
     runtimeNormalizationProbes: 0,
+    controllerRangeProbes: 0,
     behaviors: Object.fromEntries(
       COMPATIBILITY_BEHAVIORS.map((behavior) => [behavior.key, { codecEditLoads: 0, saveReloadLoads: 0 }]),
     ),
@@ -694,6 +769,7 @@ function printSummary(summary, fileCount) {
   console.log(`  codec edit loads: ${summary.codecEditLoads}`);
   console.log(`  SunVox save/reload loads: ${summary.saveReloadLoads}`);
   console.log(`  runtime normalization probes: ${summary.runtimeNormalizationProbes}`);
+  console.log(`  controller range probes: ${summary.controllerRangeProbes}`);
   console.log("  edit behaviors:");
   for (const behavior of COMPATIBILITY_BEHAVIORS) {
     const coverage = summary.behaviors[behavior.key];
@@ -715,6 +791,7 @@ async function main() {
   let failures = 0;
   const summary = makeSummary();
   let normalizationProbesRun = false;
+  let controllerRangeProbesRun = false;
   for (const file of files) {
     try {
       const buffer = readFileSync(file);
@@ -760,6 +837,17 @@ async function main() {
         }
         summary.runtimeNormalizationProbes += probes.length;
         normalizationProbesRun = true;
+      }
+      if (!controllerRangeProbesRun && report.magic === "SVOX") {
+        const probes = await validateControllerRangeProbes(file, buffer);
+        for (const probe of probes) {
+          console.log(
+            `${relative(process.cwd(), file)} (${probe.moduleType}.${probe.controller} ${probe.label} preservation): ` +
+              `${probe.value} preserved`,
+          );
+        }
+        summary.controllerRangeProbes += probes.length;
+        controllerRangeProbesRun = true;
       }
     } catch (error) {
       failures += 1;
