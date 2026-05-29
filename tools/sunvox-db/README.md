@@ -21,7 +21,8 @@ can either interpret it directly or generate conversion code from it later.
 
 The database covers the chunk labels already used by the codec,
 project/pattern/module chunk order, project/pattern/module flag bits, `CMID`
-MIDI binding bitfields, `SVPR` visualizer parameter bitfields, and all 42 module controller layouts currently detected
+MIDI binding bitfields, `SVPR` visualizer parameter bitfields, MIDI output
+channel names, and all 42 module controller layouts currently detected
 from `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`. It also identifies the
 first `MetaModule` data chunk as an embedded SunVox container, allowing the
 codec to recurse into it instead of keeping that payload as opaque base64.

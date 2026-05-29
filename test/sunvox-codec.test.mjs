@@ -193,9 +193,9 @@ test("parses synth into a structured module", async () => {
   assert.equal(document.module.dataChunks[0].container.project.name, "Shepard tone");
   assert.deepEqual(document.module.midi, {
     inputFlags: {},
-    outputChannel: 0,
+    outputChannel: "channel1",
     outputBank: -1,
-    outputProgram: 4294967295,
+    outputProgram: -1,
   });
   assert.equal(document.module.dataChunks.length, 3);
   assert.deepEqual(document.module.controllers, {
