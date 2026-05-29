@@ -54,7 +54,12 @@ Distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 This repository contains the SunVox library.
 
-[js/sunvox_lib/license/LICENSE.txt](js/sunvox_lib/license/LICENSE.txt) This license applies to the library files under [sunvox_lib](js/sunvox_lib/).
+[sunvox_lib/sunvox_lib/docs/license/LICENSE.txt](sunvox_lib/sunvox_lib/docs/license/LICENSE.txt)
+This license applies to the library files under
+[sunvox_lib](sunvox_lib/).
 
 > Powered by SunVox (modular synth & tracker)  
-> Copyright (c) 2008 - 2024, Alexander Zolotov \<nightradio@gmail.com>, WarmPlace.ru
+> Copyright (c) 2008 - 2026, Alexander Zolotov \<nightradio@gmail.com>, WarmPlace.ru
+
+The GitHub Pages frontend links to the SunVox library license and the required
+third-party license text files from the deployed page.
