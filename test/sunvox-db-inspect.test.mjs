@@ -41,10 +41,10 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.moduleCatalogCoveragePercent, 100);
   assert.equal(metrics.summary.missingModuleCatalogFields, 0);
   assert.equal(metrics.summary.sourcePatternEffects, 43);
-  assert.equal(metrics.summary.dbPatternEffects, 37);
-  assert.equal(metrics.summary.namedSourcePatternEffects, 37);
-  assert.equal(metrics.summary.unnamedSourcePatternEffects, 6);
-  assert.equal(metrics.summary.patternEffectNameCoveragePercent, 86);
+  assert.equal(metrics.summary.dbPatternEffects, 43);
+  assert.equal(metrics.summary.namedSourcePatternEffects, 43);
+  assert.equal(metrics.summary.unnamedSourcePatternEffects, 0);
+  assert.equal(metrics.summary.patternEffectNameCoveragePercent, 100);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 5);
@@ -92,17 +92,10 @@ test("pattern effect coverage exposes unnamed source cases", () => {
     "tonePortamento",
     "vibrato",
   ]);
-  assert.deepEqual(coverage.missingCodes, [36, 37, 38, 39, 40, 41]);
-  assert.deepEqual(coverage.missingCases, [
-    { code: 36, lines: [353] },
-    { code: 37, lines: [354] },
-    { code: 38, lines: [355] },
-    { code: 39, lines: [356] },
-    { code: 40, lines: [357] },
-    { code: 41, lines: [358] },
-  ]);
+  assert.deepEqual(coverage.missingCodes, []);
+  assert.deepEqual(coverage.missingCases, []);
   assert.deepEqual(coverage.unknownEntries, []);
-  assert.equal(coverage.coveragePercent, 86);
+  assert.equal(coverage.coveragePercent, 100);
 });
 
 test("synthetic coverage fixture is up to date", () => {
