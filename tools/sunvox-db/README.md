@@ -107,7 +107,10 @@ npm run sunvox:verify:all
   `sv_load_from_memory()` and `.sunsynth` modules with
   `sv_load_module_from_memory()` through the bundled SunVox JS/WASM library. The
   synthetic fixture also verifies that SunVox exposes the expected module slots
-  and types, not just that the codec can round-trip the bytes.
+  and types, not just that the codec can round-trip the bytes. The check also
+  builds small codec-edited variants and verifies through SunVox Lib that edited
+  project/module/pattern names and representative controller values are exposed
+  as expected.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.

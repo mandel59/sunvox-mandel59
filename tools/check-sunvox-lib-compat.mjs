@@ -7,13 +7,18 @@ import { pathToFileURL } from "node:url";
 import vm from "node:vm";
 
 import { COVERAGE_MODULE_TYPES } from "./generate-sunvox-coverage-fixtures.mjs";
-import { parseContainer } from "./sunvox-codec.mjs";
+import { buildContainer, parseContainer, SUNVOX_DB } from "./sunvox-codec.mjs";
 
 const DEFAULT_INPUT_PATH = "test/fixtures/sunvox/unsampled-modules.sunvox";
 const DEFAULT_INPUTS = ["music", "instruments", "test/fixtures/sunvox"];
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const SUNVOX_JS_PATH = "sunvox_lib/sunvox_lib/js/lib/sunvox.js";
 const SLOT = 0;
+const EDITED_PROJECT_NAME = "Codec compat project";
+const EDITED_MODULE_NAME = "CodecCompatModule";
+const EDITED_PATTERN_NAME = "Codec compat pattern";
+const EDITED_SYNTH_NAME = "CodecCompatSynth";
+const EDITED_CONTROLLER_VALUE = 123;
 const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
 const SV_INIT_FLAG_OFFLINE = 1 << 1;
 const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
@@ -60,6 +65,10 @@ function readMagic(buffer) {
   return buffer.subarray(0, 4).toString("latin1");
 }
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 async function findFiles(paths) {
   const files = [];
   for (const input of paths) {
@@ -82,11 +91,51 @@ async function findFiles(paths) {
   return files.sort((a, b) => a.localeCompare(b, "en"));
 }
 
-export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {
-  const filePath = resolve(inputPath);
-  const buffer = readFileSync(filePath);
+function moduleControllerDefinitions(type) {
+  return SUNVOX_DB.modules[type]?.controllers ?? [];
+}
+
+function controllerIndex(type, name) {
+  return moduleControllerDefinitions(type).find((controller) => controller.name === name)?.index;
+}
+
+function inspectLoadedState(module, moduleCount, magic) {
+  const modules = [];
+  for (let index = 0; index < moduleCount; index += 1) {
+    const controllerCount = module._sv_get_number_of_module_ctls(SLOT, index);
+    const controllers = [];
+    for (let controllerIndex = 0; controllerIndex < controllerCount; controllerIndex += 1) {
+      controllers.push({
+        index: controllerIndex,
+        name: readCString(module, module._sv_get_module_ctl_name(SLOT, index, controllerIndex)),
+        value: module._sv_get_module_ctl_value(SLOT, index, controllerIndex, 0),
+      });
+    }
+    modules.push({
+      index,
+      type: readCString(module, module._sv_get_module_type(SLOT, index)),
+      name: readCString(module, module._sv_get_module_name(SLOT, index)),
+      flags: module._sv_get_module_flags(SLOT, index),
+      controllers,
+    });
+  }
+
+  const patternCount = magic === "SVOX" ? module._sv_get_number_of_patterns(SLOT) : 0;
+  const patterns = [];
+  for (let index = 0; index < patternCount; index += 1) {
+    patterns.push({
+      index,
+      name: readCString(module, module._sv_get_pattern_name(SLOT, index)),
+      tracks: module._sv_get_pattern_tracks(SLOT, index),
+      lines: module._sv_get_pattern_lines(SLOT, index),
+    });
+  }
+  return { modules, patterns };
+}
+
+export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
   const magic = readMagic(buffer);
-  const expectedModuleType = magic === "SSYN" ? parseContainer(buffer).module.type : undefined;
+  const expectedModuleType = options.expectedModuleType ?? (magic === "SSYN" ? parseContainer(buffer).module.type : undefined);
   const module = await loadSunVoxLib();
   const initResult = module._sv_init(0, 44100, 2, SV_INIT_FLAGS);
   if (initResult < 0) {
@@ -112,25 +161,21 @@ export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {
           ? module._sv_load_module_from_memory(SLOT, dataPointer, buffer.length, 0, 0, 0)
           : module._sv_load_from_memory(SLOT, dataPointer, buffer.length);
       const moduleCount = module._sv_get_number_of_modules(SLOT);
-      const modules = [];
-      for (let index = 0; index < moduleCount; index += 1) {
-        modules.push({
-          index,
-          type: readCString(module, module._sv_get_module_type(SLOT, index)),
-          name: readCString(module, module._sv_get_module_name(SLOT, index)),
-          flags: module._sv_get_module_flags(SLOT, index),
-        });
-      }
+      const state = inspectLoadedState(module, moduleCount, magic);
       return {
-        filePath,
+        filePath: options.filePath ? resolve(options.filePath) : undefined,
+        label: options.label,
         magic,
         engineVersion: initResult,
         expectedModuleType,
         loadApi,
         loadResult,
         moduleCount,
-        modules,
+        modules: state.modules,
+        patterns: state.patterns,
         songName: readCString(module, module._sv_get_song_name(SLOT)),
+        bpm: magic === "SVOX" ? module._sv_get_song_bpm(SLOT) : undefined,
+        tpl: magic === "SVOX" ? module._sv_get_song_tpl(SLOT) : undefined,
       };
     } finally {
       if (dataPointer !== undefined) {
@@ -141,6 +186,12 @@ export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {
   } finally {
     module._sv_deinit();
   }
+}
+
+export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {
+  const filePath = resolve(inputPath);
+  const buffer = readFileSync(filePath);
+  return inspectBufferWithSunVoxLib(buffer, { filePath });
 }
 
 function validateDefaultCoverageFixture(report) {
@@ -164,7 +215,7 @@ function validateDefaultCoverageFixture(report) {
 }
 
 function validateLoad(report) {
-  if (!SAMPLE_EXTENSIONS.has(extname(report.filePath).toLowerCase())) {
+  if (!report.filePath || !SAMPLE_EXTENSIONS.has(extname(report.filePath).toLowerCase())) {
     throw new Error(`Unsupported SunVox sample extension for ${report.filePath}`);
   }
   if (resolve(report.filePath) === resolve(DEFAULT_INPUT_PATH)) {
@@ -190,9 +241,115 @@ function validateLoad(report) {
   }
 }
 
+function controllerValue(report, moduleIndex, controllerIndex) {
+  return report.modules[moduleIndex]?.controllers?.find((controller) => controller.index === controllerIndex)?.value;
+}
+
+function validateEditedCompatibility(report, expectations) {
+  validateLoad(report);
+  if (expectations.songName !== undefined && report.songName !== expectations.songName) {
+    throw new Error(`SunVox lib exposed song name ${report.songName}; expected ${expectations.songName}`);
+  }
+  if (expectations.moduleName) {
+    const { index, name } = expectations.moduleName;
+    if (report.modules[index]?.name !== name) {
+      throw new Error(`SunVox lib exposed module #${index} name ${report.modules[index]?.name}; expected ${name}`);
+    }
+  }
+  if (expectations.patternName) {
+    const { index, name } = expectations.patternName;
+    if (report.patterns[index]?.name !== name) {
+      throw new Error(`SunVox lib exposed pattern #${index} name ${report.patterns[index]?.name}; expected ${name}`);
+    }
+  }
+  if (expectations.controllerValue) {
+    const { moduleIndex, controllerIndex, value } = expectations.controllerValue;
+    const actual = controllerValue(report, moduleIndex, controllerIndex);
+    if (actual !== value) {
+      throw new Error(
+        `SunVox lib exposed module #${moduleIndex} controller #${controllerIndex} value ${actual}; expected ${value}`,
+      );
+    }
+  }
+}
+
+function firstEditableModule(modules) {
+  return modules.findIndex((module) => module?.type && module.type !== "Output");
+}
+
+function firstNamedPattern(patterns) {
+  return patterns.findIndex((pattern) => pattern?.name !== undefined);
+}
+
+function applyControllerEdit(module, moduleIndex, expectations) {
+  const controllers = module?.controllers;
+  if (!module?.type || !controllers || typeof controllers !== "object" || Array.isArray(controllers)) {
+    return;
+  }
+  const index = controllerIndex(module.type, "volume");
+  if (!Number.isInteger(index) || typeof controllers.volume !== "number") {
+    return;
+  }
+  controllers.volume = EDITED_CONTROLLER_VALUE;
+  expectations.controllerValue = {
+    moduleIndex,
+    controllerIndex: index,
+    value: EDITED_CONTROLLER_VALUE,
+  };
+}
+
+function makeEditedCompatibilityCase(filePath, buffer) {
+  const document = cloneJson(parseContainer(buffer));
+  const expectations = {};
+
+  if (document.magic === "SVOX") {
+    document.project ??= {};
+    document.project.name = EDITED_PROJECT_NAME;
+    expectations.songName = EDITED_PROJECT_NAME;
+
+    const moduleIndex = firstEditableModule(document.modules ?? []);
+    if (moduleIndex >= 0) {
+      document.modules[moduleIndex].name = EDITED_MODULE_NAME;
+      expectations.moduleName = { index: moduleIndex, name: EDITED_MODULE_NAME };
+      applyControllerEdit(document.modules[moduleIndex], moduleIndex, expectations);
+    }
+
+    const patternIndex = firstNamedPattern(document.patterns ?? []);
+    if (patternIndex >= 0) {
+      document.patterns[patternIndex].name = EDITED_PATTERN_NAME;
+      expectations.patternName = { index: patternIndex, name: EDITED_PATTERN_NAME };
+    }
+  } else if (document.magic === "SSYN") {
+    document.module ??= {};
+    document.module.name = EDITED_SYNTH_NAME;
+    expectations.moduleName = { index: "$loaded", name: EDITED_SYNTH_NAME };
+    applyControllerEdit(document.module, "$loaded", expectations);
+  } else {
+    return undefined;
+  }
+
+  return {
+    filePath,
+    label: `${relative(process.cwd(), filePath)} (codec edit)`,
+    buffer: buildContainer(document),
+    expectations,
+  };
+}
+
+function resolveLoadedModuleExpectations(report, expectations) {
+  const resolved = cloneJson(expectations);
+  if (resolved.moduleName?.index === "$loaded") {
+    resolved.moduleName.index = report.loadResult;
+  }
+  if (resolved.controllerValue?.moduleIndex === "$loaded") {
+    resolved.controllerValue.moduleIndex = report.loadResult;
+  }
+  return resolved;
+}
+
 function printReport(report) {
   console.log(
-    `${relative(process.cwd(), report.filePath)}: engine=0x${report.engineVersion.toString(16)}, ` +
+    `${report.label ?? relative(process.cwd(), report.filePath)}: engine=0x${report.engineVersion.toString(16)}, ` +
       `magic=${report.magic}, api=${report.loadApi}, load=${report.loadResult}, modules=${report.moduleCount}`,
   );
 }
@@ -212,6 +369,16 @@ async function main() {
       const report = await inspectWithSunVoxLib(file);
       validateLoad(report);
       printReport(report);
+
+      const edited = makeEditedCompatibilityCase(file, readFileSync(file));
+      if (edited) {
+        const editedReport = await inspectBufferWithSunVoxLib(edited.buffer, {
+          filePath: edited.filePath,
+          label: edited.label,
+        });
+        validateEditedCompatibility(editedReport, resolveLoadedModuleExpectations(editedReport, edited.expectations));
+        printReport(editedReport);
+      }
     } catch (error) {
       failures += 1;
       console.error(`${relative(process.cwd(), file)}: ${error instanceof Error ? error.message : error}`);
@@ -222,7 +389,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log(`SunVox lib compatibility passed for ${files.length} files.`);
+  console.log(`SunVox lib compatibility passed for ${files.length} files and codec edit variants.`);
 }
 
 if (import.meta.url === pathToFileURL(resolve(process.argv[1] ?? "")).href) {
