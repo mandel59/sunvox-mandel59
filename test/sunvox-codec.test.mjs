@@ -144,6 +144,41 @@ test("decodes module MIDI input flag bitfields", () => {
   assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
 });
 
+test("decodes module visualizer parameter bitfields", () => {
+  const document = {
+    format: TEXT_FORMAT,
+    magic: "SSYN",
+    headerTailHex: "00000000",
+    module: {
+      name: "Visualizer",
+      visualizerParameters: {
+        levelMode: "stereo",
+        levelFlags: {
+          vertical: true,
+          peak: true,
+        },
+        oscilloscopeMode: "xy",
+        oscilloscopeFlags: {
+          sync: true,
+        },
+        oscilloscopeSizeMs: 24,
+        backgroundTransparency: 2,
+        shadowOpacity: 3,
+        flags: {
+          noBackgroundFill: true,
+          levelRms: true,
+        },
+      },
+    },
+  };
+
+  const buffer = buildContainer(document);
+  const parsed = parseContainer(buffer);
+
+  assert.deepEqual(parsed.module.visualizerParameters, document.module.visualizerParameters);
+  assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
+});
+
 test("parses synth into a structured module", async () => {
   const buffer = await readFile("instruments/mandel59 shepard.sunsynth");
   const document = parseContainer(buffer);

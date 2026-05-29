@@ -94,6 +94,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousProjectFieldCount = projectFields.length;
   const linkSlotChunk = SUNVOX_DB.chunks.find((chunk) => chunk.id === "SLnK");
   const previousLinkSlots = linkSlotChunk.linkSlots;
+  const bitfield = SUNVOX_DB.bitfields.psynth_midi_input_flags;
+  const previousBitfieldFields = bitfield.fields;
   SUNVOX_DB.modules[moduleName] = {
     controllers: [],
     dataChunks: [
@@ -125,6 +127,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
     bitflags: "__missing_grammar_bitflags",
   });
   linkSlotChunk.linkSlots = { linkChunk: "NOPE" };
+  bitfield.fields = [...bitfield.fields, { name: "broken", shift: 7, bits: 1, bitflags: "__missing_bitfield_bitflags" }];
 
   try {
     const check = collectDbCheck("__missing_source_root__");
@@ -153,9 +156,14 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /grammar:project: field brokenGrammarField references missing bitfield __missing_grammar_bitfield/u);
     assert.match(errors, /grammar:project: field brokenGrammarField references missing bitflags __missing_grammar_bitflags/u);
     assert.match(errors, /chunk SLnK linkSlots references missing link chunk NOPE/u);
+    assert.match(
+      errors,
+      /bitfield:psynth_midi_input_flags: packed field field broken references missing bitflags __missing_bitfield_bitflags/u,
+    );
   } finally {
     projectFields.length = previousProjectFieldCount;
     linkSlotChunk.linkSlots = previousLinkSlots;
+    bitfield.fields = previousBitfieldFields;
     if (previousModule) {
       SUNVOX_DB.modules[moduleName] = previousModule;
     } else {

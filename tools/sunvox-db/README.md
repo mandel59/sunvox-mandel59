@@ -21,7 +21,7 @@ can either interpret it directly or generate conversion code from it later.
 
 The database covers the chunk labels already used by the codec,
 project/pattern/module chunk order, project/pattern/module flag bits, `CMID`
-MIDI binding bitfields, and all 42 module controller layouts currently detected
+MIDI binding bitfields, `SVPR` visualizer parameter bitfields, and all 42 module controller layouts currently detected
 from `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`. It also identifies the
 first `MetaModule` data chunk as an embedded SunVox container, allowing the
 codec to recurse into it instead of keeping that payload as opaque base64.
@@ -98,7 +98,8 @@ npm run sunvox:verify:all
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
 - `check` validates structural DB mistakes such as duplicate controller
-  indexes, missing enum/bitfield/bitflags references, grammar references to
+  indexes, missing enum/bitfield/bitflags references, bitfield field references,
+  grammar references to
   missing chunks, source/DB chunk ID drift, data chunk index collisions across
   explicit chunks and ranges, and simple source/DB controller-count mismatches.
 

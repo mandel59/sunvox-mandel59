@@ -37,6 +37,28 @@ export type ModuleMidiInputFlags = {
     | number;
   never?: "off" | "on";
 };
+export type ModuleVisualizerParameters = {
+  levelMode?: "off" | "mono" | "stereo" | "color" | "glow" | number;
+  levelFlags?: Partial<Record<"vertical" | "db" | "peak" | "unknown", boolean | number | undefined>>;
+  oscilloscopeMode?:
+    | "off"
+    | "points"
+    | "lines"
+    | "bars"
+    | "bars2"
+    | "phaseScopeX1"
+    | "phaseScopeX2"
+    | "xy"
+    | number;
+  oscilloscopeFlags?: Partial<Record<"sync" | "unknown", boolean | number | undefined>>;
+  oscilloscopeSizeMs?: number;
+  backgroundTransparency?: number;
+  shadowOpacity?: number;
+  flags?: Partial<Record<
+    "noBackgroundOutline" | "noBackgroundFill" | "noPeakValues" | "levelRms" | "unknown",
+    boolean | number | undefined
+  >>;
+};
 
 export interface SunVoxStructTextLayout {
   kind: "lineMajorTupleArray" | "sparsePatternEvents";
@@ -298,7 +320,7 @@ export interface StructuredModule {
   finetune?: number;
   relativeNote?: number;
   scale?: number;
-  visualizerParameters?: number;
+  visualizerParameters?: number | ModuleVisualizerParameters;
   midi?: {
     inputFlags?: number | ModuleMidiInputFlags;
     outputName?: string;

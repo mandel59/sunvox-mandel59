@@ -846,6 +846,12 @@ function checkBinaryFields(errors, moduleName, subject, fields = []) {
   }
 }
 
+function checkBitfieldDefinitions(errors) {
+  for (const [bitfieldName, definition] of Object.entries(SUNVOX_DB.bitfields ?? {})) {
+    checkBinaryFields(errors, `bitfield:${bitfieldName}`, "packed field", definition.fields);
+  }
+}
+
 function checkDataDefinitionReferences(errors, moduleName, definition) {
   const subject = `data chunk ${dataDefinitionLabel(definition)}`;
   checkNamedReference(errors, moduleName, subject, "flag bitfield", definition.flagBitfield, SUNVOX_DB.bitfields);
@@ -942,6 +948,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const sourceByName = new Map(sourceReport.sourceModules.map((module) => [module.module, module]));
 
   checkChunkDefinitions(errors, warnings, sourceRoot);
+  checkBitfieldDefinitions(errors);
 
   for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
     const controllers = expandControllerDefinitions(moduleDefinition.controllers);

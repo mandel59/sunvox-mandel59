@@ -44,7 +44,9 @@
                 "name": { "type": "string" },
                 "shift": { "type": "integer", "minimum": 0 },
                 "bits": { "type": "integer", "minimum": 1, "maximum": 32 },
-                "enum": { "type": "string" }
+                "enum": { "type": "string" },
+                "bitflags": { "type": "string" },
+                "default": {}
               },
               "additionalProperties": false
             }

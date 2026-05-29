@@ -687,6 +687,23 @@
       "5": "effect3",
       "6": "effect4"
     },
+    "psynth_level_mode": {
+      "0": "off",
+      "1": "mono",
+      "2": "stereo",
+      "3": "color",
+      "4": "glow"
+    },
+    "psynth_oscilloscope_mode": {
+      "0": "off",
+      "1": "points",
+      "2": "lines",
+      "3": "bars",
+      "4": "bars2",
+      "5": "phaseScopeX1",
+      "6": "phaseScopeX2",
+      "7": "xy"
+    },
     "midi_channel_selector": {
       "0": "any",
       "1": "channel1",
@@ -730,6 +747,19 @@
         { "name": "alwaysActive", "shift": 0, "bits": 1, "enum": "off_on" },
         { "name": "channel", "shift": 1, "bits": 5, "enum": "midi_channel_selector" },
         { "name": "never", "shift": 6, "bits": 1, "enum": "off_on" }
+      ]
+    },
+    "psynth_visualizer_parameters": {
+      "type": "uint32",
+      "fields": [
+        { "name": "levelMode", "shift": 0, "bits": 5, "enum": "psynth_level_mode", "default": "mono" },
+        { "name": "levelFlags", "shift": 5, "bits": 3, "bitflags": "psynth_level_flags", "default": {} },
+        { "name": "oscilloscopeMode", "shift": 8, "bits": 5, "enum": "psynth_oscilloscope_mode", "default": "points" },
+        { "name": "oscilloscopeFlags", "shift": 13, "bits": 3, "bitflags": "psynth_oscilloscope_flags", "default": {} },
+        { "name": "oscilloscopeSizeMs", "shift": 16, "bits": 8, "default": 12 },
+        { "name": "backgroundTransparency", "shift": 24, "bits": 2, "default": 0 },
+        { "name": "shadowOpacity", "shift": 26, "bits": 2, "default": 0 },
+        { "name": "flags", "shift": 28, "bits": 4, "bitflags": "psynth_visualizer_flags", "default": {} }
       ]
     },
     "multisynth_options_flags": {
@@ -867,6 +897,20 @@
       { "name": "mute", "bit": 3 },
       { "name": "solo", "bit": 4 }
     ],
+    "psynth_level_flags": [
+      { "name": "vertical", "bit": 0 },
+      { "name": "db", "bit": 1 },
+      { "name": "peak", "bit": 2 }
+    ],
+    "psynth_oscilloscope_flags": [
+      { "name": "sync", "bit": 0 }
+    ],
+    "psynth_visualizer_flags": [
+      { "name": "noBackgroundOutline", "bit": 0 },
+      { "name": "noBackgroundFill", "bit": 1 },
+      { "name": "noPeakValues", "bit": 2 },
+      { "name": "levelRms", "bit": 3 }
+    ],
     "metamodule_option_flags": [
       { "name": "forceGenerator", "bit": 0 },
       { "name": "forceNotGenerator", "bit": 1 },
@@ -944,7 +988,7 @@
           { "chunk": "SYYY", "path": "position.y", "field": "value" },
           { "chunk": "SZZZ", "path": "position.z", "field": "value" },
           { "chunk": "SSCL", "path": "scale", "field": "value" },
-          { "chunk": "SVPR", "path": "visualizerParameters", "field": "value" },
+          { "chunk": "SVPR", "path": "visualizerParameters", "field": "value", "bitfield": "psynth_visualizer_parameters", "omitDefaults": true },
           { "chunk": "SCOL", "path": "color", "field": "rgb" },
           { "chunk": "SMII", "path": "midi.inputFlags", "field": "value", "bitfield": "psynth_midi_input_flags", "omitDefaults": true },
           { "chunk": "SMIN", "path": "midi.outputName", "field": "text" },

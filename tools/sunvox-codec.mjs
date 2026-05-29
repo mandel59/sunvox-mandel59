@@ -161,10 +161,10 @@ function unpackBitfield(bitfieldName, value, options = {}) {
   const result = {};
   for (const field of definition.fields) {
     const rawValue = (value >>> field.shift) & bitMask(field.bits);
-    const decodedValue = field.enum ? enumToName(field.enum, rawValue) : rawValue;
+    const decodedValue = decodeBitfieldField(field, rawValue);
     if (options.omitDefaults) {
-      const defaultValue = field.enum ? enumToName(field.enum, 0) : 0;
-      if (decodedValue === defaultValue) {
+      const defaultValue = defaultBitfieldFieldValue(field);
+      if (sameJsonValue(decodedValue, defaultValue)) {
         continue;
       }
     }
@@ -178,13 +178,44 @@ function packBitfield(bitfieldName, value) {
   if (!definition) {
     throw new Error(`Unknown bitfield: ${bitfieldName}`);
   }
+  if (typeof value === "number") {
+    return value >>> 0;
+  }
   let packed = 0;
   for (const field of definition.fields) {
-    const rawFieldValue = value?.[field.name] ?? 0;
-    const fieldValue = field.enum ? enumToValue(field.enum, rawFieldValue) : rawFieldValue;
+    const rawFieldValue = value?.[field.name] ?? defaultBitfieldFieldValue(field);
+    const fieldValue = encodeBitfieldField(field, rawFieldValue);
     packed |= (fieldValue & bitMask(field.bits)) << field.shift;
   }
   return packed >>> 0;
+}
+
+function decodeBitfieldField(field, rawValue) {
+  if (field.bitflags) {
+    return decodeBitflags(field.bitflags, rawValue);
+  }
+  if (field.enum) {
+    return enumToName(field.enum, rawValue);
+  }
+  return rawValue;
+}
+
+function encodeBitfieldField(field, value) {
+  if (field.bitflags) {
+    return encodeBitflags(field.bitflags, value);
+  }
+  if (field.enum) {
+    return enumToValue(field.enum, value);
+  }
+  return value;
+}
+
+function defaultBitfieldFieldValue(field) {
+  return field.default ?? decodeBitfieldField(field, 0);
+}
+
+function sameJsonValue(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function decodeBitflags(bitflagName, value) {
