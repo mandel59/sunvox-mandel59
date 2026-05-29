@@ -179,10 +179,11 @@ npm run sunvox:verify:all
   binary SunVox file or decoded JSON document, including embedded MetaModule
   containers. The first rules cover positive project tempo values, module name
   byte budgets, semantic link targets, controller values outside DB-declared
-  ranges or enum values, and pattern events that cannot be encoded through the
-  DB-declared `textLayout`. Validation issues also carry a `trackingIssue`
-  number so newly detected warnings can be routed back to the relevant
-  source/DB gap or quality tracking issue.
+  ranges or enum values, pattern events that cannot be encoded through the
+  DB-declared `textLayout`, and pattern event module references that point
+  outside the module list. Validation issues also carry a `trackingIssue` number
+  so newly detected warnings can be routed back to the relevant source/DB gap or
+  quality tracking issue.
 - `sunvox:validate:all` applies the same validation to every checked-in
   `.sunvox` and `.sunsynth` sample, and treats any warning or error as a quality
   gate failure.

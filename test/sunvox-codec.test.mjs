@@ -191,13 +191,18 @@ test("reports DB-driven pattern event encoding errors", () => {
         lines: 1,
         events: [{ line: 0, track: 0, velocity: 300 }],
       },
+      {
+        tracks: 1,
+        lines: 1,
+        events: [{ line: 0, track: 0, module: 3 }],
+      },
     ],
   });
 
   assert.equal(result.ok, false);
   assert.deepEqual(
     result.issues.map((issue) => issue.rule),
-    ["pattern.event.encoding", "pattern.event.encoding", "pattern.event.fieldRange"],
+    ["pattern.event.encoding", "pattern.event.encoding", "pattern.event.fieldRange", "pattern.event.reference"],
   );
   assert.equal(result.issues[0].path, "patterns[0].events");
   assert.match(result.issues[0].message, /outside the event grid/u);
@@ -205,7 +210,9 @@ test("reports DB-driven pattern event encoding errors", () => {
   assert.match(result.issues[1].message, /Invalid pattern note name/u);
   assert.equal(result.issues[2].path, "patterns[2].events[0].velocity");
   assert.match(result.issues[2].message, /expected 0\.\.255 for uint8/u);
-  assert.deepEqual(result.issues.map((issue) => issue.trackingIssue), [1, 1, 1]);
+  assert.equal(result.issues[3].path, "patterns[3].events[0].module");
+  assert.match(result.issues[3].message, /missing module slot 3/u);
+  assert.deepEqual(result.issues.map((issue) => issue.trackingIssue), [1, 1, 1, 1]);
 });
 
 test("recursively validates embedded MetaModule containers", () => {

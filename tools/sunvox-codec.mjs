@@ -1355,6 +1355,39 @@ function validatePatternRecordField(record, field, path) {
   return [];
 }
 
+function validatePatternRecordReference(record, fieldName, semantics, modules, path) {
+  if (semantics.reference !== "modules") {
+    return [];
+  }
+  const storedValue = record?.[fieldName] ?? 0;
+  const moduleIndex = semantics.encoding === "oneBasedModuleIndex" ? patternModuleFromStored(storedValue) : storedValue;
+  if (moduleIndex === undefined) {
+    return [];
+  }
+  if (!Number.isInteger(moduleIndex)) {
+    return [
+      patternValidationIssue("pattern.event.reference", path, moduleIndex, `${path} must reference a module slot`),
+    ];
+  }
+  if (moduleIndex < 0 || moduleIndex >= modules.length) {
+    return [
+      patternValidationIssue(
+        "pattern.event.reference",
+        path,
+        moduleIndex,
+        `${path} references missing module slot ${moduleIndex}`,
+      ),
+    ];
+  }
+  return [];
+}
+
+function validatePatternRecordSemantics(record, definition, modules, path) {
+  return Object.entries(definition.textLayout?.fieldSemantics ?? {}).flatMap(([fieldName, semantics]) =>
+    validatePatternRecordReference(record, fieldName, semantics, modules, `${path}.${fieldName}`),
+  );
+}
+
 function validatePatternEvents(document, basePath = "") {
   const definition = SUNVOX_DB.structs.sunvox_note;
   if (!definition) {
@@ -1378,9 +1411,12 @@ function validatePatternEvents(document, basePath = "") {
       ];
     }
     return (records ?? []).flatMap((record, index) =>
-      (definition.fields ?? []).flatMap((field) =>
-        validatePatternRecordField(record, field, `${path}.events[${index}].${field.name}`),
-      ),
+      [
+        ...(definition.fields ?? []).flatMap((field) =>
+          validatePatternRecordField(record, field, `${path}.events[${index}].${field.name}`),
+        ),
+        ...validatePatternRecordSemantics(record, definition, document?.modules ?? [], `${path}.events[${index}]`),
+      ],
     );
   });
 }
