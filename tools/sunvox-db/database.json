@@ -1100,6 +1100,12 @@
       "severity": "error",
       "source": "psynth_module::name",
       "trackingIssue": 2,
+      "observedBehavior": {
+        "probeValue": "01234567890123456789012345678901",
+        "loadedValue": "01234567890123456789012345678901",
+        "savedValue": "01234567890123456789012345678901",
+        "description": "SunVox Lib 2.1.4d loads and saves a 32-byte module name without truncation; longer semantic names cannot be encoded into the fixed SNAM chunk."
+      },
       "description": "SunVox stores module names in a fixed-size name buffer; reject editable semantic names that cannot be encoded into the fixed SNAM chunk."
     },
     {

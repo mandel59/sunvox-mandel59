@@ -612,6 +612,12 @@ function projectRuntimeNormalizationRules() {
   );
 }
 
+function moduleNameBoundaryRule() {
+  return (SUNVOX_DB.runtimeConstraints ?? []).find(
+    (rule) => rule.id === "module.name.maxBytes" && rule.observedBehavior?.savedValue !== undefined,
+  );
+}
+
 function firstControllerRangeProbe(document) {
   for (const [moduleIndex, module] of (document.modules ?? []).entries()) {
     if (!module?.type || !module.controllers || typeof module.controllers !== "object") {
@@ -668,6 +674,50 @@ async function validateRuntimeNormalizationProbes(filePath, buffer) {
     });
   }
   return probes;
+}
+
+async function validateModuleNameBoundaryProbe(filePath, buffer) {
+  if (readMagic(buffer) !== "SVOX") {
+    return [];
+  }
+  const rule = moduleNameBoundaryRule();
+  if (!rule) {
+    return [];
+  }
+  const base = parseContainer(buffer);
+  const moduleIndex = firstEditableModule(base.modules ?? []);
+  if (moduleIndex < 0) {
+    return [];
+  }
+  const document = cloneJson(base);
+  document.modules[moduleIndex].name = rule.observedBehavior.probeValue;
+  const report = await inspectBufferWithSunVoxLib(buildContainer(document), {
+    filePath,
+    label: `${relative(process.cwd(), filePath)} (${rule.id} boundary)`,
+    saveToMemory: true,
+  });
+  validateLoad(report);
+  const expectedLoaded = rule.observedBehavior.loadedValue ?? rule.observedBehavior.savedValue;
+  const loaded = report.modules[moduleIndex]?.name;
+  if (loaded !== expectedLoaded) {
+    throw new Error(`SunVox lib exposed module name ${loaded}; expected ${expectedLoaded}`);
+  }
+  if (!report.savedBuffer) {
+    throw new Error(`SunVox lib did not save module name boundary probe ${rule.id}`);
+  }
+  const savedDocument = parseContainer(report.savedBuffer);
+  const saved = savedDocument.modules?.[moduleIndex]?.name;
+  const expectedSaved = rule.observedBehavior.savedValue;
+  if (saved !== expectedSaved) {
+    throw new Error(`SunVox lib saved module name ${saved}; expected ${expectedSaved}`);
+  }
+  return [
+    {
+      rule: rule.id,
+      moduleIndex,
+      value: saved,
+    },
+  ];
 }
 
 async function validateControllerRangeProbes(filePath, buffer) {
@@ -746,6 +796,7 @@ function makeSummary() {
     codecEditLoads: 0,
     saveReloadLoads: 0,
     runtimeNormalizationProbes: 0,
+    moduleNameBoundaryProbes: 0,
     controllerRangeProbes: 0,
     behaviors: Object.fromEntries(
       COMPATIBILITY_BEHAVIORS.map((behavior) => [behavior.key, { codecEditLoads: 0, saveReloadLoads: 0 }]),
@@ -769,6 +820,7 @@ function printSummary(summary, fileCount) {
   console.log(`  codec edit loads: ${summary.codecEditLoads}`);
   console.log(`  SunVox save/reload loads: ${summary.saveReloadLoads}`);
   console.log(`  runtime normalization probes: ${summary.runtimeNormalizationProbes}`);
+  console.log(`  module name boundary probes: ${summary.moduleNameBoundaryProbes}`);
   console.log(`  controller range probes: ${summary.controllerRangeProbes}`);
   console.log("  edit behaviors:");
   for (const behavior of COMPATIBILITY_BEHAVIORS) {
@@ -791,6 +843,7 @@ async function main() {
   let failures = 0;
   const summary = makeSummary();
   let normalizationProbesRun = false;
+  let moduleNameBoundaryProbesRun = false;
   let controllerRangeProbesRun = false;
   for (const file of files) {
     try {
@@ -837,6 +890,17 @@ async function main() {
         }
         summary.runtimeNormalizationProbes += probes.length;
         normalizationProbesRun = true;
+      }
+      if (!moduleNameBoundaryProbesRun && report.magic === "SVOX") {
+        const probes = await validateModuleNameBoundaryProbe(file, buffer);
+        for (const probe of probes) {
+          console.log(
+            `${relative(process.cwd(), file)} (${probe.rule} boundary): ` +
+              `module #${probe.moduleIndex} ${Buffer.byteLength(probe.value, "utf8")} bytes preserved`,
+          );
+        }
+        summary.moduleNameBoundaryProbes += probes.length;
+        moduleNameBoundaryProbesRun = true;
       }
       if (!controllerRangeProbesRun && report.magic === "SVOX") {
         const probes = await validateControllerRangeProbes(file, buffer);
