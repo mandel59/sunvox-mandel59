@@ -1063,11 +1063,14 @@
     },
     "Analog generator": {
       "dataChunks": [
-        { "index": 0, "name": "drawnWaveform", "type": "int8Array", "count": 32 },
+        { "index": 0, "name": "drawnWaveform", "type": "int8Array", "sourceType": "int8", "valueKind": "waveform", "sourceSymbol": "psynths_generator2.cpp:data->drawn_wave", "count": 32 },
         {
           "index": 1,
           "name": "options",
           "type": "struct",
+          "sourceType": "bytes",
+          "valueKind": "options",
+          "sourceSymbol": "psynths_generator2.cpp:gen2_options",
           "path": "options",
           "size": 15,
           "trimTrailingZeroes": true,
@@ -1363,7 +1366,7 @@
     },
     "Generator": {
       "dataChunks": [
-        { "index": 0, "name": "drawnWaveform", "type": "int8Array", "count": 32 }
+        { "index": 0, "name": "drawnWaveform", "type": "int8Array", "sourceType": "int8", "valueKind": "waveform", "sourceSymbol": "psynths_generator.cpp:data->drawn_wave", "count": 32 }
       ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
@@ -1455,11 +1458,14 @@
     },
     "MetaModule": {
       "dataChunks": [
-        { "index": 0, "name": "embeddedProject", "type": "container", "magic": ["SVOX"] },
+        { "index": 0, "name": "embeddedProject", "type": "container", "sourceType": "container", "valueKind": "container", "sourceSymbol": "psynths_metamodule.cpp:sunvox_file", "magic": ["SVOX"] },
         {
           "index": 1,
           "name": "controllerLinks",
           "type": "packedUInt32Array",
+          "sourceType": "uint32",
+          "valueKind": "controllerLinks",
+          "sourceSymbol": "psynths_metamodule.cpp:MAX_USER_CTLS * sizeof(uint32_t)",
           "path": "links",
           "count": 96,
           "omitZero": true,
@@ -1472,6 +1478,9 @@
           "index": 2,
           "name": "options",
           "type": "struct",
+          "sourceType": "bytes",
+          "valueKind": "options",
+          "sourceSymbol": "psynths_metamodule.cpp:metamodule_options",
           "path": "options",
           "size": 8,
           "fields": [
@@ -1484,7 +1493,7 @@
         }
       ],
       "dataChunkRanges": [
-        { "start": 8, "end": 103, "name": "userControllerName", "type": "string", "format": "metamoduleControllerName", "indexOffset": 8 }
+        { "start": 8, "end": 103, "name": "userControllerName", "type": "string", "sourceType": "string", "valueKind": "text", "sourceSymbol": "psynths_metamodule.cpp:get_user_control_name", "format": "metamoduleControllerName", "indexOffset": 8 }
       ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
@@ -1505,11 +1514,14 @@
     },
     "MultiSynth": {
       "dataChunks": [
-        { "index": 0, "name": "velocityByPitchCurve", "type": "uint8Array", "count": 128 },
+        { "index": 0, "name": "velocityByPitchCurve", "type": "uint8Array", "sourceType": "uint8", "valueKind": "curve", "sourceSymbol": "psynths_multisynth.cpp:g_curve_chunk_id[0]", "count": 128 },
         {
           "index": 1,
           "name": "options",
           "type": "struct",
+          "sourceType": "bytes",
+          "valueKind": "options",
+          "sourceSymbol": "psynths_multisynth.cpp:multisynth_options",
           "path": "options",
           "size": 8,
           "fields": [
@@ -1520,8 +1532,8 @@
             { "name": "flags", "type": "uint32", "offset": 4, "bitfield": "multisynth_options_flags", "flatten": true }
           ]
         },
-        { "index": 2, "name": "velocityRemapCurve", "type": "uint8Array", "count": 257 },
-        { "index": 3, "name": "pitchRemapCurve", "type": "uint16Array", "count": 128 }
+        { "index": 2, "name": "velocityRemapCurve", "type": "uint8Array", "sourceType": "uint8", "valueKind": "mapping", "sourceSymbol": "psynths_multisynth.cpp:g_curve_chunk_id[1]", "count": 257 },
+        { "index": 3, "name": "pitchRemapCurve", "type": "uint16Array", "sourceType": "uint16", "valueKind": "mapping", "sourceSymbol": "psynths_multisynth.cpp:g_curve_chunk_id[2]", "count": 128 }
       ],
       "controllers": [
         { "index": 0, "name": "transpose", "label": "Transpose", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
@@ -1540,6 +1552,9 @@
           "index": 0,
           "name": "outputSlots",
           "type": "recordArray",
+          "sourceType": "bytes",
+          "valueKind": "slots",
+          "sourceSymbol": "psynths_multictl.cpp:multictl_output_slot",
           "path": "slots",
           "count": 16,
           "recordSize": 32,
@@ -1553,7 +1568,7 @@
             { "name": "futureUse", "type": "int32", "offset": 16, "count": 4, "default": [0, 0, 0, 0] }
           ]
         },
-        { "index": 1, "name": "curve", "type": "uint16Array", "count": 257 }
+        { "index": 1, "name": "curve", "type": "uint16Array", "sourceType": "uint16", "valueKind": "curve", "sourceSymbol": "psynths_multictl.cpp:MULTICTL_CURVE_POINTS", "count": 257 }
       ],
       "controllers": [
         { "index": 0, "name": "value", "label": "Value", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 0 },
@@ -1570,6 +1585,9 @@
           "index": 0,
           "name": "options",
           "type": "struct",
+          "sourceType": "bytes",
+          "valueKind": "options",
+          "sourceSymbol": "psynths_sound2ctl.cpp:sound2ctl_options",
           "path": "options",
           "size": 2,
           "fields": [
@@ -1602,10 +1620,10 @@
     },
     "SpectraVoice": {
       "dataChunks": [
-        { "index": 0, "name": "harmonicFrequencies", "type": "uint16Array", "count": 16 },
-        { "index": 1, "name": "harmonicVolumes", "type": "uint8Array", "count": 16 },
-        { "index": 2, "name": "harmonicWidths", "type": "uint8Array", "count": 16 },
-        { "index": 3, "name": "harmonicTypes", "type": "uint8Array", "count": 16 }
+        { "index": 0, "name": "harmonicFrequencies", "type": "uint16Array", "sourceType": "uint16", "valueKind": "harmonics", "sourceSymbol": "psynths_spectravoice.cpp:data->freq", "count": 16 },
+        { "index": 1, "name": "harmonicVolumes", "type": "uint8Array", "sourceType": "uint8", "valueKind": "harmonics", "sourceSymbol": "psynths_spectravoice.cpp:data->freq_vol", "count": 16 },
+        { "index": 2, "name": "harmonicWidths", "type": "uint8Array", "sourceType": "uint8", "valueKind": "harmonics", "sourceSymbol": "psynths_spectravoice.cpp:data->freq_band", "count": 16 },
+        { "index": 3, "name": "harmonicTypes", "type": "uint8Array", "sourceType": "uint8", "valueKind": "harmonics", "sourceSymbol": "psynths_spectravoice.cpp:data->freq_type", "count": 16 }
       ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
@@ -1731,6 +1749,9 @@
           "index": 0,
           "name": "instrument",
           "type": "struct",
+          "sourceType": "bytes",
+          "valueKind": "instrument",
+          "sourceSymbol": "psynths_sampler.cpp:CHUNK_INS/instrument",
           "path": "instrument",
           "size": 400,
           "fields": [
@@ -1775,6 +1796,9 @@
           "index": 257,
           "name": "options",
           "type": "struct",
+          "sourceType": "bytes",
+          "valueKind": "options",
+          "sourceSymbol": "psynths_sampler.cpp:CHUNK_OPT/sampler_options",
           "path": "options",
           "size": 8,
           "trimTrailingZeroes": true,
@@ -1789,7 +1813,7 @@
             { "name": "fitToPattern", "type": "uint8", "offset": 7, "default": 0 }
           ]
         },
-        { "index": 266, "name": "effectModule", "type": "container", "magic": ["SSYN"] }
+        { "index": 266, "name": "effectModule", "type": "container", "sourceType": "container", "valueKind": "container", "sourceSymbol": "psynths_sampler.cpp:CHUNK_EFFECT_MOD", "magic": ["SSYN"] }
       ],
       "dataChunkRanges": [
         {
@@ -1798,6 +1822,9 @@
           "step": 2,
           "name": "sample",
           "type": "struct",
+          "sourceType": "bytes",
+          "valueKind": "sample",
+          "sourceSymbol": "psynths_sampler.cpp:CHUNK_SMP(smp_num)/sample",
           "path": "sample",
           "size": 44,
           "indexOffset": 1,
@@ -1823,6 +1850,9 @@
           "step": 2,
           "name": "sampleData",
           "type": "bytes",
+          "sourceType": "bytes",
+          "valueKind": "sampleData",
+          "sourceSymbol": "psynths_sampler.cpp:CHUNK_SMP_DATA(smp_num)",
           "indexOffset": 2,
           "indexDivisor": 2,
           "indexName": "slot",
@@ -1833,6 +1863,9 @@
           "end": 264,
           "name": "envelope",
           "type": "samplerEnvelope",
+          "sourceType": "bytes",
+          "valueKind": "envelope",
+          "sourceSymbol": "psynths_sampler.cpp:CHUNK_ENV(env_num)/sampler_envelope",
           "path": "envelope",
           "headerSize": 20,
           "indexOffset": 258,
@@ -1871,7 +1904,7 @@
     },
     "WaveShaper": {
       "dataChunks": [
-        { "index": 0, "name": "curve", "type": "uint16Array", "count": 256 }
+        { "index": 0, "name": "curve", "type": "uint16Array", "sourceType": "uint16", "valueKind": "curve", "sourceSymbol": "psynths_waveshaper.cpp:data->shape", "count": 256 }
       ],
       "controllers": [
         { "index": 0, "name": "inputVolume", "label": "Input volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },

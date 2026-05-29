@@ -41,6 +41,9 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.ok(metrics.summary.scalarChunks > 0);
   assert.equal(metrics.summary.reviewedScalarChunks, metrics.summary.scalarChunks);
   assert.equal(metrics.summary.scalarChunkStorageReviewPercent, 100);
+  assert.ok(metrics.summary.dataChunkLayouts > 0);
+  assert.equal(metrics.summary.reviewedDataChunkLayouts, metrics.summary.dataChunkLayouts);
+  assert.equal(metrics.summary.dataChunkLayoutReviewPercent, 100);
   assert.deepEqual(
     ["CHFR", "PDTA", "PPAR", "SLnK", "SMIB", "SMIC", "SMIP"].every((chunkId) =>
       metrics.chunkStorage.reviewedChunkIds.includes(chunkId),
@@ -122,6 +125,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
         index: 0,
         name: "brokenChunk",
         type: "struct",
+        sourceType: "__missing_data_source_type",
+        valueKind: "__missing_data_value_kind",
         flagBitfield: "__missing_flag_bits",
         fields: [{ name: "mode", type: "uint8", offset: 0, enum: "__missing_enum" }],
       },
@@ -158,6 +163,14 @@ test("DB check validates data chunk ranges and metadata references", () => {
 
     assert.equal(check.ok, false);
     assert.match(errors, /__BrokenDbCheckFixture: data chunk brokenChunk#0 references missing flag bitfield __missing_flag_bits/u);
+    assert.match(
+      errors,
+      /__BrokenDbCheckFixture: data chunk brokenChunk#0 has invalid sourceType __missing_data_source_type/u,
+    );
+    assert.match(
+      errors,
+      /__BrokenDbCheckFixture: data chunk brokenChunk#0 has invalid valueKind __missing_data_value_kind/u,
+    );
     assert.match(
       errors,
       /__BrokenDbCheckFixture: data chunk brokenChunk#0 field mode references missing enum __missing_enum/u,

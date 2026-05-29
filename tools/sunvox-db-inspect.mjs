@@ -926,6 +926,7 @@ function checkBitfieldDefinitions(errors) {
 
 function checkDataDefinitionReferences(errors, moduleName, definition) {
   const subject = `data chunk ${dataDefinitionLabel(definition)}`;
+  checkStorageMetadata(errors, `${moduleName}: ${subject}`, definition);
   checkNamedReference(errors, moduleName, subject, "flag bitfield", definition.flagBitfield, SUNVOX_DB.bitfields);
   checkNamedReference(errors, moduleName, subject, "flag bitflags", definition.flagBitflags, SUNVOX_DB.bitflags);
   checkNamedReference(errors, moduleName, subject, "index enum", definition.indexEnum, SUNVOX_DB.enums);
@@ -955,40 +956,66 @@ function collectSourceBlockIds(sourceRoot) {
   return { sourcePath, ids };
 }
 
-const CHUNK_SOURCE_TYPES = new Set(["int32", "uint32", "uint16", "uint8", "bytes", "string", "empty"]);
+const CHUNK_SOURCE_TYPES = new Set([
+  "int32",
+  "uint32",
+  "uint16",
+  "uint8",
+  "int8",
+  "bytes",
+  "string",
+  "container",
+  "empty",
+]);
 const CHUNK_VALUE_KINDS = new Set([
   "bitset",
   "bytes",
   "color",
+  "container",
   "controller",
+  "controllerLinks",
   "count",
+  "curve",
   "enum",
+  "envelope",
   "events",
   "flags",
   "grid",
+  "harmonics",
   "icon",
   "index",
+  "instrument",
   "level",
   "linkSlots",
   "links",
+  "mapping",
   "midi",
+  "options",
   "position",
   "rate",
   "scale",
+  "sample",
+  "sampleData",
+  "slots",
   "state",
   "tempo",
   "terminator",
   "text",
   "version",
+  "waveform",
 ]);
 
+function checkStorageMetadata(errors, subject, definition) {
+  if (definition.sourceType && !CHUNK_SOURCE_TYPES.has(definition.sourceType)) {
+    errors.push(`${subject} has invalid sourceType ${definition.sourceType}`);
+  }
+  if (definition.valueKind && !CHUNK_VALUE_KINDS.has(definition.valueKind)) {
+    errors.push(`${subject} has invalid valueKind ${definition.valueKind}`);
+  }
+}
+
 function checkChunkStorageMetadata(errors, chunk) {
-  if (chunk.sourceType && !CHUNK_SOURCE_TYPES.has(chunk.sourceType)) {
-    errors.push(`chunk ${chunk.id} has invalid sourceType ${chunk.sourceType}`);
-  }
-  if (chunk.valueKind && !CHUNK_VALUE_KINDS.has(chunk.valueKind)) {
-    errors.push(`chunk ${chunk.id} has invalid valueKind ${chunk.valueKind}`);
-  }
+  checkStorageMetadata(errors, `chunk ${chunk.id}`, chunk);
   if (chunk.signedRoundTrip && chunk.type !== "int32") {
     errors.push(`chunk ${chunk.id} is marked signedRoundTrip but uses ${chunk.type} payload type`);
   }
@@ -1158,12 +1185,38 @@ function collectChunkStorageMetrics() {
   };
 }
 
+function collectDataChunkLayoutMetrics() {
+  const layouts = [];
+  for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
+    for (const definition of moduleDefinition.dataChunks ?? []) {
+      layouts.push({ moduleName, label: dataDefinitionLabel(definition), definition });
+    }
+    for (const definition of moduleDefinition.dataChunkRanges ?? []) {
+      layouts.push({ moduleName, label: dataDefinitionLabel(definition), definition });
+    }
+  }
+  const reviewedLayouts = layouts.filter(
+    (layout) => layout.definition.sourceType && layout.definition.valueKind && layout.definition.sourceSymbol,
+  );
+  const layoutReviewPercent =
+    layouts.length === 0 ? 100 : Number(((reviewedLayouts.length / layouts.length) * 100).toFixed(1));
+  return {
+    dataChunkLayouts: layouts.length,
+    reviewedDataChunkLayouts: reviewedLayouts.length,
+    layoutReviewPercent,
+    reviewedDataChunkLayoutIds: reviewedLayouts
+      .map((layout) => `${layout.moduleName}:${layout.label}`)
+      .sort(compareText),
+  };
+}
+
 export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, sourceRoot = DEFAULT_SOURCE_ROOT) {
   const coverage = collectCoverage(sampleRoots);
   const report = collectSourceReport(sourceRoot);
   const controllerDiff = collectControllerDiff(sourceRoot);
   const dbCheck = collectDbCheck(sourceRoot);
   const chunkStorage = collectChunkStorageMetrics();
+  const dataChunkLayouts = collectDataChunkLayoutMetrics();
   const coverageGateFailures = coverageFailures(coverage);
   const sampledDbModuleTypes = coverage.moduleTypes
     .map(([moduleType]) => moduleType)
@@ -1194,6 +1247,9 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       signedRoundTripChunks: chunkStorage.signedRoundTripChunks,
       chunkStorageReviewPercent: chunkStorage.reviewPercent,
       scalarChunkStorageReviewPercent: chunkStorage.scalarReviewPercent,
+      dataChunkLayouts: dataChunkLayouts.dataChunkLayouts,
+      reviewedDataChunkLayouts: dataChunkLayouts.reviewedDataChunkLayouts,
+      dataChunkLayoutReviewPercent: dataChunkLayouts.layoutReviewPercent,
       moduleLinkIssues: coverage.linkIssues.length,
       coverageGateFailures: coverageGateFailures.length,
     },
@@ -1212,6 +1268,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
     sampledDbModuleTypes,
     unsampledDbModuleTypes: coverage.unusedDbModuleTypes,
     chunkStorage,
+    dataChunkLayouts,
     coverageGateFailures,
   };
 }
@@ -1569,6 +1626,9 @@ function formatProjectMetrics(metrics) {
     { metric: "Reviewed scalar chunks", value: metrics.summary.reviewedScalarChunks },
     { metric: "Scalar chunk storage review", value: formatPercent(metrics.summary.scalarChunkStorageReviewPercent) },
     { metric: "Signed round-trip chunks", value: metrics.summary.signedRoundTripChunks },
+    { metric: "Data chunk layouts", value: metrics.summary.dataChunkLayouts },
+    { metric: "Reviewed data chunk layouts", value: metrics.summary.reviewedDataChunkLayouts },
+    { metric: "Data chunk layout review", value: formatPercent(metrics.summary.dataChunkLayoutReviewPercent) },
     { metric: "Module link issues", value: metrics.summary.moduleLinkIssues },
     { metric: "Coverage gate failures", value: metrics.summary.coverageGateFailures },
   ];
@@ -1607,6 +1667,11 @@ function formatProjectMetrics(metrics) {
     "Reviewed chunk storage:",
     metrics.chunkStorage.reviewedChunkIds.length
       ? metrics.chunkStorage.reviewedChunkIds.map((chunkId) => `  - ${chunkId}`).join("\n")
+      : "(none)",
+    "",
+    "Reviewed data chunk layouts:",
+    metrics.dataChunkLayouts.reviewedDataChunkLayoutIds.length
+      ? metrics.dataChunkLayouts.reviewedDataChunkLayoutIds.map((layoutId) => `  - ${layoutId}`).join("\n")
       : "(none)",
   ].join("\n");
 }

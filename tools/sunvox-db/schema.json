@@ -17,7 +17,7 @@
           "name": { "type": "string" },
           "type": { "type": "string" },
           "label": { "type": "string" },
-          "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "bytes", "string", "empty"] },
+          "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "int8", "bytes", "string", "container", "empty"] },
           "valueKind": {
             "enum": ["bitset", "bytes", "color", "controller", "count", "enum", "events", "flags", "grid", "icon", "index", "level", "linkSlots", "links", "midi", "position", "rate", "scale", "state", "tempo", "terminator", "text", "version"]
           },
@@ -200,6 +200,11 @@
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
                 "type": { "enum": ["bytes", "container", "int8Array", "packedUInt32Array", "recordArray", "samplerEnvelope", "string", "struct", "uint8Array", "uint16Array"] },
+                "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "int8", "bytes", "string", "container", "empty"] },
+                "valueKind": {
+                  "enum": ["container", "controllerLinks", "curve", "envelope", "harmonics", "instrument", "mapping", "options", "sample", "sampleData", "slots", "text", "waveform"]
+                },
+                "sourceSymbol": { "type": "string" },
                 "path": { "type": "string" },
                 "count": { "type": "integer", "minimum": 0 },
                 "size": { "type": "integer", "minimum": 0 },
@@ -252,6 +257,11 @@
                 "end": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
                 "type": { "enum": ["bytes", "container", "int8Array", "packedUInt32Array", "recordArray", "samplerEnvelope", "string", "struct", "uint8Array", "uint16Array"] },
+                "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "int8", "bytes", "string", "container", "empty"] },
+                "valueKind": {
+                  "enum": ["container", "controllerLinks", "curve", "envelope", "harmonics", "instrument", "mapping", "options", "sample", "sampleData", "slots", "text", "waveform"]
+                },
+                "sourceSymbol": { "type": "string" },
                 "path": { "type": "string" },
                 "step": { "type": "integer", "minimum": 1 },
                 "count": { "type": "integer", "minimum": 0 },
