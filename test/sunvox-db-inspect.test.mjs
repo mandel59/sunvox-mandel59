@@ -220,7 +220,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   projectFields.push({
     chunk: "NOPE",
     path: "brokenGrammarField",
-    field: "value",
+    field: "text",
+    textSize: 8,
     enum: "__missing_grammar_enum",
     bitfield: "__missing_grammar_bitfield",
     bitflags: "__missing_grammar_bitflags",
@@ -297,6 +298,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
       /__BrokenDbCheckFixture: data chunk index 0 is defined by both data chunk brokenChunk#0 and data chunk range brokenRange#0-1/u,
     );
     assert.match(errors, /grammar scope project references missing chunk NOPE/u);
+    assert.match(
+      errors,
+      /grammar:project: field brokenGrammarField fixed textSize 8 is missing matching maxUtf8Bytes runtime constraint/u,
+    );
     assert.match(errors, /grammar:project: field brokenGrammarField references missing enum __missing_grammar_enum/u);
     assert.match(errors, /grammar:project: field brokenGrammarField references missing bitfield __missing_grammar_bitfield/u);
     assert.match(errors, /grammar:project: field brokenGrammarField references missing bitflags __missing_grammar_bitflags/u);

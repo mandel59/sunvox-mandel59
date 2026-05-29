@@ -1331,6 +1331,7 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
       if (!chunkIds.has(field.chunk)) {
         errors.push(`grammar scope ${scopeName} references missing chunk ${field.chunk}`);
       }
+      checkFixedTextSizeRuntimeConstraint(errors, scopeName, field);
       checkNamedReference(errors, `grammar:${scopeName}`, `field ${field.path}`, "enum", field.enum, SUNVOX_DB.enums);
       checkNamedReference(
         errors,
@@ -1382,6 +1383,28 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
     if (!sourceIds.has(id)) {
       errors.push(`DB chunk id ${id} is missing from source block id list`);
     }
+  }
+}
+
+function checkFixedTextSizeRuntimeConstraint(errors, scopeName, field) {
+  if (field.field !== "text" || field.textSize === undefined) {
+    return;
+  }
+  if (!Number.isInteger(field.textSize)) {
+    errors.push(`grammar:${scopeName}: field ${field.path} textSize must be an integer`);
+    return;
+  }
+  const rule = (SUNVOX_DB.runtimeConstraints ?? []).find(
+    (candidate) =>
+      candidate.scope === scopeName &&
+      candidate.path === field.path &&
+      candidate.kind === "maxUtf8Bytes" &&
+      candidate.maxBytes === field.textSize,
+  );
+  if (!rule) {
+    errors.push(
+      `grammar:${scopeName}: field ${field.path} fixed textSize ${field.textSize} is missing matching maxUtf8Bytes runtime constraint`,
+    );
   }
 }
 
