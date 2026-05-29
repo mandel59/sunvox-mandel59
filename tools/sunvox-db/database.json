@@ -831,6 +831,8 @@
         "path": "events",
         "columnsPath": "tracks",
         "rowsPath": "lines",
+        "columnsOverridePath": "eventColumns",
+        "rowsOverridePath": "eventRows",
         "positionFields": ["line", "track"],
         "tupleFields": ["note", "velocity", "module", "controller", "value"],
         "emptyTuple": [0, 0, 0, 0, 0],

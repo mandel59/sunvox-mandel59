@@ -519,6 +519,8 @@ test("decodes pattern note data", async () => {
   assert.equal(layout.kind, "sparsePatternEvents");
   assert.equal(layout.columnsPath, "tracks");
   assert.equal(layout.rowsPath, "lines");
+  assert.equal(layout.columnsOverridePath, "eventColumns");
+  assert.equal(layout.rowsOverridePath, "eventRows");
   assert.deepEqual(layout.positionFields, ["line", "track"]);
   assert.deepEqual(layout.tupleFields, ["note", "velocity", "module", "controller", "value"]);
   assert.equal(layout.fieldSemantics.note.encoding, "sunvoxNote");
@@ -551,6 +553,47 @@ test("uses DB text layout position field names for pattern events", async () => 
     assert.equal(sha256(buildContainer(document)), sha256(buffer));
   } finally {
     layout.positionFields = previousPositionFields;
+  }
+});
+
+test("uses DB text layout grid paths for pattern events", async () => {
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const document = parseContainer(buffer);
+  const layout = SUNVOX_DB.structs.sunvox_note.textLayout;
+  const previousPaths = {
+    columnsPath: layout.columnsPath,
+    rowsPath: layout.rowsPath,
+    columnsOverridePath: layout.columnsOverridePath,
+    rowsOverridePath: layout.rowsOverridePath,
+  };
+  layout.columnsPath = "grid.columns";
+  layout.rowsPath = "grid.rows";
+  layout.columnsOverridePath = "grid.actualColumns";
+  layout.rowsOverridePath = "grid.actualRows";
+
+  try {
+    const addGrid = (container) => {
+      for (const pattern of container.patterns?.filter((candidate) => candidate.events) ?? []) {
+        pattern.grid = {
+          columns: pattern.eventColumns ?? pattern.tracks,
+          rows: pattern.eventRows ?? pattern.lines,
+        };
+        delete pattern.eventColumns;
+        delete pattern.eventRows;
+      }
+      for (const module of container.modules ?? []) {
+        for (const dataChunk of module?.dataChunks ?? []) {
+          if (dataChunk.container) {
+            addGrid(dataChunk.container);
+          }
+        }
+      }
+    };
+    addGrid(document);
+
+    assert.equal(sha256(buildContainer(document)), sha256(buffer));
+  } finally {
+    Object.assign(layout, previousPaths);
   }
 });
 

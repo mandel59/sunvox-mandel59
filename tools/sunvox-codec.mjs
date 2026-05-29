@@ -369,9 +369,24 @@ function compactPatternNotes(pattern, definition) {
   };
 }
 
+function structTextEmptyRecord(definition) {
+  const tupleFields = structTextTupleFields(definition);
+  const emptyTuple = definition?.textLayout?.emptyTuple ?? tupleFields.map(() => 0);
+  return Object.fromEntries(tupleFields.map((fieldName, index) => [fieldName, emptyTuple[index] ?? 0]));
+}
+
 function structTextPositionFields(definition) {
   const [lineField = "line", trackField = "track"] = definition?.textLayout?.positionFields ?? [];
   return { lineField, trackField };
+}
+
+function structTextGridPaths(definition) {
+  return {
+    columnsPath: definition?.textLayout?.columnsPath ?? "tracks",
+    rowsPath: definition?.textLayout?.rowsPath ?? "lines",
+    columnsOverridePath: definition?.textLayout?.columnsOverridePath ?? "eventColumns",
+    rowsOverridePath: definition?.textLayout?.rowsOverridePath ?? "eventRows",
+  };
 }
 
 function patternNoteValueToText(value) {
@@ -604,12 +619,13 @@ function encodePatternEventField(fieldName, event, context) {
 }
 
 function emptyPatternRecord(definition) {
-  return Object.fromEntries(structTextTupleFields(definition).map((fieldName) => [fieldName, 0]));
+  return structTextEmptyRecord(definition);
 }
 
 function patternRecordIsEmpty(record, definition) {
   const object = tupleRecordToObject(record, definition);
-  return structTextTupleFields(definition).every((fieldName) => (object?.[fieldName] ?? 0) === 0);
+  const emptyRecord = structTextEmptyRecord(definition);
+  return structTextTupleFields(definition).every((fieldName) => (object?.[fieldName] ?? 0) === emptyRecord[fieldName]);
 }
 
 function patternRecordToSemanticEvent(record, index, columns, modules, definition) {
@@ -626,24 +642,29 @@ function patternRecordToSemanticEvent(record, index, columns, modules, definitio
   return event;
 }
 
-function patternEventColumns(pattern, records = []) {
-  if (pattern?.eventColumns !== undefined) {
-    return pattern.eventColumns;
+function patternEventColumns(pattern, definition, records = []) {
+  const { columnsPath, rowsPath, columnsOverridePath } = structTextGridPaths(definition);
+  const overrideColumns = getPath(pattern, columnsOverridePath);
+  if (overrideColumns !== undefined) {
+    return overrideColumns;
   }
-  if (records.length && pattern?.lines && records.length % pattern.lines === 0) {
-    return records.length / pattern.lines;
+  const rows = getPath(pattern, rowsPath);
+  if (records.length && rows && records.length % rows === 0) {
+    return records.length / rows;
   }
-  return pattern?.tracks ?? Math.max(1, records.length);
+  return getPath(pattern, columnsPath) ?? Math.max(1, records.length);
 }
 
-function patternEventRows(pattern, columns, records = []) {
-  if (pattern?.eventRows !== undefined) {
-    return pattern.eventRows;
+function patternEventRows(pattern, definition, columns, records = []) {
+  const { rowsPath, rowsOverridePath } = structTextGridPaths(definition);
+  const overrideRows = getPath(pattern, rowsOverridePath);
+  if (overrideRows !== undefined) {
+    return overrideRows;
   }
   if (records.length && columns && records.length % columns === 0) {
     return records.length / columns;
   }
-  return pattern?.lines ?? Math.ceil(records.length / columns);
+  return getPath(pattern, rowsPath) ?? Math.ceil(records.length / columns);
 }
 
 function semanticPatternEvents(pattern, modules) {
@@ -652,8 +673,9 @@ function semanticPatternEvents(pattern, modules) {
   }
   const definition = SUNVOX_DB.structs.sunvox_note;
   const records = pattern.events.map((event) => tupleRecordToObject(event, definition));
-  const columns = patternEventColumns(pattern, records);
-  const rows = patternEventRows(pattern, columns, records);
+  const { columnsPath, rowsPath, columnsOverridePath, rowsOverridePath } = structTextGridPaths(definition);
+  const columns = patternEventColumns(pattern, definition, records);
+  const rows = patternEventRows(pattern, definition, columns, records);
   const events = records
     .map((record, index) =>
       patternRecordIsEmpty(record, definition)
@@ -663,11 +685,11 @@ function semanticPatternEvents(pattern, modules) {
     .filter(Boolean);
 
   pattern.events = events;
-  if (columns !== pattern.tracks) {
-    pattern.eventColumns = columns;
+  if (columns !== getPath(pattern, columnsPath)) {
+    setPath(pattern, columnsOverridePath, columns);
   }
-  if (rows !== pattern.lines) {
-    pattern.eventRows = rows;
+  if (rows !== getPath(pattern, rowsPath)) {
+    setPath(pattern, rowsOverridePath, rows);
   }
   return pattern;
 }
@@ -692,12 +714,13 @@ function patternEventRecords(pattern, modules) {
   }
   const definition = SUNVOX_DB.structs.sunvox_note;
   const positionFields = Object.values(structTextPositionFields(definition));
+  const { columnsPath, rowsPath, columnsOverridePath, rowsOverridePath } = structTextGridPaths(definition);
   const sparse =
     pattern.events.length === 0
-      ? pattern.eventColumns !== undefined ||
-        pattern.eventRows !== undefined ||
-        pattern.tracks !== undefined ||
-        pattern.lines !== undefined
+      ? getPath(pattern, columnsOverridePath) !== undefined ||
+        getPath(pattern, rowsOverridePath) !== undefined ||
+        getPath(pattern, columnsPath) !== undefined ||
+        getPath(pattern, rowsPath) !== undefined
       : pattern.events.some(
           (event) =>
             event &&
@@ -708,8 +731,8 @@ function patternEventRecords(pattern, modules) {
   if (!sparse) {
     return pattern.events.map((event) => tupleRecordToObject(event, definition));
   }
-  const columns = patternEventColumns(pattern);
-  const rows = patternEventRows(pattern, columns);
+  const columns = patternEventColumns(pattern, definition);
+  const rows = patternEventRows(pattern, definition, columns);
   const records = Array.from({ length: columns * rows }, () => emptyPatternRecord(definition));
   const { lineField, trackField } = structTextPositionFields(definition);
   for (const event of pattern.events) {

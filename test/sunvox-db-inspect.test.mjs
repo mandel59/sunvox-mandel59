@@ -177,6 +177,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousTupleFields = textLayout.tupleFields.slice();
   const previousEmptyTuple = textLayout.emptyTuple.slice();
   const previousPositionFields = textLayout.positionFields.slice();
+  const previousColumnsPath = textLayout.columnsPath;
+  const previousRowsPath = textLayout.rowsPath;
   const amplifier = SUNVOX_DB.modules.Amplifier;
   const previousAmplifierColor = amplifier.color;
   SUNVOX_DB.modules[moduleName] = {
@@ -255,6 +257,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   textLayout.tupleFields = [...textLayout.tupleFields, "missingTuple"];
   textLayout.emptyTuple = [0];
   textLayout.positionFields = ["line"];
+  textLayout.columnsPath = "";
+  textLayout.rowsPath = "";
   textLayout.fieldSemantics.broken = { encoding: "__missing_encoding", reference: "__missing_reference" };
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
@@ -332,6 +336,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /struct sunvox_note field controller packed field badRange has invalid stored range 0\.\.4/u);
     assert.match(errors, /struct sunvox_note textLayout tuple field missingTuple is not in fields/u);
     assert.match(errors, /struct sunvox_note textLayout emptyTuple length 1 does not match tupleFields length 6/u);
+    assert.match(errors, /struct sunvox_note textLayout is missing columnsPath/u);
+    assert.match(errors, /struct sunvox_note textLayout is missing rowsPath/u);
     assert.match(
       errors,
       /struct sunvox_note textLayout positionFields must contain exactly 2 fields for sparsePatternEvents/u,
@@ -355,6 +361,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     textLayout.tupleFields = previousTupleFields;
     textLayout.emptyTuple = previousEmptyTuple;
     textLayout.positionFields = previousPositionFields;
+    textLayout.columnsPath = previousColumnsPath;
+    textLayout.rowsPath = previousRowsPath;
     delete textLayout.fieldSemantics.broken;
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     amplifier.color = previousAmplifierColor;

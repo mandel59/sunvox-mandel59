@@ -1161,8 +1161,16 @@ function checkTextLayoutDefinition(errors, structName, definition) {
   if (layout.emptyTuple && layout.emptyTuple.length !== tupleFields.length) {
     errors.push(`${subject} emptyTuple length ${layout.emptyTuple.length} does not match tupleFields length ${tupleFields.length}`);
   }
-  if (layout.kind === "sparsePatternEvents" && (layout.positionFields?.length ?? 0) !== 2) {
-    errors.push(`${subject} positionFields must contain exactly 2 fields for sparsePatternEvents`);
+  if (layout.kind === "sparsePatternEvents") {
+    if (!layout.columnsPath) {
+      errors.push(`${subject} is missing columnsPath`);
+    }
+    if (!layout.rowsPath) {
+      errors.push(`${subject} is missing rowsPath`);
+    }
+    if ((layout.positionFields?.length ?? 0) !== 2) {
+      errors.push(`${subject} positionFields must contain exactly 2 fields for sparsePatternEvents`);
+    }
   }
 
   const tupleFieldSet = new Set(tupleFields);

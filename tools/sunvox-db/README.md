@@ -16,10 +16,10 @@ can either interpret it directly or generate conversion code from it later.
 - `structs`: describes fixed-size record arrays such as pattern notes and MIDI
   bindings. Pattern notes also declare the editable text layout used for
   `patterns[].events`: sparse semantic event objects with explicit `line` and
-  `track` fields, backed by a line-major tuple layout for binary round-trips.
-  Their `fieldSemantics` entries drive note names, one-based module references,
-  packed controller/effect values via `packedFields`, and editable aliases such
-  as `parameter`.
+  `track` fields, backed by DB-declared grid paths and a line-major tuple
+  layout for binary round-trips. Their `fieldSemantics` entries drive note
+  names, one-based module references, packed controller/effect values via
+  `packedFields`, and editable aliases such as `parameter`.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
 - `moduleDataChunkGrammar`: describes the `CHNK` / `CHNM` / `CHDT`
   sequence and optional metadata chunks such as `CHFF` and `CHFR`.
