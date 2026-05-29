@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { buildCoverageFixture } from "../tools/generate-sunvox-coverage-fixtures.mjs";
 import {
   collectControllerDiff,
   collectCoverage,
@@ -30,8 +32,14 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.coverageGateFailures, 0);
+  assert.equal(metrics.summary.unsampledDbModules, 0);
+  assert.equal(metrics.summary.sampleCoveragePercent, 100);
   assert.equal(metrics.gates.ok, true);
-  assert.equal(metrics.unsampledDbModuleTypes.includes("Sampler"), true);
+  assert.deepEqual(metrics.unsampledDbModuleTypes, []);
+});
+
+test("synthetic coverage fixture is up to date", () => {
+  assert.deepEqual(readFileSync("test/fixtures/sunvox/unsampled-modules.sunvox"), buildCoverageFixture());
 });
 
 test("controller diff has no metadata mismatches", () => {

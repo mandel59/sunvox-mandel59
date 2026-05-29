@@ -46,6 +46,7 @@ npm run sunvox:inspect -- coverage
 npm run sunvox:inspect -- coverage --details
 npm run sunvox:inspect -- coverage --json
 npm run sunvox:coverage:check
+npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 npm run sunvox:inspect -- metrics --json
 npm run sunvox:inspect -- report
@@ -58,11 +59,11 @@ npm run sunvox:inspect -- check
 npm run sunvox:verify:all
 ```
 
-- `coverage` decodes checked-in sample `.sunvox` and `.sunsynth` files,
-  including embedded MetaModule projects, and reports module types, missing DB
-  module definitions, STYP-less output/empty module slots, raw controller
-  arrays, controller extras, extra chunks, opaque data chunks, plus DB module
-  definitions that are not exercised by the current sample corpus.
+- `coverage` decodes checked-in sample and fixture `.sunvox` and `.sunsynth`
+  files, including embedded MetaModule projects, and reports module types,
+  missing DB module definitions, STYP-less output/empty module slots, raw
+  controller arrays, controller extras, extra chunks, opaque data chunks, plus
+  DB module definitions that are not exercised by the current corpus.
 - `coverage --details` includes per-module paths for raw or opaque data.
 - `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp` and compares
   source module/controller declaration counts with the DB.
@@ -80,7 +81,10 @@ npm run sunvox:verify:all
   chunks. Output and empty module slots without `STYP` are reported separately
   and do not fail the gate.
 - `sunvox:verify:all` recursively verifies every checked-in `.sunvox` and
-  `.sunsynth` sample under `music/` and `instruments/`.
+  `.sunsynth` sample under `music/`, `instruments/`, and
+  `test/fixtures/sunvox/`.
+- `sunvox:fixtures:generate` regenerates the synthetic coverage fixture used to
+  keep every DB module type represented in the default coverage corpus.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
@@ -95,6 +99,7 @@ Run this loop before committing codec or DB changes:
 
 ```sh
 npm test
+npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 npm run sunvox:coverage:check
 npm run sunvox:inspect -- coverage

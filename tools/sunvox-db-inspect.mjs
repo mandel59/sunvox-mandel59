@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 import { parseContainer, SUNVOX_DB } from "./sunvox-codec.mjs";
 
-const DEFAULT_SAMPLE_ROOTS = ["music", "instruments"];
+const DEFAULT_SAMPLE_ROOTS = ["music", "instruments", "test/fixtures/sunvox"];
 const DEFAULT_SOURCE_ROOT = "var/sunvox_lib/lib_sunvox/psynth";
 const DEFAULT_STRINGS_FILE = "var/sunvox_lib/lib_sunvox/psynth/psynth_strings.cpp";
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);

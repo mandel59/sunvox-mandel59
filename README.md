@@ -34,6 +34,7 @@ controller values and options are decoded into named fields.
 npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json
 npm run sunvox:decode -- var/2022-04-17.sunvox.json var/2022-04-17.sunvox
 npm run sunvox:verify -- music/2022-04-17.sunvox
+npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 ```
 
