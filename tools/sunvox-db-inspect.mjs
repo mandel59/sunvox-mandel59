@@ -8,6 +8,7 @@ import { parseContainer, SUNVOX_DB, validateContainer } from "./sunvox-codec.mjs
 const DEFAULT_SAMPLE_ROOTS = ["music", "instruments", "test/fixtures/sunvox"];
 const DEFAULT_SOURCE_ROOT = "var/sunvox_lib/lib_sunvox/psynth";
 const SOURCE_BLOCK_ID_FILE = "../sunvox_engine.cpp";
+const SOURCE_PATTERN_EFFECT_FILE = "../sunvox_engine_audio_callback.cpp";
 const DEFAULT_STRINGS_FILE = "var/sunvox_lib/lib_sunvox/psynth/psynth_strings.cpp";
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const MODULE_CATALOG_FIELDS = ["color", "inputs", "outputs", "flags", "flags2"];
@@ -1228,6 +1229,25 @@ function collectSourceBlockIds(sourceRoot) {
   return { sourcePath, ids };
 }
 
+function collectSourcePatternEffectCodes(sourceRoot) {
+  const sourcePath = resolve(sourceRoot, SOURCE_PATTERN_EFFECT_FILE);
+  if (!safeStat(sourcePath)?.isFile()) {
+    return { sourcePath, codes: undefined };
+  }
+  const source = readFileSync(sourcePath, "utf8");
+  const start = source.indexOf("static void sunvox_handle_command(");
+  const end = source.indexOf("static void sunvox_reset_track_effect", start);
+  if (start < 0 || end < 0) {
+    return { sourcePath, codes: undefined };
+  }
+  const body = source.slice(start, end);
+  const codes = new Set();
+  for (const match of body.matchAll(/case\s+0x([0-9A-Fa-f]+)\s*:/gu)) {
+    codes.add(Number.parseInt(match[1], 16));
+  }
+  return { sourcePath, codes };
+}
+
 const CHUNK_SOURCE_TYPES = new Set([
   "int32",
   "uint32",
@@ -1458,6 +1478,28 @@ function checkRuntimeConstraints(errors) {
   }
 }
 
+function checkPatternEffectEnum(errors, warnings, sourceRoot) {
+  const effectEnum = SUNVOX_DB.enums.sunvox_pattern_effect;
+  if (!effectEnum) {
+    return;
+  }
+  const sourceEffects = collectSourcePatternEffectCodes(sourceRoot);
+  if (!sourceEffects.codes) {
+    warnings.push(`could not read SunVox pattern effect cases from ${relative(process.cwd(), sourceEffects.sourcePath)}`);
+    return;
+  }
+  for (const value of Object.keys(effectEnum)) {
+    const code = Number(value);
+    if (!Number.isInteger(code)) {
+      errors.push(`sunvox_pattern_effect enum value ${value} is not an integer`);
+      continue;
+    }
+    if (!sourceEffects.codes.has(code)) {
+      errors.push(`sunvox_pattern_effect ${value} is missing from source ctl_eff cases`);
+    }
+  }
+}
+
 function checkControllerDynamicLimits(errors, moduleName, controller, controllersByKey, sourceDynamicLimitSources) {
   const dynamicLimits = controller.dynamicLimits;
   if (!dynamicLimits) {
@@ -1509,6 +1551,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   checkBitfieldDefinitions(errors);
   checkStructDefinitions(errors);
   checkRuntimeConstraints(errors);
+  checkPatternEffectEnum(errors, warnings, sourceRoot);
   for (const row of sourceReport.missingDynamicLimitSources) {
     errors.push(`source dynamic limit ${row.source} (${row.module}) is missing from DB dynamicLimits`);
   }

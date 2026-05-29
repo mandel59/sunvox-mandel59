@@ -179,6 +179,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousPositionFields = textLayout.positionFields.slice();
   const previousColumnsPath = textLayout.columnsPath;
   const previousRowsPath = textLayout.rowsPath;
+  const patternEffectEnum = SUNVOX_DB.enums.sunvox_pattern_effect;
+  const previousPatternEffectEnum = { ...patternEffectEnum };
   const amplifier = SUNVOX_DB.modules.Amplifier;
   const previousAmplifierColor = amplifier.color;
   SUNVOX_DB.modules[moduleName] = {
@@ -269,6 +271,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
   textLayout.columnsPath = "";
   textLayout.rowsPath = "";
   textLayout.fieldSemantics.broken = { encoding: "__missing_encoding", reference: "__missing_reference" };
+  patternEffectEnum["254"] = "notSourceBacked";
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
   storageChunk.signedRoundTrip = true;
@@ -362,6 +365,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /struct sunvox_note field broken has semantics but is not in tupleFields/u);
     assert.match(errors, /struct sunvox_note field broken has invalid encoding __missing_encoding/u);
     assert.match(errors, /struct sunvox_note field broken has invalid reference __missing_reference/u);
+    assert.match(errors, /sunvox_pattern_effect 254 is missing from source ctl_eff cases/u);
     assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
     assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);
     assert.match(errors, /chunk SMIC is marked signedRoundTrip but uses uint32 payload type/u);
@@ -381,6 +385,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
     textLayout.columnsPath = previousColumnsPath;
     textLayout.rowsPath = previousRowsPath;
     delete textLayout.fieldSemantics.broken;
+    for (const key of Object.keys(patternEffectEnum)) {
+      delete patternEffectEnum[key];
+    }
+    Object.assign(patternEffectEnum, previousPatternEffectEnum);
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     amplifier.color = previousAmplifierColor;
     if (previousModule) {
