@@ -1106,6 +1106,53 @@ function checkBitfieldDefinitions(errors) {
   }
 }
 
+function checkTextLayoutPackedFields(errors, subject, packedFields = []) {
+  const fieldsByWindow = new Map();
+  for (const field of packedFields) {
+    const fieldSubject = `${subject} packed field ${field.name ?? "(unnamed)"}`;
+    if (!Number.isInteger(field.shift) || field.shift < 0) {
+      errors.push(`${fieldSubject} has invalid shift ${field.shift}`);
+    }
+    if (!Number.isInteger(field.bits) || field.bits < 1 || field.bits > 31) {
+      errors.push(`${fieldSubject} has invalid bits ${field.bits}`);
+      continue;
+    }
+    if (field.shift + field.bits > 32) {
+      errors.push(`${fieldSubject} exceeds 32-bit storage`);
+    }
+    if (field.reference && !PACKED_FIELD_REFERENCES.has(field.reference)) {
+      errors.push(`${fieldSubject} has invalid reference ${field.reference}`);
+    }
+
+    const maxStored = 2 ** field.bits - 1;
+    const range = { min: field.min ?? 0, max: field.max ?? maxStored };
+    if (range.min < 0 || range.max > maxStored || range.max < range.min) {
+      errors.push(`${fieldSubject} has invalid stored range ${range.min}..${range.max}`);
+      continue;
+    }
+
+    const windowKey = `${field.shift}:${field.bits}`;
+    const peers = fieldsByWindow.get(windowKey) ?? [];
+    for (const peer of peers) {
+      if (range.min <= peer.range.max && peer.range.min <= range.max) {
+        errors.push(
+          `${fieldSubject} stored range ${range.min}..${range.max} overlaps ${peer.name} ${peer.range.min}..${peer.range.max}`,
+        );
+      }
+    }
+    peers.push({ name: field.name ?? "(unnamed)", range });
+    fieldsByWindow.set(windowKey, peers);
+  }
+}
+
+function checkStructDefinitions(errors) {
+  for (const [structName, definition] of Object.entries(SUNVOX_DB.structs ?? {})) {
+    for (const [fieldName, semantics] of Object.entries(definition.textLayout?.fieldSemantics ?? {})) {
+      checkTextLayoutPackedFields(errors, `struct ${structName} field ${fieldName}`, semantics.packedFields);
+    }
+  }
+}
+
 function checkDataDefinitionReferences(errors, moduleName, definition) {
   const subject = `data chunk ${dataDefinitionLabel(definition)}`;
   checkStorageMetadata(errors, `${moduleName}: ${subject}`, definition);
@@ -1189,6 +1236,7 @@ const CHUNK_VALUE_KINDS = new Set([
 const RUNTIME_CONSTRAINT_SCOPES = new Set(["project", "module", "moduleLink"]);
 const RUNTIME_CONSTRAINT_KINDS = new Set(["integerRange", "maxUtf8Bytes"]);
 const RUNTIME_CONSTRAINT_SEVERITIES = new Set(["warning", "error"]);
+const PACKED_FIELD_REFERENCES = new Set(["module.controllers"]);
 
 function checkStorageMetadata(errors, subject, definition) {
   if (definition.sourceType && !CHUNK_SOURCE_TYPES.has(definition.sourceType)) {
@@ -1385,6 +1433,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
 
   checkChunkDefinitions(errors, warnings, sourceRoot);
   checkBitfieldDefinitions(errors);
+  checkStructDefinitions(errors);
   checkRuntimeConstraints(errors);
   for (const row of sourceReport.missingDynamicLimitSources) {
     errors.push(`source dynamic limit ${row.source} (${row.module}) is missing from DB dynamicLimits`);

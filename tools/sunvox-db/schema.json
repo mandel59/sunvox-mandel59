@@ -134,6 +134,23 @@
                     "aliases": {
                       "type": "array",
                       "items": { "type": "string" }
+                    },
+                    "packedFields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["name", "shift", "bits"],
+                        "properties": {
+                          "name": { "type": "string" },
+                          "shift": { "type": "integer", "minimum": 0 },
+                          "bits": { "type": "integer", "minimum": 1, "maximum": 31 },
+                          "offset": { "type": "integer" },
+                          "min": { "type": "integer" },
+                          "max": { "type": "integer" },
+                          "reference": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "additionalProperties": false

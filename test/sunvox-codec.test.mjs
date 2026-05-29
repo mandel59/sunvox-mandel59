@@ -524,6 +524,11 @@ test("decodes pattern note data", async () => {
   assert.equal(layout.fieldSemantics.note.encoding, "sunvoxNote");
   assert.equal(layout.fieldSemantics.module.reference, "modules");
   assert.equal(layout.fieldSemantics.controller.encoding, "packedPatternControllerEffect");
+  assert.deepEqual(layout.fieldSemantics.controller.packedFields, [
+    { name: "controller", shift: 8, bits: 8, offset: -1, min: 1, max: 127, reference: "module.controllers" },
+    { name: "midiController", shift: 8, bits: 8, offset: -128, min: 128, max: 255 },
+    { name: "effect", shift: 0, bits: 8, min: 1, max: 255 },
+  ]);
   assert.deepEqual(layout.fieldSemantics.value.aliases, ["parameter"]);
   assert.ok(pattern.events.length < pattern.tracks * pattern.lines);
   assert.equal(sha256(buildContainer(document)), sha256(buffer));
@@ -557,6 +562,31 @@ test("encodes named pattern controller events", async () => {
   assert.equal(event.controller, "volume");
   assert.equal(event._controllerIndex, controllerIndex);
   assert.equal(event.value, 321);
+});
+
+test("encodes DB-described packed pattern MIDI controller and effect fields", async () => {
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const document = parseContainer(buffer);
+  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 3);
+  assert.ok(patternIndex >= 0);
+  const pattern = document.patterns[patternIndex];
+
+  pattern.events = [
+    {
+      line: 2,
+      track: 0,
+      midiController: 7,
+      effect: 3,
+      parameter: 12,
+    },
+  ];
+
+  const reparsed = parseContainer(buildContainer(document));
+  const event = reparsed.patterns[patternIndex].events.find((candidate) => candidate.line === 2 && candidate.track === 0);
+
+  assert.equal(event.midiController, 7);
+  assert.equal(event.effect, 3);
+  assert.equal(event.value, 12);
 });
 
 test("can still build editable chunk documents", async () => {

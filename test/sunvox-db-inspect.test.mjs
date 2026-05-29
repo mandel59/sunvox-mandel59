@@ -171,6 +171,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     valueKind: storageChunk.valueKind,
     signedRoundTrip: storageChunk.signedRoundTrip,
   };
+  const packedFields = SUNVOX_DB.structs.sunvox_note.textLayout.fieldSemantics.controller.packedFields;
+  const previousPackedFields = packedFields.slice();
   const amplifier = SUNVOX_DB.modules.Amplifier;
   const previousAmplifierColor = amplifier.color;
   SUNVOX_DB.modules[moduleName] = {
@@ -242,6 +244,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
     },
   );
   bitfield.fields = [...bitfield.fields, { name: "broken", shift: 7, bits: 1, bitflags: "__missing_bitfield_bitflags" }];
+  packedFields.push(
+    { name: "brokenPacked", shift: 8, bits: 8, min: 127, max: 200, reference: "__missing_packed_reference" },
+    { name: "badRange", shift: 0, bits: 2, min: 0, max: 4 },
+  );
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
   storageChunk.signedRoundTrip = true;
@@ -307,6 +313,15 @@ test("DB check validates data chunk ranges and metadata references", () => {
       errors,
       /bitfield:psynth_midi_input_flags: packed field field broken references missing bitflags __missing_bitfield_bitflags/u,
     );
+    assert.match(
+      errors,
+      /struct sunvox_note field controller packed field brokenPacked has invalid reference __missing_packed_reference/u,
+    );
+    assert.match(
+      errors,
+      /struct sunvox_note field controller packed field brokenPacked stored range 127\.\.200 overlaps controller 1\.\.127/u,
+    );
+    assert.match(errors, /struct sunvox_note field controller packed field badRange has invalid stored range 0\.\.4/u);
     assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
     assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);
     assert.match(errors, /chunk SMIC is marked signedRoundTrip but uses uint32 payload type/u);
@@ -318,6 +333,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     SUNVOX_DB.runtimeConstraints.length = 0;
     SUNVOX_DB.runtimeConstraints.push(...previousRuntimeConstraints);
     bitfield.fields = previousBitfieldFields;
+    packedFields.length = 0;
+    packedFields.push(...previousPackedFields);
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     amplifier.color = previousAmplifierColor;
     if (previousModule) {

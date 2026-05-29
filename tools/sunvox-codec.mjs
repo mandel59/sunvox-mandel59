@@ -424,42 +424,99 @@ function moduleControllerIndex(module, name) {
   return moduleControllers(module?.type).find((controller) => controllerPath(controller) === name || controller.name === name)?.index;
 }
 
-function decodePatternController(value, module, event) {
-  const controllerNumber = value >>> 8;
-  const effect = value & 0xff;
-  if (controllerNumber > 0 && controllerNumber < 128) {
-    const controllerIndex = controllerNumber - 1;
-    const controllerName = moduleControllerName(module, controllerIndex);
-    event.controller = controllerName ?? controllerIndex;
-    if (controllerName) {
-      event._controllerIndex = controllerIndex;
-    }
-  } else if (controllerNumber >= 128) {
-    event.midiController = controllerNumber - 128;
-  }
-  if (effect) {
-    event.effect = effect;
-  }
-}
-
-function encodePatternController(event, module) {
-  let controllerNumber = 0;
-  if (event.midiController !== undefined) {
-    controllerNumber = event.midiController + 128;
-  } else if (event.controller !== undefined) {
-    const controllerIndex =
-      typeof event.controller === "string" ? moduleControllerIndex(module, event.controller) : event.controller;
-    if (controllerIndex === undefined) {
-      throw new Error(`Unknown pattern controller: ${event.controller}`);
-    }
-    controllerNumber = controllerIndex + 1;
-  }
-  const effect = typeof event.effect === "number" ? event.effect : 0;
-  return ((controllerNumber & 0xff) << 8) | (effect & 0xff);
-}
-
 function patternFieldSemantics(definition, fieldName) {
   return definition?.textLayout?.fieldSemantics?.[fieldName] ?? {};
+}
+
+function packedFieldMask(field) {
+  return 2 ** field.bits - 1;
+}
+
+function packedFieldStoredRange(field) {
+  return {
+    min: field.min ?? 0,
+    max: field.max ?? packedFieldMask(field),
+  };
+}
+
+function packedFieldStoredValue(value, field) {
+  return (value >>> field.shift) & packedFieldMask(field);
+}
+
+function packedFieldDecodedValue(storedValue, field) {
+  return storedValue + (field.offset ?? 0);
+}
+
+function packedFieldEncodedValue(decodedValue, field) {
+  return decodedValue - (field.offset ?? 0);
+}
+
+function packedFieldContainsStoredValue(storedValue, field) {
+  const { min, max } = packedFieldStoredRange(field);
+  return storedValue >= min && storedValue <= max;
+}
+
+function setPackedFieldValue(value, field, storedValue) {
+  const mask = packedFieldMask(field) << field.shift;
+  return (value & ~mask) | ((storedValue & packedFieldMask(field)) << field.shift);
+}
+
+function decodePatternPackedField(value, module, event, field) {
+  const storedValue = packedFieldStoredValue(value, field);
+  if (!packedFieldContainsStoredValue(storedValue, field)) {
+    return;
+  }
+  const decodedValue = packedFieldDecodedValue(storedValue, field);
+  if (field.reference === "module.controllers") {
+    const controllerName = moduleControllerName(module, decodedValue);
+    event[field.name] = controllerName ?? decodedValue;
+    if (controllerName) {
+      event._controllerIndex = decodedValue;
+    }
+    return;
+  }
+  event[field.name] = decodedValue;
+}
+
+function decodePatternController(value, module, event, semantics) {
+  for (const field of semantics.packedFields ?? []) {
+    decodePatternPackedField(value, module, event, field);
+  }
+}
+
+function eventPackedFieldValue(event, module, field) {
+  const value = event[field.name];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (field.reference === "module.controllers") {
+    const controllerIndex = typeof value === "string" ? moduleControllerIndex(module, value) : value;
+    if (controllerIndex === undefined) {
+      throw new Error(`Unknown pattern controller: ${value}`);
+    }
+    return controllerIndex;
+  }
+  return value;
+}
+
+function encodePatternController(event, module, semantics) {
+  let packedValue = 0;
+  for (const field of semantics.packedFields ?? []) {
+    const decodedValue = eventPackedFieldValue(event, module, field);
+    if (decodedValue === undefined) {
+      continue;
+    }
+    const storedValue = packedFieldEncodedValue(decodedValue, field);
+    if (storedValue === 0 && field.min > 0) {
+      continue;
+    }
+    if (!packedFieldContainsStoredValue(storedValue, field)) {
+      const { min, max } = packedFieldStoredRange(field);
+      throw new Error(`Pattern ${field.name} value ${decodedValue} stores as ${storedValue}; expected ${min}..${max}`);
+    }
+    packedValue = setPackedFieldValue(packedValue, field, storedValue);
+  }
+  return packedValue;
 }
 
 function semanticEventFieldValue(event, fieldName, semantics) {
@@ -517,7 +574,7 @@ function applyDecodedPatternField(event, fieldName, value, context) {
       return;
     }
     case "packedPatternControllerEffect":
-      decodePatternController(value, context.module, event);
+      decodePatternController(value, context.module, event, semantics);
       return;
     default:
       if (shouldKeepDecodedPatternField(fieldName, value, semantics, context.rawRecord)) {
@@ -535,7 +592,7 @@ function encodePatternEventField(fieldName, event, context) {
     case "oneBasedModuleIndex":
       return patternModuleToStored(value);
     case "packedPatternControllerEffect":
-      return encodePatternController(event, context.module);
+      return encodePatternController(event, context.module, semantics);
     default:
       return value === "default" && semantics.zero === "default" ? 0 : (value ?? 0);
   }
