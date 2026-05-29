@@ -1141,15 +1141,25 @@ function controllerStoredValue(controller, value) {
   return tryEnumToValue(controller.enum, value);
 }
 
-function controllerEffectiveLimits(controller, controllers) {
+function controllerEffectiveLimits(moduleEntry, controller, controllers) {
   const dynamicLimits = controller.dynamicLimits;
   if (!dynamicLimits) {
     return controller;
   }
   const dependencyValue = getPath(controllers, dynamicLimits.controller);
+  const dependencyController = moduleControllers(moduleEntry.module?.type).find(
+    (candidate) => controllerPath(candidate) === dynamicLimits.controller || candidate.name === dynamicLimits.controller,
+  );
+  const storedDependencyValue =
+    dependencyValue === undefined || !dependencyController ? undefined : controllerStoredValue(dependencyController, dependencyValue);
+  const namedDependencyValue =
+    dependencyController?.enum && Number.isInteger(storedDependencyValue)
+      ? enumToName(dependencyController.enum, storedDependencyValue)
+      : undefined;
   const limit =
     dynamicLimits.cases?.[String(dependencyValue)] ??
-    (dependencyValue === undefined ? undefined : dynamicLimits.cases?.[String(controllerStoredValue(controller, dependencyValue))]) ??
+    (namedDependencyValue === undefined ? undefined : dynamicLimits.cases?.[String(namedDependencyValue)]) ??
+    (storedDependencyValue === undefined ? undefined : dynamicLimits.cases?.[String(storedDependencyValue)]) ??
     dynamicLimits.default;
   if (!limit) {
     return controller;
@@ -1166,7 +1176,7 @@ function validateControllerValue(moduleEntry, controller) {
   if (!controllers || typeof controllers !== "object" || Array.isArray(controllers)) {
     return [];
   }
-  const effectiveController = controllerEffectiveLimits(controller, controllers);
+  const effectiveController = controllerEffectiveLimits(moduleEntry, controller, controllers);
   const path = `${moduleEntry.path}.controllers.${controllerPath(controller)}`;
   const value = getPath(controllers, controllerPath(controller));
   if (value === undefined) {

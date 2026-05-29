@@ -1274,8 +1274,8 @@
       "controllers": [
         { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
-        { "index": 2, "name": "delayL", "label": "Delay L", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 1 },
-        { "index": 3, "name": "delayR", "label": "Delay R", "type": "int32", "min": 0, "max": 256, "default": 160, "normal": -1, "group": 1 },
+        { "index": 2, "name": "delayL", "label": "Delay L", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 1, "dynamicLimits": { "controller": "delayUnit", "source": "delay_change_ctl_limits", "cases": { "ms": { "max": 4000 }, "hz": { "max": 8192 }, "sec44100": { "max": 32768 }, "sec48000": { "max": 32768 }, "sample": { "max": 32768 } } } },
+        { "index": 3, "name": "delayR", "label": "Delay R", "type": "int32", "min": 0, "max": 256, "default": 160, "normal": -1, "group": 1, "dynamicLimits": { "controller": "delayUnit", "source": "delay_change_ctl_limits", "cases": { "ms": { "max": 4000 }, "hz": { "max": 8192 }, "sec44100": { "max": 32768 }, "sec48000": { "max": 32768 }, "sample": { "max": 32768 } } } },
         { "index": 4, "name": "volumeL", "label": "Volume L", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 2 },
         { "index": 5, "name": "volumeR", "label": "Volume R", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 2 },
         { "index": 6, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 3 },
@@ -1356,7 +1356,7 @@
         { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 256, "default": 40, "normal": -1, "group": 0 },
         { "index": 2, "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 1 },
-        { "index": 3, "name": "delay", "label": "Delay", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1 },
+        { "index": 3, "name": "delay", "label": "Delay", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 1, "dynamicLimits": { "controller": "delayUnit", "source": "echo_change_ctl_limits", "cases": { "ms": { "max": 4000 }, "hz": { "max": 8192 } } } },
         { "index": 4, "name": "rightChannelOffset", "label": "Right channel offset", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 1 },
         { "index": 5, "name": "delayUnit", "label": "Delay unit", "type": "enum", "enum": "echo_delay_unit", "min": 0, "max": 6, "default": 0, "normal": -1, "group": 1 },
         { "index": 6, "name": "rightChannelOffsetValue", "label": "Right channel offset value", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 1, "unit": "delay/32768" },
@@ -1603,7 +1603,7 @@
       "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
-        { "index": 1, "name": "length", "label": "Length", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
+        { "index": 1, "name": "length", "label": "Length", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0, "dynamicLimits": { "controller": "lengthUnit", "source": "loop_change_ctl_limits", "cases": { "line": { "max": 8192 }, "line2": { "max": 8192 }, "line3": { "max": 8192 }, "tick": { "max": 8192 }, "ms": { "max": 8192 }, "hz": { "max": 8192 } } } },
         { "index": 2, "name": "channels", "label": "Channels", "type": "enum", "enum": "mono_stereo", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
         { "index": 3, "name": "repeat128Endless", "label": "Repeats (128=endless)", "type": "int32", "min": 0, "max": 128, "default": 0, "normal": -1, "group": 0 },
         { "index": 4, "name": "mode", "label": "Mode", "type": "enum", "enum": "loop_mode", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },

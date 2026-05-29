@@ -132,9 +132,10 @@ npm run sunvox:verify:all
   which declarative source facts should be copied into `database.json`; CI
   expects this report to have no mismatches.
 - Controller metadata may include `dynamicLimits` when SunVox source changes a
-  controller range based on another controller value, such as LFO/Vibrato
-  frequency limits by frequency unit. Static `min`/`max` remain aligned with
-  `psynth_register_ctl()`; validation applies the dynamic effective range.
+  controller range based on another controller value, such as Delay/Echo/Loop
+  length limits and LFO/Vibrato frequency limits by unit. Static `min`/`max`
+  remain aligned with `psynth_register_ctl()`; validation applies the dynamic
+  effective range.
 - `coverage --json`, `report --json`, and `controller-diff --json` emit
   machine-readable metrics for future CI or frontend tooling.
 - `metrics` summarizes coverage, source/DB consistency, controller metadata

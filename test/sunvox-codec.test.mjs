@@ -126,6 +126,50 @@ test("reports DB-driven controller value warnings", () => {
   assert.match(formatValidationIssue(result.issues[1]), /source=psynth_register_ctl issue=#2/u);
 });
 
+test("applies DB-driven dynamic controller limits", () => {
+  const result = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [
+      {
+        type: "Delay",
+        controllers: {
+          delayUnit: "hz",
+          delayL: 8192,
+          delayR: 8193,
+        },
+      },
+      {
+        type: "Echo",
+        controllers: {
+          delayUnit: 2,
+          delay: 8192,
+        },
+      },
+      {
+        type: "Loop",
+        controllers: {
+          lengthUnit: "ms",
+          length: 8192,
+        },
+      },
+      {
+        type: "LFO",
+        controllers: {
+          frequencyUnit: 2,
+          freq: 16384,
+        },
+      },
+    ],
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.issues.map((issue) => [issue.path, issue.message]),
+    [["modules[0].controllers.delayR", "modules[0].controllers.delayR is 8193; expected <= 8192"]],
+  );
+});
+
 test("recursively validates embedded MetaModule containers", () => {
   const result = validateContainer({
     magic: "SSYN",
