@@ -1242,10 +1242,16 @@ function collectSourcePatternEffectCodes(sourceRoot) {
   }
   const body = source.slice(start, end);
   const codes = new Set();
+  const cases = [];
   for (const match of body.matchAll(/case\s+0x([0-9A-Fa-f]+)\s*:/gu)) {
-    codes.add(Number.parseInt(match[1], 16));
+    const code = Number.parseInt(match[1], 16);
+    codes.add(code);
+    cases.push({
+      code,
+      line: source.slice(0, start + match.index).split(/\r?\n/u).length,
+    });
   }
-  return { sourcePath, codes };
+  return { sourcePath, codes, cases };
 }
 
 export function collectPatternEffectCoverage(sourceRoot = DEFAULT_SOURCE_ROOT) {
@@ -1259,6 +1265,10 @@ export function collectPatternEffectCoverage(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const dbCodeSet = new Set(dbEntries.map((entry) => entry.code));
   const namedEntries = dbEntries.filter((entry) => sourceCodeSet.has(entry.code));
   const missingCodes = sourceCodes.filter((code) => !dbCodeSet.has(code));
+  const missingCases = missingCodes.map((code) => ({
+    code,
+    lines: [...new Set((sourceEffects.cases ?? []).filter((entry) => entry.code === code).map((entry) => entry.line))],
+  }));
   const unknownEntries = dbEntries.filter((entry) => !sourceCodeSet.has(entry.code));
   const coveragePercent = sourceCodes.length
     ? Number(((namedEntries.length / sourceCodes.length) * 100).toFixed(1))
@@ -1271,6 +1281,7 @@ export function collectPatternEffectCoverage(sourceRoot = DEFAULT_SOURCE_ROOT) {
     dbEntries,
     namedEntries,
     missingCodes,
+    missingCases,
     unknownEntries,
     coveragePercent,
   };
@@ -2313,8 +2324,10 @@ function formatProjectMetrics(metrics) {
       : "(none)",
     "",
     "Unnamed source pattern effects:",
-    metrics.patternEffectCoverage.missingCodes.length
-      ? metrics.patternEffectCoverage.missingCodes.map((code) => `  - 0x${code.toString(16).toUpperCase()}`).join("\n")
+    metrics.patternEffectCoverage.missingCases.length
+      ? metrics.patternEffectCoverage.missingCases
+          .map((entry) => `  - 0x${entry.code.toString(16).toUpperCase()} (lines ${entry.lines.join(", ")})`)
+          .join("\n")
       : "(none)",
     "",
     "Validation issues:",

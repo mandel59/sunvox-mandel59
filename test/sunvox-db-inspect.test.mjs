@@ -93,6 +93,12 @@ test("pattern effect coverage exposes unnamed source cases", () => {
     "arpeggio",
   ]);
   assert.deepEqual(coverage.missingCodes.slice(0, 4), [1, 2, 5, 6]);
+  assert.deepEqual(coverage.missingCases.slice(0, 4), [
+    { code: 1, lines: [709] },
+    { code: 2, lines: [715] },
+    { code: 5, lines: [450, 463, 750] },
+    { code: 6, lines: [451, 464, 751] },
+  ]);
   assert.deepEqual(coverage.unknownEntries, []);
   assert.equal(coverage.coveragePercent, 46.5);
 });
