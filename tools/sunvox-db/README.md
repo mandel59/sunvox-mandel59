@@ -109,8 +109,8 @@ npm run sunvox:verify:all
   synthetic fixture also verifies that SunVox exposes the expected module slots
   and types, not just that the codec can round-trip the bytes. The check also
   builds small codec-edited variants and verifies through SunVox Lib that edited
-  project/module/pattern names and representative controller values are exposed
-  as expected.
+  project/module/pattern names, representative controller values, and pattern
+  note events are exposed as expected.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.

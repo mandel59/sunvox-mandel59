@@ -62,7 +62,8 @@ npm run quality
 
 The quality gate includes SunVox Lib compatibility checks for both checked-in
 sample files and small codec-edited variants, so representative text edits are
-verified against the runtime API as well as byte-level round-trips.
+verified against the runtime API as well as byte-level round-trips. These checks
+cover project, module, pattern, controller, and pattern event edits.
 
 ## Licenses
 

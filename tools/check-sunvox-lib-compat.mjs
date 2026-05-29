@@ -19,6 +19,13 @@ const EDITED_MODULE_NAME = "CodecCompatModule";
 const EDITED_PATTERN_NAME = "Codec compat pattern";
 const EDITED_SYNTH_NAME = "CodecCompatSynth";
 const EDITED_CONTROLLER_VALUE = 123;
+const EDITED_PATTERN_EVENT = {
+  line: 0,
+  track: 0,
+  note: "C4",
+  noteValue: 49,
+  velocity: 64,
+};
 const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
 const SV_INIT_FLAG_OFFLINE = 1 << 1;
 const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
@@ -99,7 +106,31 @@ function controllerIndex(type, name) {
   return moduleControllerDefinitions(type).find((controller) => controller.name === name)?.index;
 }
 
-function inspectLoadedState(module, moduleCount, magic) {
+function readPatternEvent(module, pattern, line, track) {
+  if (!pattern) {
+    return undefined;
+  }
+  if (track < 0 || line < 0 || track >= pattern.tracks || line >= pattern.lines) {
+    return undefined;
+  }
+  const dataPointer = module._sv_get_pattern_data(SLOT, pattern.index);
+  if (!dataPointer) {
+    return undefined;
+  }
+  const offset = dataPointer + (line * pattern.tracks + track) * 8;
+  return {
+    patternIndex: pattern.index,
+    line,
+    track,
+    note: module.HEAPU8[offset],
+    velocity: module.HEAPU8[offset + 1],
+    module: module.HEAPU8[offset + 2] | (module.HEAPU8[offset + 3] << 8),
+    controller: module.HEAPU8[offset + 4] | (module.HEAPU8[offset + 5] << 8),
+    value: module.HEAPU8[offset + 6] | (module.HEAPU8[offset + 7] << 8),
+  };
+}
+
+function inspectLoadedState(module, moduleCount, magic, options = {}) {
   const modules = [];
   for (let index = 0; index < moduleCount; index += 1) {
     const controllerCount = module._sv_get_number_of_module_ctls(SLOT, index);
@@ -130,7 +161,10 @@ function inspectLoadedState(module, moduleCount, magic) {
       lines: module._sv_get_pattern_lines(SLOT, index),
     });
   }
-  return { modules, patterns };
+  const patternEvents = (options.patternEventProbes ?? [])
+    .map((probe) => readPatternEvent(module, patterns[probe.patternIndex], probe.line, probe.track))
+    .filter(Boolean);
+  return { modules, patterns, patternEvents };
 }
 
 export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
@@ -161,7 +195,7 @@ export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
           ? module._sv_load_module_from_memory(SLOT, dataPointer, buffer.length, 0, 0, 0)
           : module._sv_load_from_memory(SLOT, dataPointer, buffer.length);
       const moduleCount = module._sv_get_number_of_modules(SLOT);
-      const state = inspectLoadedState(module, moduleCount, magic);
+      const state = inspectLoadedState(module, moduleCount, magic, options);
       return {
         filePath: options.filePath ? resolve(options.filePath) : undefined,
         label: options.label,
@@ -173,6 +207,7 @@ export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
         moduleCount,
         modules: state.modules,
         patterns: state.patterns,
+        patternEvents: state.patternEvents,
         songName: readCString(module, module._sv_get_song_name(SLOT)),
         bpm: magic === "SVOX" ? module._sv_get_song_bpm(SLOT) : undefined,
         tpl: magic === "SVOX" ? module._sv_get_song_tpl(SLOT) : undefined,
@@ -271,6 +306,20 @@ function validateEditedCompatibility(report, expectations) {
       );
     }
   }
+  if (expectations.patternEvent) {
+    const { patternIndex, line, track, event } = expectations.patternEvent;
+    const actual = report.patternEvents?.find(
+      (candidate) => candidate.patternIndex === patternIndex && candidate.line === line && candidate.track === track,
+    );
+    for (const field of ["note", "velocity", "module", "controller", "value"]) {
+      if (actual?.[field] !== event[field]) {
+        throw new Error(
+          `SunVox lib exposed pattern #${patternIndex} event (${line},${track}) ${field} ` +
+            `${actual?.[field]}; expected ${event[field]}`,
+        );
+      }
+    }
+  }
 }
 
 function firstEditableModule(modules) {
@@ -279,6 +328,10 @@ function firstEditableModule(modules) {
 
 function firstNamedPattern(patterns) {
   return patterns.findIndex((pattern) => pattern?.name !== undefined);
+}
+
+function firstPatternGrid(patterns) {
+  return patterns.findIndex((pattern) => pattern?.tracks > 0 && pattern?.lines > 0);
 }
 
 function applyControllerEdit(module, moduleIndex, expectations) {
@@ -298,6 +351,34 @@ function applyControllerEdit(module, moduleIndex, expectations) {
   };
 }
 
+function applyPatternEventEdit(document, moduleIndex, expectations) {
+  const patternIndex = firstPatternGrid(document.patterns ?? []);
+  if (patternIndex < 0 || moduleIndex < 0) {
+    return;
+  }
+  const pattern = document.patterns[patternIndex];
+  pattern.events ??= [];
+  pattern.events.push({
+    line: EDITED_PATTERN_EVENT.line,
+    track: EDITED_PATTERN_EVENT.track,
+    note: EDITED_PATTERN_EVENT.note,
+    velocity: EDITED_PATTERN_EVENT.velocity,
+    module: moduleIndex,
+  });
+  expectations.patternEvent = {
+    patternIndex,
+    line: EDITED_PATTERN_EVENT.line,
+    track: EDITED_PATTERN_EVENT.track,
+    event: {
+      note: EDITED_PATTERN_EVENT.noteValue,
+      velocity: EDITED_PATTERN_EVENT.velocity,
+      module: moduleIndex + 1,
+      controller: 0,
+      value: 0,
+    },
+  };
+}
+
 function makeEditedCompatibilityCase(filePath, buffer) {
   const document = cloneJson(parseContainer(buffer));
   const expectations = {};
@@ -312,6 +393,7 @@ function makeEditedCompatibilityCase(filePath, buffer) {
       document.modules[moduleIndex].name = EDITED_MODULE_NAME;
       expectations.moduleName = { index: moduleIndex, name: EDITED_MODULE_NAME };
       applyControllerEdit(document.modules[moduleIndex], moduleIndex, expectations);
+      applyPatternEventEdit(document, moduleIndex, expectations);
     }
 
     const patternIndex = firstNamedPattern(document.patterns ?? []);
@@ -333,6 +415,15 @@ function makeEditedCompatibilityCase(filePath, buffer) {
     label: `${relative(process.cwd(), filePath)} (codec edit)`,
     buffer: buildContainer(document),
     expectations,
+    patternEventProbes: expectations.patternEvent
+      ? [
+          {
+            patternIndex: expectations.patternEvent.patternIndex,
+            line: expectations.patternEvent.line,
+            track: expectations.patternEvent.track,
+          },
+        ]
+      : [],
   };
 }
 
@@ -375,6 +466,7 @@ async function main() {
         const editedReport = await inspectBufferWithSunVoxLib(edited.buffer, {
           filePath: edited.filePath,
           label: edited.label,
+          patternEventProbes: edited.patternEventProbes,
         });
         validateEditedCompatibility(editedReport, resolveLoadedModuleExpectations(editedReport, edited.expectations));
         printReport(editedReport);
