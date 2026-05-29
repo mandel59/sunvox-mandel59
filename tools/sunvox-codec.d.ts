@@ -222,18 +222,19 @@ export interface StructuredProject {
     yOffset?: number;
   };
   layerMask?: number;
-  currentLine?: number;
-  time?: number;
-  selectionStart?: number;
-  lastGenerator?: number;
-  patternCount?: number;
+  currentLayer?: number;
+  lineCounter?: number;
+  restartPosition?: number;
+  selectedModule?: number;
+  lastSelectedGenerator?: number;
+  currentPattern?: number;
+  currentPatternTrack?: number;
+  currentPatternLine?: number;
   extraChunks?: EditableSunVoxChunk[];
   chunks?: EditableSunVoxChunk[];
 }
 
 export interface StructuredPattern {
-  index?: number;
-  layer?: number;
   name?: string;
   position?: { x?: number; y?: number };
   tracks?: number;
@@ -241,12 +242,12 @@ export interface StructuredPattern {
   eventColumns?: number;
   eventRows?: number;
   ySize?: number;
-  displayFlags?: number;
+  flags?: number | Record<string, boolean>;
   iconBase64?: string;
   foreground?: string;
   background?: string;
   parent?: number;
-  flags?: number;
+  infoFlags?: number | Record<string, boolean>;
   events?: EditablePatternEvent[];
   extraChunks?: EditableSunVoxChunk[];
   chunks?: EditableSunVoxChunk[];
@@ -261,18 +262,18 @@ export interface StructuredModule {
   finetune?: number;
   relativeNote?: number;
   scale?: number;
-  version?: number;
+  visualizerParameters?: number;
   midi?: {
-    inputIndex?: number;
-    name?: string;
-    inputChannel?: number;
-    inputBank?: number;
-    inputProgram?: number;
+    inputFlags?: number;
+    outputName?: string;
+    outputChannel?: number;
+    outputBank?: number;
+    outputProgram?: number;
   };
   inputLinks?: number[];
-  auxInputLinks?: number[];
+  inputLinkSlots?: number[];
   outputLinks?: number[];
-  auxOutputLinks?: number[];
+  outputLinkSlots?: number[];
   controllers?: ModuleControllers;
   midiBindings?: EditableMidiBinding[];
   dataChunkCount?: number;

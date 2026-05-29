@@ -49,9 +49,9 @@ function moduleSummary(module, index) {
     position: module?.position,
     color: module?.color,
     inputLinks: compactLinks(module?.inputLinks),
-    auxInputLinks: compactLinks(module?.auxInputLinks),
+    inputLinkSlots: compactSlots(module?.inputLinkSlots),
     outputLinks: compactLinks(module?.outputLinks),
-    auxOutputLinks: compactLinks(module?.auxOutputLinks),
+    outputLinkSlots: compactSlots(module?.outputLinkSlots),
     controllerCount: countControllers(module?.controllers),
     dataChunkCount: module?.dataChunkCount ?? dataChunks.length,
     embeddedCount: dataChunks.filter((chunk) => chunk.container).length,
@@ -70,6 +70,10 @@ function countControllers(controllers) {
 
 function compactLinks(links) {
   return (links ?? []).filter((link) => Number.isInteger(link) && link >= 0);
+}
+
+function compactSlots(slots) {
+  return (slots ?? []).filter((slot) => Number.isInteger(slot));
 }
 
 function linkName(modules, index) {
@@ -95,9 +99,7 @@ function moduleEdges(modules) {
   const edges = [];
   modules.forEach((module, index) => {
     addEdges(edges, modules, index, module.inputLinks, "input", "input");
-    addEdges(edges, modules, index, module.auxInputLinks, "input", "auxInput");
     addEdges(edges, modules, index, module.outputLinks, "output", "output");
-    addEdges(edges, modules, index, module.auxOutputLinks, "output", "auxOutput");
   });
 
   const seen = new Set();
@@ -111,12 +113,11 @@ function moduleEdges(modules) {
   });
 }
 
-function patternSummary(pattern) {
+function patternSummary(pattern, index) {
   const events = pattern?.events ?? [];
   return {
-    index: pattern?.index,
+    index,
     name: pattern?.name,
-    layer: pattern?.layer,
     position: pattern?.position,
     tracks: pattern?.tracks,
     lines: pattern?.lines,
@@ -207,20 +208,23 @@ function formatPosition(position) {
   return values.length ? ` pos=(${values.join(",")})` : "";
 }
 
-function formatLinkList(title, links, modules) {
+function formatLinkList(title, links, slots, modules) {
   if (!links?.length) {
     return "";
   }
-  return ` ${title}=[${links.map((index) => linkName(modules, index)).join(", ")}]`;
+  return ` ${title}=[${links
+    .map((index, linkIndex) => {
+      const slot = slots?.[linkIndex];
+      return `${linkName(modules, index)}${slot !== undefined ? ` slot=${slot}` : ""}`;
+    })
+    .join(", ")}]`;
 }
 
 function formatModule(module, modules, level) {
   const flags = module.flags.length ? ` flags=${module.flags.join(",")}` : "";
   const links = [
-    formatLinkList("in", module.inputLinks, modules),
-    formatLinkList("auxIn", module.auxInputLinks, modules),
-    formatLinkList("out", module.outputLinks, modules),
-    formatLinkList("auxOut", module.auxOutputLinks, modules),
+    formatLinkList("in", module.inputLinks, module.inputLinkSlots, modules),
+    formatLinkList("out", module.outputLinks, module.outputLinkSlots, modules),
   ].join("");
   const chunks = module.dataChunkCount ? ` dataChunks=${module.dataChunkCount}` : "";
   const embedded = module.embeddedCount ? ` embedded=${module.embeddedCount}` : "";
@@ -263,7 +267,6 @@ function formatPattern(pattern, level, eventLimit) {
     `lines=${formatValue(pattern.lines)}`,
     `tracks=${formatValue(pattern.tracks)}`,
     `events=${pattern.eventCount}`,
-    pattern.layer !== undefined ? `layer=${pattern.layer}` : "",
     formatPosition(pattern.position).trim(),
   ]
     .filter(Boolean)

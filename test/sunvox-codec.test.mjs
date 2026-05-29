@@ -39,11 +39,19 @@ test("parses project into structured metadata", async () => {
   assert.equal(document.project.version, 33554437);
   assert.equal(document.project.bpm, 125);
   assert.equal(document.project.speed, 6);
+  assert.equal(document.project.currentLayer, 0);
+  assert.equal(document.project.lineCounter, 17);
+  assert.equal(document.project.selectedModule, 2);
+  assert.equal(document.project.currentPattern, 0);
+  assert.equal(document.project.currentPatternTrack, 1);
+  assert.equal(document.project.currentPatternLine, 0);
   assert.equal(document.project.chunks, undefined);
   assert.ok(document.patterns.length > 0);
   assert.ok(document.modules.length > 0);
   assert.equal(document.patterns.some((pattern) => Array.isArray(pattern.chunks)), false);
   assert.equal(document.modules.some((module) => Array.isArray(module.chunks)), false);
+  assert.equal(document.patterns[0].index, undefined);
+  assert.equal(document.patterns[0].layer, undefined);
 });
 
 test("parses synth into a structured module", async () => {
@@ -59,10 +67,10 @@ test("parses synth into a structured module", async () => {
   assert.equal(document.module.dataChunks[0].container.magic, "SVOX");
   assert.equal(document.module.dataChunks[0].container.project.name, "Shepard tone");
   assert.deepEqual(document.module.midi, {
-    inputIndex: 0,
-    inputChannel: 0,
-    inputBank: -1,
-    inputProgram: 4294967295,
+    inputFlags: 0,
+    outputChannel: 0,
+    outputBank: -1,
+    outputProgram: 4294967295,
   });
   assert.equal(document.module.dataChunks.length, 3);
   assert.deepEqual(document.module.controllers, {
@@ -939,7 +947,7 @@ test("decodes structured flags as named bitflags", async () => {
   const multiCtl = document.modules.find((module) => module.type === "MultiCtl");
 
   assert.deepEqual(document.project.flags, {});
-  assert.deepEqual(document.patterns[0].displayFlags, {});
+  assert.deepEqual(document.patterns[0].flags, {});
   assert.equal(multiCtl.flags.exists, true);
   assert.equal(multiCtl.flags.effect, true);
   assert.equal(multiCtl.flags.noScopeBuffer, true);

@@ -11,7 +11,9 @@ test("builds a readable outline for SunVox projects", async () => {
   assert.equal(outline.project.name, "2022-04-17 03-24");
   assert.equal(outline.project.patternCount, 1);
   assert.equal(outline.modules.some((module) => module.name === "DrumSynth"), true);
+  assert.equal(outline.modules.some((module) => module.inputLinkSlots?.length), true);
   assert.equal(outline.links.some((edge) => edge._toName === "Output"), true);
+  assert.equal(outline.links.some((edge) => edge.kind === "auxInput" || edge.kind === "auxOutput"), false);
   assert.equal(outline.patterns[0].events[0].note, "C4");
   assert.match(text, /SunVox Outline: music[\\/]2022-04-17\.sunvox/u);
   assert.match(text, /#2 DrumSynth \[DrumSynth\]/u);
