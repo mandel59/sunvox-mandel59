@@ -31,6 +31,7 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.dbModulesMissingFromSource, 0);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
+  assert.equal(metrics.summary.moduleLinkIssues, 0);
   assert.equal(metrics.summary.coverageGateFailures, 0);
   assert.equal(metrics.summary.unsampledDbModules, 0);
   assert.equal(metrics.summary.sampleCoveragePercent, 100);

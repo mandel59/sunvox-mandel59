@@ -202,6 +202,75 @@ function isSyntheticModuleType(type) {
   return type.startsWith("(") && type.endsWith(")");
 }
 
+function coverageModuleKind(module) {
+  if (module?.type) {
+    return module.type;
+  }
+  if (module?.flags?.output || module?.name === "Output") {
+    return "(output slot)";
+  }
+  if (module && Object.keys(module).length > 0) {
+    return "(missing STYP)";
+  }
+  return "(empty slot)";
+}
+
+function collectDocumentLinkIssues(document, source, path, issues) {
+  if (document.magic === "SSYN") {
+    for (const chunk of document.module?.dataChunks ?? []) {
+      if (chunk.container) {
+        collectDocumentLinkIssues(chunk.container, source, [...path, `dataChunk[${chunk.index}]`], issues);
+      }
+    }
+    return;
+  }
+
+  const modules = document.modules ?? [];
+  modules.forEach((module, moduleIndex) => {
+    for (const [field, slotsField] of [
+      ["inputLinks", "inputLinkSlots"],
+      ["outputLinks", "outputLinkSlots"],
+    ]) {
+      const links = module?.[field];
+      if (!Array.isArray(links)) {
+        continue;
+      }
+      links.forEach((linkedModule, linkIndex) => {
+        if (linkedModule === -1) {
+          return;
+        }
+        const issue = {
+          source,
+          path: [...path, moduleLabel(module, moduleIndex)].join(" / "),
+          module: moduleIndex,
+          field,
+          linkIndex,
+          linkedModule,
+          slot: module?.[slotsField]?.[linkIndex],
+        };
+        if (!Number.isInteger(linkedModule)) {
+          issues.push({ ...issue, reason: "non-integer module reference" });
+        } else if (linkedModule < 0 || linkedModule >= modules.length) {
+          issues.push({ ...issue, reason: "module reference out of range" });
+        } else if (coverageModuleKind(modules[linkedModule]) === "(empty slot)") {
+          issues.push({ ...issue, reason: "module reference points to an empty slot" });
+        }
+      });
+    }
+
+    for (const chunk of module?.dataChunks ?? []) {
+      if (chunk.container) {
+        collectDocumentLinkIssues(
+          chunk.container,
+          source,
+          [...path, moduleLabel(module, moduleIndex), `dataChunk[${chunk.index}]`],
+          issues,
+        );
+      }
+    }
+  });
+}
+
 function collectDocumentModules(document, source, path, modules) {
   const documentModules =
     document.magic === "SSYN" ? (document.module ? [document.module] : []) : document.modules ?? [];
@@ -227,11 +296,13 @@ export function collectCoverage(sampleRoots = DEFAULT_SAMPLE_ROOTS) {
   const sampleFiles = findFiles(sampleRoots, SAMPLE_EXTENSIONS);
   const modules = [];
   const errors = [];
+  const linkIssues = [];
 
   for (const file of sampleFiles) {
     try {
       const document = parseContainer(readFileSync(file));
       collectDocumentModules(document, relative(process.cwd(), file), [], modules);
+      collectDocumentLinkIssues(document, relative(process.cwd(), file), [], linkIssues);
     } catch (error) {
       errors.push({ file: relative(process.cwd(), file), message: error.message });
     }
@@ -308,6 +379,7 @@ export function collectCoverage(sampleRoots = DEFAULT_SAMPLE_ROOTS) {
     moduleExtraChunks,
     opaqueDataChunks,
     modulesWithoutType,
+    linkIssues,
   };
 }
 
@@ -1122,6 +1194,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       signedRoundTripChunks: chunkStorage.signedRoundTripChunks,
       chunkStorageReviewPercent: chunkStorage.reviewPercent,
       scalarChunkStorageReviewPercent: chunkStorage.scalarReviewPercent,
+      moduleLinkIssues: coverage.linkIssues.length,
       coverageGateFailures: coverageGateFailures.length,
     },
     gates: {
@@ -1189,6 +1262,7 @@ function formatCoverage(coverage, options = {}) {
       group.name = row.name ?? "";
     },
   );
+  const linkIssueSummary = aggregateRows(coverage.linkIssues, (row) => row.reason);
 
   const lines = [
     "SunVox DB coverage",
@@ -1272,6 +1346,12 @@ function formatCoverage(coverage, options = {}) {
       { header: "name", value: (row) => row.name ?? "" },
       { header: "chunks", value: (row) => row.count },
     ]),
+    "",
+    "Module link issues:",
+    formatTable(linkIssueSummary, [
+      { header: "reason", value: (row) => row.key },
+      { header: "links", value: (row) => row.count },
+    ]),
   ];
 
   if (options.details) {
@@ -1317,6 +1397,17 @@ function formatCoverage(coverage, options = {}) {
         { header: "source", value: (row) => row.source },
         { header: "path", value: (row) => row.path },
       ]),
+      "",
+      "Module link issue details:",
+      formatTable(coverage.linkIssues, [
+        { header: "reason", value: (row) => row.reason },
+        { header: "module", value: (row) => row.module },
+        { header: "field", value: (row) => row.field },
+        { header: "linkIndex", value: (row) => row.linkIndex },
+        { header: "linkedModule", value: (row) => row.linkedModule },
+        { header: "source", value: (row) => row.source },
+        { header: "path", value: (row) => row.path },
+      ]),
     );
   }
 
@@ -1340,6 +1431,7 @@ function coverageFailures(coverage) {
     { name: "controller extras", count: coverage.controllerExtras.length },
     { name: "module extra chunks", count: coverage.moduleExtraChunks.length },
     { name: "opaque data chunks", count: coverage.opaqueDataChunks.length },
+    { name: "module link issues", count: coverage.linkIssues.length },
   ].filter((failure) => failure.count > 0);
 }
 
@@ -1477,6 +1569,7 @@ function formatProjectMetrics(metrics) {
     { metric: "Reviewed scalar chunks", value: metrics.summary.reviewedScalarChunks },
     { metric: "Scalar chunk storage review", value: formatPercent(metrics.summary.scalarChunkStorageReviewPercent) },
     { metric: "Signed round-trip chunks", value: metrics.summary.signedRoundTripChunks },
+    { metric: "Module link issues", value: metrics.summary.moduleLinkIssues },
     { metric: "Coverage gate failures", value: metrics.summary.coverageGateFailures },
   ];
 
