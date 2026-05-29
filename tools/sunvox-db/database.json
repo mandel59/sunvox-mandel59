@@ -1521,7 +1521,7 @@
               { "name": "selfMod", "label": "Self-modulation", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 5 },
               { "name": "feedback", "label": "Feedback", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 5, "scale": "exp3" },
               { "name": "modulationType", "label": "Modulation type", "type": "enum", "enum": "modulation_type2", "min": 0, "max": 11, "default": 0, "normal": -1, "group": 5 },
-              { "name": "outputMode", "label": "Output mode", "type": "int32", "min": 0, "max": [15, 7, 3, 1], "default": [0, 0, 0, 2], "normal": -1, "group": 5, "repeatCount": 4 }
+              { "name": "outputMode", "label": "Output mode", "type": "int32", "min": 0, "max": [31, 15, 7, 3], "default": [0, 0, 0, 2], "normal": -1, "group": 5, "repeatCount": 4 }
             ]
           }
         },

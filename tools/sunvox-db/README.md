@@ -113,6 +113,7 @@ npm run sunvox:inspect -- controller-diff --json
 npm run sunvox:inspect -- scaffold "Distortion"
 npm run sunvox:inspect -- check
 npm run sunvox:validate -- music/2022-04-17.sunvox
+npm run sunvox:validate:all
 npm run sunvox:verify:all
 ```
 
@@ -164,6 +165,9 @@ npm run sunvox:verify:all
   binary SunVox file or decoded JSON document. The first rules cover positive
   project tempo values, module name byte budgets, semantic link targets, and
   controller values outside DB-declared ranges or enum values.
+- `sunvox:validate:all` applies the same validation to every checked-in
+  `.sunvox` and `.sunsynth` sample, and treats any warning or error as a quality
+  gate failure.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
