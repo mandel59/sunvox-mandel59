@@ -7,6 +7,7 @@
     "build": "node tools/build.mjs",
     "preview": "vite preview --config tools/vite.config.mjs",
     "licenses:check": "node tools/check-licenses.mjs",
+    "quality": "node tools/quality-check.mjs",
     "test": "node --test",
     "sunvox:encode": "node tools/sunvox-codec.mjs encode",
     "sunvox:decode": "node tools/sunvox-codec.mjs decode",

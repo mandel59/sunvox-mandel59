@@ -101,22 +101,16 @@ npm run sunvox:verify:all
 
 ## Local Quality Loop
 
-Run this loop before committing codec or DB changes:
+Run the combined quality loop before committing codec or DB changes:
 
 ```sh
-npm run sunvox:fixtures:generate
-npm run sunvox:lib:check
-npm test
-npm run sunvox:metrics
-npm run sunvox:coverage:check
-npm run sunvox:inspect -- coverage
-npm run sunvox:inspect -- report
-npm run sunvox:controller-diff
-npm run sunvox:inspect -- check
-npm run sunvox:verify:all
-npm run build
-git diff --check
+npm run quality
 ```
+
+The command runs license notice checks, fixture regeneration, SunVox JS/WASM
+compatibility, Node tests, metrics, DB structure checks, coverage and controller
+metadata gates, sample round-trip verification, the frontend build, and
+`git diff --check`.
 
 ## Round-Trip Policy
 

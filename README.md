@@ -38,6 +38,12 @@ npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 ```
 
+Run the local quality gate before committing codec, DB, or frontend changes:
+
+```sh
+npm run quality
+```
+
 ## Licenses
 
 ### Instruments under [instruments/](instruments/)
