@@ -191,6 +191,17 @@
       "additionalProperties": {
         "type": "object",
         "properties": {
+          "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+          "inputs": { "type": "integer", "minimum": 0 },
+          "outputs": { "type": "integer", "minimum": 0 },
+          "flags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "flags2": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
           "dataChunks": {
             "type": "array",
             "items": {

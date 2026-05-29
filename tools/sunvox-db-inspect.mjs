@@ -428,6 +428,61 @@ function extractCaseReturnExpression(text, command) {
   return pattern.exec(text)?.[1]?.trim();
 }
 
+function extractLocalDefines(text) {
+  const defines = new Map();
+  for (const match of text.matchAll(/^#define\s+([A-Z0-9_]+)\s+(.+)$/gmu)) {
+    defines.set(match[1], match[2].replace(/\/\/.*$/u, "").trim());
+  }
+  return defines;
+}
+
+function resolveIntegerExpression(expression, defines) {
+  if (expression === undefined) {
+    return undefined;
+  }
+  const normalized = expression.trim();
+  if (/^-?\d+$/u.test(normalized)) {
+    return Number(normalized);
+  }
+  const defined = defines.get(normalized);
+  if (defined !== undefined && /^-?\d+$/u.test(defined)) {
+    return Number(defined);
+  }
+  return normalized;
+}
+
+const FLAG_NAME_ALIASES = new Map([
+  ["NO_SCOPE_BUF", "noScopeBuffer"],
+  ["OUTPUT_IS_EMPTY", "outputIsEmpty"],
+]);
+
+const FLAG_EXPRESSION_ALIASES = new Map([
+  ["PSYNTH_FLAG2_NOTE_IO", ["noteSender", "noteReceiver"]],
+]);
+
+function flagNameFromMacro(macro) {
+  const normalized = macro.replace(/^PSYNTH_FLAG2?_/u, "");
+  return FLAG_NAME_ALIASES.get(normalized) ?? identifierFromLabel(normalized);
+}
+
+function decodeFlagExpression(expression) {
+  if (expression === undefined) {
+    return undefined;
+  }
+  const flags = [];
+  for (const token of expression.split("|").map((part) => part.trim()).filter(Boolean)) {
+    const alias = FLAG_EXPRESSION_ALIASES.get(token);
+    if (alias) {
+      flags.push(...alias);
+    } else if (/^PSYNTH_FLAG2?_[A-Z0-9_]+$/u.test(token)) {
+      flags.push(flagNameFromMacro(token));
+    } else {
+      flags.push(token);
+    }
+  }
+  return flags;
+}
+
 function countMatches(text, pattern) {
   return [...text.matchAll(pattern)].length;
 }
@@ -459,6 +514,11 @@ function loadStringTable(stringsFile = DEFAULT_STRINGS_FILE) {
 
 function scanSourceFile(file) {
   const text = readFileSync(file, "utf8");
+  const defines = extractLocalDefines(text);
+  const inputs = extractCaseReturnExpression(text, "PS_CMD_GET_INPUTS_NUM");
+  const outputs = extractCaseReturnExpression(text, "PS_CMD_GET_OUTPUTS_NUM");
+  const flags = extractCaseReturnExpression(text, "PS_CMD_GET_FLAGS");
+  const flags2 = extractCaseReturnExpression(text, "PS_CMD_GET_FLAGS2");
   const fallbackName = file
     .replace(/\\/gu, "/")
     .replace(/^.*\/psynths_/u, "")
@@ -470,10 +530,10 @@ function scanSourceFile(file) {
     showOffsets: countMatches(text, /psynth_set_ctl_show_offset\s*\(/gu),
     controlFlags: countMatches(text, /psynth_set_ctl_flags\s*\(/gu),
     color: extractCaseReturnString(text, "PS_CMD_GET_COLOR"),
-    inputs: extractCaseReturnExpression(text, "PS_CMD_GET_INPUTS_NUM"),
-    outputs: extractCaseReturnExpression(text, "PS_CMD_GET_OUTPUTS_NUM"),
-    flags: extractCaseReturnExpression(text, "PS_CMD_GET_FLAGS"),
-    flags2: extractCaseReturnExpression(text, "PS_CMD_GET_FLAGS2"),
+    inputs: resolveIntegerExpression(inputs, defines),
+    outputs: resolveIntegerExpression(outputs, defines),
+    flags: decodeFlagExpression(flags),
+    flags2: decodeFlagExpression(flags2),
   };
 }
 
@@ -490,6 +550,37 @@ function collectModuleCatalogGaps(sourceModules) {
       missingDbModules: sourceModulesWithField.length - dbModulesWithField.length,
     };
   });
+}
+
+function catalogValueText(value) {
+  return Array.isArray(value) ? value.join("|") : String(value);
+}
+
+function catalogValuesEqual(left, right) {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) && left.join("\0") === right.join("\0");
+  }
+  return left === right;
+}
+
+function checkModuleCatalogMetadata(errors, moduleName, moduleDefinition, source) {
+  if (!source) {
+    return;
+  }
+  for (const field of MODULE_CATALOG_FIELDS) {
+    const sourceValue = source[field];
+    if (sourceValue === undefined) {
+      continue;
+    }
+    const dbValue = moduleDefinition[field];
+    if (dbValue === undefined) {
+      errors.push(`${moduleName}: missing module catalog ${field}`);
+    } else if (!catalogValuesEqual(dbValue, sourceValue)) {
+      errors.push(
+        `${moduleName}: module catalog ${field} mismatch source=${catalogValueText(sourceValue)} db=${catalogValueText(dbValue)}`,
+      );
+    }
+  }
 }
 
 function splitArguments(text) {
@@ -1169,6 +1260,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
     }
 
     const source = sourceByName.get(moduleName);
+    checkModuleCatalogMetadata(errors, moduleName, moduleDefinition, source);
     if (
       source &&
       moduleName !== "MetaModule" &&
@@ -1559,7 +1651,7 @@ function formatSourceReport(report) {
     "DB modules missing from source scan:",
     report.missingFromSource.length ? report.missingFromSource.map((module) => `  - ${module}`).join("\n") : "(none)",
     "",
-    "Module catalog fields not yet represented in DB:",
+    "Module catalog field DB coverage:",
     formatTable(report.moduleCatalogGaps, [
       { header: "field", value: (row) => row.field },
       { header: "sourceModules", value: (row) => row.sourceModules },

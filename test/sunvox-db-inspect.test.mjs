@@ -72,12 +72,12 @@ test("source report summarizes module catalog metadata gaps", () => {
 
   assert.equal(report.sourceModules.length, 42);
   assert.equal(colorGap.sourceModules, 42);
-  assert.equal(colorGap.dbModules, 0);
-  assert.equal(colorGap.missingDbModules, 42);
+  assert.equal(colorGap.dbModules, 42);
+  assert.equal(colorGap.missingDbModules, 0);
   assert.equal(amplifier.color, "#E47FFF");
-  assert.equal(amplifier.inputs, "MODULE_INPUTS");
-  assert.equal(amplifier.outputs, "MODULE_OUTPUTS");
-  assert.equal(amplifier.flags, "PSYNTH_FLAG_EFFECT");
+  assert.equal(amplifier.inputs, 2);
+  assert.equal(amplifier.outputs, 2);
+  assert.deepEqual(amplifier.flags, ["effect"]);
 });
 
 test("scaffold preserves signed, unit, empty, and suffix enum value names", () => {
@@ -134,6 +134,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     valueKind: storageChunk.valueKind,
     signedRoundTrip: storageChunk.signedRoundTrip,
   };
+  const amplifier = SUNVOX_DB.modules.Amplifier;
+  const previousAmplifierColor = amplifier.color;
   SUNVOX_DB.modules[moduleName] = {
     controllers: [],
     dataChunks: [
@@ -172,9 +174,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
   storageChunk.valueKind = "__missing_value_kind";
   storageChunk.signedRoundTrip = true;
   storageChunk.type = "uint32";
+  amplifier.color = "#000000";
 
   try {
-    const check = collectDbCheck("__missing_source_root__");
+    const check = collectDbCheck();
     const errors = check.errors.join("\n");
 
     assert.equal(check.ok, false);
@@ -215,11 +218,13 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
     assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);
     assert.match(errors, /chunk SMIC is marked signedRoundTrip but uses uint32 payload type/u);
+    assert.match(errors, /Amplifier: module catalog color mismatch source=#E47FFF db=#000000/u);
   } finally {
     projectFields.length = previousProjectFieldCount;
     linkSlotChunk.linkSlots = previousLinkSlots;
     bitfield.fields = previousBitfieldFields;
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
+    amplifier.color = previousAmplifierColor;
     if (previousModule) {
       SUNVOX_DB.modules[moduleName] = previousModule;
     } else {

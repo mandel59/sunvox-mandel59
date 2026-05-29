@@ -1030,6 +1030,10 @@
   },
   "modules": {
     "Amplifier": {
+      "color": "#E47FFF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "balance", "label": "Balance", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
@@ -1043,6 +1047,10 @@
       ]
     },
     "ADSR": {
+      "color": "#FF7F95",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["generator", "effect"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 0 },
         { "index": 1, "name": "attack", "label": "Attack", "type": "int32", "min": 0, "max": 10000, "default": 100, "normal": -1, "group": 1, "scale": "exp3", "unit": "ms" },
@@ -1062,6 +1070,10 @@
       ]
     },
     "Analog generator": {
+      "color": "#AEFF00",
+      "inputs": 0,
+      "outputs": 2,
+      "flags": ["generator"],
       "dataChunks": [
         { "index": 0, "name": "drawnWaveform", "type": "int8Array", "sourceType": "int8", "valueKind": "waveform", "sourceSymbol": "psynths_generator2.cpp:data->drawn_wave", "count": 32 },
         {
@@ -1119,6 +1131,10 @@
       ]
     },
     "Compressor": {
+      "color": "#FF3000",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "dontFillInput"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "threshold", "label": "Threshold", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 1 },
@@ -1130,6 +1146,11 @@
       ]
     },
     "Ctl2Note": {
+      "color": "#FFC2BB",
+      "inputs": 0,
+      "outputs": 0,
+      "flags": ["noScopeBuffer", "getStopCommands", "noRender"],
+      "flags2": ["noteSender", "getMutedCommands"],
       "controllers": [
         { "index": 0, "name": "pitch", "label": "Pitch", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 0 },
         { "index": 1, "name": "firstNote", "label": "First note", "type": "int32", "min": 0, "max": 120, "default": 0, "normal": -1, "group": 0 },
@@ -1144,11 +1165,20 @@
       ]
     },
     "DC Blocker": {
+      "color": "#FFC77F",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
       ]
     },
     "Delay": {
+      "color": "#7FFFDB",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getSpeedChanges"],
+      "flags2": ["noteSender", "noteReceiver"],
       "controllers": [
         { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
@@ -1166,6 +1196,10 @@
       ]
     },
     "Distortion": {
+      "color": "#7FFF88",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0 },
         { "index": 1, "name": "type", "label": "Type", "type": "enum", "enum": "distortion_type", "min": 0, "max": 10, "default": 0, "normal": -1, "group": 1 },
@@ -1177,6 +1211,10 @@
       ]
     },
     "EQ": {
+      "color": "#7FFDFF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "low", "label": "Low", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "middle", "label": "Middle", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
@@ -1185,12 +1223,20 @@
       ]
     },
     "Feedback": {
+      "color": "#FF0000",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getRenderSetupCommands", "feedback"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 10000, "default": 1000, "normal": -1, "group": 0 },
         { "index": 1, "name": "channels", "label": "Channels", "type": "enum", "enum": "stereo_mono", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
       ]
     },
     "DrumSynth": {
+      "color": "#00CBFF",
+      "inputs": 0,
+      "outputs": 2,
+      "flags": ["generator"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
@@ -1210,6 +1256,10 @@
       ]
     },
     "Echo": {
+      "color": "#FFA37F",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getSpeedChanges"],
       "controllers": [
         { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 256, "default": 40, "normal": -1, "group": 0 },
@@ -1223,6 +1273,11 @@
       ]
     },
     "Filter": {
+      "color": "#7FD9FF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getSpeedChanges"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "freq", "label": "Freq", "type": "int32", "min": 0, "max": 14000, "default": 14000, "normal": -1, "group": 0, "scale": "exp3", "unit": "Hz" },
@@ -1242,6 +1297,11 @@
       ]
     },
     "Filter Pro": {
+      "color": "#7FB5FF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getSpeedChanges"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 32768, "normal": -1, "group": 0 },
         { "index": 1, "name": "type", "label": "Type", "type": "enum", "enum": "filter2_type", "min": 0, "max": 10, "default": 0, "normal": -1, "group": 0 },
@@ -1263,6 +1323,11 @@
       ]
     },
     "Flanger": {
+      "color": "#9C7FFF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getSpeedChanges"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
@@ -1277,6 +1342,10 @@
       ]
     },
     "FFT": {
+      "color": "#006BFF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "sampleRate", "label": "Sample rate", "type": "enum", "enum": "fft_sample_rate", "min": 0, "max": 9, "default": 5, "normal": -1, "group": 0 },
         { "index": 1, "name": "channels", "label": "Channels", "type": "enum", "enum": "mono_stereo", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
@@ -1298,6 +1367,10 @@
       ]
     },
     "FM": {
+      "color": "#00E3FF",
+      "inputs": 0,
+      "outputs": 2,
+      "flags": ["generator"],
       "controllers": [
         { "index": 0, "name": "cVolume", "label": "C.Volume", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": -1, "group": 0 },
         { "index": 1, "name": "mVolume", "label": "M.Volume", "type": "int32", "min": 0, "max": 256, "default": 48, "normal": -1, "group": 0 },
@@ -1319,6 +1392,10 @@
       ]
     },
     "FMX": {
+      "color": "#009BFF",
+      "inputs": 1,
+      "outputs": 2,
+      "flags": ["generator", "effect"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 0 },
         { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
@@ -1365,6 +1442,10 @@
       ]
     },
     "Generator": {
+      "color": "#05FF00",
+      "inputs": 1,
+      "outputs": 2,
+      "flags": ["generator", "effect"],
       "dataChunks": [
         { "index": 0, "name": "drawnWaveform", "type": "int8Array", "sourceType": "int8", "valueKind": "waveform", "sourceSymbol": "psynths_generator.cpp:data->drawn_wave", "count": 32 }
       ],
@@ -1382,6 +1463,10 @@
       ]
     },
     "Kicker": {
+      "color": "#009BFF",
+      "inputs": 0,
+      "outputs": 2,
+      "flags": ["generator"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "waveform", "label": "Waveform", "type": "enum", "enum": "kicker_wave_type", "min": 0, "max": 2, "default": 2, "normal": -1, "group": 0 },
@@ -1395,6 +1480,11 @@
       ]
     },
     "LFO": {
+      "color": "#E47FFF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getSpeedChanges"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "type", "label": "Type", "type": "enum", "enum": "lfo_type", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
@@ -1414,6 +1504,11 @@
       ]
     },
     "Loop": {
+      "color": "#FF7FC5",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getSpeedChanges"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "length", "label": "Length", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
@@ -1426,6 +1521,11 @@
       ]
     },
     "Glide": {
+      "color": "#4EFF00",
+      "inputs": 0,
+      "outputs": 0,
+      "flags": ["generator", "noScopeBuffer", "outputIsEmpty"],
+      "flags2": ["noteSender"],
       "controllers": [
         { "index": 0, "name": "response", "label": "Response", "type": "int32", "min": 0, "max": 1000, "default": 500, "normal": -1, "group": 0 },
         { "index": 1, "name": "sampleRate", "label": "Sample rate", "type": "int32", "min": 1, "max": 32768, "default": 150, "normal": 150, "group": 0, "unit": "Hz", "scale": "exp3" },
@@ -1440,6 +1540,10 @@
       ]
     },
     "GPIO": {
+      "color": "#847FFF",
+      "inputs": 1,
+      "outputs": 1,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "out", "label": "Out", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
         { "index": 1, "name": "outPin", "label": "Out pin", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 0 },
@@ -1451,12 +1555,20 @@
       ]
     },
     "Input": {
+      "color": "#009BFF",
+      "inputs": 0,
+      "outputs": 2,
+      "flags": ["generator"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 1024, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "channels", "label": "Channels", "type": "enum", "enum": "mono_stereo", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 }
       ]
     },
     "MetaModule": {
+      "color": "#FF7800",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "useMutex"],
       "dataChunks": [
         { "index": 0, "name": "embeddedProject", "type": "container", "sourceType": "container", "valueKind": "container", "sourceSymbol": "psynths_metamodule.cpp:sunvox_file", "magic": ["SVOX"] },
         {
@@ -1504,6 +1616,10 @@
       ]
     },
     "Modulator": {
+      "color": "#FF7FD1",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "dontFillInput"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "modulationType", "label": "Modulation type", "type": "enum", "enum": "modulation_type", "min": 0, "max": 10, "default": 0, "normal": -1, "group": 0 },
@@ -1513,6 +1629,11 @@
       ]
     },
     "MultiSynth": {
+      "color": "#DEFF00",
+      "inputs": 0,
+      "outputs": 0,
+      "flags": ["generator", "noScopeBuffer", "noRender"],
+      "flags2": ["noteSender", "noteReceiver", "getMutedCommands"],
       "dataChunks": [
         { "index": 0, "name": "velocityByPitchCurve", "type": "uint8Array", "sourceType": "uint8", "valueKind": "curve", "sourceSymbol": "psynths_multisynth.cpp:g_curve_chunk_id[0]", "count": 128 },
         {
@@ -1547,6 +1668,10 @@
       ]
     },
     "MultiCtl": {
+      "color": "#DEFF00",
+      "inputs": 0,
+      "outputs": 0,
+      "flags": ["effect", "noScopeBuffer", "outputIsEmpty"],
       "dataChunks": [
         {
           "index": 0,
@@ -1580,6 +1705,10 @@
       ]
     },
     "Sound2Ctl": {
+      "color": "#FFFFFF",
+      "inputs": 2,
+      "outputs": 0,
+      "flags": ["effect", "noScopeBuffer", "outputIsEmpty"],
       "dataChunks": [
         {
           "index": 0,
@@ -1609,6 +1738,10 @@
       ]
     },
     "Smooth": {
+      "color": "#C07FFF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "rise", "label": "Rise", "type": "int32", "min": 0, "max": 32768, "default": 5000, "normal": -1, "group": 0, "scale": "exp3" },
         { "index": 1, "name": "fall", "label": "Fall", "type": "int32", "min": 0, "max": 32768, "default": 5000, "normal": -1, "group": 0, "scale": "exp3" },
@@ -1619,6 +1752,10 @@
       ]
     },
     "SpectraVoice": {
+      "color": "#FF00E8",
+      "inputs": 0,
+      "outputs": 2,
+      "flags": ["generator"],
       "dataChunks": [
         { "index": 0, "name": "harmonicFrequencies", "type": "uint16Array", "sourceType": "uint16", "valueKind": "harmonics", "sourceSymbol": "psynths_spectravoice.cpp:data->freq", "count": 16 },
         { "index": 1, "name": "harmonicVolumes", "type": "uint8Array", "sourceType": "uint8", "valueKind": "harmonics", "sourceSymbol": "psynths_spectravoice.cpp:data->freq_vol", "count": 16 },
@@ -1642,6 +1779,11 @@
       ]
     },
     "Velocity2Ctl": {
+      "color": "#FF977F",
+      "inputs": 0,
+      "outputs": 0,
+      "flags": ["generator", "noScopeBuffer", "noRender"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "onNoteOff", "label": "On NoteOFF", "type": "enum", "enum": "velocity2ctl_noteoff_action", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 0 },
         { "index": 1, "name": "outMin", "label": "OUT min", "type": "int32", "min": 0, "max": 32768, "default": 0, "normal": -1, "group": 1 },
@@ -1651,6 +1793,11 @@
       ]
     },
     "Vibrato": {
+      "color": "#7FFFC4",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect", "getSpeedChanges"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "amplitude", "label": "Amplitude", "type": "int32", "min": 0, "max": 256, "default": 16, "normal": -1, "group": 0 },
@@ -1662,6 +1809,10 @@
       ]
     },
     "Vocal filter": {
+      "color": "#FFC2BB",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "formantWidth", "label": "Formant width", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "unit": "Hz" },
@@ -1680,6 +1831,10 @@
       ]
     },
     "Vorbis player": {
+      "color": "#0082FF",
+      "inputs": 0,
+      "outputs": 2,
+      "flags": ["generator", "useMutex"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "originalSpeed", "label": "Original speed", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },
@@ -1692,6 +1847,11 @@
       ]
     },
     "Pitch2Ctl": {
+      "color": "#FFC2BB",
+      "inputs": 0,
+      "outputs": 0,
+      "flags": ["generator", "noScopeBuffer", "noRender"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "mode", "label": "Mode", "type": "enum", "enum": "pitch2ctl_mode", "min": 0, "max": 1, "default": 0, "normal": -1, "group": 0 },
         { "index": 1, "name": "onNoteOff", "label": "On NoteOFF", "type": "enum", "enum": "pitch2ctl_noteoff_action", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 0 },
@@ -1703,6 +1863,11 @@
       ]
     },
     "Pitch shifter": {
+      "color": "#FFD800",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
+      "flags2": ["noteReceiver"],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "pitch", "label": "Pitch", "type": "int32", "min": 0, "max": 1200, "default": 600, "normal": 600, "group": 0, "displayOffset": -600, "unit": "semitone/10" },
@@ -1714,6 +1879,11 @@
       ]
     },
     "Pitch Detector": {
+      "color": "#FFC000",
+      "inputs": 1,
+      "outputs": 0,
+      "flags": ["effect", "noScopeBuffer", "outputIsEmpty", "getStopCommands"],
+      "flags2": ["noteSender", "getMutedCommands"],
       "controllers": [
         { "index": 0, "name": "algorithm", "label": "Algorithm", "type": "enum", "enum": "pitch_detector_algorithm", "min": 0, "max": 3, "default": 1, "normal": 1, "group": 0 },
         { "index": 1, "name": "threshold", "label": "Threshold", "type": "int32", "min": 0, "max": 10000, "default": 80, "normal": -1, "group": 0, "scale": "exp3" },
@@ -1730,6 +1900,10 @@
       ]
     },
     "Reverb": {
+      "color": "#FFD37F",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "controllers": [
         { "index": 0, "name": "dry", "label": "Dry", "type": "int32", "min": 0, "max": 256, "default": 256, "normal": -1, "group": 0 },
         { "index": 1, "name": "wet", "label": "Wet", "type": "int32", "min": 0, "max": 256, "default": 40, "normal": -1, "group": 0 },
@@ -1744,6 +1918,10 @@
       ]
     },
     "Sampler": {
+      "color": "#FF9000",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["generator", "getSpeedChanges", "effect", "useMutex"],
       "dataChunks": [
         {
           "index": 0,
@@ -1903,6 +2081,10 @@
       ]
     },
     "WaveShaper": {
+      "color": "#006BFF",
+      "inputs": 2,
+      "outputs": 2,
+      "flags": ["effect"],
       "dataChunks": [
         { "index": 0, "name": "curve", "type": "uint16Array", "sourceType": "uint16", "valueKind": "curve", "sourceSymbol": "psynths_waveshaper.cpp:data->shape", "count": 256 }
       ],

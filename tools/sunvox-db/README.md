@@ -26,8 +26,10 @@ The database covers the chunk labels already used by the codec,
 project/pattern/module chunk order, project/pattern/module flag bits, `CMID`
 MIDI binding bitfields, `SVPR` visualizer parameter bitfields, MIDI output
 channel names, signed MIDI output settings, signed project editor state fields,
-signed clone parent/sample rate metadata, and all 42 module controller layouts currently detected
-from `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`. It also identifies the
+signed clone parent/sample rate metadata, all 42 module catalog defaults
+(`color`, `inputs`, `outputs`, `flags`, and available `flags2`), and all 42
+module controller layouts currently detected from
+`var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`. It also identifies the
 first `MetaModule` data chunk as an embedded SunVox container, allowing the
 codec to recurse into it instead of keeping that payload as opaque base64.
 Additional `MetaModule` data chunk definitions describe user controller links,
@@ -80,8 +82,8 @@ npm run sunvox:verify:all
 - `coverage --details` includes per-module paths for raw or opaque data.
 - `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`, compares
   source module/controller declaration counts with the DB, and summarizes
-  source module catalog fields such as default color, input/output expressions,
-  and module flags that are not yet represented in the DB.
+  source module catalog fields such as default color, input/output counts, and
+  module flags.
 - `controller-diff` compares controller ranges, units, scales, display offsets,
   and source enum value sets against the DB. It is a triage report for deciding
   which declarative source facts should be copied into `database.json`; CI
