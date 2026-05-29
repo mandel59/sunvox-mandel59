@@ -422,12 +422,12 @@ function patternModuleToStored(value) {
 }
 
 function moduleControllerName(module, index) {
-  const definition = moduleControllerDefinitions(module?.type).find((controller) => controller.index === index);
+  const definition = moduleControllers(module?.type).find((controller) => controller.index === index);
   return definition ? controllerPath(definition) : undefined;
 }
 
 function moduleControllerIndex(module, name) {
-  return moduleControllerDefinitions(module?.type).find((controller) => controllerPath(controller) === name || controller.name === name)?.index;
+  return moduleControllers(module?.type).find((controller) => controllerPath(controller) === name || controller.name === name)?.index;
 }
 
 function decodePatternController(value, module, event) {

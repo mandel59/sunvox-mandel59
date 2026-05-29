@@ -26,6 +26,7 @@ const EDITED_PATTERN_EVENT = {
   noteValue: 49,
   velocity: 64,
 };
+const EDITED_PATTERN_CONTROLLER_VALUE = 321;
 const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
 const SV_INIT_FLAG_OFFLINE = 1 << 1;
 const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
@@ -323,18 +324,10 @@ function validateEditedCompatibility(report, expectations) {
     }
   }
   if (expectations.patternEvent) {
-    const { patternIndex, line, track, event } = expectations.patternEvent;
-    const actual = report.patternEvents?.find(
-      (candidate) => candidate.patternIndex === patternIndex && candidate.line === line && candidate.track === track,
-    );
-    for (const field of ["note", "velocity", "module", "controller", "value"]) {
-      if (actual?.[field] !== event[field]) {
-        throw new Error(
-          `SunVox lib exposed pattern #${patternIndex} event (${line},${track}) ${field} ` +
-            `${actual?.[field]}; expected ${event[field]}`,
-        );
-      }
-    }
+    validatePatternEvent(report, expectations.patternEvent);
+  }
+  if (expectations.patternControllerEvent) {
+    validatePatternEvent(report, expectations.patternControllerEvent);
   }
   if (expectations.moduleLink) {
     const { source, destination, destinationSlot } = expectations.moduleLink;
@@ -350,6 +343,21 @@ function validateEditedCompatibility(report, expectations) {
   }
 }
 
+function validatePatternEvent(report, expectation) {
+  const { patternIndex, line, track, event } = expectation;
+  const actual = report.patternEvents?.find(
+    (candidate) => candidate.patternIndex === patternIndex && candidate.line === line && candidate.track === track,
+  );
+  for (const field of ["note", "velocity", "module", "controller", "value"]) {
+    if (actual?.[field] !== event[field]) {
+      throw new Error(
+        `SunVox lib exposed pattern #${patternIndex} event (${line},${track}) ${field} ` +
+          `${actual?.[field]}; expected ${event[field]}`,
+      );
+    }
+  }
+}
+
 function firstEditableModule(modules) {
   return modules.findIndex((module) => module?.type && module.type !== "Output");
 }
@@ -360,6 +368,23 @@ function firstNamedPattern(patterns) {
 
 function firstPatternGrid(patterns) {
   return patterns.findIndex((pattern) => pattern?.tracks > 0 && pattern?.lines > 0);
+}
+
+function nextPatternEventPosition(pattern, usedPositions) {
+  for (let line = 0; line < pattern.lines; line += 1) {
+    for (let track = 0; track < pattern.tracks; track += 1) {
+      const key = `${line}:${track}`;
+      if (!usedPositions.has(key)) {
+        usedPositions.add(key);
+        return { line, track };
+      }
+    }
+  }
+  return undefined;
+}
+
+function firstModuleWithController(modules, controllerName) {
+  return modules.findIndex((module) => module?.type && Number.isInteger(controllerIndex(module.type, controllerName)));
 }
 
 function outputModuleIndex(modules) {
@@ -428,24 +453,55 @@ function applyPatternEventEdit(document, moduleIndex, expectations) {
     return;
   }
   const pattern = document.patterns[patternIndex];
+  const usedPositions = new Set();
+  const notePosition = nextPatternEventPosition(pattern, usedPositions);
+  if (!notePosition) {
+    return;
+  }
   pattern.events ??= [];
   pattern.events.push({
-    line: EDITED_PATTERN_EVENT.line,
-    track: EDITED_PATTERN_EVENT.track,
+    line: notePosition.line,
+    track: notePosition.track,
     note: EDITED_PATTERN_EVENT.note,
     velocity: EDITED_PATTERN_EVENT.velocity,
     module: moduleIndex,
   });
   expectations.patternEvent = {
     patternIndex,
-    line: EDITED_PATTERN_EVENT.line,
-    track: EDITED_PATTERN_EVENT.track,
+    line: notePosition.line,
+    track: notePosition.track,
     event: {
       note: EDITED_PATTERN_EVENT.noteValue,
       velocity: EDITED_PATTERN_EVENT.velocity,
       module: moduleIndex + 1,
       controller: 0,
       value: 0,
+    },
+  };
+
+  const controllerModuleIndex = firstModuleWithController(document.modules ?? [], "volume");
+  const controllerIndexValue = controllerIndex(document.modules?.[controllerModuleIndex]?.type, "volume");
+  const controllerPosition = nextPatternEventPosition(pattern, usedPositions);
+  if (controllerModuleIndex < 0 || !Number.isInteger(controllerIndexValue) || !controllerPosition) {
+    return;
+  }
+  pattern.events.push({
+    line: controllerPosition.line,
+    track: controllerPosition.track,
+    module: controllerModuleIndex,
+    controller: "volume",
+    value: EDITED_PATTERN_CONTROLLER_VALUE,
+  });
+  expectations.patternControllerEvent = {
+    patternIndex,
+    line: controllerPosition.line,
+    track: controllerPosition.track,
+    event: {
+      note: 0,
+      velocity: 0,
+      module: controllerModuleIndex + 1,
+      controller: (controllerIndexValue + 1) << 8,
+      value: EDITED_PATTERN_CONTROLLER_VALUE,
     },
   };
 }
@@ -487,15 +543,11 @@ function makeEditedCompatibilityCase(filePath, buffer) {
     label: `${relative(process.cwd(), filePath)} (codec edit)`,
     buffer: buildContainer(document),
     expectations,
-    patternEventProbes: expectations.patternEvent
-      ? [
-          {
-            patternIndex: expectations.patternEvent.patternIndex,
-            line: expectations.patternEvent.line,
-            track: expectations.patternEvent.track,
-          },
-        ]
-      : [],
+    patternEventProbes: [expectations.patternEvent, expectations.patternControllerEvent].filter(Boolean).map((event) => ({
+      patternIndex: event.patternIndex,
+      line: event.line,
+      track: event.track,
+    })),
   };
 }
 

@@ -379,6 +379,36 @@ test("decodes pattern note data", async () => {
   assert.equal(sha256(buildContainer(document)), sha256(buffer));
 });
 
+test("encodes named pattern controller events", async () => {
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const document = parseContainer(buffer);
+  const moduleIndex = document.modules.findIndex((module) =>
+    SUNVOX_DB.modules[module?.type]?.controllers?.some((controller) => controller.name === "volume"),
+  );
+  assert.ok(moduleIndex >= 0);
+  const module = document.modules[moduleIndex];
+  const controllerIndex = SUNVOX_DB.modules[module.type].controllers.find((controller) => controller.name === "volume").index;
+  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 1);
+  assert.ok(patternIndex >= 0);
+  const pattern = document.patterns[patternIndex];
+
+  pattern.events.push({
+    line: 1,
+    track: 0,
+    module: moduleIndex,
+    controller: "volume",
+    value: 321,
+  });
+
+  const reparsed = parseContainer(buildContainer(document));
+  const event = reparsed.patterns[patternIndex].events.find((candidate) => candidate.line === 1 && candidate.track === 0);
+
+  assert.equal(event.module, moduleIndex);
+  assert.equal(event.controller, "volume");
+  assert.equal(event._controllerIndex, controllerIndex);
+  assert.equal(event.value, 321);
+});
+
 test("can still build editable chunk documents", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseEditableContainer(buffer);
