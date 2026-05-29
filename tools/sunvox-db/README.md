@@ -24,7 +24,8 @@ can either interpret it directly or generate conversion code from it later.
 - `moduleDataChunkGrammar`: describes the `CHNK` / `CHNM` / `CHDT`
   sequence and optional metadata chunks such as `CHFF` and `CHFR`.
 - `runtimeConstraints`: records SunVox Lib runtime/save compatibility warnings
-  that are useful during editing but are not hard build errors by default.
+  and errors that are useful during editing before a build or runtime probe
+  fails.
 - `modules`: describes module-specific controller layouts and data chunk
   layouts. Controller definitions can use `path` for nested semantic output and
   `repeat` for repeated layouts such as FMX operators.
@@ -75,6 +76,8 @@ one function:
   relations
 - runtime constraints or save-normalization rules once they can be tested
   against SunVox Lib behavior
+- fixed-size text budgets such as `SNAM` through both grammar `textSize` and a
+  matching `maxUtf8Bytes` runtime constraint
 
 Keep logic in code when it is mechanical, algorithmic, or still experimental:
 
@@ -194,7 +197,8 @@ npm run sunvox:verify:all
   indexes, missing enum/bitfield/bitflags references, bitfield field references,
   grammar references to missing chunks, invalid text layout tuple/position
   fields, packed text field range overlap, source/DB chunk ID drift, data chunk
-  index collisions across explicit chunks and ranges, and simple source/DB
+  index collisions across explicit chunks and ranges, fixed-size text grammar
+  fields without matching runtime constraints, and simple source/DB
   controller-count mismatches.
 
 ## Local Quality Loop
