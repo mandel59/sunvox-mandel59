@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import vm from "node:vm";
 
 import { COVERAGE_MODULE_TYPES } from "./generate-sunvox-coverage-fixtures.mjs";
+import { parseContainer } from "./sunvox-codec.mjs";
 
 const DEFAULT_INPUT_PATH = "test/fixtures/sunvox/unsampled-modules.sunvox";
 const DEFAULT_INPUTS = ["music", "instruments", "test/fixtures/sunvox"];
@@ -55,6 +56,10 @@ function readCString(module, pointer) {
   return pointer ? module.UTF8ToString(pointer) : undefined;
 }
 
+function readMagic(buffer) {
+  return buffer.subarray(0, 4).toString("latin1");
+}
+
 async function findFiles(paths) {
   const files = [];
   for (const input of paths) {
@@ -80,6 +85,8 @@ async function findFiles(paths) {
 export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {
   const filePath = resolve(inputPath);
   const buffer = readFileSync(filePath);
+  const magic = readMagic(buffer);
+  const expectedModuleType = magic === "SSYN" ? parseContainer(buffer).module.type : undefined;
   const module = await loadSunVoxLib();
   const initResult = module._sv_init(0, 44100, 2, SV_INIT_FLAGS);
   if (initResult < 0) {
@@ -99,7 +106,11 @@ export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {
         throw new Error(`malloc failed for ${buffer.length} bytes`);
       }
       module.HEAPU8.set(buffer, dataPointer);
-      const loadResult = module._sv_load_from_memory(SLOT, dataPointer, buffer.length);
+      const loadApi = magic === "SSYN" ? "sv_load_module_from_memory" : "sv_load_from_memory";
+      const loadResult =
+        loadApi === "sv_load_module_from_memory"
+          ? module._sv_load_module_from_memory(SLOT, dataPointer, buffer.length, 0, 0, 0)
+          : module._sv_load_from_memory(SLOT, dataPointer, buffer.length);
       const moduleCount = module._sv_get_number_of_modules(SLOT);
       const modules = [];
       for (let index = 0; index < moduleCount; index += 1) {
@@ -112,7 +123,10 @@ export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {
       }
       return {
         filePath,
+        magic,
         engineVersion: initResult,
+        expectedModuleType,
+        loadApi,
         loadResult,
         moduleCount,
         modules,
@@ -150,22 +164,36 @@ function validateDefaultCoverageFixture(report) {
 }
 
 function validateLoad(report) {
+  if (!SAMPLE_EXTENSIONS.has(extname(report.filePath).toLowerCase())) {
+    throw new Error(`Unsupported SunVox sample extension for ${report.filePath}`);
+  }
   if (resolve(report.filePath) === resolve(DEFAULT_INPUT_PATH)) {
     validateDefaultCoverageFixture(report);
     return;
   }
-  if (report.loadResult !== 0) {
-    throw new Error(`SunVox lib rejected ${report.filePath}: sv_load_from_memory returned ${report.loadResult}`);
+  if (report.loadResult < 0) {
+    throw new Error(`SunVox lib rejected ${report.filePath}: ${report.loadApi} returned ${report.loadResult}`);
   }
   if (report.moduleCount < 1) {
     throw new Error(`SunVox lib exposed no modules for ${report.filePath}`);
+  }
+  if (report.magic === "SSYN") {
+    const loadedModule = report.modules[report.loadResult];
+    if (loadedModule?.type !== report.expectedModuleType) {
+      throw new Error(
+        `SunVox lib loaded ${report.filePath} as ${loadedModule?.type ?? "<missing>"}; ` +
+          `expected ${report.expectedModuleType}`,
+      );
+    }
+  } else if (report.loadResult !== 0) {
+    throw new Error(`SunVox lib rejected ${report.filePath}: ${report.loadApi} returned ${report.loadResult}`);
   }
 }
 
 function printReport(report) {
   console.log(
     `${relative(process.cwd(), report.filePath)}: engine=0x${report.engineVersion.toString(16)}, ` +
-      `load=${report.loadResult}, modules=${report.moduleCount}`,
+      `magic=${report.magic}, api=${report.loadApi}, load=${report.loadResult}, modules=${report.moduleCount}`,
   );
 }
 
