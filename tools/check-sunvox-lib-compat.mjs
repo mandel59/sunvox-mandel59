@@ -30,6 +30,8 @@ const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
 const SV_INIT_FLAG_OFFLINE = 1 << 1;
 const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
 const SV_INIT_FLAGS = SV_INIT_FLAG_NO_DEBUG_OUTPUT | SV_INIT_FLAG_OFFLINE | SV_INIT_FLAG_ONE_THREAD;
+const SV_MODULE_INPUTS_OFF = 16;
+const SV_MODULE_OUTPUTS_OFF = 24;
 
 async function loadSunVoxLib() {
   const sunvoxJsPath = resolve(SUNVOX_JS_PATH);
@@ -106,6 +108,17 @@ function controllerIndex(type, name) {
   return moduleControllerDefinitions(type).find((controller) => controller.name === name)?.index;
 }
 
+function moduleLinkSlotCount(flags, offset) {
+  return (flags >>> offset) & 0xff;
+}
+
+function readModuleLinks(module, pointer, count) {
+  if (!pointer || count <= 0) {
+    return [];
+  }
+  return Array.from(module.HEAP32.subarray(pointer >> 2, (pointer >> 2) + count));
+}
+
 function readPatternEvent(module, pattern, line, track) {
   if (!pattern) {
     return undefined;
@@ -133,6 +146,7 @@ function readPatternEvent(module, pattern, line, track) {
 function inspectLoadedState(module, moduleCount, magic, options = {}) {
   const modules = [];
   for (let index = 0; index < moduleCount; index += 1) {
+    const flags = module._sv_get_module_flags(SLOT, index);
     const controllerCount = module._sv_get_number_of_module_ctls(SLOT, index);
     const controllers = [];
     for (let controllerIndex = 0; controllerIndex < controllerCount; controllerIndex += 1) {
@@ -146,7 +160,9 @@ function inspectLoadedState(module, moduleCount, magic, options = {}) {
       index,
       type: readCString(module, module._sv_get_module_type(SLOT, index)),
       name: readCString(module, module._sv_get_module_name(SLOT, index)),
-      flags: module._sv_get_module_flags(SLOT, index),
+      flags,
+      inputs: readModuleLinks(module, module._sv_get_module_inputs(SLOT, index), moduleLinkSlotCount(flags, SV_MODULE_INPUTS_OFF)),
+      outputs: readModuleLinks(module, module._sv_get_module_outputs(SLOT, index), moduleLinkSlotCount(flags, SV_MODULE_OUTPUTS_OFF)),
       controllers,
     });
   }
@@ -320,6 +336,18 @@ function validateEditedCompatibility(report, expectations) {
       }
     }
   }
+  if (expectations.moduleLink) {
+    const { source, destination, destinationSlot } = expectations.moduleLink;
+    const destinationInput = report.modules[destination]?.inputs?.[destinationSlot];
+    if (destinationInput !== source) {
+      throw new Error(
+        `SunVox lib exposed module #${destination} input slot ${destinationSlot} as ${destinationInput}; expected ${source}`,
+      );
+    }
+    if (!report.modules[source]?.outputs?.includes(destination)) {
+      throw new Error(`SunVox lib did not expose module #${source} output link to module #${destination}`);
+    }
+  }
 }
 
 function firstEditableModule(modules) {
@@ -332,6 +360,49 @@ function firstNamedPattern(patterns) {
 
 function firstPatternGrid(patterns) {
   return patterns.findIndex((pattern) => pattern?.tracks > 0 && pattern?.lines > 0);
+}
+
+function outputModuleIndex(modules) {
+  return modules.findIndex((module) => module?.name === "Output");
+}
+
+function occupiedLinkSlots(links) {
+  return new Set((links ?? []).map((link, index) => (Number.isInteger(link?.slot) ? link.slot : index)));
+}
+
+function nextInputSlot(module) {
+  const occupied = occupiedLinkSlots(module?.inputs);
+  const slotCount = module?.inputSlotCount ?? 0;
+  for (let slot = 0; slot < slotCount; slot += 1) {
+    if (!occupied.has(slot)) {
+      return slot;
+    }
+  }
+  return Math.max(slotCount, occupied.size ? Math.max(...occupied) + 1 : 0);
+}
+
+function applyModuleLinkEdit(document, expectations) {
+  const modules = document.modules ?? [];
+  const destination = outputModuleIndex(modules);
+  if (destination < 0) {
+    return;
+  }
+  const usedSources = new Set((modules[destination].inputs ?? []).map((link) => link.module));
+  const source = modules.findIndex((module, index) => index !== destination && module?.type && !usedSources.has(index));
+  if (source < 0) {
+    return;
+  }
+  const destinationSlot = nextInputSlot(modules[destination]);
+  modules[destination].inputs ??= [];
+  modules[destination].inputs.push({ slot: destinationSlot, module: source });
+  if (modules[destination].inputSlotCount !== undefined && modules[destination].inputSlotCount <= destinationSlot) {
+    modules[destination].inputSlotCount = destinationSlot + 1;
+  }
+  expectations.moduleLink = {
+    source,
+    destination,
+    destinationSlot,
+  };
 }
 
 function applyControllerEdit(module, moduleIndex, expectations) {
@@ -394,6 +465,7 @@ function makeEditedCompatibilityCase(filePath, buffer) {
       expectations.moduleName = { index: moduleIndex, name: EDITED_MODULE_NAME };
       applyControllerEdit(document.modules[moduleIndex], moduleIndex, expectations);
       applyPatternEventEdit(document, moduleIndex, expectations);
+      applyModuleLinkEdit(document, expectations);
     }
 
     const patternIndex = firstNamedPattern(document.patterns ?? []);
