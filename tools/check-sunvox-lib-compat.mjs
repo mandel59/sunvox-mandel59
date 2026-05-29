@@ -33,6 +33,15 @@ const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
 const SV_INIT_FLAGS = SV_INIT_FLAG_NO_DEBUG_OUTPUT | SV_INIT_FLAG_OFFLINE | SV_INIT_FLAG_ONE_THREAD;
 const SV_MODULE_INPUTS_OFF = 16;
 const SV_MODULE_OUTPUTS_OFF = 24;
+const COMPATIBILITY_BEHAVIORS = [
+  { key: "songName", label: "project song name" },
+  { key: "moduleName", label: "module name" },
+  { key: "patternName", label: "pattern name" },
+  { key: "controllerValue", label: "module controller value" },
+  { key: "patternEvent", label: "pattern note event" },
+  { key: "patternControllerEvent", label: "pattern controller event" },
+  { key: "moduleLink", label: "module link graph" },
+];
 
 async function loadSunVoxLib() {
   const sunvoxJsPath = resolve(SUNVOX_JS_PATH);
@@ -386,12 +395,16 @@ function firstEditableModule(modules) {
   return modules.findIndex((module) => module?.type && module.type !== "Output");
 }
 
-function firstNamedPattern(patterns) {
-  return patterns.findIndex((pattern) => pattern?.name !== undefined);
-}
-
 function firstPatternGrid(patterns) {
   return patterns.findIndex((pattern) => pattern?.tracks > 0 && pattern?.lines > 0);
+}
+
+function firstEditablePattern(patterns) {
+  const gridIndex = firstPatternGrid(patterns);
+  if (gridIndex >= 0) {
+    return gridIndex;
+  }
+  return patterns.findIndex((pattern) => pattern);
 }
 
 function nextPatternEventPosition(pattern, usedPositions) {
@@ -548,7 +561,7 @@ function makeEditedCompatibilityCase(filePath, buffer) {
       applyModuleLinkEdit(document, expectations);
     }
 
-    const patternIndex = firstNamedPattern(document.patterns ?? []);
+    const patternIndex = firstEditablePattern(document.patterns ?? []);
     if (patternIndex >= 0) {
       document.patterns[patternIndex].name = EDITED_PATTERN_NAME;
       expectations.patternName = { index: patternIndex, name: EDITED_PATTERN_NAME };
@@ -594,6 +607,41 @@ function printReport(report) {
   );
 }
 
+function makeSummary() {
+  return {
+    originalLoads: 0,
+    codecEditLoads: 0,
+    saveReloadLoads: 0,
+    behaviors: Object.fromEntries(
+      COMPATIBILITY_BEHAVIORS.map((behavior) => [behavior.key, { codecEditLoads: 0, saveReloadLoads: 0 }]),
+    ),
+  };
+}
+
+function recordBehaviorSummary(summary, expectations, bucket) {
+  for (const behavior of COMPATIBILITY_BEHAVIORS) {
+    if (expectations[behavior.key] !== undefined) {
+      summary.behaviors[behavior.key][bucket] += 1;
+    }
+  }
+}
+
+function printSummary(summary, fileCount) {
+  console.log("");
+  console.log("SunVox lib compatibility summary");
+  console.log(`  sample files: ${fileCount}`);
+  console.log(`  original loads: ${summary.originalLoads}`);
+  console.log(`  codec edit loads: ${summary.codecEditLoads}`);
+  console.log(`  SunVox save/reload loads: ${summary.saveReloadLoads}`);
+  console.log("  edit behaviors:");
+  for (const behavior of COMPATIBILITY_BEHAVIORS) {
+    const coverage = summary.behaviors[behavior.key];
+    console.log(
+      `    - ${behavior.label}: codec edits=${coverage.codecEditLoads}, save/reload=${coverage.saveReloadLoads}`,
+    );
+  }
+}
+
 async function main() {
   const inputs = process.argv.slice(2);
   const files = await findFiles(inputs.length ? inputs : DEFAULT_INPUTS);
@@ -604,11 +652,13 @@ async function main() {
   }
 
   let failures = 0;
+  const summary = makeSummary();
   for (const file of files) {
     try {
       const report = await inspectWithSunVoxLib(file);
       validateLoad(report);
       printReport(report);
+      summary.originalLoads += 1;
 
       const edited = makeEditedCompatibilityCase(file, readFileSync(file));
       if (edited) {
@@ -618,8 +668,11 @@ async function main() {
           patternEventProbes: edited.patternEventProbes,
           saveToMemory: true,
         });
-        validateEditedCompatibility(editedReport, resolveLoadedModuleExpectations(editedReport, edited.expectations));
+        const editedExpectations = resolveLoadedModuleExpectations(editedReport, edited.expectations);
+        validateEditedCompatibility(editedReport, editedExpectations);
         printReport(editedReport);
+        summary.codecEditLoads += 1;
+        recordBehaviorSummary(summary, editedExpectations, "codecEditLoads");
 
         if (editedReport.savedBuffer) {
           const savedReport = await inspectBufferWithSunVoxLib(editedReport.savedBuffer, {
@@ -627,8 +680,11 @@ async function main() {
             label: `${relative(process.cwd(), file)} (SunVox save/reload)`,
             patternEventProbes: edited.patternEventProbes,
           });
-          validateEditedCompatibility(savedReport, resolveLoadedModuleExpectations(savedReport, edited.expectations));
+          const savedExpectations = resolveLoadedModuleExpectations(savedReport, edited.expectations);
+          validateEditedCompatibility(savedReport, savedExpectations);
           printReport(savedReport);
+          summary.saveReloadLoads += 1;
+          recordBehaviorSummary(summary, savedExpectations, "saveReloadLoads");
         }
       }
     } catch (error) {
@@ -641,6 +697,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
+  printSummary(summary, files.length);
   console.log(`SunVox lib compatibility passed for ${files.length} files and codec edit variants.`);
 }
 

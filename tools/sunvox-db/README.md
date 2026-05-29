@@ -112,7 +112,8 @@ npm run sunvox:verify:all
   project/module/pattern names, representative controller values, module links,
   and pattern note/controller events are exposed as expected. Edited `.sunvox`
   variants are also saved through SunVox Lib and reloaded to catch runtime
-  normalization issues.
+  normalization issues. The command prints a compact coverage summary so missing
+  edit-behavior checks are visible in the local and CI logs.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.
