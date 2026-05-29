@@ -54,6 +54,52 @@ test("parses project into structured metadata", async () => {
   assert.equal(document.patterns[0].layer, undefined);
 });
 
+test("decodes project supertrack mute and jump address state", () => {
+  const document = {
+    format: TEXT_FORMAT,
+    magic: "SVOX",
+    headerTailHex: "00000000",
+    project: {
+      supertrackMuteWords: [1, 2],
+      jumpAddressMode: "nextLineMinus",
+    },
+    patterns: [],
+    modules: [],
+  };
+
+  const buffer = buildContainer(document);
+  const parsed = parseContainer(buffer);
+
+  assert.deepEqual(parsed.project.supertrackMuteWords, [1, 2]);
+  assert.equal(parsed.project.jumpAddressMode, "nextLineMinus");
+  assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
+});
+
+test("decodes clone pattern parent numbers and stable parent ids", () => {
+  const document = {
+    format: TEXT_FORMAT,
+    magic: "SVOX",
+    headerTailHex: "00000000",
+    project: {},
+    patterns: [
+      {
+        parent: 0,
+        parentId: 12345,
+        infoFlags: { clone: true },
+      },
+    ],
+    modules: [],
+  };
+
+  const buffer = buildContainer(document);
+  const parsed = parseContainer(buffer);
+
+  assert.equal(parsed.patterns[0].parent, 0);
+  assert.equal(parsed.patterns[0].parentId, 12345);
+  assert.deepEqual(parsed.patterns[0].infoFlags, { clone: true });
+  assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
+});
+
 test("parses synth into a structured module", async () => {
   const buffer = await readFile("instruments/mandel59 shepard.sunsynth");
   const document = parseContainer(buffer);

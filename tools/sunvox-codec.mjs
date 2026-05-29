@@ -716,12 +716,26 @@ function setPath(object, path, value) {
 function chunkSemanticValue(chunk, field) {
   const fieldName = typeof field === "string" ? field : field.field;
   const value = fieldName === "pattern.events" ? chunk.pattern?.events : chunk[fieldName];
-  return field.bitflags && value !== undefined ? decodeBitflags(field.bitflags, value) : value;
+  if (value === undefined) {
+    return value;
+  }
+  if (field.bitflags) {
+    return decodeBitflags(field.bitflags, value);
+  }
+  if (field.enum) {
+    return enumToName(field.enum, value);
+  }
+  return value;
 }
 
 function assignChunkSemanticValue(chunk, field, value) {
   const fieldName = typeof field === "string" ? field : field.field;
-  const chunkValue = field.bitflags ? encodeBitflags(field.bitflags, value) : value;
+  let chunkValue = value;
+  if (field.bitflags) {
+    chunkValue = encodeBitflags(field.bitflags, value);
+  } else if (field.enum) {
+    chunkValue = enumToValue(field.enum, value);
+  }
   if (fieldName === "pattern.events") {
     chunk.pattern = { events: chunkValue };
   } else {
@@ -1769,21 +1783,7 @@ function makeModule(chunks) {
 
 function isPatternStart(chunks, index) {
   const id = chunks[index]?.id;
-  if (!PATTERN_CHUNKS.has(id)) {
-    return false;
-  }
-  if (id !== "PATT" && id !== "PATL") {
-    return true;
-  }
-  for (let cursor = index; cursor < chunks.length; cursor += 1) {
-    if (chunks[cursor].id === "PEND") {
-      return true;
-    }
-    if (cursor > index && MODULE_CHUNKS.has(chunks[cursor].id)) {
-      return false;
-    }
-  }
-  return false;
+  return PATTERN_CHUNKS.has(id);
 }
 
 function groupStructuredDocument(document) {

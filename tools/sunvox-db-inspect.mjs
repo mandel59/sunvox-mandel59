@@ -7,6 +7,7 @@ import { parseContainer, SUNVOX_DB } from "./sunvox-codec.mjs";
 
 const DEFAULT_SAMPLE_ROOTS = ["music", "instruments", "test/fixtures/sunvox"];
 const DEFAULT_SOURCE_ROOT = "var/sunvox_lib/lib_sunvox/psynth";
+const SOURCE_BLOCK_ID_FILE = "../sunvox_engine.cpp";
 const DEFAULT_STRINGS_FILE = "var/sunvox_lib/lib_sunvox/psynth/psynth_strings.cpp";
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 
@@ -862,11 +863,72 @@ function claimDataChunkIndex(errors, moduleName, owners, index, owner) {
   owners.set(index, owner);
 }
 
+function collectSourceBlockIds(sourceRoot) {
+  const sourcePath = resolve(sourceRoot, SOURCE_BLOCK_ID_FILE);
+  if (!safeStat(sourcePath)?.isFile()) {
+    return { sourcePath, ids: undefined };
+  }
+  const source = readFileSync(sourcePath, "utf8");
+  const match = source.match(/const char\* g_sunvox_block_id_names\[\] =\s*\{([\s\S]*?)\};/u);
+  if (!match) {
+    return { sourcePath, ids: undefined };
+  }
+  const ids = [...match[1].matchAll(/"([^"]{4})"/gu)].map((item) => item[1]);
+  return { sourcePath, ids };
+}
+
+function checkChunkDefinitions(errors, warnings, sourceRoot) {
+  const chunkIds = new Set();
+  for (const chunk of SUNVOX_DB.chunks) {
+    if (chunkIds.has(chunk.id)) {
+      errors.push(`duplicate chunk id ${chunk.id}`);
+    }
+    chunkIds.add(chunk.id);
+  }
+
+  for (const [scopeName, scope] of Object.entries(SUNVOX_DB.grammar.scopes ?? {})) {
+    for (const field of scope.fields ?? []) {
+      if (!chunkIds.has(field.chunk)) {
+        errors.push(`grammar scope ${scopeName} references missing chunk ${field.chunk}`);
+      }
+      checkNamedReference(errors, `grammar:${scopeName}`, `field ${field.path}`, "enum", field.enum, SUNVOX_DB.enums);
+      checkNamedReference(
+        errors,
+        `grammar:${scopeName}`,
+        `field ${field.path}`,
+        "bitflags",
+        field.bitflags,
+        SUNVOX_DB.bitflags,
+      );
+    }
+  }
+
+  const sourceBlocks = collectSourceBlockIds(sourceRoot);
+  if (!sourceBlocks.ids) {
+    warnings.push(`could not read SunVox block id list from ${relative(process.cwd(), sourceBlocks.sourcePath)}`);
+    return;
+  }
+
+  const sourceIds = new Set(sourceBlocks.ids);
+  for (const id of sourceBlocks.ids) {
+    if (!chunkIds.has(id)) {
+      errors.push(`source block id ${id} is missing from DB chunks`);
+    }
+  }
+  for (const id of chunkIds) {
+    if (!sourceIds.has(id)) {
+      errors.push(`DB chunk id ${id} is missing from source block id list`);
+    }
+  }
+}
+
 export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const errors = [];
   const warnings = [];
   const sourceReport = collectSourceReport(sourceRoot);
   const sourceByName = new Map(sourceReport.sourceModules.map((module) => [module.module, module]));
+
+  checkChunkDefinitions(errors, warnings, sourceRoot);
 
   for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
     const controllers = expandControllerDefinitions(moduleDefinition.controllers);

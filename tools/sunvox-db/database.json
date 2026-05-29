@@ -36,7 +36,7 @@
     { "id": "PXXX", "scope": "pattern", "name": "x", "type": "int32", "label": "pattern x position" },
     { "id": "PYYY", "scope": "pattern", "name": "y", "type": "int32", "label": "pattern y position" },
     { "id": "PPAR", "scope": "pattern", "name": "parent", "type": "uint32", "label": "pattern parent" },
-    { "id": "PPR#", "scope": "pattern", "name": "projectNumber", "type": "uint32", "label": "pattern project number" },
+    { "id": "PPR#", "scope": "pattern", "name": "parentId", "type": "uint32", "label": "pattern clone parent id" },
     { "id": "PFGC", "scope": "pattern", "name": "foreground", "type": "rgb24", "label": "pattern foreground color" },
     { "id": "PBGC", "scope": "pattern", "name": "background", "type": "rgb24", "label": "pattern background color" },
     { "id": "SFFF", "scope": "module", "name": "flags", "type": "uint32", "label": "module flags" },
@@ -61,13 +61,13 @@
     { "id": "SLnk", "scope": "module", "name": "outputLinkSlots", "type": "int32Array", "label": "module output link slots" },
     { "id": "CVAL", "scope": "module", "name": "controllerValue", "type": "int32", "label": "module controller value" },
     { "id": "CMID", "scope": "module", "name": "midiBindings", "type": "structArray:midi_binding", "label": "module controller MIDI bindings" },
-    { "id": "STMT", "name": "stateValues", "type": "uint32Array", "label": "state values" },
+    { "id": "STMT", "scope": "project", "name": "supertrackMuteWords", "type": "uint32Array", "label": "supertrack mute bitset words" },
     { "id": "CHNK", "scope": "module", "name": "chunkCount", "type": "uint32", "label": "module chunk count" },
     { "id": "CHNM", "scope": "module", "name": "chunkIndex", "type": "uint32", "label": "module chunk index" },
     { "id": "CHDT", "scope": "module", "name": "chunkData", "type": "bytes", "label": "module chunk data" },
     { "id": "CHFF", "scope": "module", "name": "chunkFlags", "type": "uint32", "label": "module chunk flags" },
     { "id": "CHFR", "scope": "module", "name": "chunkSampleRate", "type": "uint32", "label": "module chunk sample rate" },
-    { "id": "JAMD", "name": "jamData", "type": "uint32", "label": "jam data" },
+    { "id": "JAMD", "scope": "project", "name": "jumpAddressMode", "type": "uint32", "label": "jump address mode" },
     { "id": "SEND", "scope": "module", "name": "end", "type": "empty", "label": "module terminator" }
   ],
   "enums": {
@@ -91,6 +91,13 @@
       "137": "jump",
       "140": "cleanModule",
       "141": "prepareImmediateJumpNegative"
+    },
+    "sunvox_jump_address_mode": {
+      "0": "absolute",
+      "1": "patternPositionPlus",
+      "2": "patternPositionMinus",
+      "3": "nextLinePlus",
+      "4": "nextLineMinus"
     },
     "psynth_midi_type": {
       "0": "none",
@@ -794,9 +801,7 @@
       { "name": "selected", "bit": 1 },
       { "name": "unused", "bit": 2 },
       { "name": "mute", "bit": 3 },
-      { "name": "solo", "bit": 4 },
-      { "name": "justLoaded", "bit": 30 },
-      { "name": "selected2", "bit": 31 }
+      { "name": "solo", "bit": 4 }
     ],
     "metamodule_option_flags": [
       { "name": "forceGenerator", "bit": 0 },
@@ -837,9 +842,11 @@
           { "chunk": "LGEN", "path": "lastSelectedGenerator", "field": "value" },
           { "chunk": "PATN", "path": "currentPattern", "field": "value" },
           { "chunk": "PATT", "path": "currentPatternTrack", "field": "value" },
-          { "chunk": "PATL", "path": "currentPatternLine", "field": "value" }
+          { "chunk": "PATL", "path": "currentPatternLine", "field": "value" },
+          { "chunk": "STMT", "path": "supertrackMuteWords", "field": "values" },
+          { "chunk": "JAMD", "path": "jumpAddressMode", "field": "value", "enum": "sunvox_jump_address_mode" }
         ],
-        "order": ["VERS", "BVER", "FLGS", "SFGS", "BPM ", "SPED", "TGRD", "TGD2", "GVOL", "NAME", "MSCL", "MZOO", "MXOF", "MYOF", "LMSK", "CURL", "TIME", "REPS", "SELS", "LGEN", "PATN", "PATT", "PATL", "extraChunks"]
+        "order": ["VERS", "BVER", "FLGS", "SFGS", "BPM ", "SPED", "TGRD", "TGD2", "GVOL", "NAME", "MSCL", "MZOO", "MXOF", "MYOF", "LMSK", "CURL", "TIME", "REPS", "SELS", "LGEN", "PATN", "PATT", "PATL", "STMT", "JAMD", "extraChunks"]
       },
       "pattern": {
         "terminator": "PEND",
@@ -854,11 +861,12 @@
           { "chunk": "PBGC", "path": "background", "field": "rgb" },
           { "chunk": "PNME", "path": "name", "field": "text" },
           { "chunk": "PPAR", "path": "parent", "field": "value" },
+          { "chunk": "PPR#", "path": "parentId", "field": "value" },
           { "chunk": "PFFF", "path": "infoFlags", "field": "value", "bitflags": "sunvox_pattern_info_flags" },
           { "chunk": "PXXX", "path": "position.x", "field": "value" },
           { "chunk": "PYYY", "path": "position.y", "field": "value" }
         ],
-        "order": ["PDTA", "PNME", "PCHN", "PLIN", "PYSZ", "PFLG", "PICO", "PFGC", "PBGC", "PPAR", "PFFF", "PXXX", "PYYY", "extraChunks", "PEND"]
+        "order": ["PDTA", "PNME", "PCHN", "PLIN", "PYSZ", "PFLG", "PICO", "PFGC", "PBGC", "PPAR", "PPR#", "PFFF", "PXXX", "PYYY", "extraChunks", "PEND"]
       },
       "module": {
         "terminator": "SEND",

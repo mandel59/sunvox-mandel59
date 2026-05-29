@@ -4,6 +4,12 @@ export const VERBOSE_TEXT_FORMAT: "sunvox-container-text-v1";
 export const SUPPORTED_MAGICS: Set<SunVoxMagic>;
 
 export type SunVoxMagic = "SVOX" | "SSYN";
+export type SunVoxJumpAddressMode =
+  | "absolute"
+  | "patternPositionPlus"
+  | "patternPositionMinus"
+  | "nextLinePlus"
+  | "nextLineMinus";
 
 export interface SunVoxStructTextLayout {
   kind: "lineMajorTupleArray" | "sparsePatternEvents";
@@ -230,6 +236,8 @@ export interface StructuredProject {
   currentPattern?: number;
   currentPatternTrack?: number;
   currentPatternLine?: number;
+  supertrackMuteWords?: number[];
+  jumpAddressMode?: SunVoxJumpAddressMode | number;
   extraChunks?: EditableSunVoxChunk[];
   chunks?: EditableSunVoxChunk[];
 }
@@ -247,6 +255,7 @@ export interface StructuredPattern {
   foreground?: string;
   background?: string;
   parent?: number;
+  parentId?: number;
   infoFlags?: number | Record<string, boolean>;
   events?: EditablePatternEvent[];
   extraChunks?: EditableSunVoxChunk[];
