@@ -46,6 +46,8 @@ npm run sunvox:inspect -- coverage
 npm run sunvox:inspect -- coverage --details
 npm run sunvox:inspect -- coverage --json
 npm run sunvox:coverage:check
+npm run sunvox:metrics
+npm run sunvox:inspect -- metrics --json
 npm run sunvox:inspect -- report
 npm run sunvox:inspect -- report --json
 npm run sunvox:controller-diff
@@ -70,6 +72,8 @@ npm run sunvox:verify:all
   expects this report to have no mismatches.
 - `coverage --json`, `report --json`, and `controller-diff --json` emit
   machine-readable metrics for future CI or frontend tooling.
+- `metrics` summarizes coverage, source/DB consistency, controller metadata
+  drift, and gate status in one compact report for progress tracking.
 - `sunvox:coverage:check` runs the coverage report as a CI gate. It fails on
   parse errors, missing DB module types, unexpected missing-STYP modules, raw
   controller arrays, controller extras, module extra chunks, or opaque data
@@ -91,6 +95,7 @@ Run this loop before committing codec or DB changes:
 
 ```sh
 npm test
+npm run sunvox:metrics
 npm run sunvox:coverage:check
 npm run sunvox:inspect -- coverage
 npm run sunvox:inspect -- report

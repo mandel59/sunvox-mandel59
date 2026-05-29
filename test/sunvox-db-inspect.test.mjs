@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { collectControllerDiff, collectCoverage, collectDbCheck, collectScaffold } from "../tools/sunvox-db-inspect.mjs";
+import {
+  collectControllerDiff,
+  collectCoverage,
+  collectDbCheck,
+  collectProjectMetrics,
+  collectScaffold,
+} from "../tools/sunvox-db-inspect.mjs";
 import { SUNVOX_DB } from "../tools/sunvox-codec.mjs";
 
 test("coverage reports DB module types not exercised by samples", () => {
@@ -13,6 +19,19 @@ test("coverage reports DB module types not exercised by samples", () => {
   for (const moduleType of Object.keys(SUNVOX_DB.modules)) {
     assert.equal(coverage.unusedDbModuleTypes.includes(moduleType), !sampledDbTypes.has(moduleType), moduleType);
   }
+});
+
+test("project metrics summarize current coverage and gate state", () => {
+  const metrics = collectProjectMetrics();
+
+  assert.equal(metrics.summary.dbModules, Object.keys(SUNVOX_DB.modules).length);
+  assert.equal(metrics.summary.sourceModulesMissingFromDb, 0);
+  assert.equal(metrics.summary.dbModulesMissingFromSource, 0);
+  assert.equal(metrics.summary.controllerMetadataMismatches, 0);
+  assert.equal(metrics.summary.dbCheckErrors, 0);
+  assert.equal(metrics.summary.coverageGateFailures, 0);
+  assert.equal(metrics.gates.ok, true);
+  assert.equal(metrics.unsampledDbModuleTypes.includes("Sampler"), true);
 });
 
 test("controller diff has no metadata mismatches", () => {

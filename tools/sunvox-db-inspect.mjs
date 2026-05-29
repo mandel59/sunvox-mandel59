@@ -13,6 +13,7 @@ const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 function usage() {
   console.error(`Usage:
   node tools/sunvox-db-inspect.mjs coverage [--json] [--details] [--check] [sample-path ...]
+  node tools/sunvox-db-inspect.mjs metrics [--json] [sample-path ...]
   node tools/sunvox-db-inspect.mjs report [--json] [source-root]
   node tools/sunvox-db-inspect.mjs controller-diff [--json] [source-root]
   node tools/sunvox-db-inspect.mjs scaffold <module-name> [source-root]
@@ -942,6 +943,54 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   };
 }
 
+export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, sourceRoot = DEFAULT_SOURCE_ROOT) {
+  const coverage = collectCoverage(sampleRoots);
+  const report = collectSourceReport(sourceRoot);
+  const controllerDiff = collectControllerDiff(sourceRoot);
+  const dbCheck = collectDbCheck(sourceRoot);
+  const coverageGateFailures = coverageFailures(coverage);
+  const sampledDbModuleTypes = coverage.moduleTypes
+    .map(([moduleType]) => moduleType)
+    .filter((moduleType) => SUNVOX_DB.modules[moduleType])
+    .sort(compareText);
+  const dbModuleTypes = coverage.dbModuleTypes;
+
+  return {
+    sampleRoots,
+    sourceRoot,
+    summary: {
+      dbModules: dbModuleTypes.length,
+      sampledDbModules: sampledDbModuleTypes.length,
+      unsampledDbModules: coverage.unusedDbModuleTypes.length,
+      sampleCoveragePercent: Number(((sampledDbModuleTypes.length / dbModuleTypes.length) * 100).toFixed(1)),
+      decodedModules: coverage.moduleCount,
+      uniqueSampleModuleTypes: coverage.moduleTypes.length,
+      sourceModules: report.sourceModules.length,
+      sourceModulesMissingFromDb: report.missingFromDb.length,
+      dbModulesMissingFromSource: report.missingFromSource.length,
+      controllerMetadataMismatches: controllerDiff.summary.mismatches,
+      dbCheckErrors: dbCheck.summary.errors,
+      dbCheckWarnings: dbCheck.summary.warnings,
+      coverageGateFailures: coverageGateFailures.length,
+    },
+    gates: {
+      sourceDbModules: report.missingFromDb.length === 0 && report.missingFromSource.length === 0,
+      dbCheck: dbCheck.ok,
+      coverage: coverageGateFailures.length === 0,
+      controllerMetadata: controllerDiff.summary.mismatches === 0,
+      ok:
+        report.missingFromDb.length === 0 &&
+        report.missingFromSource.length === 0 &&
+        dbCheck.ok &&
+        coverageGateFailures.length === 0 &&
+        controllerDiff.summary.mismatches === 0,
+    },
+    sampledDbModuleTypes,
+    unsampledDbModuleTypes: coverage.unusedDbModuleTypes,
+    coverageGateFailures,
+  };
+}
+
 function formatTable(rows, columns) {
   if (rows.length === 0) {
     return "(none)";
@@ -1248,6 +1297,63 @@ function formatCheck(check) {
   return lines.join("\n");
 }
 
+function formatPercent(value) {
+  return `${value.toFixed(1)}%`;
+}
+
+function gateLabel(ok) {
+  return ok ? "pass" : "fail";
+}
+
+function formatProjectMetrics(metrics) {
+  const rows = [
+    { metric: "DB modules", value: metrics.summary.dbModules },
+    { metric: "Sampled DB modules", value: metrics.summary.sampledDbModules },
+    { metric: "Unsampled DB modules", value: metrics.summary.unsampledDbModules },
+    { metric: "Sample module coverage", value: formatPercent(metrics.summary.sampleCoveragePercent) },
+    { metric: "Decoded sample modules", value: metrics.summary.decodedModules },
+    { metric: "Unique sample module types/kinds", value: metrics.summary.uniqueSampleModuleTypes },
+    { metric: "Source modules", value: metrics.summary.sourceModules },
+    { metric: "Source modules missing from DB", value: metrics.summary.sourceModulesMissingFromDb },
+    { metric: "DB modules missing from source", value: metrics.summary.dbModulesMissingFromSource },
+    { metric: "Controller metadata mismatches", value: metrics.summary.controllerMetadataMismatches },
+    { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
+    { metric: "Coverage gate failures", value: metrics.summary.coverageGateFailures },
+  ];
+
+  const gateRows = [
+    { gate: "source/DB modules", status: gateLabel(metrics.gates.sourceDbModules) },
+    { gate: "DB check", status: gateLabel(metrics.gates.dbCheck) },
+    { gate: "coverage", status: gateLabel(metrics.gates.coverage) },
+    { gate: "controller metadata", status: gateLabel(metrics.gates.controllerMetadata) },
+    { gate: "overall", status: gateLabel(metrics.gates.ok) },
+  ];
+
+  return [
+    "SunVox project metrics",
+    "",
+    `Sample roots: ${metrics.sampleRoots.join(", ")}`,
+    `Source root: ${metrics.sourceRoot}`,
+    "",
+    "Summary:",
+    formatTable(rows, [
+      { header: "metric", value: (row) => row.metric },
+      { header: "value", value: (row) => row.value },
+    ]),
+    "",
+    "Gates:",
+    formatTable(gateRows, [
+      { header: "gate", value: (row) => row.gate },
+      { header: "status", value: (row) => row.status },
+    ]),
+    "",
+    "Unsampled DB module types:",
+    metrics.unsampledDbModuleTypes.length
+      ? metrics.unsampledDbModuleTypes.map((moduleType) => `  - ${moduleType}`).join("\n")
+      : "(none)",
+  ].join("\n");
+}
+
 function main(argv) {
   const [command, ...args] = argv;
   if (command === "coverage") {
@@ -1263,6 +1369,16 @@ function main(argv) {
       console.log([formatCoverage(coverage, { details }), check ? formatCoverageGate(failures) : ""].filter(Boolean).join("\n\n"));
     }
     if (check && failures.length > 0) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+  if (command === "metrics") {
+    const json = args.includes("--json");
+    const paths = withoutFlags(args, ["--json"]);
+    const metrics = collectProjectMetrics(paths.length ? paths : DEFAULT_SAMPLE_ROOTS);
+    console.log(json ? JSON.stringify(metrics, null, 2) : formatProjectMetrics(metrics));
+    if (!metrics.gates.ok) {
       process.exitCode = 1;
     }
     return;
