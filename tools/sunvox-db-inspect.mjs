@@ -1129,6 +1129,9 @@ const CHUNK_VALUE_KINDS = new Set([
   "version",
   "waveform",
 ]);
+const RUNTIME_CONSTRAINT_SCOPES = new Set(["project", "module", "moduleLink"]);
+const RUNTIME_CONSTRAINT_KINDS = new Set(["integerRange", "maxUtf8Bytes"]);
+const RUNTIME_CONSTRAINT_SEVERITIES = new Set(["warning", "error"]);
 
 function checkStorageMetadata(errors, subject, definition) {
   if (definition.sourceType && !CHUNK_SOURCE_TYPES.has(definition.sourceType)) {
@@ -1227,6 +1230,41 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
   }
 }
 
+function checkRuntimeConstraints(errors) {
+  const ids = new Set();
+  for (const rule of SUNVOX_DB.runtimeConstraints ?? []) {
+    if (!rule.id) {
+      errors.push("runtime constraint is missing id");
+      continue;
+    }
+    if (ids.has(rule.id)) {
+      errors.push(`duplicate runtime constraint id ${rule.id}`);
+    }
+    ids.add(rule.id);
+    if (!RUNTIME_CONSTRAINT_SCOPES.has(rule.scope)) {
+      errors.push(`runtime constraint ${rule.id} has invalid scope ${rule.scope}`);
+    }
+    if (!RUNTIME_CONSTRAINT_KINDS.has(rule.kind)) {
+      errors.push(`runtime constraint ${rule.id} has invalid kind ${rule.kind}`);
+    }
+    if (!RUNTIME_CONSTRAINT_SEVERITIES.has(rule.severity)) {
+      errors.push(`runtime constraint ${rule.id} has invalid severity ${rule.severity}`);
+    }
+    if (!rule.path) {
+      errors.push(`runtime constraint ${rule.id} is missing path`);
+    }
+    if (rule.scope === "moduleLink" && !["inputs", "outputs"].includes(rule.relation)) {
+      errors.push(`runtime constraint ${rule.id} has invalid module link relation ${rule.relation}`);
+    }
+    if (rule.kind === "integerRange" && rule.min === undefined && rule.max === undefined) {
+      errors.push(`runtime constraint ${rule.id} integerRange is missing min or max`);
+    }
+    if (rule.kind === "maxUtf8Bytes" && !Number.isInteger(rule.maxBytes)) {
+      errors.push(`runtime constraint ${rule.id} maxUtf8Bytes is missing maxBytes`);
+    }
+  }
+}
+
 export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const errors = [];
   const warnings = [];
@@ -1235,6 +1273,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
 
   checkChunkDefinitions(errors, warnings, sourceRoot);
   checkBitfieldDefinitions(errors);
+  checkRuntimeConstraints(errors);
 
   for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
     const controllers = expandControllerDefinitions(moduleDefinition.controllers);

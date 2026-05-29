@@ -3,7 +3,7 @@
   "$id": "https://mandel59.github.io/sunvox-mandel59/sunvox-db.schema.json",
   "title": "SunVox codec knowledge database",
   "type": "object",
-  "required": ["version", "chunks", "enums", "bitfields", "grammar", "moduleDataChunkGrammar", "modules"],
+  "required": ["version", "chunks", "enums", "bitfields", "grammar", "moduleDataChunkGrammar", "runtimeConstraints", "modules"],
   "properties": {
     "version": { "type": "integer", "minimum": 1 },
     "chunks": {
@@ -231,6 +231,27 @@
         }
       },
       "additionalProperties": false
+    },
+    "runtimeConstraints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "scope", "path", "kind", "severity", "description"],
+        "properties": {
+          "id": { "type": "string" },
+          "scope": { "enum": ["project", "module", "moduleLink"] },
+          "path": { "type": "string" },
+          "relation": { "type": "string" },
+          "kind": { "enum": ["integerRange", "maxUtf8Bytes"] },
+          "min": { "type": "integer" },
+          "max": { "type": "integer" },
+          "maxBytes": { "type": "integer", "minimum": 0 },
+          "severity": { "enum": ["warning", "error"] },
+          "source": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
     },
     "modules": {
       "type": "object",

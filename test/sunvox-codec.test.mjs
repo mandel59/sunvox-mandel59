@@ -13,6 +13,7 @@ import {
   sha256,
   SUNVOX_DB,
   TEXT_FORMAT,
+  validateContainer,
 } from "../tools/sunvox-codec.mjs";
 
 function withoutAuxiliaryProperties(value) {
@@ -62,6 +63,35 @@ test("parses project into structured metadata", async () => {
   assert.equal(document.modules[1].inputSlotCount, 2);
   assert.equal(document.modules[1].inputLinks, undefined);
   assert.equal(document.modules[1].inputLinkSlots, undefined);
+});
+
+test("reports DB-driven runtime constraint warnings", () => {
+  const result = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 0, speed: 0 },
+    modules: [
+      {
+        type: "Amplifier",
+        name: "012345678901234567890123456789012",
+        inputs: [{ slot: 0, module: -1 }],
+        outputs: [{ slot: 0, module: -1 }],
+      },
+    ],
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.issues.map((issue) => issue.rule),
+    [
+      "project.bpm.positive",
+      "project.speed.positive",
+      "module.name.maxBytes",
+      "module.inputs.target.nonNegative",
+      "module.outputs.target.nonNegative",
+    ],
+  );
+  assert.match(result.issues[2].message, /33 UTF-8 bytes/u);
+  assert.equal(result.issues[3].path, "modules[0].inputs[0].module");
 });
 
 test("decodes project supertrack mute and jump address state", () => {

@@ -132,6 +132,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousLinkSlots = linkSlotChunk.linkSlots;
   const dataChunkGrammar = SUNVOX_DB.moduleDataChunkGrammar;
   const previousDataChunkGrammar = JSON.parse(JSON.stringify(dataChunkGrammar));
+  const previousRuntimeConstraints = SUNVOX_DB.runtimeConstraints.slice();
   const bitfield = SUNVOX_DB.bitfields.psynth_midi_input_flags;
   const previousBitfieldFields = bitfield.fields;
   const storageChunk = SUNVOX_DB.chunks.find((chunk) => chunk.id === "SMIC");
@@ -177,6 +178,25 @@ test("DB check validates data chunk ranges and metadata references", () => {
   linkSlotChunk.linkSlots = { linkChunk: "NOPE" };
   dataChunkGrammar.countChunk = "NOPE";
   dataChunkGrammar.metadataChunks = [{ chunk: "NOPE", path: "brokenMetadata", field: "value" }];
+  SUNVOX_DB.runtimeConstraints.push(
+    {
+      id: "broken.runtime",
+      scope: "moduleLink",
+      relation: "sideways",
+      path: "module",
+      kind: "integerRange",
+      severity: "fatal",
+      description: "broken rule",
+    },
+    {
+      id: "broken.runtime",
+      scope: "project",
+      path: "name",
+      kind: "maxUtf8Bytes",
+      severity: "warning",
+      description: "broken duplicate rule",
+    },
+  );
   bitfield.fields = [...bitfield.fields, { name: "broken", shift: 7, bits: 1, bitflags: "__missing_bitfield_bitflags" }];
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
@@ -224,6 +244,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /chunk SLnK linkSlots is missing slotCountPath/u);
     assert.match(errors, /moduleDataChunkGrammar countChunk references missing chunk NOPE/u);
     assert.match(errors, /moduleDataChunkGrammar metadata brokenMetadata references missing chunk NOPE/u);
+    assert.match(errors, /duplicate runtime constraint id broken\.runtime/u);
+    assert.match(errors, /runtime constraint broken\.runtime has invalid severity fatal/u);
+    assert.match(errors, /runtime constraint broken\.runtime has invalid module link relation sideways/u);
+    assert.match(errors, /runtime constraint broken\.runtime maxUtf8Bytes is missing maxBytes/u);
     assert.match(
       errors,
       /bitfield:psynth_midi_input_flags: packed field field broken references missing bitflags __missing_bitfield_bitflags/u,
@@ -236,6 +260,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     projectFields.length = previousProjectFieldCount;
     linkSlotChunk.linkSlots = previousLinkSlots;
     Object.assign(dataChunkGrammar, previousDataChunkGrammar);
+    SUNVOX_DB.runtimeConstraints.length = 0;
+    SUNVOX_DB.runtimeConstraints.push(...previousRuntimeConstraints);
     bitfield.fields = previousBitfieldFields;
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     amplifier.color = previousAmplifierColor;

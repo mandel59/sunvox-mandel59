@@ -22,6 +22,8 @@ can either interpret it directly or generate conversion code from it later.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
 - `moduleDataChunkGrammar`: describes the `CHNK` / `CHNM` / `CHDT`
   sequence and optional metadata chunks such as `CHFF` and `CHFR`.
+- `runtimeConstraints`: records SunVox Lib runtime/save compatibility warnings
+  that are useful during editing but are not hard build errors by default.
 - `modules`: describes module-specific controller layouts and data chunk
   layouts. Controller definitions can use `path` for nested semantic output and
   `repeat` for repeated layouts such as FMX operators.
@@ -110,6 +112,7 @@ npm run sunvox:inspect -- controller-diff
 npm run sunvox:inspect -- controller-diff --json
 npm run sunvox:inspect -- scaffold "Distortion"
 npm run sunvox:inspect -- check
+npm run sunvox:validate -- music/2022-04-17.sunvox
 npm run sunvox:verify:all
 ```
 
@@ -153,6 +156,9 @@ npm run sunvox:verify:all
   variants are also saved through SunVox Lib and reloaded to catch runtime
   normalization issues. The command prints a compact coverage summary so missing
   edit-behavior checks are visible in the local and CI logs.
+- `sunvox:validate` reports DB-driven runtime compatibility warnings for a
+  binary SunVox file or decoded JSON document. The first rules cover positive
+  project tempo values, module name byte budgets, and semantic link targets.
 - `scaffold <module>` emits a best-effort DB JSON draft for direct
   `psynth_register_ctl()` declarations in the SunVox source. Review unresolved
   expressions and enum names before inserting the output into `database.json`.

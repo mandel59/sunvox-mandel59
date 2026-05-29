@@ -1051,6 +1051,60 @@
       { "chunk": "CHFR", "path": "sampleRate", "kind": "sampleRate", "field": "value" }
     ]
   },
+  "runtimeConstraints": [
+    {
+      "id": "project.bpm.positive",
+      "scope": "project",
+      "path": "bpm",
+      "kind": "integerRange",
+      "min": 1,
+      "severity": "warning",
+      "source": "sunvox_engine::bpm",
+      "description": "SunVox Lib expects project BPM to be positive; keep raw values round-trip safe but warn before runtime use."
+    },
+    {
+      "id": "project.speed.positive",
+      "scope": "project",
+      "path": "speed",
+      "kind": "integerRange",
+      "min": 1,
+      "severity": "warning",
+      "source": "sunvox_engine::speed",
+      "description": "SunVox Lib expects project speed to be positive; keep raw values round-trip safe but warn before runtime use."
+    },
+    {
+      "id": "module.name.maxBytes",
+      "scope": "module",
+      "path": "name",
+      "kind": "maxUtf8Bytes",
+      "maxBytes": 32,
+      "severity": "warning",
+      "source": "psynth_module::name",
+      "description": "SunVox stores module names in a fixed-size name buffer; warn when editable text exceeds the known saved name budget."
+    },
+    {
+      "id": "module.inputs.target.nonNegative",
+      "scope": "moduleLink",
+      "relation": "inputs",
+      "path": "module",
+      "kind": "integerRange",
+      "min": 0,
+      "severity": "warning",
+      "source": "psynth_module::input_links",
+      "description": "Negative module numbers are empty link slots in stored arrays and should not appear in semantic input link objects."
+    },
+    {
+      "id": "module.outputs.target.nonNegative",
+      "scope": "moduleLink",
+      "relation": "outputs",
+      "path": "module",
+      "kind": "integerRange",
+      "min": 0,
+      "severity": "warning",
+      "source": "psynth_module::output_links",
+      "description": "Negative module numbers are empty link slots in stored arrays and should not appear in semantic output link objects."
+    }
+  ],
   "modules": {
     "Amplifier": {
       "color": "#E47FFF",

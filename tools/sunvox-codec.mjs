@@ -39,7 +39,8 @@ function usage() {
   console.error(`Usage:
   node tools/sunvox-codec.mjs encode <input.sunvox|input.sunsynth> <output.json>
   node tools/sunvox-codec.mjs decode <input.json> <output.sunvox|output.sunsynth>
-  node tools/sunvox-codec.mjs verify <input.sunvox|input.sunsynth>`);
+  node tools/sunvox-codec.mjs verify <input.sunvox|input.sunsynth>
+  node tools/sunvox-codec.mjs validate <input.sunvox|input.sunsynth|input.json>`);
 }
 
 export function sha256(buffer) {
@@ -1014,6 +1015,100 @@ function emitModuleLinkChunk(module, chunkId) {
     return slots === undefined ? undefined : makeSemanticChunk(chunkId, "values", slots);
   }
   return undefined;
+}
+
+function validationIssue(rule, path, value, message) {
+  return {
+    severity: rule.severity ?? "warning",
+    rule: rule.id,
+    path,
+    value,
+    message,
+    source: rule.source,
+  };
+}
+
+function validateIntegerRange(value, rule, path) {
+  if (value === undefined) {
+    return [];
+  }
+  if (!Number.isInteger(value)) {
+    return [validationIssue(rule, path, value, `${path} must be an integer`)];
+  }
+  const issues = [];
+  if (rule.min !== undefined && value < rule.min) {
+    issues.push(validationIssue(rule, path, value, `${path} is ${value}; expected >= ${rule.min}`));
+  }
+  if (rule.max !== undefined && value > rule.max) {
+    issues.push(validationIssue(rule, path, value, `${path} is ${value}; expected <= ${rule.max}`));
+  }
+  return issues;
+}
+
+function validateMaxUtf8Bytes(value, rule, path) {
+  if (value === undefined) {
+    return [];
+  }
+  if (typeof value !== "string") {
+    return [validationIssue(rule, path, value, `${path} must be a string`)];
+  }
+  const byteLength = Buffer.byteLength(value, "utf8");
+  if (byteLength > rule.maxBytes) {
+    return [
+      validationIssue(rule, path, value, `${path} is ${byteLength} UTF-8 bytes; expected <= ${rule.maxBytes}`),
+    ];
+  }
+  return [];
+}
+
+function validateRuntimeValue(value, rule, path) {
+  if (rule.kind === "integerRange") {
+    return validateIntegerRange(value, rule, path);
+  }
+  if (rule.kind === "maxUtf8Bytes") {
+    return validateMaxUtf8Bytes(value, rule, path);
+  }
+  return [validationIssue(rule, path, value, `Unsupported runtime constraint kind: ${rule.kind}`)];
+}
+
+function documentModuleEntries(document) {
+  if (document?.module) {
+    return [{ module: document.module, path: "module" }];
+  }
+  return (document?.modules ?? []).map((module, index) => ({ module, path: `modules[${index}]` }));
+}
+
+function validateRuntimeConstraint(document, rule) {
+  if (rule.scope === "project") {
+    return validateRuntimeValue(getPath(document.project, rule.path), rule, `project.${rule.path}`);
+  }
+  if (rule.scope === "module") {
+    return documentModuleEntries(document).flatMap((entry) =>
+      validateRuntimeValue(getPath(entry.module, rule.path), rule, `${entry.path}.${rule.path}`),
+    );
+  }
+  if (rule.scope === "moduleLink") {
+    return documentModuleEntries(document).flatMap((entry) => {
+      const links = entry.module?.[rule.relation];
+      if (!Array.isArray(links)) {
+        return [];
+      }
+      return links.flatMap((link, index) =>
+        validateRuntimeValue(getPath(link, rule.path), rule, `${entry.path}.${rule.relation}[${index}].${rule.path}`),
+      );
+    });
+  }
+  return [validationIssue(rule, rule.path, undefined, `Unsupported runtime constraint scope: ${rule.scope}`)];
+}
+
+export function validateContainer(document) {
+  const issues = (SUNVOX_DB.runtimeConstraints ?? []).flatMap((rule) =>
+    validateRuntimeConstraint(document, rule),
+  );
+  return {
+    ok: !issues.some((issue) => issue.severity === "error"),
+    issues,
+  };
 }
 
 function consumeScopeFields(scopeName, chunks, target, used) {
@@ -2508,6 +2603,30 @@ export async function verify(inputPath) {
   console.log(`${inputPath}: ${document.magic}, ${chunkCount} chunks, ${buffer.length} bytes`);
 }
 
+async function readDocument(inputPath) {
+  const buffer = await readFile(inputPath);
+  if (inputPath.toLowerCase().endsWith(".json")) {
+    return JSON.parse(buffer.toString("utf8"));
+  }
+  return parseContainer(buffer);
+}
+
+export async function validate(inputPath) {
+  const document = await readDocument(inputPath);
+  const result = validateContainer(document);
+  if (result.issues.length === 0) {
+    console.log(`${inputPath}: no runtime constraint issues`);
+    return;
+  }
+  for (const issue of result.issues) {
+    const source = issue.source ? ` source=${issue.source}` : "";
+    console.log(`${issue.severity}: ${issue.path}: ${issue.message} (${issue.rule})${source}`);
+  }
+  if (!result.ok) {
+    throw new Error(`${inputPath}: runtime constraint validation failed`);
+  }
+}
+
 async function runCli() {
   const [command, inputPath, outputPath] = process.argv.slice(2);
 
@@ -2518,6 +2637,8 @@ async function runCli() {
       await decode(inputPath, outputPath);
     } else if (command === "verify" && inputPath && !outputPath) {
       await verify(inputPath);
+    } else if (command === "validate" && inputPath && !outputPath) {
+      await validate(inputPath);
     } else {
       usage();
       process.exitCode = 2;
