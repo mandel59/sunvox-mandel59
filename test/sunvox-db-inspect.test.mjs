@@ -9,6 +9,7 @@ import {
   collectDbCheck,
   collectProjectMetrics,
   collectScaffold,
+  collectSourceReport,
 } from "../tools/sunvox-db-inspect.mjs";
 import { SUNVOX_DB } from "../tools/sunvox-codec.mjs";
 
@@ -62,6 +63,21 @@ test("controller diff has no metadata mismatches", () => {
   const diff = collectControllerDiff();
 
   assert.deepEqual(diff.mismatches, []);
+});
+
+test("source report summarizes module catalog metadata gaps", () => {
+  const report = collectSourceReport();
+  const colorGap = report.moduleCatalogGaps.find((gap) => gap.field === "color");
+  const amplifier = report.sourceModules.find((module) => module.module === "Amplifier");
+
+  assert.equal(report.sourceModules.length, 42);
+  assert.equal(colorGap.sourceModules, 42);
+  assert.equal(colorGap.dbModules, 0);
+  assert.equal(colorGap.missingDbModules, 42);
+  assert.equal(amplifier.color, "#E47FFF");
+  assert.equal(amplifier.inputs, "MODULE_INPUTS");
+  assert.equal(amplifier.outputs, "MODULE_OUTPUTS");
+  assert.equal(amplifier.flags, "PSYNTH_FLAG_EFFECT");
 });
 
 test("scaffold preserves signed, unit, empty, and suffix enum value names", () => {

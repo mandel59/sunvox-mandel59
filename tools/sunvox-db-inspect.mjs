@@ -10,6 +10,7 @@ const DEFAULT_SOURCE_ROOT = "var/sunvox_lib/lib_sunvox/psynth";
 const SOURCE_BLOCK_ID_FILE = "../sunvox_engine.cpp";
 const DEFAULT_STRINGS_FILE = "var/sunvox_lib/lib_sunvox/psynth/psynth_strings.cpp";
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
+const MODULE_CATALOG_FIELDS = ["color", "inputs", "outputs", "flags", "flags2"];
 
 function usage() {
   console.error(`Usage:
@@ -476,6 +477,21 @@ function scanSourceFile(file) {
   };
 }
 
+function collectModuleCatalogGaps(sourceModules) {
+  return MODULE_CATALOG_FIELDS.map((field) => {
+    const sourceModulesWithField = sourceModules.filter((module) => module[field] !== undefined);
+    const dbModulesWithField = sourceModulesWithField.filter(
+      (module) => SUNVOX_DB.modules[module.module]?.[field] !== undefined,
+    );
+    return {
+      field,
+      sourceModules: sourceModulesWithField.length,
+      dbModules: dbModulesWithField.length,
+      missingDbModules: sourceModulesWithField.length - dbModulesWithField.length,
+    };
+  });
+}
+
 function splitArguments(text) {
   const args = [];
   let current = "";
@@ -708,6 +724,7 @@ export function collectSourceReport(sourceRoot = DEFAULT_SOURCE_ROOT) {
     sourceRoot,
     sourceFiles: files.map((file) => relative(process.cwd(), file)),
     sourceModules: modules,
+    moduleCatalogGaps: collectModuleCatalogGaps(modules),
     dbModules: dbRows,
     missingFromDb: modules
       .filter((module) => !SUNVOX_DB.modules[module.module])
@@ -1541,6 +1558,14 @@ function formatSourceReport(report) {
     "",
     "DB modules missing from source scan:",
     report.missingFromSource.length ? report.missingFromSource.map((module) => `  - ${module}`).join("\n") : "(none)",
+    "",
+    "Module catalog fields not yet represented in DB:",
+    formatTable(report.moduleCatalogGaps, [
+      { header: "field", value: (row) => row.field },
+      { header: "sourceModules", value: (row) => row.sourceModules },
+      { header: "dbModules", value: (row) => row.dbModules },
+      { header: "missingDbModules", value: (row) => row.missingDbModules },
+    ]),
     "",
     "Covered DB modules:",
     formatTable(

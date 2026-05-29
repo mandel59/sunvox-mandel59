@@ -78,8 +78,10 @@ npm run sunvox:verify:all
   controller arrays, controller extras, extra chunks, opaque data chunks, plus
   DB module definitions that are not exercised by the current corpus.
 - `coverage --details` includes per-module paths for raw or opaque data.
-- `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp` and compares
-  source module/controller declaration counts with the DB.
+- `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`, compares
+  source module/controller declaration counts with the DB, and summarizes
+  source module catalog fields such as default color, input/output expressions,
+  and module flags that are not yet represented in the DB.
 - `controller-diff` compares controller ranges, units, scales, display offsets,
   and source enum value sets against the DB. It is a triage report for deciding
   which declarative source facts should be copied into `database.json`; CI
