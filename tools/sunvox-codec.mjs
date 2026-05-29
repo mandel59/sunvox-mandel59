@@ -18,6 +18,7 @@ const CHUNK_DESCRIPTIONS = Object.fromEntries(
   SUNVOX_DB.chunks.map((chunk) => [chunk.id, chunk.label]),
 );
 const MODULE_CONTROLLER_CACHE = new Map();
+let MODULE_LINK_RELATIONS;
 const PATTERN_CHUNKS = scopedChunkSet("pattern");
 const MODULE_CHUNKS = scopedChunkSet("module");
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -803,6 +804,35 @@ function makeSemanticChunk(chunkId, field, value, options = {}) {
   return chunk;
 }
 
+function moduleLinkRelations() {
+  if (MODULE_LINK_RELATIONS) {
+    return MODULE_LINK_RELATIONS;
+  }
+  MODULE_LINK_RELATIONS = SUNVOX_DB.chunks
+    .filter((chunk) => chunk.scope === "module" && chunk.linkSlots?.linkChunk)
+    .map((slotChunk) => {
+      const linkChunk = chunkDefinition(slotChunk.linkSlots.linkChunk);
+      if (!linkChunk) {
+        return undefined;
+      }
+      return {
+        linksChunk: linkChunk.id,
+        slotsChunk: slotChunk.id,
+        linksPath: slotChunk.linkSlots.localLinksPath ?? linkChunk.name,
+        slotsPath: slotChunk.name,
+        semanticPath: slotChunk.linkSlots.semanticPath,
+        slotCountPath: slotChunk.linkSlots.slotCountPath,
+      };
+    })
+    .filter(Boolean)
+    .filter((relation) => relation.linksPath && relation.slotsPath && relation.semanticPath && relation.slotCountPath);
+  return MODULE_LINK_RELATIONS;
+}
+
+function moduleLinkRelationForChunk(chunkId) {
+  return moduleLinkRelations().find((relation) => relation.linksChunk === chunkId || relation.slotsChunk === chunkId);
+}
+
 function semanticLinksFromArrays(module, linksPath, slotsPath, modules) {
   const links = module?.[linksPath];
   if (!Array.isArray(links)) {
@@ -849,25 +879,17 @@ function preservedLinkSlotCount(rawLinks, semanticLinks) {
 }
 
 function normalizeModuleLinks(module, modules) {
-  const inputs = semanticLinksFromArrays(module, "inputLinks", "inputLinkSlots", modules);
-  const outputs = semanticLinksFromArrays(module, "outputLinks", "outputLinkSlots", modules);
-  const inputSlotCount = preservedLinkSlotCount(module.inputLinks, inputs);
-  const outputSlotCount = preservedLinkSlotCount(module.outputLinks, outputs);
-  delete module.inputLinks;
-  delete module.inputLinkSlots;
-  delete module.outputLinks;
-  delete module.outputLinkSlots;
-  if (inputs.length) {
-    module.inputs = inputs;
-  }
-  if (inputSlotCount !== undefined) {
-    module.inputSlotCount = inputSlotCount;
-  }
-  if (outputs.length) {
-    module.outputs = outputs;
-  }
-  if (outputSlotCount !== undefined) {
-    module.outputSlotCount = outputSlotCount;
+  for (const relation of moduleLinkRelations()) {
+    const links = semanticLinksFromArrays(module, relation.linksPath, relation.slotsPath, modules);
+    const slotCount = preservedLinkSlotCount(module[relation.linksPath], links);
+    delete module[relation.linksPath];
+    delete module[relation.slotsPath];
+    if (links.length) {
+      module[relation.semanticPath] = links;
+    }
+    if (slotCount !== undefined) {
+      module[relation.slotCountPath] = slotCount;
+    }
   }
   return module;
 }
@@ -914,30 +936,30 @@ function semanticLinksToArrays(links, legacyLinks, legacySlots, slotCount) {
   return { links: storedLinks, slots: hasSlots ? storedSlots : undefined };
 }
 
-function moduleLinkArrays(module, direction) {
-  if (direction === "input") {
-    const inputs = Array.isArray(module?.inputs) ? module.inputs : module?.inputSlotCount !== undefined ? [] : undefined;
-    return semanticLinksToArrays(inputs, module?.inputLinks, module?.inputLinkSlots, module?.inputSlotCount);
-  }
-  const outputs = Array.isArray(module?.outputs) ? module.outputs : module?.outputSlotCount !== undefined ? [] : undefined;
-  return semanticLinksToArrays(outputs, module?.outputLinks, module?.outputLinkSlots, module?.outputSlotCount);
+function moduleLinkArrays(module, relation) {
+  const semanticLinks = Array.isArray(module?.[relation.semanticPath])
+    ? module[relation.semanticPath]
+    : module?.[relation.slotCountPath] !== undefined
+      ? []
+      : undefined;
+  return semanticLinksToArrays(
+    semanticLinks,
+    module?.[relation.linksPath],
+    module?.[relation.slotsPath],
+    module?.[relation.slotCountPath],
+  );
 }
 
 function emitModuleLinkChunk(module, chunkId) {
-  if (chunkId === "SLNK") {
-    const { links } = moduleLinkArrays(module, "input");
+  const relation = moduleLinkRelationForChunk(chunkId);
+  if (!relation) {
+    return undefined;
+  }
+  const { links, slots } = moduleLinkArrays(module, relation);
+  if (chunkId === relation.linksChunk) {
     return links === undefined ? undefined : makeSemanticChunk(chunkId, "values", links);
   }
-  if (chunkId === "SLnK") {
-    const { slots } = moduleLinkArrays(module, "input");
-    return slots === undefined ? undefined : makeSemanticChunk(chunkId, "values", slots);
-  }
-  if (chunkId === "SLNk") {
-    const { links } = moduleLinkArrays(module, "output");
-    return links === undefined ? undefined : makeSemanticChunk(chunkId, "values", links);
-  }
-  if (chunkId === "SLnk") {
-    const { slots } = moduleLinkArrays(module, "output");
+  if (chunkId === relation.slotsChunk) {
     return slots === undefined ? undefined : makeSemanticChunk(chunkId, "values", slots);
   }
   return undefined;
@@ -2203,7 +2225,7 @@ function syncModule(module) {
       chunks.push({ id: terminator, _label: chunkLabel(terminator) });
       continue;
     }
-    if (token === "SLNK" || token === "SLnK" || token === "SLNk" || token === "SLnk") {
+    if (moduleLinkRelationForChunk(token)) {
       const chunk = emitModuleLinkChunk(module, token);
       if (chunk) {
         chunks.push(chunk);

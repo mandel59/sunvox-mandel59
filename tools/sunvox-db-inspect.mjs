@@ -1159,6 +1159,13 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
     if (chunk.linkSlots?.linkChunk && !chunkIds.has(chunk.linkSlots.linkChunk)) {
       errors.push(`chunk ${chunk.id} linkSlots references missing link chunk ${chunk.linkSlots.linkChunk}`);
     }
+    if (chunk.linkSlots) {
+      for (const field of ["localLinksPath", "semanticPath", "slotCountPath"]) {
+        if (!chunk.linkSlots[field]) {
+          errors.push(`chunk ${chunk.id} linkSlots is missing ${field}`);
+        }
+      }
+    }
   }
 
   for (const [scopeName, scope] of Object.entries(SUNVOX_DB.grammar.scopes ?? {})) {

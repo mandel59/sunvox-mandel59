@@ -215,6 +215,9 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /grammar:project: field brokenGrammarField references missing bitfield __missing_grammar_bitfield/u);
     assert.match(errors, /grammar:project: field brokenGrammarField references missing bitflags __missing_grammar_bitflags/u);
     assert.match(errors, /chunk SLnK linkSlots references missing link chunk NOPE/u);
+    assert.match(errors, /chunk SLnK linkSlots is missing localLinksPath/u);
+    assert.match(errors, /chunk SLnK linkSlots is missing semanticPath/u);
+    assert.match(errors, /chunk SLnK linkSlots is missing slotCountPath/u);
     assert.match(
       errors,
       /bitfield:psynth_midi_input_flags: packed field field broken references missing bitflags __missing_bitfield_bitflags/u,

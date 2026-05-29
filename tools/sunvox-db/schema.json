@@ -22,7 +22,22 @@
             "enum": ["bitset", "bytes", "color", "controller", "count", "enum", "events", "flags", "grid", "icon", "index", "level", "linkSlots", "links", "midi", "position", "rate", "scale", "state", "tempo", "terminator", "text", "version"]
           },
           "sourceSymbol": { "type": "string" },
-          "signedRoundTrip": { "type": "boolean" }
+          "signedRoundTrip": { "type": "boolean" },
+          "linkSlots": {
+            "type": "object",
+            "required": ["linkChunk", "localLinksPath", "semanticPath", "slotCountPath"],
+            "properties": {
+              "linkChunk": { "type": "string", "minLength": 4, "maxLength": 4 },
+              "localLinksPath": { "type": "string" },
+              "remoteLinksPath": { "type": "string" },
+              "semanticPath": { "type": "string" },
+              "slotCountPath": { "type": "string" },
+              "slotSide": { "type": "string" },
+              "default": { "type": "integer" },
+              "omittedWhenAllSlotsNonPositive": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
         },
         "additionalProperties": true
       }

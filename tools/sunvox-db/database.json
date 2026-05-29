@@ -69,6 +69,8 @@
         "linkChunk": "SLNK",
         "localLinksPath": "inputLinks",
         "remoteLinksPath": "outputLinks",
+        "semanticPath": "inputs",
+        "slotCountPath": "inputSlotCount",
         "slotSide": "remoteOutput",
         "default": -1,
         "omittedWhenAllSlotsNonPositive": true
@@ -88,6 +90,8 @@
         "linkChunk": "SLNk",
         "localLinksPath": "outputLinks",
         "remoteLinksPath": "inputLinks",
+        "semanticPath": "outputs",
+        "slotCountPath": "outputSlotCount",
         "slotSide": "remoteInput",
         "default": -1,
         "omittedWhenAllSlotsNonPositive": true
