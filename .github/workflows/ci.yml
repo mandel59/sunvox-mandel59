@@ -35,6 +35,9 @@ jobs:
       - name: Install SunVox library
         run: sh scripts/install_sunvox_lib.sh
 
+      - name: Check license notices
+        run: npm run licenses:check
+
       - name: Test
         run: npm test
 

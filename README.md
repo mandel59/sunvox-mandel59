@@ -63,3 +63,7 @@ This license applies to the library files under
 
 The GitHub Pages frontend links to the SunVox library license and the required
 third-party license text files from the deployed page.
+
+Run `npm run licenses:check` to verify that the frontend includes the required
+SunVox notice and links every TXT file under
+`sunvox_lib/sunvox_lib/docs/license/`.
