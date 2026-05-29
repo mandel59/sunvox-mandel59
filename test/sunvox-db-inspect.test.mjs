@@ -130,6 +130,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousProjectFieldCount = projectFields.length;
   const linkSlotChunk = SUNVOX_DB.chunks.find((chunk) => chunk.id === "SLnK");
   const previousLinkSlots = linkSlotChunk.linkSlots;
+  const dataChunkGrammar = SUNVOX_DB.moduleDataChunkGrammar;
+  const previousDataChunkGrammar = JSON.parse(JSON.stringify(dataChunkGrammar));
   const bitfield = SUNVOX_DB.bitfields.psynth_midi_input_flags;
   const previousBitfieldFields = bitfield.fields;
   const storageChunk = SUNVOX_DB.chunks.find((chunk) => chunk.id === "SMIC");
@@ -173,6 +175,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     bitflags: "__missing_grammar_bitflags",
   });
   linkSlotChunk.linkSlots = { linkChunk: "NOPE" };
+  dataChunkGrammar.countChunk = "NOPE";
+  dataChunkGrammar.metadataChunks = [{ chunk: "NOPE", path: "brokenMetadata", field: "value" }];
   bitfield.fields = [...bitfield.fields, { name: "broken", shift: 7, bits: 1, bitflags: "__missing_bitfield_bitflags" }];
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
@@ -218,6 +222,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /chunk SLnK linkSlots is missing localLinksPath/u);
     assert.match(errors, /chunk SLnK linkSlots is missing semanticPath/u);
     assert.match(errors, /chunk SLnK linkSlots is missing slotCountPath/u);
+    assert.match(errors, /moduleDataChunkGrammar countChunk references missing chunk NOPE/u);
+    assert.match(errors, /moduleDataChunkGrammar metadata brokenMetadata references missing chunk NOPE/u);
     assert.match(
       errors,
       /bitfield:psynth_midi_input_flags: packed field field broken references missing bitflags __missing_bitfield_bitflags/u,
@@ -229,6 +235,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
   } finally {
     projectFields.length = previousProjectFieldCount;
     linkSlotChunk.linkSlots = previousLinkSlots;
+    Object.assign(dataChunkGrammar, previousDataChunkGrammar);
     bitfield.fields = previousBitfieldFields;
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     amplifier.color = previousAmplifierColor;

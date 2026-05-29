@@ -1193,6 +1193,21 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
     }
   }
 
+  const dataChunkGrammar = SUNVOX_DB.moduleDataChunkGrammar;
+  if (dataChunkGrammar) {
+    for (const field of ["countChunk", "indexChunk", "payloadChunk"]) {
+      const chunkId = dataChunkGrammar[field];
+      if (!chunkIds.has(chunkId)) {
+        errors.push(`moduleDataChunkGrammar ${field} references missing chunk ${chunkId}`);
+      }
+    }
+    for (const metadata of dataChunkGrammar.metadataChunks ?? []) {
+      if (!chunkIds.has(metadata.chunk)) {
+        errors.push(`moduleDataChunkGrammar metadata ${metadata.path} references missing chunk ${metadata.chunk}`);
+      }
+    }
+  }
+
   const sourceBlocks = collectSourceBlockIds(sourceRoot);
   if (!sourceBlocks.ids) {
     warnings.push(`could not read SunVox block id list from ${relative(process.cwd(), sourceBlocks.sourcePath)}`);

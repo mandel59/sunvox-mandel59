@@ -1040,6 +1040,17 @@
       }
     }
   },
+  "moduleDataChunkGrammar": {
+    "path": "dataChunks",
+    "countPath": "dataChunkCount",
+    "countChunk": "CHNK",
+    "indexChunk": "CHNM",
+    "payloadChunk": "CHDT",
+    "metadataChunks": [
+      { "chunk": "CHFF", "path": "flags", "kind": "flags", "field": "value" },
+      { "chunk": "CHFR", "path": "sampleRate", "kind": "sampleRate", "field": "value" }
+    ]
+  },
   "modules": {
     "Amplifier": {
       "color": "#E47FFF",

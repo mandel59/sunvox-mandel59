@@ -20,6 +20,8 @@ can either interpret it directly or generate conversion code from it later.
   Their `fieldSemantics` entries drive note names, one-based module references,
   packed controller/effect values, and editable aliases such as `parameter`.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
+- `moduleDataChunkGrammar`: describes the `CHNK` / `CHNM` / `CHDT`
+  sequence and optional metadata chunks such as `CHFF` and `CHFR`.
 - `modules`: describes module-specific controller layouts and data chunk
   layouts. Controller definitions can use `path` for nested semantic output and
   `repeat` for repeated layouts such as FMX operators.

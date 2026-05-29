@@ -1161,6 +1161,14 @@ function moduleControllerDefinition(type, index) {
   return moduleControllers(type).find((controller) => controller.index === index);
 }
 
+function moduleDataChunkGrammar() {
+  return SUNVOX_DB.moduleDataChunkGrammar;
+}
+
+function moduleDataChunkMetadata(grammar, chunkId) {
+  return grammar.metadataChunks?.find((metadata) => metadata.chunk === chunkId);
+}
+
 function controllerPath(controller) {
   return controller.path ?? controller.name;
 }
@@ -1942,20 +1950,21 @@ function makeControllerChunks(type, controllers) {
 }
 
 function consumeModuleDataChunks(chunks, target, used, type) {
+  const grammar = moduleDataChunkGrammar();
   const dataChunks = [];
   for (let index = 0; index < chunks.length; index += 1) {
     const chunk = chunks[index];
     if (used.has(index)) {
       continue;
     }
-    if (chunk.id === "CHNK") {
+    if (chunk.id === grammar.countChunk) {
       if (chunk.value !== undefined) {
-        target.dataChunkCount = chunk.value;
+        setPath(target, grammar.countPath, chunk.value);
       }
       used.add(index);
       continue;
     }
-    if (chunk.id !== "CHNM") {
+    if (chunk.id !== grammar.indexChunk) {
       continue;
     }
 
@@ -1963,7 +1972,7 @@ function consumeModuleDataChunks(chunks, target, used, type) {
     used.add(index);
 
     const data = chunks[index + 1];
-    if (data?.id === "CHDT" && !used.has(index + 1)) {
+    if (data?.id === grammar.payloadChunk && !used.has(index + 1)) {
       Object.assign(dataChunk, decodeModuleDataChunk(type, dataChunk.index, data));
       used.add(index + 1);
       index += 1;
@@ -1972,12 +1981,13 @@ function consumeModuleDataChunks(chunks, target, used, type) {
     while (index + 1 < chunks.length) {
       const next = chunks[index + 1];
       const definition = moduleDataDefinition(type, dataChunk.index);
-      if (next.id === "CHFF" && !used.has(index + 1)) {
-        dataChunk.flags = decodeDataChunkInfoValue(definition, "flags", next.value);
-        used.add(index + 1);
-        index += 1;
-      } else if (next.id === "CHFR" && !used.has(index + 1)) {
-        dataChunk.sampleRate = next.value;
+      const metadata = moduleDataChunkMetadata(grammar, next.id);
+      if (metadata && !used.has(index + 1)) {
+        setPath(
+          dataChunk,
+          metadata.path,
+          decodeDataChunkInfoValue(definition, metadata.kind ?? metadata.path, chunkSemanticValue(next, metadata)),
+        );
         used.add(index + 1);
         index += 1;
       } else {
@@ -1987,35 +1997,42 @@ function consumeModuleDataChunks(chunks, target, used, type) {
     dataChunks.push(dataChunk);
   }
   if (dataChunks.length) {
-    target.dataChunks = dataChunks;
+    setPath(target, grammar.path, dataChunks);
   }
 }
 
 function makeModuleDataChunks(module) {
+  const grammar = moduleDataChunkGrammar();
   const dataChunks = module?.dataChunks;
-  const declaredCount = module?.dataChunkCount ?? dataChunks?.length;
+  const declaredCount = getPath(module, grammar.countPath) ?? dataChunks?.length;
   if (declaredCount === undefined && !Array.isArray(dataChunks)) {
     return [];
   }
 
-  const chunks = [makeSemanticChunk("CHNK", "value", declaredCount ?? 0)];
+  const chunks = [makeSemanticChunk(grammar.countChunk, "value", declaredCount ?? 0)];
   for (const dataChunk of dataChunks ?? []) {
     const definition = moduleDataDefinition(module?.type, dataChunk.index);
-    chunks.push(makeSemanticChunk("CHNM", "value", dataChunk.index ?? 0));
+    chunks.push(makeSemanticChunk(grammar.indexChunk, "value", dataChunk.index ?? 0));
     if (dataChunk.chunk) {
       chunks.push(cloneJson(dataChunk.chunk));
     } else {
       chunks.push({
-        id: "CHDT",
-        _label: chunkLabel("CHDT"),
+        id: grammar.payloadChunk,
+        _label: chunkLabel(grammar.payloadChunk),
         base64: encodeModuleDataPayload(dataChunk, definition).toString("base64"),
       });
     }
-    if (dataChunk.flags !== undefined) {
-      chunks.push(makeSemanticChunk("CHFF", "value", encodeDataChunkInfoValue(definition, "flags", dataChunk.flags)));
-    }
-    if (dataChunk.sampleRate !== undefined) {
-      chunks.push(makeSemanticChunk("CHFR", "value", dataChunk.sampleRate));
+    for (const metadata of grammar.metadataChunks ?? []) {
+      const value = getPath(dataChunk, metadata.path);
+      if (value !== undefined) {
+        chunks.push(
+          makeSemanticChunk(
+            metadata.chunk,
+            metadata.field,
+            encodeDataChunkInfoValue(definition, metadata.kind ?? metadata.path, value),
+          ),
+        );
+      }
     }
   }
   return chunks;
