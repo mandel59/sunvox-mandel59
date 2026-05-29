@@ -57,10 +57,17 @@ test("formats semantic diff output", () => {
   const text = formatDiff({
     before: "before.sunvox",
     after: "after.sunvox",
-    changes: [{ type: "changed", path: "project.name", before: "Before", after: "After" }],
+    changes: [
+      { type: "changed", path: "project.name", before: "Before", after: "After" },
+      { type: "changed", path: "modules[0].controllers.volume", before: 256, after: 300 },
+      { type: "changed", path: "patterns[1].events[3].note", before: "C4", after: "D4" },
+    ],
   });
 
   assert.match(text, /SunVox semantic diff/u);
-  assert.match(text, /Changes: 1/u);
+  assert.match(text, /Changes: 3/u);
+  assert.match(text, /Project/u);
+  assert.match(text, /Module #0 controllers/u);
+  assert.match(text, /Pattern #1 events/u);
   assert.match(text, /~ project\.name: "Before" -> "After"/u);
 });

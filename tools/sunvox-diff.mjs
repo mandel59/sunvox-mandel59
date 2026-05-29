@@ -150,6 +150,45 @@ function formatChange(change) {
   return `~ ${path}: ${summarizeValue(change.before)} -> ${summarizeValue(change.after)}`;
 }
 
+function changeGroup(path) {
+  if (!path || path === "$") {
+    return "Document";
+  }
+  if (path.startsWith("project.")) {
+    return "Project";
+  }
+  const moduleMatch = /^modules\[(\d+)\](?:\.(controllers|inputs|outputs)\b)?/u.exec(path);
+  if (moduleMatch) {
+    const [, moduleIndex, section] = moduleMatch;
+    if (section === "controllers") {
+      return `Module #${moduleIndex} controllers`;
+    }
+    if (section === "inputs" || section === "outputs") {
+      return `Module #${moduleIndex} ${section}`;
+    }
+    return `Module #${moduleIndex}`;
+  }
+  const patternMatch = /^patterns\[(\d+)\](?:\.events\b)?/u.exec(path);
+  if (patternMatch) {
+    const [, patternIndex] = patternMatch;
+    return path.startsWith(`patterns[${patternIndex}].events`)
+      ? `Pattern #${patternIndex} events`
+      : `Pattern #${patternIndex}`;
+  }
+  return "Document";
+}
+
+function formatGroupedChanges(changes) {
+  const groups = new Map();
+  for (const change of changes) {
+    const group = changeGroup(change.path);
+    groups.set(group, [...(groups.get(group) ?? []), change]);
+  }
+  return [...groups.entries()]
+    .map(([group, groupChanges]) => [group, ...groupChanges.map((change) => `  ${formatChange(change)}`)].join("\n"))
+    .join("\n\n");
+}
+
 export function formatDiff(result) {
   return [
     "SunVox semantic diff",
@@ -157,7 +196,7 @@ export function formatDiff(result) {
     `After: ${result.after}`,
     `Changes: ${result.changes.length}`,
     "",
-    result.changes.length ? result.changes.map(formatChange).join("\n") : "(none)",
+    result.changes.length ? formatGroupedChanges(result.changes) : "(none)",
     "",
   ].join("\n");
 }
