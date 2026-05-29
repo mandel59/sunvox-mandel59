@@ -495,6 +495,10 @@ function decodePatternPackedField(value, module, event, field) {
     }
     return;
   }
+  if (field.enum) {
+    event[field.name] = enumToName(field.enum, decodedValue);
+    return;
+  }
   event[field.name] = decodedValue;
 }
 
@@ -515,6 +519,9 @@ function eventPackedFieldValue(event, module, field) {
       throw new Error(`Unknown pattern controller: ${value}`);
     }
     return controllerIndex;
+  }
+  if (field.enum) {
+    return enumToValue(field.enum, value);
   }
   return value;
 }

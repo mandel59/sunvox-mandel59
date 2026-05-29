@@ -86,6 +86,7 @@ export interface SunVoxStructTextLayout {
         offset?: number;
         min?: number;
         max?: number;
+        enum?: string;
         reference?: string;
       }>;
     }

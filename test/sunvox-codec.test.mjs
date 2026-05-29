@@ -586,7 +586,7 @@ test("decodes pattern note data", async () => {
   assert.deepEqual(layout.fieldSemantics.controller.packedFields, [
     { name: "controller", shift: 8, bits: 8, offset: -1, min: 1, max: 127, reference: "module.controllers" },
     { name: "midiController", shift: 8, bits: 8, offset: -128, min: 128, max: 255 },
-    { name: "effect", shift: 0, bits: 8, min: 1, max: 255 },
+    { name: "effect", shift: 0, bits: 8, min: 1, max: 255, enum: "sunvox_pattern_effect" },
   ]);
   assert.deepEqual(layout.fieldSemantics.value.aliases, ["parameter"]);
   assert.ok(pattern.events.length < pattern.tracks * pattern.lines);
@@ -696,7 +696,7 @@ test("encodes DB-described packed pattern MIDI controller and effect fields", as
       line: 2,
       track: 0,
       midiController: 7,
-      effect: 3,
+      effect: "tonePortamento",
       parameter: 12,
     },
   ];
@@ -705,7 +705,7 @@ test("encodes DB-described packed pattern MIDI controller and effect fields", as
   const event = reparsed.patterns[patternIndex].events.find((candidate) => candidate.line === 2 && candidate.track === 0);
 
   assert.equal(event.midiController, 7);
-  assert.equal(event.effect, 3);
+  assert.equal(event.effect, "tonePortamento");
   assert.equal(event.value, 12);
 });
 

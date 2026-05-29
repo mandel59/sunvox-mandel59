@@ -149,6 +149,7 @@
                           "offset": { "type": "integer" },
                           "min": { "type": "integer" },
                           "max": { "type": "integer" },
+                          "enum": { "type": "string" },
                           "reference": { "type": "string" }
                         },
                         "additionalProperties": false

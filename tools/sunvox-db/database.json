@@ -137,6 +137,28 @@
       "3": "nextLinePlus",
       "4": "nextLineMinus"
     },
+    "sunvox_pattern_effect": {
+      "3": "tonePortamento",
+      "4": "vibrato",
+      "7": "sampleOffsetFine",
+      "8": "arpeggio",
+      "9": "sampleOffset",
+      "10": "velocitySlide",
+      "15": "setSpeedOrBpm",
+      "25": "retrigger",
+      "28": "noteCut",
+      "29": "noteDelay",
+      "31": "setBpm",
+      "32": "noteProbability",
+      "33": "noteProbabilityRandomVelocity",
+      "34": "randomControllerValue",
+      "35": "randomControllerValueRange",
+      "48": "stop",
+      "49": "jumpRequest",
+      "50": "setJumpAddressMode",
+      "51": "slotSync",
+      "53": "midiMessageSupport"
+    },
     "psynth_midi_type": {
       "0": "none",
       "1": "note",
@@ -860,7 +882,7 @@
             "packedFields": [
               { "name": "controller", "shift": 8, "bits": 8, "offset": -1, "min": 1, "max": 127, "reference": "module.controllers" },
               { "name": "midiController", "shift": 8, "bits": 8, "offset": -128, "min": 128, "max": 255 },
-              { "name": "effect", "shift": 0, "bits": 8, "min": 1, "max": 255 }
+              { "name": "effect", "shift": 0, "bits": 8, "min": 1, "max": 255, "enum": "sunvox_pattern_effect" }
             ]
           },
           "value": {

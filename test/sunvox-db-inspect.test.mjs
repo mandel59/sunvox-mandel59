@@ -252,7 +252,15 @@ test("DB check validates data chunk ranges and metadata references", () => {
   );
   bitfield.fields = [...bitfield.fields, { name: "broken", shift: 7, bits: 1, bitflags: "__missing_bitfield_bitflags" }];
   packedFields.push(
-    { name: "brokenPacked", shift: 8, bits: 8, min: 127, max: 200, reference: "__missing_packed_reference" },
+    {
+      name: "brokenPacked",
+      shift: 8,
+      bits: 8,
+      min: 127,
+      max: 200,
+      enum: "__missing_packed_enum",
+      reference: "__missing_packed_reference",
+    },
     { name: "badRange", shift: 0, bits: 2, min: 0, max: 4 },
   );
   textLayout.tupleFields = [...textLayout.tupleFields, "missingTuple"];
@@ -333,6 +341,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(
       errors,
       /struct sunvox_note field controller packed field brokenPacked has invalid reference __missing_packed_reference/u,
+    );
+    assert.match(
+      errors,
+      /struct sunvox_note field controller: packed field brokenPacked references missing enum __missing_packed_enum/u,
     );
     assert.match(
       errors,
