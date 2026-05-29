@@ -36,9 +36,15 @@ auxiliary module names, while the dense binary grid remains round-trip safe.
 npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json
 npm run sunvox:decode -- var/2022-04-17.sunvox.json var/2022-04-17.sunvox
 npm run sunvox:verify -- music/2022-04-17.sunvox
+npm run sunvox:outline -- music/2022-04-17.sunvox
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 ```
+
+`sunvox:outline` prints a human-readable outline of a SunVox/SunSynth file:
+project settings, module slots, graph links, patterns, and embedded MetaModule
+containers. Use `--json` for machine-readable output, `--events <count>` to
+control pattern event previews, or `--no-embedded` to keep the report shallow.
 
 Run the local quality gate before committing codec, DB, or frontend changes:
 
