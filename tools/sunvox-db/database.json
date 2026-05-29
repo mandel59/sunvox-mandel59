@@ -803,6 +803,27 @@
     }
   },
   "patternEffectParameters": {
+    "portamentoUp": {
+      "description": "Portamento-up speed stored before SunVox scales it internally.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x01",
+      "packedFields": [
+        { "name": "speed", "shift": 0, "bits": 16 }
+      ]
+    },
+    "portamentoDown": {
+      "description": "Portamento-down speed stored before SunVox scales it internally.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x02",
+      "packedFields": [
+        { "name": "speed", "shift": 0, "bits": 16 }
+      ]
+    },
+    "tonePortamento": {
+      "description": "Tone portamento speed stored before SunVox scales it internally.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x03",
+      "packedFields": [
+        { "name": "speed", "shift": 0, "bits": 16 }
+      ]
+    },
     "vibrato": {
       "description": "0xSSAA where SS is vibrato speed and AA is vibrato amplitude.",
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x04",
@@ -811,12 +832,54 @@
         { "name": "amplitude", "shift": 0, "bits": 8 }
       ]
     },
+    "pitchUp": {
+      "description": "Pitch-up amount applied to the event pitch.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x05",
+      "packedFields": [
+        { "name": "amount", "shift": 0, "bits": 16 }
+      ]
+    },
+    "pitchDown": {
+      "description": "Pitch-down amount applied to the event pitch.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x06",
+      "packedFields": [
+        { "name": "amount", "shift": 0, "bits": 16 }
+      ]
+    },
     "velocitySlide": {
       "description": "0xUUDD where UU slides velocity up and DD slides velocity down.",
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x0A",
       "packedFields": [
         { "name": "up", "shift": 8, "bits": 8 },
         { "name": "down", "shift": 0, "bits": 8 }
+      ]
+    },
+    "finePortamentoUp": {
+      "description": "Fine portamento-up speed stored before SunVox scales it internally.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x11",
+      "packedFields": [
+        { "name": "speed", "shift": 0, "bits": 16 }
+      ]
+    },
+    "finePortamentoDown": {
+      "description": "Fine portamento-down speed stored before SunVox scales it internally.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x12",
+      "packedFields": [
+        { "name": "speed", "shift": 0, "bits": 16 }
+      ]
+    },
+    "setModuleMuteSoloBypass": {
+      "description": "Sparse flags that set mute, solo, and bypass state on the target module.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x13",
+      "packedFields": [
+        { "name": "flags", "shift": 0, "bits": 9, "bitflags": "module_mute_solo_bypass_flags" }
+      ]
+    },
+    "resetModuleMuteSoloBypass": {
+      "description": "Sparse flags that reset mute, solo, and bypass state on the target module.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x14",
+      "packedFields": [
+        { "name": "flags", "shift": 0, "bits": 9, "bitflags": "module_mute_solo_bypass_flags" }
       ]
     },
     "sampleOffsetFine": {
@@ -869,6 +932,13 @@
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x1D",
       "packedFields": [
         { "name": "ticks", "shift": 0, "bits": 5 }
+      ]
+    },
+    "setBpm": {
+      "description": "Project BPM value requested by effect 0x1F before SunVox runtime clamping.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x1F",
+      "packedFields": [
+        { "name": "bpm", "shift": 0, "bits": 16 }
       ]
     },
     "noteProbability": {
@@ -943,6 +1013,20 @@
       "packedFields": [
         { "name": "fromLine", "shift": 8, "bits": 8 },
         { "name": "toLine", "shift": 0, "bits": 8 }
+      ]
+    },
+    "jumpRequest": {
+      "description": "Requested jump line before the current jump address mode is applied.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x31",
+      "packedFields": [
+        { "name": "line", "shift": 0, "bits": 16 }
+      ]
+    },
+    "setJumpAddressMode": {
+      "description": "Jump address interpretation mode used by subsequent jump requests.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x32",
+      "packedFields": [
+        { "name": "mode", "shift": 0, "bits": 16, "enum": "sunvox_jump_address_mode" }
       ]
     },
     "setRuntimeFlags": {
@@ -1184,6 +1268,11 @@
       { "name": "noVolSlideOnTick0", "bit": 1 },
       { "name": "keyboardRoundRobin", "bit": 2 },
       { "name": "midiOut7bit", "bit": 3 }
+    ],
+    "module_mute_solo_bypass_flags": [
+      { "name": "mute", "bit": 0 },
+      { "name": "solo", "bit": 4 },
+      { "name": "bypass", "bit": 8 }
     ],
     "sunvox_sync_flags": [
       { "name": "midiStartStopContinue", "bit": 0 },

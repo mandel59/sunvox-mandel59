@@ -45,8 +45,8 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.namedSourcePatternEffects, 43);
   assert.equal(metrics.summary.unnamedSourcePatternEffects, 0);
   assert.equal(metrics.summary.patternEffectNameCoveragePercent, 100);
-  assert.equal(metrics.summary.patternEffectParameterSchemas, 27);
-  assert.equal(metrics.summary.patternEffectParameterCoveragePercent, 62.8);
+  assert.equal(metrics.summary.patternEffectParameterSchemas, 39);
+  assert.equal(metrics.summary.patternEffectParameterCoveragePercent, 90.7);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 5);

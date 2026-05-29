@@ -706,7 +706,8 @@ test("encodes DB-described packed pattern MIDI controller and effect fields", as
 
   assert.equal(event.midiController, 7);
   assert.equal(event.effect, "tonePortamento");
-  assert.equal(event.value, 12);
+  assert.deepEqual(event.parameter, { speed: 12 });
+  assert.equal(event.value, undefined);
 });
 
 test("decodes and encodes DB-described pattern effect parameters", async () => {
@@ -720,7 +721,7 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
 
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
-  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 9);
+  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 11);
   assert.ok(patternIndex >= 0);
   const pattern = document.patterns[patternIndex];
 
@@ -776,6 +777,18 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
       effect: "midiMessageSupport",
       parameter: { message: "pitchBendChange", controller: 131 },
     },
+    {
+      line: 10,
+      track: 0,
+      effect: "setModuleMuteSoloBypass",
+      parameter: { flags: { mute: true, bypass: true } },
+    },
+    {
+      line: 11,
+      track: 0,
+      effect: "setJumpAddressMode",
+      parameter: { mode: "nextLineMinus" },
+    },
   ];
 
   const reparsed = parseContainer(buildContainer(document));
@@ -791,6 +804,8 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
     reset: { noVolSlideOnTick0: true },
   });
   assert.deepEqual(reparsed.patterns[patternIndex].events[7].parameter, { message: "pitchBendChange", controller: 131 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[8].parameter, { flags: { mute: true, bypass: true } });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[9].parameter, { mode: "nextLineMinus" });
 });
 
 test("can still build editable chunk documents", async () => {
