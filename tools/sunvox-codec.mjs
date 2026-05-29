@@ -406,14 +406,6 @@ function patternNoteTextToValue(value) {
   return noteNumber + 1;
 }
 
-function patternVelocityValueToText(value) {
-  return value === 0 ? undefined : value;
-}
-
-function patternVelocityTextToValue(value) {
-  return value === undefined || value === "default" ? 0 : value;
-}
-
 function patternModuleFromStored(value) {
   return value === 0 ? undefined : value - 1;
 }
@@ -465,6 +457,89 @@ function encodePatternController(event, module) {
   return ((controllerNumber & 0xff) << 8) | (effect & 0xff);
 }
 
+function patternFieldSemantics(definition, fieldName) {
+  return definition?.textLayout?.fieldSemantics?.[fieldName] ?? {};
+}
+
+function semanticEventFieldValue(event, fieldName, semantics) {
+  if (event[fieldName] !== undefined) {
+    return event[fieldName];
+  }
+  for (const alias of semantics.aliases ?? []) {
+    if (event[alias] !== undefined) {
+      return event[alias];
+    }
+  }
+  return undefined;
+}
+
+function shouldKeepDecodedPatternField(fieldName, value, semantics, rawRecord) {
+  if (value !== 0) {
+    return true;
+  }
+  if (semantics.zero === "omitUnlessController") {
+    return (rawRecord.controller ?? 0) !== 0;
+  }
+  return !["default", "empty", "none"].includes(semantics.zero) && fieldName !== "value";
+}
+
+function annotatePatternModuleReference(event, fieldName, module, semantics) {
+  if (semantics.reference !== "modules") {
+    return;
+  }
+  if (module?.name) {
+    event[`_${fieldName}Name`] = module.name;
+  }
+  if (module?.type) {
+    event[`_${fieldName}Type`] = module.type;
+  }
+}
+
+function applyDecodedPatternField(event, fieldName, value, context) {
+  const semantics = patternFieldSemantics(context.definition, fieldName);
+  switch (semantics.encoding) {
+    case "sunvoxNote": {
+      const note = patternNoteValueToText(value);
+      if (note !== undefined) {
+        event[fieldName] = note;
+      }
+      return;
+    }
+    case "oneBasedModuleIndex": {
+      const moduleIndex = patternModuleFromStored(value);
+      if (moduleIndex !== undefined) {
+        const module = context.modules?.[moduleIndex];
+        event[fieldName] = moduleIndex;
+        context.module = module;
+        annotatePatternModuleReference(event, fieldName, module, semantics);
+      }
+      return;
+    }
+    case "packedPatternControllerEffect":
+      decodePatternController(value, context.module, event);
+      return;
+    default:
+      if (shouldKeepDecodedPatternField(fieldName, value, semantics, context.rawRecord)) {
+        event[fieldName] = value;
+      }
+  }
+}
+
+function encodePatternEventField(fieldName, event, context) {
+  const semantics = patternFieldSemantics(context.definition, fieldName);
+  const value = semanticEventFieldValue(event, fieldName, semantics);
+  switch (semantics.encoding) {
+    case "sunvoxNote":
+      return patternNoteTextToValue(value);
+    case "oneBasedModuleIndex":
+      return patternModuleToStored(value);
+    case "packedPatternControllerEffect":
+      return encodePatternController(event, context.module);
+    default:
+      return value === "default" && semantics.zero === "default" ? 0 : (value ?? 0);
+  }
+}
+
 function emptyPatternRecord(definition) {
   return Object.fromEntries(structTextTupleFields(definition).map((fieldName) => [fieldName, 0]));
 }
@@ -480,28 +555,9 @@ function patternRecordToSemanticEvent(record, index, columns, modules, definitio
     line: Math.floor(index / columns),
     track: index % columns,
   };
-  const note = patternNoteValueToText(object.note ?? 0);
-  if (note !== undefined) {
-    event.note = note;
-  }
-  const velocity = patternVelocityValueToText(object.velocity ?? 0);
-  if (velocity !== undefined) {
-    event.velocity = velocity;
-  }
-  const moduleIndex = patternModuleFromStored(object.module ?? 0);
-  const module = moduleIndex === undefined ? undefined : modules[moduleIndex];
-  if (moduleIndex !== undefined) {
-    event.module = moduleIndex;
-    if (module?.name) {
-      event._moduleName = module.name;
-    }
-    if (module?.type) {
-      event._moduleType = module.type;
-    }
-  }
-  decodePatternController(object.controller ?? 0, module, event);
-  if ((object.value ?? 0) !== 0 || object.controller !== 0) {
-    event.value = object.value ?? 0;
+  const context = { definition, modules, rawRecord: object };
+  for (const fieldName of structTextTupleFields(definition)) {
+    applyDecodedPatternField(event, fieldName, object[fieldName] ?? 0, context);
   }
   return event;
 }
@@ -559,15 +615,10 @@ function patternSemanticEventToRecord(event, modules, definition) {
   if (event.line === undefined && event.track === undefined) {
     return tupleRecordToObject(event, definition);
   }
-  const moduleIndex = event.module;
-  const module = moduleIndex === undefined ? undefined : modules?.[moduleIndex];
-  return {
-    note: patternNoteTextToValue(event.note),
-    velocity: patternVelocityTextToValue(event.velocity),
-    module: patternModuleToStored(moduleIndex),
-    controller: encodePatternController(event, module),
-    value: event.value ?? event.parameter ?? 0,
-  };
+  const context = { definition, modules, module: modules?.[event.module] };
+  return Object.fromEntries(
+    structTextTupleFields(definition).map((fieldName) => [fieldName, encodePatternEventField(fieldName, event, context)]),
+  );
 }
 
 function patternEventRecords(pattern, modules) {

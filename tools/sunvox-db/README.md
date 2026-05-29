@@ -17,6 +17,8 @@ can either interpret it directly or generate conversion code from it later.
   bindings. Pattern notes also declare the editable text layout used for
   `patterns[].events`: sparse semantic event objects with explicit `line` and
   `track` fields, backed by a line-major tuple layout for binary round-trips.
+  Their `fieldSemantics` entries drive note names, one-based module references,
+  packed controller/effect values, and editable aliases such as `parameter`.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
 - `modules`: describes module-specific controller layouts and data chunk
   layouts. Controller definitions can use `path` for nested semantic output and

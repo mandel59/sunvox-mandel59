@@ -836,23 +836,31 @@
         "emptyTuple": [0, 0, 0, 0, 0],
         "fieldSemantics": {
           "note": {
-            "description": "0 is empty; 1..127 are note number plus 1; 128 is note off; 129 and above are note commands."
+            "description": "0 is empty; 1..127 are note number plus 1; 128 is note off; 129 and above are note commands.",
+            "encoding": "sunvoxNote",
+            "zero": "empty"
           },
           "velocity": {
-            "description": "0 selects the default velocity; non-zero values are stored directly in the pattern event."
+            "description": "0 selects the default velocity; non-zero values are stored directly in the pattern event.",
+            "encoding": "uint8",
+            "zero": "default"
           },
           "module": {
             "description": "0 selects no module; non-zero values are one-based module slot references.",
             "encoding": "oneBasedModuleIndex",
+            "reference": "modules",
             "zero": "none"
           },
           "controller": {
             "description": "0 selects no controller or effect; packed 0xCCEE value where CC is controller number plus 1 and EE is the standard effect code.",
-            "encoding": "packedPatternControllerEffect"
+            "encoding": "packedPatternControllerEffect",
+            "zero": "none"
           },
           "value": {
             "description": "Controller value or standard effect parameter.",
-            "encoding": "uint16"
+            "encoding": "uint16",
+            "zero": "omitUnlessController",
+            "aliases": ["parameter"]
           }
         }
       },

@@ -128,8 +128,13 @@
                   "properties": {
                     "description": { "type": "string" },
                     "encoding": { "type": "string" },
+                    "reference": { "type": "string" },
                     "zero": { "type": "string" },
-                    "range": { "type": "string" }
+                    "range": { "type": "string" },
+                    "aliases": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
                   },
                   "additionalProperties": false
                 }

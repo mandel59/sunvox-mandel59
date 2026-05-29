@@ -375,6 +375,10 @@ test("decodes pattern note data", async () => {
   assert.equal(layout.rowsPath, "lines");
   assert.deepEqual(layout.positionFields, ["line", "track"]);
   assert.deepEqual(layout.tupleFields, ["note", "velocity", "module", "controller", "value"]);
+  assert.equal(layout.fieldSemantics.note.encoding, "sunvoxNote");
+  assert.equal(layout.fieldSemantics.module.reference, "modules");
+  assert.equal(layout.fieldSemantics.controller.encoding, "packedPatternControllerEffect");
+  assert.deepEqual(layout.fieldSemantics.value.aliases, ["parameter"]);
   assert.ok(pattern.events.length < pattern.tracks * pattern.lines);
   assert.equal(sha256(buildContainer(document)), sha256(buffer));
 });
@@ -397,7 +401,7 @@ test("encodes named pattern controller events", async () => {
     track: 0,
     module: moduleIndex,
     controller: "volume",
-    value: 321,
+    parameter: 321,
   });
 
   const reparsed = parseContainer(buildContainer(document));
