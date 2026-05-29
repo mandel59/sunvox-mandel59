@@ -56,6 +56,12 @@ test("parses project into structured metadata", async () => {
   assert.equal(document.modules.some((module) => Array.isArray(module.chunks)), false);
   assert.equal(document.patterns[0].index, undefined);
   assert.equal(document.patterns[0].layer, undefined);
+  assert.deepEqual(document.modules[1].inputs, [
+    { slot: 0, module: 8, peerSlot: 1, _moduleName: "MultiCtl", _moduleType: "MultiCtl" },
+  ]);
+  assert.equal(document.modules[1].inputSlotCount, 2);
+  assert.equal(document.modules[1].inputLinks, undefined);
+  assert.equal(document.modules[1].inputLinkSlots, undefined);
 });
 
 test("decodes project supertrack mute and jump address state", () => {

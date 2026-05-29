@@ -215,6 +215,23 @@ function coverageModuleKind(module) {
   return "(empty slot)";
 }
 
+function moduleLinkObjects(module, semanticPath, legacyLinksPath, legacySlotsPath) {
+  if (Array.isArray(module?.[semanticPath])) {
+    return module[semanticPath]
+      .filter((link) => Number.isInteger(link?.module))
+      .map((link, index) => ({
+        slot: Number.isInteger(link.slot) ? link.slot : index,
+        linkedModule: link.module,
+        peerSlot: link.peerSlot,
+      }));
+  }
+  return (module?.[legacyLinksPath] ?? []).map((linkedModule, slot) => ({
+    slot,
+    linkedModule,
+    peerSlot: module?.[legacySlotsPath]?.[slot],
+  }));
+}
+
 function collectDocumentLinkIssues(document, source, path, issues) {
   if (document.magic === "SSYN") {
     for (const chunk of document.module?.dataChunks ?? []) {
@@ -227,15 +244,15 @@ function collectDocumentLinkIssues(document, source, path, issues) {
 
   const modules = document.modules ?? [];
   modules.forEach((module, moduleIndex) => {
-    for (const [field, slotsField] of [
-      ["inputLinks", "inputLinkSlots"],
-      ["outputLinks", "outputLinkSlots"],
+    for (const [field, semanticPath, legacyLinksPath, legacySlotsPath] of [
+      ["inputs", "inputs", "inputLinks", "inputLinkSlots"],
+      ["outputs", "outputs", "outputLinks", "outputLinkSlots"],
     ]) {
-      const links = module?.[field];
-      if (!Array.isArray(links)) {
+      const links = moduleLinkObjects(module, semanticPath, legacyLinksPath, legacySlotsPath);
+      if (!links.length) {
         continue;
       }
-      links.forEach((linkedModule, linkIndex) => {
+      links.forEach(({ linkedModule, slot, peerSlot }) => {
         if (linkedModule === -1) {
           return;
         }
@@ -244,9 +261,9 @@ function collectDocumentLinkIssues(document, source, path, issues) {
           path: [...path, moduleLabel(module, moduleIndex)].join(" / "),
           module: moduleIndex,
           field,
-          linkIndex,
+          linkIndex: slot,
           linkedModule,
-          slot: module?.[slotsField]?.[linkIndex],
+          slot: peerSlot,
         };
         if (!Number.isInteger(linkedModule)) {
           issues.push({ ...issue, reason: "non-integer module reference" });

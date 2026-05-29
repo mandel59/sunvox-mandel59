@@ -48,10 +48,8 @@ function moduleSummary(module, index) {
     flags: flagNames(module?.flags),
     position: module?.position,
     color: module?.color,
-    inputLinks: compactLinks(module?.inputLinks),
-    inputLinkSlots: compactSlots(module?.inputLinks, module?.inputLinkSlots),
-    outputLinks: compactLinks(module?.outputLinks),
-    outputLinkSlots: compactSlots(module?.outputLinks, module?.outputLinkSlots),
+    inputs: compactModuleLinks(module, "inputs", "inputLinks", "inputLinkSlots"),
+    outputs: compactModuleLinks(module, "outputs", "outputLinks", "outputLinkSlots"),
     controllerCount: countControllers(module?.controllers),
     dataChunkCount: module?.dataChunkCount ?? dataChunks.length,
     embeddedCount: dataChunks.filter((chunk) => chunk.container).length,
@@ -72,14 +70,32 @@ function compactLinks(links) {
   return (links ?? []).filter((link) => Number.isInteger(link) && link >= 0);
 }
 
-function compactSlots(links, slots) {
+function compactModuleLinks(module, semanticPath, legacyLinksPath, legacySlotsPath) {
+  const semanticLinks = module?.[semanticPath];
+  if (Array.isArray(semanticLinks)) {
+    return semanticLinks
+      .filter((link) => Number.isInteger(link?.module) && link.module >= 0)
+      .map((link, index) => ({
+        slot: Number.isInteger(link.slot) ? link.slot : index,
+        module: link.module,
+        ...(Number.isInteger(link.peerSlot) ? { peerSlot: link.peerSlot } : {}),
+      }));
+  }
+
+  const legacyLinks = compactLinks(module?.[legacyLinksPath]);
   const compact = [];
-  for (const [index, link] of (links ?? []).entries()) {
+  for (const [index, link] of (module?.[legacyLinksPath] ?? []).entries()) {
     if (Number.isInteger(link) && link >= 0) {
-      compact.push(Number.isInteger(slots?.[index]) ? slots[index] : null);
+      compact.push({
+        slot: index,
+        module: link,
+        ...(Number.isInteger(module?.[legacySlotsPath]?.[index])
+          ? { peerSlot: module[legacySlotsPath][index] }
+          : {}),
+      });
     }
   }
-  return compact;
+  return compact.length ? compact : legacyLinks.map((moduleIndex, slot) => ({ slot, module: moduleIndex }));
 }
 
 function linkName(modules, index) {
@@ -88,18 +104,15 @@ function linkName(modules, index) {
 }
 
 function addEdges(edges, modules, sourceModule, links, direction, kind) {
-  for (const [linkIndex, linkedModule] of (links ?? []).entries()) {
+  for (const link of links ?? []) {
+    const linkedModule = link.module;
     if (!Number.isInteger(linkedModule) || linkedModule < 0) {
       continue;
     }
     const from = direction === "input" ? linkedModule : sourceModule;
     const to = direction === "input" ? sourceModule : linkedModule;
-    const peerSlot =
-      direction === "input"
-        ? modules[sourceModule]?.inputLinkSlots?.[linkIndex]
-        : modules[sourceModule]?.outputLinkSlots?.[linkIndex];
-    const fromSlot = direction === "input" ? peerSlot : linkIndex;
-    const toSlot = direction === "input" ? linkIndex : peerSlot;
+    const fromSlot = direction === "input" ? link.peerSlot : link.slot;
+    const toSlot = direction === "input" ? link.slot : link.peerSlot;
     edges.push({
       from,
       to,
@@ -116,8 +129,8 @@ function addEdges(edges, modules, sourceModule, links, direction, kind) {
 function moduleEdges(modules) {
   const edges = [];
   modules.forEach((module, index) => {
-    addEdges(edges, modules, index, module.inputLinks, "input", "input");
-    addEdges(edges, modules, index, module.outputLinks, "output", "output");
+    addEdges(edges, modules, index, module.inputs, "input", "input");
+    addEdges(edges, modules, index, module.outputs, "output", "output");
   });
 
   const seen = new Set();
@@ -242,14 +255,15 @@ function formatPosition(position) {
   return values.length ? ` pos=(${values.join(",")})` : "";
 }
 
-function formatLinkList(title, links, slots, modules) {
+function formatLinkList(title, links, modules) {
   if (!links?.length) {
     return "";
   }
   return ` ${title}=[${links
-    .map((index, linkIndex) => {
-      const slot = slots?.[linkIndex];
-      return `${linkName(modules, index)}${Number.isInteger(slot) ? ` peerSlot=${slot}` : ""}`;
+    .map((link) => {
+      const slot = Number.isInteger(link.slot) ? ` slot=${link.slot}` : "";
+      const peerSlot = Number.isInteger(link.peerSlot) ? ` peerSlot=${link.peerSlot}` : "";
+      return `${linkName(modules, link.module)}${slot}${peerSlot}`;
     })
     .join(", ")}]`;
 }
@@ -257,8 +271,8 @@ function formatLinkList(title, links, slots, modules) {
 function formatModule(module, modules, level) {
   const flags = module.flags.length ? ` flags=${module.flags.join(",")}` : "";
   const links = [
-    formatLinkList("in", module.inputLinks, module.inputLinkSlots, modules),
-    formatLinkList("out", module.outputLinks, module.outputLinkSlots, modules),
+    formatLinkList("in", module.inputs, modules),
+    formatLinkList("out", module.outputs, modules),
   ].join("");
   const chunks = module.dataChunkCount ? ` dataChunks=${module.dataChunkCount}` : "";
   const embedded = module.embeddedCount ? ` embedded=${module.embeddedCount}` : "";

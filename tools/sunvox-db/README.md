@@ -43,7 +43,9 @@ trailing-zero trimming can round-trip exactly. Sampler PCM payloads are treated
 as known byte payloads with decoded chunk flags and sample rates; the raw bytes
 remain in `bytesBase64` until a higher-level audio sample representation is
 added. Module link slot chunks (`SLnK` and `SLnk`) declare which link array they
-annotate so graph tooling can avoid treating slot arrays as separate links.
+annotate so graph tooling can avoid treating slot arrays as separate links. The
+codec maps those parallel arrays to editable `inputs` / `outputs` link objects
+with local `slot`, target `module`, and peer `peerSlot` fields.
 
 ## Inspection Tool
 

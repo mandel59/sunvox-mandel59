@@ -803,6 +803,146 @@ function makeSemanticChunk(chunkId, field, value, options = {}) {
   return chunk;
 }
 
+function semanticLinksFromArrays(module, linksPath, slotsPath, modules) {
+  const links = module?.[linksPath];
+  if (!Array.isArray(links)) {
+    return [];
+  }
+  const slots = module?.[slotsPath];
+  return links
+    .map((linkedModule, slot) => {
+      if (!Number.isInteger(linkedModule) || linkedModule < 0) {
+        return undefined;
+      }
+      const peer = modules?.[linkedModule];
+      const link = { slot, module: linkedModule };
+      if (Number.isInteger(slots?.[slot]) && slots[slot] >= 0) {
+        link.peerSlot = slots[slot];
+      }
+      if (peer?.name) {
+        link._moduleName = peer.name;
+      }
+      if (peer?.type) {
+        link._moduleType = peer.type;
+      }
+      return link;
+    })
+    .filter(Boolean);
+}
+
+function inferredLinkSlotCount(links) {
+  if (!links.length) {
+    return 0;
+  }
+  return Math.max(...links.map((link) => link.slot)) + 1;
+}
+
+function preservedLinkSlotCount(rawLinks, semanticLinks) {
+  if (!Array.isArray(rawLinks)) {
+    return undefined;
+  }
+  if (rawLinks.length === 0) {
+    return 0;
+  }
+  const inferred = inferredLinkSlotCount(semanticLinks);
+  return rawLinks.length === inferred ? undefined : rawLinks.length;
+}
+
+function normalizeModuleLinks(module, modules) {
+  const inputs = semanticLinksFromArrays(module, "inputLinks", "inputLinkSlots", modules);
+  const outputs = semanticLinksFromArrays(module, "outputLinks", "outputLinkSlots", modules);
+  const inputSlotCount = preservedLinkSlotCount(module.inputLinks, inputs);
+  const outputSlotCount = preservedLinkSlotCount(module.outputLinks, outputs);
+  delete module.inputLinks;
+  delete module.inputLinkSlots;
+  delete module.outputLinks;
+  delete module.outputLinkSlots;
+  if (inputs.length) {
+    module.inputs = inputs;
+  }
+  if (inputSlotCount !== undefined) {
+    module.inputSlotCount = inputSlotCount;
+  }
+  if (outputs.length) {
+    module.outputs = outputs;
+  }
+  if (outputSlotCount !== undefined) {
+    module.outputSlotCount = outputSlotCount;
+  }
+  return module;
+}
+
+function normalizeModuleCollectionLinks(modules) {
+  for (const module of modules) {
+    normalizeModuleLinks(module, modules);
+  }
+  return modules;
+}
+
+function semanticLinksToArrays(links, legacyLinks, legacySlots, slotCount) {
+  if (!Array.isArray(links)) {
+    return { links: legacyLinks, slots: legacySlots };
+  }
+  const maxSlot = links.reduce((max, link, index) => {
+    const slot = Number.isInteger(link?.slot) ? link.slot : index;
+    return Math.max(max, slot);
+  }, -1);
+  const count = slotCount ?? maxSlot + 1;
+  if (count < maxSlot + 1) {
+    throw new Error(`module link slot count ${count} is smaller than highest slot ${maxSlot}`);
+  }
+  const storedLinks = Array.from({ length: count }, () => -1);
+  const storedSlots = Array.from({ length: count }, () => -1);
+  let hasSlots = false;
+  for (const [index, link] of links.entries()) {
+    const slot = Number.isInteger(link?.slot) ? link.slot : index;
+    if (slot < 0 || slot >= storedLinks.length) {
+      throw new Error(`Invalid module link slot: ${slot}`);
+    }
+    if (!Number.isInteger(link.module) || link.module < 0) {
+      throw new Error(`Invalid module link target at slot ${slot}: ${link.module}`);
+    }
+    if (storedLinks[slot] !== -1) {
+      throw new Error(`Duplicate module link slot: ${slot}`);
+    }
+    storedLinks[slot] = link.module;
+    if (Number.isInteger(link.peerSlot) && link.peerSlot >= 0) {
+      storedSlots[slot] = link.peerSlot;
+      hasSlots = true;
+    }
+  }
+  return { links: storedLinks, slots: hasSlots ? storedSlots : undefined };
+}
+
+function moduleLinkArrays(module, direction) {
+  if (direction === "input") {
+    const inputs = Array.isArray(module?.inputs) ? module.inputs : module?.inputSlotCount !== undefined ? [] : undefined;
+    return semanticLinksToArrays(inputs, module?.inputLinks, module?.inputLinkSlots, module?.inputSlotCount);
+  }
+  const outputs = Array.isArray(module?.outputs) ? module.outputs : module?.outputSlotCount !== undefined ? [] : undefined;
+  return semanticLinksToArrays(outputs, module?.outputLinks, module?.outputLinkSlots, module?.outputSlotCount);
+}
+
+function emitModuleLinkChunk(module, chunkId) {
+  if (chunkId === "SLNK") {
+    const { links } = moduleLinkArrays(module, "input");
+    return links === undefined ? undefined : makeSemanticChunk(chunkId, "values", links);
+  }
+  if (chunkId === "SLnK") {
+    const { slots } = moduleLinkArrays(module, "input");
+    return slots === undefined ? undefined : makeSemanticChunk(chunkId, "values", slots);
+  }
+  if (chunkId === "SLNk") {
+    const { links } = moduleLinkArrays(module, "output");
+    return links === undefined ? undefined : makeSemanticChunk(chunkId, "values", links);
+  }
+  if (chunkId === "SLnk") {
+    const { slots } = moduleLinkArrays(module, "output");
+    return slots === undefined ? undefined : makeSemanticChunk(chunkId, "values", slots);
+  }
+  return undefined;
+}
+
 function consumeScopeFields(scopeName, chunks, target, used) {
   const grammar = scopeGrammar(scopeName);
   for (const field of grammar.fields) {
@@ -1844,7 +1984,7 @@ function groupStructuredDocument(document) {
       headerTailHex: document.headerTailHex,
       _comments: [],
       preludeChunks,
-      module: makeModule(moduleChunks),
+      module: normalizeModuleLinks(makeModule(moduleChunks), []),
     };
   }
 
@@ -1886,6 +2026,8 @@ function groupStructuredDocument(document) {
     }
     index += 1;
   }
+
+  normalizeModuleCollectionLinks(modules);
 
   return {
     format: TEXT_FORMAT,
@@ -2015,6 +2157,13 @@ function syncModule(module) {
     }
     if (token === terminator) {
       chunks.push({ id: terminator, _label: chunkLabel(terminator) });
+      continue;
+    }
+    if (token === "SLNK" || token === "SLnK" || token === "SLNk" || token === "SLnk") {
+      const chunk = emitModuleLinkChunk(module, token);
+      if (chunk) {
+        chunks.push(chunk);
+      }
       continue;
     }
     const chunk = emitScopeField("module", module, token);

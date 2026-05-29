@@ -31,6 +31,10 @@ bytes remain reversible as `bytesBase64` with decoded format flags. Sound2Ctl
 controller values and options are decoded into named fields. Pattern note data
 is emitted as sparse `line` / `track` event objects with note names and
 auxiliary module names, while the dense binary grid remains round-trip safe.
+Module graph links are emitted as editable `inputs` / `outputs` objects with
+local `slot`, target `module`, and optional peer `peerSlot` fields instead of
+raw parallel link arrays. `inputSlotCount` / `outputSlotCount` are kept only
+when needed to preserve empty or trailing SunVox link slots exactly.
 
 ```sh
 npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json

@@ -19,7 +19,7 @@ test("builds a readable outline for SunVox projects", async () => {
     danglingEdges: 0,
   });
   assert.equal(outline.modules.some((module) => module.name === "DrumSynth"), true);
-  assert.equal(outline.modules.some((module) => module.inputLinkSlots?.length), true);
+  assert.equal(outline.modules.some((module) => module.inputs?.some((link) => Number.isInteger(link.peerSlot))), true);
   assert.equal(outline.links.some((edge) => edge._toName === "Output"), true);
   assert.equal(outline.links.some((edge) => edge.kind === "auxInput" || edge.kind === "auxOutput"), false);
   assert.equal(outline.patterns[0].events[0].note, "C4");

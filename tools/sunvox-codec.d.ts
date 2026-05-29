@@ -150,6 +150,14 @@ export type ModuleControllerValue =
   | undefined;
 export type ModuleControllers = number[] | ({ extra?: Record<string, number> } & Record<string, ModuleControllerValue>);
 
+export interface ModuleLink {
+  slot: number;
+  module: number;
+  peerSlot?: number;
+  _moduleName?: string;
+  _moduleType?: string;
+}
+
 export interface ModuleDataChunk {
   index: number;
   name?: string;
@@ -345,6 +353,10 @@ export interface StructuredModule {
     outputBank?: number;
     outputProgram?: number;
   };
+  inputs?: ModuleLink[];
+  inputSlotCount?: number;
+  outputs?: ModuleLink[];
+  outputSlotCount?: number;
   inputLinks?: number[];
   inputLinkSlots?: number[];
   outputLinks?: number[];
