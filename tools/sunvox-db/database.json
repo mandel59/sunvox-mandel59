@@ -692,6 +692,35 @@
       "kind": "patternNotes",
       "path": "pattern.events",
       "recordSize": 8,
+      "textLayout": {
+        "kind": "lineMajorTupleArray",
+        "path": "events",
+        "columnsPath": "tracks",
+        "rowsPath": "lines",
+        "tupleFields": ["note", "velocity", "module", "controller", "value"],
+        "emptyTuple": [0, 0, 0, 0, 0],
+        "fieldSemantics": {
+          "note": {
+            "description": "0 is empty; 1..127 are note number plus 1; 128 is note off; 129 and above are note commands."
+          },
+          "velocity": {
+            "description": "0 selects the default velocity; non-zero values are stored directly in the pattern event."
+          },
+          "module": {
+            "description": "0 selects no module; non-zero values are one-based module slot references.",
+            "encoding": "oneBasedModuleIndex",
+            "zero": "none"
+          },
+          "controller": {
+            "description": "0 selects no controller or effect; packed 0xCCEE value where CC is controller number plus 1 and EE is the standard effect code.",
+            "encoding": "packedPatternControllerEffect"
+          },
+          "value": {
+            "description": "Controller value or standard effect parameter.",
+            "encoding": "uint16"
+          }
+        }
+      },
       "fields": [
         { "name": "note", "type": "uint8", "offset": 0 },
         { "name": "velocity", "type": "uint8", "offset": 1 },

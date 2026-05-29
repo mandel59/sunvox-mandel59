@@ -5,6 +5,56 @@ export const SUPPORTED_MAGICS: Set<SunVoxMagic>;
 
 export type SunVoxMagic = "SVOX" | "SSYN";
 
+export interface SunVoxStructTextLayout {
+  kind: "lineMajorTupleArray";
+  path: string;
+  columnsPath?: string;
+  rowsPath?: string;
+  tupleFields: string[];
+  emptyTuple?: number[];
+  fieldSemantics?: Record<
+    string,
+    {
+      description?: string;
+      encoding?: string;
+      zero?: string;
+      range?: string;
+    }
+  >;
+}
+
+export interface SunVoxStructDefinition {
+  kind?: string;
+  path?: string;
+  recordSize: number;
+  textLayout?: SunVoxStructTextLayout;
+  fields: Array<{
+    name: string;
+    type: string;
+    offset: number;
+    count?: number;
+    default?: unknown;
+    invert?: boolean;
+    enum?: string;
+    bitfield?: string;
+    bitflags?: string;
+    flatten?: boolean;
+  }>;
+}
+
+export interface SunVoxDatabase {
+  version: number;
+  chunks: Array<Record<string, unknown>>;
+  enums: Record<string, Record<string, string>>;
+  bitfields?: Record<string, unknown>;
+  bitflags?: Record<string, Array<{ name: string; bit: number }>>;
+  structs?: Record<string, SunVoxStructDefinition>;
+  grammar: Record<string, unknown>;
+  modules: Record<string, unknown>;
+}
+
+export const SUNVOX_DB: SunVoxDatabase;
+
 export type DecodedChunk =
   | { kind: "empty"; _description?: string }
   | { kind: "string"; value: string; _description?: string }

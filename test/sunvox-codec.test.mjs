@@ -11,6 +11,7 @@ import {
   parseEditableContainer,
   parseVerboseContainer,
   sha256,
+  SUNVOX_DB,
   TEXT_FORMAT,
 } from "../tools/sunvox-codec.mjs";
 
@@ -112,10 +113,16 @@ test("decodes pattern note data", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
   const pattern = document.patterns.find((candidate) => candidate.events);
+  const layout = SUNVOX_DB.structs.sunvox_note.textLayout;
 
   assert.ok(Array.isArray(pattern?.events));
   assert.ok(pattern.events.length > 0);
   assert.equal(pattern.events[0].length, 5);
+  assert.equal(layout.kind, "lineMajorTupleArray");
+  assert.equal(layout.columnsPath, "tracks");
+  assert.equal(layout.rowsPath, "lines");
+  assert.deepEqual(layout.tupleFields, ["note", "velocity", "module", "controller", "value"]);
+  assert.equal(pattern.events.length, pattern.tracks * pattern.lines);
 });
 
 test("can still build editable chunk documents", async () => {

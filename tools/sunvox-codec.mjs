@@ -301,20 +301,28 @@ function makeChunk(id, offset, data) {
   return chunk;
 }
 
-function compactPatternNotes(pattern) {
+function structTextTupleFields(definition) {
+  return definition?.textLayout?.tupleFields ?? definition?.fields?.map((field) => field.name) ?? [];
+}
+
+function tupleRecordToObject(record, definition) {
+  if (!Array.isArray(record)) {
+    return record;
+  }
+  const tupleFields = structTextTupleFields(definition);
+  return Object.fromEntries(tupleFields.map((fieldName, index) => [fieldName, record[index]]));
+}
+
+function compactPatternNotes(pattern, definition) {
+  const tupleFields = structTextTupleFields(definition);
   return {
-    events: pattern.events.map((event) => [
-      event.note,
-      event.velocity,
-      event.module,
-      event.controller,
-      event.value,
-    ]),
+    events: pattern.events.map((event) => tupleFields.map((fieldName) => event[fieldName] ?? 0)),
   };
 }
 
 function makeEditableChunk(id, data) {
   const chunk = { id };
+  const structArray = structArrayDefinition(chunkType(id));
   const decoded = decodeChunkData(id, data);
 
   if (decoded?._description) {
@@ -347,7 +355,7 @@ function makeEditableChunk(id, data) {
       chunk.midiBindings = decoded.value;
       return chunk;
     case "patternNotes":
-      chunk.pattern = compactPatternNotes(decoded.value);
+      chunk.pattern = compactPatternNotes(decoded.value, structArray);
       return chunk;
     default:
       chunk.base64 = data.toString("base64");
@@ -839,7 +847,9 @@ function encodeStructArrayData(records, definition) {
   }
   const recordSize = definition.recordSize ?? binaryLayoutSize(definition.fields ?? []);
   const buffer = Buffer.alloc(records.length * recordSize);
-  records.forEach((record, index) => writeStructRecord(buffer, definition.fields, record, index * recordSize));
+  records.forEach((record, index) =>
+    writeStructRecord(buffer, definition.fields, tupleRecordToObject(record, definition), index * recordSize),
+  );
   return buffer;
 }
 
