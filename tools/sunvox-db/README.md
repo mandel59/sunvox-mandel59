@@ -19,7 +19,8 @@ can either interpret it directly or generate conversion code from it later.
   `track` fields, backed by DB-declared grid paths and a line-major tuple
   layout for binary round-trips. Their `fieldSemantics` entries drive note
   names, one-based module references, packed controller/effect values via
-  `packedFields`, and editable aliases such as `parameter`.
+  `packedFields`, sparse source-backed effect names, and editable aliases such
+  as `parameter`.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
 - `moduleDataChunkGrammar`: describes the `CHNK` / `CHNM` / `CHDT`
   sequence and optional metadata chunks such as `CHFF` and `CHFR`.
