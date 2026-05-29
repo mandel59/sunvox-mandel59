@@ -300,7 +300,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
   textLayout.fieldSemantics.broken = { encoding: "__missing_encoding", reference: "__missing_reference" };
   patternEffectEnum["254"] = "notSourceBacked";
   patternEffectParameters.notSourceBackedParameter = {
-    packedFields: [{ name: "bad", shift: 0, bits: 8, enum: "__missing_parameter_enum" }],
+    packedFields: [
+      { name: "bad", shift: 0, bits: 8, enum: "__missing_parameter_enum" },
+      { name: "badFlags", shift: 8, bits: 8, bitflags: "__missing_parameter_bitflags" },
+    ],
   };
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
@@ -400,6 +403,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(
       errors,
       /pattern effect parameter notSourceBackedParameter: packed field bad references missing enum __missing_parameter_enum/u,
+    );
+    assert.match(
+      errors,
+      /pattern effect parameter notSourceBackedParameter: packed field badFlags references missing bitflags __missing_parameter_bitflags/u,
     );
     assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
     assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);

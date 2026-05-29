@@ -69,7 +69,8 @@
                 "offset": { "type": "integer" },
                 "min": { "type": "integer" },
                 "max": { "type": "integer" },
-                "enum": { "type": "string" }
+                "enum": { "type": "string" },
+                "bitflags": { "type": "string" }
               },
               "additionalProperties": false
             }
@@ -179,6 +180,7 @@
                           "min": { "type": "integer" },
                           "max": { "type": "integer" },
                           "enum": { "type": "string" },
+                          "bitflags": { "type": "string" },
                           "reference": { "type": "string" }
                         },
                         "additionalProperties": false

@@ -87,6 +87,7 @@ export interface SunVoxStructTextLayout {
         min?: number;
         max?: number;
         enum?: string;
+        bitflags?: string;
         reference?: string;
       }>;
     }
@@ -120,6 +121,7 @@ export interface SunVoxPackedFieldDefinition {
   min?: number;
   max?: number;
   enum?: string;
+  bitflags?: string;
   reference?: string;
 }
 

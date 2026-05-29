@@ -1125,6 +1125,7 @@ function checkTextLayoutPackedFields(errors, subject, packedFields = []) {
       errors.push(`${fieldSubject} has invalid reference ${field.reference}`);
     }
     checkNamedReference(errors, subject, `packed field ${field.name}`, "enum", field.enum, SUNVOX_DB.enums);
+    checkNamedReference(errors, subject, `packed field ${field.name}`, "bitflags", field.bitflags, SUNVOX_DB.bitflags);
 
     const maxStored = 2 ** field.bits - 1;
     const range = { min: field.min ?? 0, max: field.max ?? maxStored };

@@ -495,6 +495,10 @@ function decodePatternPackedField(value, module, event, field) {
     }
     return;
   }
+  if (field.bitflags) {
+    event[field.name] = decodeBitflags(field.bitflags, decodedValue);
+    return;
+  }
   if (field.enum) {
     event[field.name] = enumToName(field.enum, decodedValue);
     return;
@@ -519,6 +523,9 @@ function eventPackedFieldValue(event, module, field) {
       throw new Error(`Unknown pattern controller: ${value}`);
     }
     return controllerIndex;
+  }
+  if (field.bitflags) {
+    return encodeBitflags(field.bitflags, value);
   }
   if (field.enum) {
     return enumToValue(field.enum, value);
@@ -562,6 +569,9 @@ function decodePackedParameter(value, definition) {
     definition.packedFields.map((field) => {
       const storedValue = packedFieldStoredValue(value, field);
       const decodedValue = packedFieldDecodedValue(storedValue, field);
+      if (field.bitflags) {
+        return [field.name, decodeBitflags(field.bitflags, decodedValue)];
+      }
       return [field.name, field.enum ? enumToName(field.enum, decodedValue) : decodedValue];
     }),
   );
@@ -573,7 +583,12 @@ function encodePackedParameter(value, definition) {
   }
   let packedValue = 0;
   for (const field of definition.packedFields) {
-    const decodedValue = field.enum ? enumToValue(field.enum, value[field.name] ?? 0) : (value[field.name] ?? 0);
+    const fieldValue = value[field.name] ?? 0;
+    const decodedValue = field.bitflags
+      ? encodeBitflags(field.bitflags, fieldValue)
+      : field.enum
+        ? enumToValue(field.enum, fieldValue)
+        : fieldValue;
     const storedValue = packedFieldEncodedValue(decodedValue, field);
     if (!packedFieldContainsStoredValue(storedValue, field)) {
       const { min, max } = packedFieldStoredRange(field);

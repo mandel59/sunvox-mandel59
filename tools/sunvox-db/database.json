@@ -201,6 +201,11 @@
       "4": "trigger",
       "5": "toggle"
     },
+    "psynth_midi_output_message": {
+      "0": "programChange",
+      "1": "channelPressure",
+      "2": "pitchBendChange"
+    },
     "off_on": {
       "0": "off",
       "1": "on"
@@ -944,15 +949,15 @@
       "description": "0xSSRR where SS names runtime flags to set and RR names runtime flags to reset.",
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x34",
       "packedFields": [
-        { "name": "set", "shift": 8, "bits": 8 },
-        { "name": "reset", "shift": 0, "bits": 8 }
+        { "name": "set", "shift": 8, "bits": 8, "bitflags": "sunvox_runtime_effect_flags" },
+        { "name": "reset", "shift": 0, "bits": 8, "bitflags": "sunvox_runtime_effect_flags" }
       ]
     },
     "midiMessageSupport": {
       "description": "0xMMCC where MM is the MIDI message and CC is the controller byte passed to the module.",
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x35",
       "packedFields": [
-        { "name": "message", "shift": 8, "bits": 8 },
+        { "name": "message", "shift": 8, "bits": 8, "enum": "psynth_midi_output_message" },
         { "name": "controller", "shift": 0, "bits": 8 }
       ]
     },
@@ -1173,6 +1178,12 @@
       { "name": "noVolSlideOnTick0", "bit": 2 },
       { "name": "keyboardRoundRobin", "bit": 3 },
       { "name": "midiOut7bit", "bit": 4 }
+    ],
+    "sunvox_runtime_effect_flags": [
+      { "name": "noTonePortaOnTick0", "bit": 0 },
+      { "name": "noVolSlideOnTick0", "bit": 1 },
+      { "name": "keyboardRoundRobin", "bit": 2 },
+      { "name": "midiOut7bit", "bit": 3 }
     ],
     "sunvox_sync_flags": [
       { "name": "midiStartStopContinue", "bit": 0 },

@@ -720,7 +720,7 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
 
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
-  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 7);
+  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 9);
   assert.ok(patternIndex >= 0);
   const pattern = document.patterns[patternIndex];
 
@@ -761,6 +761,21 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
       effect: "sampleOffset",
       parameter: { offset256: 3 },
     },
+    {
+      line: 8,
+      track: 0,
+      effect: "setRuntimeFlags",
+      parameter: {
+        set: { noTonePortaOnTick0: true, midiOut7bit: true },
+        reset: { noVolSlideOnTick0: true },
+      },
+    },
+    {
+      line: 9,
+      track: 0,
+      effect: "midiMessageSupport",
+      parameter: { message: "pitchBendChange", controller: 131 },
+    },
   ];
 
   const reparsed = parseContainer(buildContainer(document));
@@ -771,6 +786,11 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
   assert.deepEqual(reparsed.patterns[patternIndex].events[3].parameter, { ticks: 4, mode: 1 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[4].parameter, { from: 20, to: 40 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[5].parameter, { offset256: 3 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[6].parameter, {
+    set: { noTonePortaOnTick0: true, midiOut7bit: true },
+    reset: { noVolSlideOnTick0: true },
+  });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[7].parameter, { message: "pitchBendChange", controller: 131 });
 });
 
 test("can still build editable chunk documents", async () => {
