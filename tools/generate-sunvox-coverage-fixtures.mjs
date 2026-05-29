@@ -46,17 +46,32 @@ function defaultControllers(moduleType) {
 
 function coverageModule(moduleType, index) {
   return {
-    name: `Coverage ${moduleType}`,
+    flags: {
+      exists: true,
+    },
+    name: `Fixture ${moduleType}`,
     type: moduleType,
     position: {
       x: (index % 7) * 128,
-      y: Math.floor(index / 7) * 96,
+      y: 96 + Math.floor(index / 7) * 96,
     },
     controllers: defaultControllers(moduleType),
   };
 }
 
 export function buildCoverageFixture() {
+  const outputModule = {
+    flags: {
+      exists: true,
+      output: true,
+    },
+    name: "Output",
+    position: {
+      x: 0,
+      y: 0,
+    },
+  };
+
   const document = {
     format: TEXT_FORMAT,
     magic: "SVOX",
@@ -65,7 +80,7 @@ export function buildCoverageFixture() {
       name: "SunVox codec synthetic coverage fixture",
     },
     patterns: [],
-    modules: COVERAGE_MODULE_TYPES.map(coverageModule),
+    modules: [outputModule, ...COVERAGE_MODULE_TYPES.map(coverageModule)],
     trailingChunks: [],
   };
 

@@ -43,6 +43,9 @@ jobs:
       - name: Check license notices
         run: npm run licenses:check
 
+      - name: Check SunVox lib compatibility
+        run: npm run sunvox:lib:check
+
       - name: Test
         run: npm test
 

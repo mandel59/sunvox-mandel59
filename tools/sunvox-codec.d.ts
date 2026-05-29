@@ -187,7 +187,7 @@ export interface StructuredModule {
   type?: string;
   position?: { x?: number; y?: number; z?: number };
   color?: string;
-  flags?: number;
+  flags?: number | Record<string, boolean>;
   finetune?: number;
   relativeNote?: number;
   scale?: number;
