@@ -355,8 +355,9 @@ function formatEvent(event) {
   if (event.effect !== undefined) {
     parts.push(`effect=${event.effect}`);
   }
-  if (event.value !== undefined) {
-    parts.push(`value=${event.value}`);
+  const value = event.parameter ?? event.value;
+  if (value !== undefined) {
+    parts.push(`${event.effect !== undefined ? "parameter" : "value"}=${value}`);
   }
   return parts.join(" ");
 }

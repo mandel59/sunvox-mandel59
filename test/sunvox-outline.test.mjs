@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildOutlineFromFile, formatOutline } from "../tools/sunvox-outline.mjs";
+import { buildOutline, buildOutlineFromFile, formatOutline } from "../tools/sunvox-outline.mjs";
 
 test("builds a readable outline for SunVox projects", async () => {
   const outline = await buildOutlineFromFile("music/2022-04-17.sunvox", { eventLimit: 3 });
@@ -69,4 +69,34 @@ test("summarizes MetaModule user controllers in outlines", async () => {
   assert.match(text, /userControllers=9/u);
   assert.match(text, /user#0 "Detune 1" group=2 value=8192 -> #16 Detune 1 \[MultiCtl\] controller=value/u);
   assert.doesNotMatch(text, /Embedded Containers/u);
+});
+
+test("formats pattern effect parameters distinctly from controller values", () => {
+  const outline = buildOutline(
+    {
+      magic: "SVOX",
+      project: { name: "effect outline", bpm: 125, speed: 6, globalVolume: 256 },
+      modules: [
+        { name: "Output", flags: { exists: true, output: true } },
+        { name: "Synth", type: "Generator", flags: { exists: true, generator: true } },
+      ],
+      patterns: [
+        {
+          name: "Fx",
+          lines: 4,
+          tracks: 1,
+          position: { x: 0, y: 0 },
+          events: [
+            { line: 0, track: 0, module: 1, effect: "pitchUp", value: 12 },
+            { line: 1, track: 0, module: 1, controller: "volume", value: 321 },
+          ],
+        },
+      ],
+    },
+    { sourceName: "synthetic.sunvox" },
+  );
+  const text = formatOutline(outline, { eventLimit: 4 });
+
+  assert.match(text, /L000 T0 module=#1 effect=pitchUp parameter=12/u);
+  assert.match(text, /L001 T0 module=#1 controller=volume value=321/u);
 });
