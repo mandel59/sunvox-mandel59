@@ -7,6 +7,7 @@ import {
   decode,
   decodeChunkData,
   encode,
+  formatValidationIssue,
   parseContainer,
   parseEditableContainer,
   parseVerboseContainer,
@@ -92,6 +93,8 @@ test("reports DB-driven runtime constraint warnings", () => {
   );
   assert.match(result.issues[2].message, /33 UTF-8 bytes/u);
   assert.equal(result.issues[3].path, "modules[0].inputs[0].module");
+  assert.deepEqual(result.issues.map((issue) => issue.trackingIssue), [2, 2, 2, 2, 2]);
+  assert.match(formatValidationIssue(result.issues[0]), /issue=#2/u);
 });
 
 test("reports DB-driven controller value warnings", () => {
@@ -117,8 +120,10 @@ test("reports DB-driven controller value warnings", () => {
   );
   assert.match(result.issues[0].message, /expected >= 0/u);
   assert.equal(result.issues[0].controller, "volume");
+  assert.equal(result.issues[0].trackingIssue, 2);
   assert.match(result.issues[1].message, /known off_on value/u);
   assert.equal(result.issues[1].path, "modules[0].controllers.inverse");
+  assert.match(formatValidationIssue(result.issues[1]), /source=psynth_register_ctl issue=#2/u);
 });
 
 test("decodes project supertrack mute and jump address state", () => {

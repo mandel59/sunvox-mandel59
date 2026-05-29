@@ -248,6 +248,7 @@
           "maxBytes": { "type": "integer", "minimum": 0 },
           "severity": { "enum": ["warning", "error"] },
           "source": { "type": "string" },
+          "trackingIssue": { "type": "integer", "minimum": 1 },
           "observedBehavior": {
             "type": "object",
             "required": ["probeValue", "savedValue"],

@@ -1253,6 +1253,12 @@ function checkRuntimeConstraints(errors) {
     if (!rule.path) {
       errors.push(`runtime constraint ${rule.id} is missing path`);
     }
+    if (
+      rule.trackingIssue !== undefined &&
+      (!Number.isInteger(rule.trackingIssue) || rule.trackingIssue < 1)
+    ) {
+      errors.push(`runtime constraint ${rule.id} has invalid trackingIssue ${rule.trackingIssue}`);
+    }
     if (rule.scope === "moduleLink" && !["inputs", "outputs"].includes(rule.relation)) {
       errors.push(`runtime constraint ${rule.id} has invalid module link relation ${rule.relation}`);
     }

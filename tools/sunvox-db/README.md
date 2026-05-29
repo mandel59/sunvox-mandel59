@@ -165,7 +165,9 @@ npm run sunvox:verify:all
 - `sunvox:validate` reports DB-driven runtime compatibility warnings for a
   binary SunVox file or decoded JSON document. The first rules cover positive
   project tempo values, module name byte budgets, semantic link targets, and
-  controller values outside DB-declared ranges or enum values.
+  controller values outside DB-declared ranges or enum values. Validation
+  issues also carry a `trackingIssue` number so newly detected warnings can be
+  routed back to the relevant source/DB gap or quality tracking issue.
 - `sunvox:validate:all` applies the same validation to every checked-in
   `.sunvox` and `.sunsynth` sample, and treats any warning or error as a quality
   gate failure.

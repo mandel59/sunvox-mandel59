@@ -3,7 +3,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { extname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { parseContainer, validateContainer } from "./sunvox-codec.mjs";
+import { formatValidationIssue, parseContainer, validateContainer } from "./sunvox-codec.mjs";
 
 const DEFAULT_ROOTS = ["music", "instruments", "test/fixtures/sunvox"];
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
@@ -28,11 +28,6 @@ async function findFiles(paths) {
     }
   }
   return files.sort((a, b) => a.localeCompare(b, "en"));
-}
-
-function formatIssue(issue) {
-  const source = issue.source ? ` source=${issue.source}` : "";
-  return `${issue.severity}: ${issue.path}: ${issue.message} (${issue.rule})${source}`;
 }
 
 async function validateFile(file) {
@@ -60,7 +55,7 @@ async function main(argv) {
       issueCount += result.issues.length;
       console.error(`${displayPath}: ${result.issues.length} validation issue(s)`);
       for (const issue of result.issues) {
-        console.error(`  ${formatIssue(issue)}`);
+        console.error(`  ${formatValidationIssue(issue)}`);
       }
     } catch (error) {
       issueCount += 1;

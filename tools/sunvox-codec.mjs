@@ -1025,7 +1025,14 @@ function validationIssue(rule, path, value, message) {
     value,
     message,
     source: rule.source,
+    trackingIssue: rule.trackingIssue,
   };
+}
+
+export function formatValidationIssue(issue) {
+  const source = issue.source ? ` source=${issue.source}` : "";
+  const trackingIssue = Number.isInteger(issue.trackingIssue) ? ` issue=#${issue.trackingIssue}` : "";
+  return `${issue.severity}: ${issue.path}: ${issue.message} (${issue.rule})${source}${trackingIssue}`;
 }
 
 function validateIntegerRange(value, rule, path) {
@@ -1109,6 +1116,7 @@ function controllerValidationIssue(moduleEntry, controller, path, value, message
     value,
     message,
     source: controller.sourceSymbol ?? "psynth_register_ctl",
+    trackingIssue: 2,
     moduleType: moduleEntry.module.type,
     controller: controller.name,
     controllerIndex: controller.index,
@@ -2674,8 +2682,7 @@ export async function validate(inputPath) {
     return;
   }
   for (const issue of result.issues) {
-    const source = issue.source ? ` source=${issue.source}` : "";
-    console.log(`${issue.severity}: ${issue.path}: ${issue.message} (${issue.rule})${source}`);
+    console.log(formatValidationIssue(issue));
   }
   if (!result.ok) {
     throw new Error(`${inputPath}: validation failed`);

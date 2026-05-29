@@ -111,6 +111,26 @@ export interface SunVoxDatabase {
 
 export const SUNVOX_DB: SunVoxDatabase;
 
+export type SunVoxValidationSeverity = "warning" | "error";
+
+export interface SunVoxValidationIssue {
+  severity: SunVoxValidationSeverity;
+  rule: string;
+  path: string;
+  value?: unknown;
+  message: string;
+  source?: string;
+  trackingIssue?: number;
+  moduleType?: string;
+  controller?: string;
+  controllerIndex?: number;
+}
+
+export interface SunVoxValidationResult {
+  ok: boolean;
+  issues: SunVoxValidationIssue[];
+}
+
 export type DecodedChunk =
   | { kind: "empty"; _description?: string }
   | { kind: "string"; value: string; _description?: string }
@@ -424,3 +444,6 @@ export function buildContainer(document: SunVoxTextDocument): Buffer;
 export function encode(inputPath: string, outputPath: string): Promise<void>;
 export function decode(inputPath: string, outputPath: string): Promise<void>;
 export function verify(inputPath: string): Promise<void>;
+export function validate(inputPath: string): Promise<void>;
+export function validateContainer(document: SunVoxTextDocument | Record<string, unknown>): SunVoxValidationResult;
+export function formatValidationIssue(issue: SunVoxValidationIssue): string;

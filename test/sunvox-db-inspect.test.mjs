@@ -194,6 +194,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
       path: "module",
       kind: "integerRange",
       severity: "fatal",
+      trackingIssue: -1,
       description: "broken rule",
     },
     {
@@ -255,6 +256,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /moduleDataChunkGrammar metadata brokenMetadata references missing chunk NOPE/u);
     assert.match(errors, /duplicate runtime constraint id broken\.runtime/u);
     assert.match(errors, /runtime constraint broken\.runtime has invalid severity fatal/u);
+    assert.match(errors, /runtime constraint broken\.runtime has invalid trackingIssue -1/u);
     assert.match(errors, /runtime constraint broken\.runtime has invalid module link relation sideways/u);
     assert.match(errors, /runtime constraint broken\.runtime maxUtf8Bytes is missing maxBytes/u);
     assert.match(errors, /runtime constraint broken\.runtime observedBehavior is missing savedValue/u);

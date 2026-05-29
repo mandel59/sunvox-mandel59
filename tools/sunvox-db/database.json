@@ -1060,6 +1060,7 @@
       "min": 1,
       "severity": "warning",
       "source": "sunvox_engine::bpm",
+      "trackingIssue": 2,
       "observedBehavior": {
         "probeValue": 0,
         "savedValue": 125,
@@ -1075,6 +1076,7 @@
       "min": 1,
       "severity": "warning",
       "source": "sunvox_engine::speed",
+      "trackingIssue": 2,
       "observedBehavior": {
         "probeValue": 0,
         "savedValue": 6,
@@ -1090,6 +1092,7 @@
       "maxBytes": 32,
       "severity": "warning",
       "source": "psynth_module::name",
+      "trackingIssue": 2,
       "description": "SunVox stores module names in a fixed-size name buffer; warn when editable text exceeds the known saved name budget."
     },
     {
@@ -1101,6 +1104,7 @@
       "min": 0,
       "severity": "warning",
       "source": "psynth_module::input_links",
+      "trackingIssue": 2,
       "description": "Negative module numbers are empty link slots in stored arrays and should not appear in semantic input link objects."
     },
     {
@@ -1112,6 +1116,7 @@
       "min": 0,
       "severity": "warning",
       "source": "psynth_module::output_links",
+      "trackingIssue": 2,
       "description": "Negative module numbers are empty link slots in stored arrays and should not appear in semantic output link objects."
     }
   ],
