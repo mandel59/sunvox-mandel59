@@ -7,6 +7,7 @@ import {
   collectControllerDiff,
   collectCoverage,
   collectDbCheck,
+  collectPatternEffectCoverage,
   collectProjectMetrics,
   collectScaffold,
   collectSourceReport,
@@ -39,6 +40,11 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.dbModuleCatalogFields, 182);
   assert.equal(metrics.summary.moduleCatalogCoveragePercent, 100);
   assert.equal(metrics.summary.missingModuleCatalogFields, 0);
+  assert.equal(metrics.summary.sourcePatternEffects, 43);
+  assert.equal(metrics.summary.dbPatternEffects, 20);
+  assert.equal(metrics.summary.namedSourcePatternEffects, 20);
+  assert.equal(metrics.summary.unnamedSourcePatternEffects, 23);
+  assert.equal(metrics.summary.patternEffectNameCoveragePercent, 46.5);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 5);
@@ -73,6 +79,22 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.gates.validation, true);
   assert.deepEqual(metrics.validation.filesWithIssues, []);
   assert.deepEqual(metrics.unsampledDbModuleTypes, []);
+  assert.deepEqual(metrics.patternEffectCoverage.unknownEntries, []);
+});
+
+test("pattern effect coverage exposes unnamed source cases", () => {
+  const coverage = collectPatternEffectCoverage();
+
+  assert.equal(coverage.sourceAvailable, true);
+  assert.deepEqual(coverage.dbEntries.map((entry) => entry.name).slice(0, 4), [
+    "tonePortamento",
+    "vibrato",
+    "sampleOffsetFine",
+    "arpeggio",
+  ]);
+  assert.deepEqual(coverage.missingCodes.slice(0, 4), [1, 2, 5, 6]);
+  assert.deepEqual(coverage.unknownEntries, []);
+  assert.equal(coverage.coveragePercent, 46.5);
 });
 
 test("synthetic coverage fixture is up to date", () => {

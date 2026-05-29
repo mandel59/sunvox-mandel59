@@ -149,8 +149,11 @@ npm run sunvox:verify:all
   machine-readable metrics for future CI or frontend tooling.
 - `metrics` summarizes coverage, source/DB consistency, controller metadata
   drift, chunk storage review coverage, module data chunk layout review
-  coverage, dynamic controller limit source coverage, validation issue counts,
-  and gate status in one compact report for progress tracking.
+  coverage, dynamic controller limit source coverage, source-backed pattern
+  effect name coverage, validation issue counts, and gate status in one compact
+  report for progress tracking. Unnamed pattern effect codes are listed as hex
+  values so the remaining numeric event fields can be triaged directly from the
+  report.
 - `sunvox:coverage:check` runs the coverage report as a CI gate. It fails on
   parse errors, missing DB module types, unexpected missing-STYP modules, raw
   controller arrays, controller extras, module extra chunks, or opaque data
@@ -199,8 +202,9 @@ npm run sunvox:verify:all
   grammar references to missing chunks, invalid text layout tuple/position
   fields, packed text field range overlap, source/DB chunk ID drift, data chunk
   index collisions across explicit chunks and ranges, fixed-size text grammar
-  fields without matching runtime constraints, and simple source/DB
-  controller-count mismatches.
+  fields without matching runtime constraints, source-backed pattern effect enum
+  values that no longer appear in `sunvox_handle_command()`, and simple
+  source/DB controller-count mismatches.
 
 ## Local Quality Loop
 

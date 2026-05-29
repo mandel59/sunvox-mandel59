@@ -1248,6 +1248,34 @@ function collectSourcePatternEffectCodes(sourceRoot) {
   return { sourcePath, codes };
 }
 
+export function collectPatternEffectCoverage(sourceRoot = DEFAULT_SOURCE_ROOT) {
+  const sourceEffects = collectSourcePatternEffectCodes(sourceRoot);
+  const sourceCodes = sourceEffects.codes ? [...sourceEffects.codes].sort((a, b) => a - b) : [];
+  const sourceCodeSet = new Set(sourceCodes);
+  const dbEntries = Object.entries(SUNVOX_DB.enums.sunvox_pattern_effect ?? {})
+    .map(([value, name]) => ({ code: Number(value), name }))
+    .filter((entry) => Number.isInteger(entry.code))
+    .sort((a, b) => a.code - b.code);
+  const dbCodeSet = new Set(dbEntries.map((entry) => entry.code));
+  const namedEntries = dbEntries.filter((entry) => sourceCodeSet.has(entry.code));
+  const missingCodes = sourceCodes.filter((code) => !dbCodeSet.has(code));
+  const unknownEntries = dbEntries.filter((entry) => !sourceCodeSet.has(entry.code));
+  const coveragePercent = sourceCodes.length
+    ? Number(((namedEntries.length / sourceCodes.length) * 100).toFixed(1))
+    : 0;
+
+  return {
+    sourcePath: sourceEffects.sourcePath,
+    sourceAvailable: Boolean(sourceEffects.codes),
+    sourceCodes,
+    dbEntries,
+    namedEntries,
+    missingCodes,
+    unknownEntries,
+    coveragePercent,
+  };
+}
+
 const CHUNK_SOURCE_TYPES = new Set([
   "int32",
   "uint32",
@@ -1745,6 +1773,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
   const chunkStorage = collectChunkStorageMetrics();
   const dataChunkLayouts = collectDataChunkLayoutMetrics();
   const moduleCatalog = collectModuleCatalogMetrics(report);
+  const patternEffectCoverage = collectPatternEffectCoverage(sourceRoot);
   const coverageGateFailures = coverageFailures(coverage);
   const sampledDbModuleTypes = coverage.moduleTypes
     .map(([moduleType]) => moduleType)
@@ -1774,6 +1803,11 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       dbModuleCatalogFields: moduleCatalog.dbFields,
       moduleCatalogCoveragePercent: moduleCatalog.coveragePercent,
       missingModuleCatalogFields: moduleCatalog.missingFields,
+      sourcePatternEffects: patternEffectCoverage.sourceCodes.length,
+      dbPatternEffects: patternEffectCoverage.dbEntries.length,
+      namedSourcePatternEffects: patternEffectCoverage.namedEntries.length,
+      unnamedSourcePatternEffects: patternEffectCoverage.missingCodes.length,
+      patternEffectNameCoveragePercent: patternEffectCoverage.coveragePercent,
       controllerMetadataMismatches: controllerDiff.summary.mismatches,
       dbCheckErrors: dbCheck.summary.errors,
       dbCheckWarnings: dbCheck.summary.warnings,
@@ -1817,6 +1851,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
     sampledDbModuleTypes,
     unsampledDbModuleTypes: coverage.unusedDbModuleTypes,
     moduleCatalog,
+    patternEffectCoverage,
     dynamicLimits: {
       sourceFunctions: report.sourceDynamicLimitFunctions,
       dbLimits: report.dbDynamicLimits,
@@ -2207,6 +2242,11 @@ function formatProjectMetrics(metrics) {
     { metric: "DB module catalog fields", value: metrics.summary.dbModuleCatalogFields },
     { metric: "Module catalog coverage", value: formatPercent(metrics.summary.moduleCatalogCoveragePercent) },
     { metric: "Missing module catalog fields", value: metrics.summary.missingModuleCatalogFields },
+    { metric: "Source pattern effects", value: metrics.summary.sourcePatternEffects },
+    { metric: "DB pattern effect names", value: metrics.summary.dbPatternEffects },
+    { metric: "Named source pattern effects", value: metrics.summary.namedSourcePatternEffects },
+    { metric: "Unnamed source pattern effects", value: metrics.summary.unnamedSourcePatternEffects },
+    { metric: "Pattern effect name coverage", value: formatPercent(metrics.summary.patternEffectNameCoveragePercent) },
     { metric: "Controller metadata mismatches", value: metrics.summary.controllerMetadataMismatches },
     { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
     { metric: "Runtime constraints", value: metrics.summary.runtimeConstraints },
@@ -2270,6 +2310,11 @@ function formatProjectMetrics(metrics) {
             (row) => `  - unknown DB source: ${row.source} (${row.controllers.join(", ")})`,
           ),
         ].join("\n")
+      : "(none)",
+    "",
+    "Unnamed source pattern effects:",
+    metrics.patternEffectCoverage.missingCodes.length
+      ? metrics.patternEffectCoverage.missingCodes.map((code) => `  - 0x${code.toString(16).toUpperCase()}`).join("\n")
       : "(none)",
     "",
     "Validation issues:",
