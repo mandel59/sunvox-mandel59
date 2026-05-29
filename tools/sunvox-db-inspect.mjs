@@ -1056,11 +1056,27 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   };
 }
 
+const SCALAR_CHUNK_TYPES = new Set(["int32", "uint32"]);
+
+function collectChunkStorageMetrics() {
+  const scalarChunks = SUNVOX_DB.chunks.filter((chunk) => SCALAR_CHUNK_TYPES.has(chunk.type));
+  const reviewedScalarChunks = scalarChunks.filter((chunk) => chunk.sourceType);
+  const signedRoundTripChunks = scalarChunks.filter((chunk) => chunk.signedRoundTrip);
+  return {
+    scalarChunks: scalarChunks.length,
+    reviewedScalarChunks: reviewedScalarChunks.length,
+    signedRoundTripChunks: signedRoundTripChunks.length,
+    reviewPercent: Number(((reviewedScalarChunks.length / scalarChunks.length) * 100).toFixed(1)),
+    reviewedChunkIds: reviewedScalarChunks.map((chunk) => chunk.id).sort(compareText),
+  };
+}
+
 export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, sourceRoot = DEFAULT_SOURCE_ROOT) {
   const coverage = collectCoverage(sampleRoots);
   const report = collectSourceReport(sourceRoot);
   const controllerDiff = collectControllerDiff(sourceRoot);
   const dbCheck = collectDbCheck(sourceRoot);
+  const chunkStorage = collectChunkStorageMetrics();
   const coverageGateFailures = coverageFailures(coverage);
   const sampledDbModuleTypes = coverage.moduleTypes
     .map(([moduleType]) => moduleType)
@@ -1084,6 +1100,10 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       controllerMetadataMismatches: controllerDiff.summary.mismatches,
       dbCheckErrors: dbCheck.summary.errors,
       dbCheckWarnings: dbCheck.summary.warnings,
+      scalarChunks: chunkStorage.scalarChunks,
+      reviewedScalarChunks: chunkStorage.reviewedScalarChunks,
+      signedRoundTripChunks: chunkStorage.signedRoundTripChunks,
+      chunkStorageReviewPercent: chunkStorage.reviewPercent,
       coverageGateFailures: coverageGateFailures.length,
     },
     gates: {
@@ -1100,6 +1120,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
     },
     sampledDbModuleTypes,
     unsampledDbModuleTypes: coverage.unusedDbModuleTypes,
+    chunkStorage,
     coverageGateFailures,
   };
 }
@@ -1431,6 +1452,10 @@ function formatProjectMetrics(metrics) {
     { metric: "DB modules missing from source", value: metrics.summary.dbModulesMissingFromSource },
     { metric: "Controller metadata mismatches", value: metrics.summary.controllerMetadataMismatches },
     { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
+    { metric: "Scalar chunks", value: metrics.summary.scalarChunks },
+    { metric: "Reviewed scalar chunks", value: metrics.summary.reviewedScalarChunks },
+    { metric: "Chunk storage review", value: formatPercent(metrics.summary.chunkStorageReviewPercent) },
+    { metric: "Signed round-trip chunks", value: metrics.summary.signedRoundTripChunks },
     { metric: "Coverage gate failures", value: metrics.summary.coverageGateFailures },
   ];
 
@@ -1463,6 +1488,11 @@ function formatProjectMetrics(metrics) {
     "Unsampled DB module types:",
     metrics.unsampledDbModuleTypes.length
       ? metrics.unsampledDbModuleTypes.map((moduleType) => `  - ${moduleType}`).join("\n")
+      : "(none)",
+    "",
+    "Reviewed scalar chunk storage:",
+    metrics.chunkStorage.reviewedChunkIds.length
+      ? metrics.chunkStorage.reviewedChunkIds.map((chunkId) => `  - ${chunkId}`).join("\n")
       : "(none)",
   ].join("\n");
 }

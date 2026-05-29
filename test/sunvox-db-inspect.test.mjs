@@ -34,6 +34,10 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.coverageGateFailures, 0);
   assert.equal(metrics.summary.unsampledDbModules, 0);
   assert.equal(metrics.summary.sampleCoveragePercent, 100);
+  assert.ok(metrics.summary.scalarChunks > 0);
+  assert.ok(metrics.summary.reviewedScalarChunks > 0);
+  assert.ok(metrics.summary.chunkStorageReviewPercent > 0);
+  assert.deepEqual(metrics.chunkStorage.reviewedChunkIds, ["CHFR", "PPAR", "SMIB", "SMIC", "SMIP"]);
   assert.equal(metrics.gates.ok, true);
   assert.deepEqual(metrics.unsampledDbModuleTypes, []);
 });
