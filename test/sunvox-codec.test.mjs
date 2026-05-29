@@ -91,6 +91,43 @@ test("decodes project supertrack mute and jump address state", () => {
   assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
 });
 
+test("preserves signed project editor state values", () => {
+  const document = {
+    format: TEXT_FORMAT,
+    magic: "SVOX",
+    headerTailHex: "00000000",
+    project: {
+      view: {
+        moduleScale: 256,
+        moduleZoom: 256,
+      },
+      currentLayer: -1,
+      lineCounter: -1,
+      restartPosition: -1,
+      selectedModule: -1,
+      lastSelectedGenerator: -1,
+      currentPattern: -1,
+      currentPatternTrack: -1,
+      currentPatternLine: -1,
+    },
+    patterns: [],
+    modules: [],
+  };
+
+  const buffer = buildContainer(document);
+  const parsed = parseContainer(buffer);
+
+  assert.equal(parsed.project.currentLayer, -1);
+  assert.equal(parsed.project.lineCounter, -1);
+  assert.equal(parsed.project.restartPosition, -1);
+  assert.equal(parsed.project.selectedModule, -1);
+  assert.equal(parsed.project.lastSelectedGenerator, -1);
+  assert.equal(parsed.project.currentPattern, -1);
+  assert.equal(parsed.project.currentPatternTrack, -1);
+  assert.equal(parsed.project.currentPatternLine, -1);
+  assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
+});
+
 test("decodes clone pattern parent numbers and stable parent ids", () => {
   const document = {
     format: TEXT_FORMAT,
