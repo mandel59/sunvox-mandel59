@@ -30,6 +30,11 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.dbModules, Object.keys(SUNVOX_DB.modules).length);
   assert.equal(metrics.summary.sourceModulesMissingFromDb, 0);
   assert.equal(metrics.summary.dbModulesMissingFromSource, 0);
+  assert.equal(metrics.summary.sourceDynamicLimitFunctions, 5);
+  assert.equal(metrics.summary.dbDynamicLimitSources, 5);
+  assert.equal(metrics.summary.dbDynamicLimitControllers, 6);
+  assert.equal(metrics.summary.missingDynamicLimitSources, 0);
+  assert.equal(metrics.summary.unknownDynamicLimitSources, 0);
   assert.equal(metrics.summary.moduleCatalogFields, 182);
   assert.equal(metrics.summary.dbModuleCatalogFields, 182);
   assert.equal(metrics.summary.moduleCatalogCoveragePercent, 100);
@@ -62,6 +67,9 @@ test("project metrics summarize current coverage and gate state", () => {
     true,
   );
   assert.equal(metrics.gates.ok, true);
+  assert.equal(metrics.gates.dynamicLimits, true);
+  assert.deepEqual(metrics.dynamicLimits.missingSources, []);
+  assert.deepEqual(metrics.dynamicLimits.unknownSources, []);
   assert.equal(metrics.gates.validation, true);
   assert.deepEqual(metrics.validation.filesWithIssues, []);
   assert.deepEqual(metrics.unsampledDbModuleTypes, []);
@@ -83,6 +91,20 @@ test("source report summarizes module catalog metadata gaps", () => {
   const amplifier = report.sourceModules.find((module) => module.module === "Amplifier");
 
   assert.equal(report.sourceModules.length, 42);
+  assert.equal(report.sourceDynamicLimitFunctions.length, 5);
+  assert.equal(report.dbDynamicLimits.length, 6);
+  assert.deepEqual(report.missingDynamicLimitSources, []);
+  assert.deepEqual(report.unknownDynamicLimitSources, []);
+  assert.deepEqual(
+    report.dynamicLimitSourceCoverage.map((row) => [row.source, row.dbControllers]),
+    [
+      ["delay_change_ctl_limits", 2],
+      ["echo_change_ctl_limits", 1],
+      ["lfo_change_ctl_limits", 1],
+      ["loop_change_ctl_limits", 1],
+      ["vibrato_change_ctl_limits", 1],
+    ],
+  );
   assert.equal(colorGap.sourceModules, 42);
   assert.equal(colorGap.dbModules, 42);
   assert.equal(colorGap.missingDbModules, 0);
@@ -162,7 +184,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
         default: 0,
         normal: 0,
         group: 0,
-        dynamicLimits: { controller: "missingCtl", cases: { nope: {} } },
+        dynamicLimits: { controller: "missingCtl", source: "missing_change_ctl_limits", cases: { nope: {} } },
       },
     ],
     dataChunks: [
@@ -275,6 +297,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(
       errors,
       /__BrokenDbCheckFixture: controller brokenCtl dynamicLimits references missing controller missingCtl/u,
+    );
+    assert.match(
+      errors,
+      /__BrokenDbCheckFixture: controller brokenCtl dynamicLimits source missing_change_ctl_limits is missing from source scan/u,
     );
     assert.match(errors, /__BrokenDbCheckFixture: controller brokenCtl dynamicLimits nope is missing min or max/u);
     assert.match(

@@ -126,7 +126,8 @@ npm run sunvox:verify:all
 - `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`, compares
   source module/controller declaration counts with the DB, and summarizes
   source module catalog fields such as default color, input/output counts, and
-  module flags.
+  module flags. It also reports `*_change_ctl_limits()` coverage so dynamic
+  controller range rules stay tied back to source declarations.
 - `controller-diff` compares controller ranges, units, scales, display offsets,
   and source enum value sets against the DB. It is a triage report for deciding
   which declarative source facts should be copied into `database.json`; CI
@@ -135,13 +136,15 @@ npm run sunvox:verify:all
   controller range based on another controller value, such as Delay/Echo/Loop
   length limits and LFO/Vibrato frequency limits by unit. Static `min`/`max`
   remain aligned with `psynth_register_ctl()`; validation applies the dynamic
-  effective range.
+  effective range. `dynamicLimits.source` should name the corresponding
+  `*_change_ctl_limits()` source function, and `check` fails if source and DB
+  drift apart.
 - `coverage --json`, `report --json`, and `controller-diff --json` emit
   machine-readable metrics for future CI or frontend tooling.
 - `metrics` summarizes coverage, source/DB consistency, controller metadata
   drift, chunk storage review coverage, module data chunk layout review
-  coverage, validation issue counts, and gate status in one compact report for
-  progress tracking.
+  coverage, dynamic controller limit source coverage, validation issue counts,
+  and gate status in one compact report for progress tracking.
 - `sunvox:coverage:check` runs the coverage report as a CI gate. It fails on
   parse errors, missing DB module types, unexpected missing-STYP modules, raw
   controller arrays, controller extras, module extra chunks, or opaque data

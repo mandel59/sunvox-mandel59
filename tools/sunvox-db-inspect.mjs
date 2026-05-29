@@ -175,6 +175,10 @@ function dbControllerCount(moduleType) {
   return expandControllerDefinitions(SUNVOX_DB.modules[moduleType]?.controllers).length;
 }
 
+function controllerKey(controller) {
+  return controller.path ?? controller.name;
+}
+
 function moduleLabel(module, fallbackIndex) {
   const parts = [`#${module.index ?? fallbackIndex}`];
   if (module.name) {
@@ -529,12 +533,38 @@ function scanSourceFile(file) {
     controllers: countMatches(text, /psynth_register_ctl\s*\(/gu),
     showOffsets: countMatches(text, /psynth_set_ctl_show_offset\s*\(/gu),
     controlFlags: countMatches(text, /psynth_set_ctl_flags\s*\(/gu),
+    dynamicLimitFunctions: [...text.matchAll(/static\s+void\s+([A-Za-z0-9_]+_change_ctl_limits)\s*\(/gu)]
+      .map((match) => match[1])
+      .sort(compareText),
     color: extractCaseReturnString(text, "PS_CMD_GET_COLOR"),
     inputs: resolveIntegerExpression(inputs, defines),
     outputs: resolveIntegerExpression(outputs, defines),
     flags: decodeFlagExpression(flags),
     flags2: decodeFlagExpression(flags2),
   };
+}
+
+function collectDbDynamicLimits() {
+  const rows = [];
+  for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
+    for (const controller of expandControllerDefinitions(moduleDefinition.controllers)) {
+      if (!controller.dynamicLimits) {
+        continue;
+      }
+      rows.push({
+        module: moduleName,
+        controller: controllerKey(controller),
+        dependency: controller.dynamicLimits.controller,
+        source: controller.dynamicLimits.source,
+      });
+    }
+  }
+  return rows.sort(
+    (a, b) =>
+      compareText(a.source ?? "", b.source ?? "") ||
+      compareText(a.module, b.module) ||
+      compareText(a.controller, b.controller),
+  );
 }
 
 function collectModuleCatalogGaps(sourceModules) {
@@ -803,6 +833,16 @@ export function collectSourceReport(sourceRoot = DEFAULT_SOURCE_ROOT) {
   );
   const modules = files.map(scanSourceFile).sort((a, b) => compareText(a.module, b.module));
   const sourceByName = new Map(modules.map((module) => [module.module, module]));
+  const sourceDynamicLimitFunctions = modules.flatMap((module) =>
+    module.dynamicLimitFunctions.map((source) => ({
+      module: module.module,
+      file: module.file,
+      source,
+    })),
+  );
+  const sourceDynamicLimitSourceSet = new Set(sourceDynamicLimitFunctions.map((row) => row.source));
+  const dbDynamicLimits = collectDbDynamicLimits();
+  const dbDynamicLimitSourceSet = new Set(dbDynamicLimits.map((row) => row.source).filter(Boolean));
   const dbModules = Object.keys(SUNVOX_DB.modules).sort(compareText);
   const dbRows = dbModules.map((module) => ({
     module,
@@ -816,6 +856,12 @@ export function collectSourceReport(sourceRoot = DEFAULT_SOURCE_ROOT) {
     sourceFiles: files.map((file) => relative(process.cwd(), file)),
     sourceModules: modules,
     moduleCatalogGaps: collectModuleCatalogGaps(modules),
+    sourceDynamicLimitFunctions,
+    dbDynamicLimits,
+    dynamicLimitSourceCoverage: sourceDynamicLimitFunctions.map((row) => ({
+      ...row,
+      dbControllers: dbDynamicLimits.filter((limit) => limit.source === row.source).length,
+    })),
     dbModules: dbRows,
     missingFromDb: modules
       .filter((module) => !SUNVOX_DB.modules[module.module])
@@ -825,6 +871,17 @@ export function collectSourceReport(sourceRoot = DEFAULT_SOURCE_ROOT) {
         file: module.file,
       })),
     missingFromSource: dbRows.filter((module) => !module.inSource).map((module) => module.module),
+    missingDynamicLimitSources: sourceDynamicLimitFunctions.filter((row) => !dbDynamicLimitSourceSet.has(row.source)),
+    unknownDynamicLimitSources: [...dbDynamicLimitSourceSet]
+      .filter((source) => !sourceDynamicLimitSourceSet.has(source))
+      .map((source) => ({
+        source,
+        controllers: dbDynamicLimits
+          .filter((limit) => limit.source === source)
+          .map((limit) => `${limit.module}.${limit.controller}`)
+          .sort(compareText),
+      }))
+      .sort((a, b) => compareText(a.source, b.source)),
   };
 }
 
@@ -1279,11 +1336,7 @@ function checkRuntimeConstraints(errors) {
   }
 }
 
-function controllerKey(controller) {
-  return controller.path ?? controller.name;
-}
-
-function checkControllerDynamicLimits(errors, moduleName, controller, controllersByKey) {
+function checkControllerDynamicLimits(errors, moduleName, controller, controllersByKey, sourceDynamicLimitSources) {
   const dynamicLimits = controller.dynamicLimits;
   if (!dynamicLimits) {
     return;
@@ -1298,6 +1351,9 @@ function checkControllerDynamicLimits(errors, moduleName, controller, controller
   ];
   if (limitSets.length === 0) {
     errors.push(`${moduleName}: controller ${controller.name} dynamicLimits has no default or cases`);
+  }
+  if (dynamicLimits.source && !sourceDynamicLimitSources.has(dynamicLimits.source)) {
+    errors.push(`${moduleName}: controller ${controller.name} dynamicLimits source ${dynamicLimits.source} is missing from source scan`);
   }
   for (const [caseName, limit] of limitSets) {
     if (limit.min === undefined && limit.max === undefined) {
@@ -1325,10 +1381,14 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const warnings = [];
   const sourceReport = collectSourceReport(sourceRoot);
   const sourceByName = new Map(sourceReport.sourceModules.map((module) => [module.module, module]));
+  const sourceDynamicLimitSources = new Set(sourceReport.sourceDynamicLimitFunctions.map((row) => row.source));
 
   checkChunkDefinitions(errors, warnings, sourceRoot);
   checkBitfieldDefinitions(errors);
   checkRuntimeConstraints(errors);
+  for (const row of sourceReport.missingDynamicLimitSources) {
+    errors.push(`source dynamic limit ${row.source} (${row.module}) is missing from DB dynamicLimits`);
+  }
 
   for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
     const controllers = expandControllerDefinitions(moduleDefinition.controllers);
@@ -1346,7 +1406,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
       if (controller.enum && !SUNVOX_DB.enums[controller.enum]) {
         errors.push(`${moduleName}: controller ${controller.name} references missing enum ${controller.enum}`);
       }
-      checkControllerDynamicLimits(errors, moduleName, controller, controllersByKey);
+      checkControllerDynamicLimits(errors, moduleName, controller, controllersByKey, sourceDynamicLimitSources);
     }
 
     const dataChunkOwners = new Map();
@@ -1539,6 +1599,11 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       sourceModules: report.sourceModules.length,
       sourceModulesMissingFromDb: report.missingFromDb.length,
       dbModulesMissingFromSource: report.missingFromSource.length,
+      sourceDynamicLimitFunctions: report.sourceDynamicLimitFunctions.length,
+      dbDynamicLimitSources: new Set(report.dbDynamicLimits.map((row) => row.source).filter(Boolean)).size,
+      dbDynamicLimitControllers: report.dbDynamicLimits.length,
+      missingDynamicLimitSources: report.missingDynamicLimitSources.length,
+      unknownDynamicLimitSources: report.unknownDynamicLimitSources.length,
       moduleCatalogFields: moduleCatalog.sourceFields,
       dbModuleCatalogFields: moduleCatalog.dbFields,
       moduleCatalogCoveragePercent: moduleCatalog.coveragePercent,
@@ -1570,10 +1635,14 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       dbCheck: dbCheck.ok,
       coverage: coverageGateFailures.length === 0,
       controllerMetadata: controllerDiff.summary.mismatches === 0,
+      dynamicLimits:
+        report.missingDynamicLimitSources.length === 0 && report.unknownDynamicLimitSources.length === 0,
       validation: validation.issues === 0,
       ok:
         report.missingFromDb.length === 0 &&
         report.missingFromSource.length === 0 &&
+        report.missingDynamicLimitSources.length === 0 &&
+        report.unknownDynamicLimitSources.length === 0 &&
         dbCheck.ok &&
         coverageGateFailures.length === 0 &&
         controllerDiff.summary.mismatches === 0 &&
@@ -1582,6 +1651,12 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
     sampledDbModuleTypes,
     unsampledDbModuleTypes: coverage.unusedDbModuleTypes,
     moduleCatalog,
+    dynamicLimits: {
+      sourceFunctions: report.sourceDynamicLimitFunctions,
+      dbLimits: report.dbDynamicLimits,
+      missingSources: report.missingDynamicLimitSources,
+      unknownSources: report.unknownDynamicLimitSources,
+    },
     validation,
     chunkStorage,
     dataChunkLayouts,
@@ -1830,6 +1905,8 @@ function formatSourceReport(report) {
     `Source controller declarations: ${sourceControllerTotal}`,
     `DB modules: ${report.dbModules.length}`,
     `DB controller definitions: ${dbControllerTotal}`,
+    `Source dynamic limit functions: ${report.sourceDynamicLimitFunctions.length}`,
+    `DB dynamic limit controllers: ${report.dbDynamicLimits.length}`,
     "",
     "Source modules missing from DB:",
     formatTable(report.missingFromDb, [
@@ -1847,6 +1924,20 @@ function formatSourceReport(report) {
       { header: "sourceModules", value: (row) => row.sourceModules },
       { header: "dbModules", value: (row) => row.dbModules },
       { header: "missingDbModules", value: (row) => row.missingDbModules },
+    ]),
+    "",
+    "Dynamic controller limit source coverage:",
+    formatTable(report.dynamicLimitSourceCoverage, [
+      { header: "source", value: (row) => row.source },
+      { header: "module", value: (row) => row.module },
+      { header: "dbControllers", value: (row) => row.dbControllers },
+      { header: "file", value: (row) => row.file },
+    ]),
+    "",
+    "DB dynamic limit sources missing from source scan:",
+    formatTable(report.unknownDynamicLimitSources, [
+      { header: "source", value: (row) => row.source },
+      { header: "controllers", value: (row) => row.controllers.join(",") },
     ]),
     "",
     "Covered DB modules:",
@@ -1941,6 +2032,11 @@ function formatProjectMetrics(metrics) {
     { metric: "Source modules", value: metrics.summary.sourceModules },
     { metric: "Source modules missing from DB", value: metrics.summary.sourceModulesMissingFromDb },
     { metric: "DB modules missing from source", value: metrics.summary.dbModulesMissingFromSource },
+    { metric: "Source dynamic limit functions", value: metrics.summary.sourceDynamicLimitFunctions },
+    { metric: "DB dynamic limit sources", value: metrics.summary.dbDynamicLimitSources },
+    { metric: "DB dynamic limit controllers", value: metrics.summary.dbDynamicLimitControllers },
+    { metric: "Missing dynamic limit sources", value: metrics.summary.missingDynamicLimitSources },
+    { metric: "Unknown dynamic limit sources", value: metrics.summary.unknownDynamicLimitSources },
     { metric: "Module catalog fields", value: metrics.summary.moduleCatalogFields },
     { metric: "DB module catalog fields", value: metrics.summary.dbModuleCatalogFields },
     { metric: "Module catalog coverage", value: formatPercent(metrics.summary.moduleCatalogCoveragePercent) },
@@ -1972,6 +2068,7 @@ function formatProjectMetrics(metrics) {
     { gate: "DB check", status: gateLabel(metrics.gates.dbCheck) },
     { gate: "coverage", status: gateLabel(metrics.gates.coverage) },
     { gate: "controller metadata", status: gateLabel(metrics.gates.controllerMetadata) },
+    { gate: "dynamic limits", status: gateLabel(metrics.gates.dynamicLimits) },
     { gate: "validation", status: gateLabel(metrics.gates.validation) },
     { gate: "overall", status: gateLabel(metrics.gates.ok) },
   ];
@@ -1997,6 +2094,16 @@ function formatProjectMetrics(metrics) {
     "Unsampled DB module types:",
     metrics.unsampledDbModuleTypes.length
       ? metrics.unsampledDbModuleTypes.map((moduleType) => `  - ${moduleType}`).join("\n")
+    : "(none)",
+    "",
+    "Dynamic limit source gaps:",
+    metrics.dynamicLimits.missingSources.length || metrics.dynamicLimits.unknownSources.length
+      ? [
+          ...metrics.dynamicLimits.missingSources.map((row) => `  - missing DB source: ${row.source} (${row.module})`),
+          ...metrics.dynamicLimits.unknownSources.map(
+            (row) => `  - unknown DB source: ${row.source} (${row.controllers.join(", ")})`,
+          ),
+        ].join("\n")
       : "(none)",
     "",
     "Validation issues:",
