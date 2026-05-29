@@ -546,6 +546,56 @@ function encodePatternController(event, module, semantics) {
   return packedValue;
 }
 
+function packedFieldsKnownMask(fields = []) {
+  return fields.reduce((mask, field) => mask | (packedFieldMask(field) << field.shift), 0);
+}
+
+function decodePackedParameter(value, definition) {
+  if (typeof value !== "number" || !definition?.packedFields?.length) {
+    return value;
+  }
+  const knownMask = packedFieldsKnownMask(definition.packedFields);
+  if ((value & ~knownMask) !== 0) {
+    return value;
+  }
+  return Object.fromEntries(
+    definition.packedFields.map((field) => {
+      const storedValue = packedFieldStoredValue(value, field);
+      const decodedValue = packedFieldDecodedValue(storedValue, field);
+      return [field.name, field.enum ? enumToName(field.enum, decodedValue) : decodedValue];
+    }),
+  );
+}
+
+function encodePackedParameter(value, definition) {
+  if (typeof value === "number" || !definition?.packedFields?.length || !value || typeof value !== "object") {
+    return value;
+  }
+  let packedValue = 0;
+  for (const field of definition.packedFields) {
+    const decodedValue = field.enum ? enumToValue(field.enum, value[field.name] ?? 0) : (value[field.name] ?? 0);
+    const storedValue = packedFieldEncodedValue(decodedValue, field);
+    if (!packedFieldContainsStoredValue(storedValue, field)) {
+      const { min, max } = packedFieldStoredRange(field);
+      throw new Error(`Pattern parameter ${field.name} value ${decodedValue} stores as ${storedValue}; expected ${min}..${max}`);
+    }
+    packedValue = setPackedFieldValue(packedValue, field, storedValue);
+  }
+  return packedValue;
+}
+
+function patternEffectParameterDefinition(effect) {
+  return SUNVOX_DB.patternEffectParameters?.[effect];
+}
+
+function decodePatternEffectParameter(effect, value) {
+  return decodePackedParameter(value, patternEffectParameterDefinition(effect));
+}
+
+function encodePatternEffectParameter(effect, value) {
+  return encodePackedParameter(value, patternEffectParameterDefinition(effect));
+}
+
 function semanticEventFieldValue(event, fieldName, semantics) {
   if (event[fieldName] !== undefined) {
     return event[fieldName];
@@ -605,6 +655,13 @@ function applyDecodedPatternField(event, fieldName, value, context) {
       return;
     default:
       if (shouldKeepDecodedPatternField(fieldName, value, semantics, context.rawRecord)) {
+        if (fieldName === "value" && event.effect !== undefined) {
+          const parameter = decodePatternEffectParameter(event.effect, value);
+          if (parameter !== value) {
+            event.parameter = parameter;
+            return;
+          }
+        }
         event[fieldName] = value;
       }
   }
@@ -621,6 +678,9 @@ function encodePatternEventField(fieldName, event, context) {
     case "packedPatternControllerEffect":
       return encodePatternController(event, context.module, semantics);
     default:
+      if (fieldName === "value" && event.effect !== undefined) {
+        return encodePatternEffectParameter(event.effect, value);
+      }
       return value === "default" && semantics.zero === "default" ? 0 : (value ?? 0);
   }
 }

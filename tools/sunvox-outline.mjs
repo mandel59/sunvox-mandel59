@@ -276,6 +276,15 @@ function formatValue(value) {
   return value === undefined || value === null || value === "" ? "-" : String(value);
 }
 
+function formatEventValue(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return `{${Object.entries(value)
+      .map(([key, fieldValue]) => `${key}=${fieldValue}`)
+      .join(",")}}`;
+  }
+  return formatValue(value);
+}
+
 function formatPosition(position) {
   if (!position) {
     return "";
@@ -357,7 +366,7 @@ function formatEvent(event) {
   }
   const value = event.parameter ?? event.value;
   if (value !== undefined) {
-    parts.push(`${event.effect !== undefined ? "parameter" : "value"}=${value}`);
+    parts.push(`${event.effect !== undefined ? "parameter" : "value"}=${formatEventValue(value)}`);
   }
   return parts.join(" ");
 }

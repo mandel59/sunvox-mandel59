@@ -709,6 +709,42 @@ test("encodes DB-described packed pattern MIDI controller and effect fields", as
   assert.equal(event.value, 12);
 });
 
+test("decodes and encodes DB-described pattern effect parameters", async () => {
+  const delayedBuffer = await readFile("music/2022-04-20.sunvox");
+  const delayedDocument = parseContainer(delayedBuffer);
+  const delayedEvent = delayedDocument.patterns[0].events.find((event) => event.effect === "noteDelay");
+
+  assert.deepEqual(delayedEvent.parameter, { ticks: 2 });
+  assert.equal(delayedEvent.value, undefined);
+  assert.equal(sha256(buildContainer(delayedDocument)), sha256(delayedBuffer));
+
+  const buffer = await readFile("music/2022-04-17.sunvox");
+  const document = parseContainer(buffer);
+  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 3);
+  assert.ok(patternIndex >= 0);
+  const pattern = document.patterns[patternIndex];
+
+  pattern.events = [
+    {
+      line: 2,
+      track: 0,
+      effect: "vibrato",
+      parameter: { speed: 3, amplitude: 4 },
+    },
+    {
+      line: 3,
+      track: 0,
+      effect: "velocitySlide",
+      parameter: { up: 5, down: 6 },
+    },
+  ];
+
+  const reparsed = parseContainer(buildContainer(document));
+
+  assert.deepEqual(reparsed.patterns[patternIndex].events[0].parameter, { speed: 3, amplitude: 4 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[1].parameter, { up: 5, down: 6 });
+});
+
 test("can still build editable chunk documents", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseEditableContainer(buffer);

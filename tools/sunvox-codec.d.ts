@@ -112,10 +112,28 @@ export interface SunVoxStructDefinition {
   }>;
 }
 
+export interface SunVoxPackedFieldDefinition {
+  name: string;
+  shift: number;
+  bits: number;
+  offset?: number;
+  min?: number;
+  max?: number;
+  enum?: string;
+  reference?: string;
+}
+
+export interface SunVoxPatternEffectParameterDefinition {
+  description?: string;
+  sourceSymbol?: string;
+  packedFields: SunVoxPackedFieldDefinition[];
+}
+
 export interface SunVoxDatabase {
   version: number;
   chunks: Array<Record<string, unknown>>;
   enums: Record<string, Record<string, string>>;
+  patternEffectParameters?: Record<string, SunVoxPatternEffectParameterDefinition>;
   bitfields?: Record<string, unknown>;
   bitflags?: Record<string, Array<{ name: string; bit: number }>>;
   structs?: Record<string, SunVoxStructDefinition>;

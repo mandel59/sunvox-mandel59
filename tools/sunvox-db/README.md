@@ -11,6 +11,10 @@ can either interpret it directly or generate conversion code from it later.
   and `signedRoundTrip` so source-code storage details do not disappear during
   codec work.
 - `enums`: maps stored numeric values to editable names.
+- `patternEffectParameters`: describes source-backed packed `parameter` layouts
+  for standard pattern effects. The codec decodes only values whose bits are
+  fully covered by a declared layout; values with unknown bits stay numeric for
+  round-trip safety.
 - `bitfields`: describes packed integer fields such as `CMID`.
 - `bitflags`: maps stored flag bits to sparse named objects.
 - `structs`: describes fixed-size record arrays such as pattern notes and MIDI

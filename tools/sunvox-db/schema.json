@@ -49,6 +49,35 @@
         "additionalProperties": { "type": "string" }
       }
     },
+    "patternEffectParameters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["packedFields"],
+        "properties": {
+          "description": { "type": "string" },
+          "sourceSymbol": { "type": "string" },
+          "packedFields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "shift", "bits"],
+              "properties": {
+                "name": { "type": "string" },
+                "shift": { "type": "integer", "minimum": 0 },
+                "bits": { "type": "integer", "minimum": 1, "maximum": 31 },
+                "offset": { "type": "integer" },
+                "min": { "type": "integer" },
+                "max": { "type": "integer" },
+                "enum": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "bitfields": {
       "type": "object",
       "additionalProperties": {

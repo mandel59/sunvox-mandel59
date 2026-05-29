@@ -797,6 +797,31 @@
       "15": "channel16"
     }
   },
+  "patternEffectParameters": {
+    "vibrato": {
+      "description": "0xSSAA where SS is vibrato speed and AA is vibrato amplitude.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x04",
+      "packedFields": [
+        { "name": "speed", "shift": 8, "bits": 8 },
+        { "name": "amplitude", "shift": 0, "bits": 8 }
+      ]
+    },
+    "velocitySlide": {
+      "description": "0xUUDD where UU slides velocity up and DD slides velocity down.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x0A",
+      "packedFields": [
+        { "name": "up", "shift": 8, "bits": 8 },
+        { "name": "down", "shift": 0, "bits": 8 }
+      ]
+    },
+    "noteDelay": {
+      "description": "Low five bits hold the note delay in ticks; values with other bits set remain numeric for round-trip safety.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x1D",
+      "packedFields": [
+        { "name": "ticks", "shift": 0, "bits": 5 }
+      ]
+    }
+  },
   "bitfields": {
     "midi_pars1": {
       "type": "uint32",

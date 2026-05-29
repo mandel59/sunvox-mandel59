@@ -45,6 +45,8 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.namedSourcePatternEffects, 43);
   assert.equal(metrics.summary.unnamedSourcePatternEffects, 0);
   assert.equal(metrics.summary.patternEffectNameCoveragePercent, 100);
+  assert.equal(metrics.summary.patternEffectParameterSchemas, 3);
+  assert.equal(metrics.summary.patternEffectParameterCoveragePercent, 7);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 5);
@@ -204,6 +206,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousRowsPath = textLayout.rowsPath;
   const patternEffectEnum = SUNVOX_DB.enums.sunvox_pattern_effect;
   const previousPatternEffectEnum = { ...patternEffectEnum };
+  const patternEffectParameters = SUNVOX_DB.patternEffectParameters;
+  const previousPatternEffectParameters = JSON.parse(JSON.stringify(patternEffectParameters));
   const amplifier = SUNVOX_DB.modules.Amplifier;
   const previousAmplifierColor = amplifier.color;
   SUNVOX_DB.modules[moduleName] = {
@@ -295,6 +299,9 @@ test("DB check validates data chunk ranges and metadata references", () => {
   textLayout.rowsPath = "";
   textLayout.fieldSemantics.broken = { encoding: "__missing_encoding", reference: "__missing_reference" };
   patternEffectEnum["254"] = "notSourceBacked";
+  patternEffectParameters.notSourceBackedParameter = {
+    packedFields: [{ name: "bad", shift: 0, bits: 8, enum: "__missing_parameter_enum" }],
+  };
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
   storageChunk.signedRoundTrip = true;
@@ -389,6 +396,11 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /struct sunvox_note field broken has invalid encoding __missing_encoding/u);
     assert.match(errors, /struct sunvox_note field broken has invalid reference __missing_reference/u);
     assert.match(errors, /sunvox_pattern_effect 254 is missing from source ctl_eff cases/u);
+    assert.match(errors, /pattern effect parameter notSourceBackedParameter references missing sunvox_pattern_effect name/u);
+    assert.match(
+      errors,
+      /pattern effect parameter notSourceBackedParameter: packed field bad references missing enum __missing_parameter_enum/u,
+    );
     assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
     assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);
     assert.match(errors, /chunk SMIC is marked signedRoundTrip but uses uint32 payload type/u);
@@ -412,6 +424,10 @@ test("DB check validates data chunk ranges and metadata references", () => {
       delete patternEffectEnum[key];
     }
     Object.assign(patternEffectEnum, previousPatternEffectEnum);
+    for (const key of Object.keys(patternEffectParameters)) {
+      delete patternEffectParameters[key];
+    }
+    Object.assign(patternEffectParameters, previousPatternEffectParameters);
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     amplifier.color = previousAmplifierColor;
     if (previousModule) {

@@ -87,7 +87,7 @@ test("formats pattern effect parameters distinctly from controller values", () =
           tracks: 1,
           position: { x: 0, y: 0 },
           events: [
-            { line: 0, track: 0, module: 1, effect: "pitchUp", value: 12 },
+            { line: 0, track: 0, module: 1, effect: "vibrato", parameter: { speed: 3, amplitude: 4 } },
             { line: 1, track: 0, module: 1, controller: "volume", value: 321 },
           ],
         },
@@ -97,6 +97,6 @@ test("formats pattern effect parameters distinctly from controller values", () =
   );
   const text = formatOutline(outline, { eventLimit: 4 });
 
-  assert.match(text, /L000 T0 module=#1 effect=pitchUp parameter=12/u);
+  assert.match(text, /L000 T0 module=#1 effect=vibrato parameter=\{speed=3,amplitude=4\}/u);
   assert.match(text, /L001 T0 module=#1 controller=volume value=321/u);
 });
