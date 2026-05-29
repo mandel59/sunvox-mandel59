@@ -35,7 +35,7 @@
     { "id": "PFFF", "scope": "pattern", "name": "infoFlags", "type": "uint32", "label": "pattern info flags" },
     { "id": "PXXX", "scope": "pattern", "name": "x", "type": "int32", "label": "pattern x position" },
     { "id": "PYYY", "scope": "pattern", "name": "y", "type": "int32", "label": "pattern y position" },
-    { "id": "PPAR", "scope": "pattern", "name": "parent", "type": "uint32", "label": "pattern parent" },
+    { "id": "PPAR", "scope": "pattern", "name": "parent", "type": "int32", "label": "pattern parent" },
     { "id": "PPR#", "scope": "pattern", "name": "parentId", "type": "uint32", "label": "pattern clone parent id" },
     { "id": "PFGC", "scope": "pattern", "name": "foreground", "type": "rgb24", "label": "pattern foreground color" },
     { "id": "PBGC", "scope": "pattern", "name": "background", "type": "rgb24", "label": "pattern background color" },
@@ -94,7 +94,7 @@
     { "id": "CHNM", "scope": "module", "name": "chunkIndex", "type": "uint32", "label": "module chunk index" },
     { "id": "CHDT", "scope": "module", "name": "chunkData", "type": "bytes", "label": "module chunk data" },
     { "id": "CHFF", "scope": "module", "name": "chunkFlags", "type": "uint32", "label": "module chunk flags" },
-    { "id": "CHFR", "scope": "module", "name": "chunkSampleRate", "type": "uint32", "label": "module chunk sample rate" },
+    { "id": "CHFR", "scope": "module", "name": "chunkSampleRate", "type": "int32", "label": "module chunk sample rate" },
     { "id": "JAMD", "scope": "project", "name": "jumpAddressMode", "type": "uint32", "label": "jump address mode" },
     { "id": "SEND", "scope": "module", "name": "end", "type": "empty", "label": "module terminator" }
   ],

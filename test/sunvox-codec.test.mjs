@@ -153,6 +153,49 @@ test("decodes clone pattern parent numbers and stable parent ids", () => {
   assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
 });
 
+test("preserves signed pattern parent and data chunk sample rate values", () => {
+  const document = {
+    format: TEXT_FORMAT,
+    magic: "SSYN",
+    headerTailHex: "00000000",
+    module: {
+      name: "Signed metadata",
+      dataChunks: [
+        {
+          index: 3,
+          base64: "",
+          sampleRate: -1,
+        },
+      ],
+    },
+  };
+  const projectDocument = {
+    format: TEXT_FORMAT,
+    magic: "SVOX",
+    headerTailHex: "00000000",
+    project: {},
+    patterns: [
+      {
+        parent: -1,
+        infoFlags: {
+          clone: true,
+        },
+      },
+    ],
+    modules: [],
+  };
+
+  const buffer = buildContainer(document);
+  const parsed = parseContainer(buffer);
+  const projectBuffer = buildContainer(projectDocument);
+  const parsedProject = parseContainer(projectBuffer);
+
+  assert.equal(parsed.module.dataChunks[0].sampleRate, -1);
+  assert.equal(parsedProject.patterns[0].parent, -1);
+  assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
+  assert.equal(sha256(buildContainer(parsedProject)), sha256(projectBuffer));
+});
+
 test("decodes module MIDI input flag bitfields", () => {
   const document = {
     format: TEXT_FORMAT,
