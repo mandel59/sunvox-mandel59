@@ -117,12 +117,21 @@ test("decodes pattern note data", async () => {
 
   assert.ok(Array.isArray(pattern?.events));
   assert.ok(pattern.events.length > 0);
-  assert.equal(pattern.events[0].length, 5);
-  assert.equal(layout.kind, "lineMajorTupleArray");
+  assert.deepEqual(pattern.events[0], {
+    line: 0,
+    track: 0,
+    note: "C4",
+    module: 2,
+    _moduleName: "DrumSynth",
+    _moduleType: "DrumSynth",
+  });
+  assert.equal(layout.kind, "sparsePatternEvents");
   assert.equal(layout.columnsPath, "tracks");
   assert.equal(layout.rowsPath, "lines");
+  assert.deepEqual(layout.positionFields, ["line", "track"]);
   assert.deepEqual(layout.tupleFields, ["note", "velocity", "module", "controller", "value"]);
-  assert.equal(pattern.events.length, pattern.tracks * pattern.lines);
+  assert.ok(pattern.events.length < pattern.tracks * pattern.lines);
+  assert.equal(sha256(buildContainer(document)), sha256(buffer));
 });
 
 test("can still build editable chunk documents", async () => {

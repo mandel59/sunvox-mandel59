@@ -28,7 +28,9 @@ generator module data chunks are decoded into typed arrays or named option
 fields where the SunVox source layout is known. Sampler instrument, sample,
 option, and envelope chunks are decoded into structured records; sample PCM
 bytes remain reversible as `bytesBase64` with decoded format flags. Sound2Ctl
-controller values and options are decoded into named fields.
+controller values and options are decoded into named fields. Pattern note data
+is emitted as sparse `line` / `track` event objects with note names and
+auxiliary module names, while the dense binary grid remains round-trip safe.
 
 ```sh
 npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json

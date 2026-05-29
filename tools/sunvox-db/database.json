@@ -78,6 +78,20 @@
       "3": "repeatEndless",
       "4": "onceEndless"
     },
+    "sunvox_note_command": {
+      "128": "noteOff",
+      "129": "allNotesOff",
+      "130": "cleanModules",
+      "131": "stop",
+      "132": "play",
+      "133": "setPitch",
+      "134": "previousTrack",
+      "135": "patternPlayOff",
+      "136": "prepareImmediateJump",
+      "137": "jump",
+      "140": "cleanModule",
+      "141": "prepareImmediateJumpNegative"
+    },
     "psynth_midi_type": {
       "0": "none",
       "1": "note",
@@ -693,10 +707,11 @@
       "path": "pattern.events",
       "recordSize": 8,
       "textLayout": {
-        "kind": "lineMajorTupleArray",
+        "kind": "sparsePatternEvents",
         "path": "events",
         "columnsPath": "tracks",
         "rowsPath": "lines",
+        "positionFields": ["line", "track"],
         "tupleFields": ["note", "velocity", "module", "controller", "value"],
         "emptyTuple": [0, 0, 0, 0, 0],
         "fieldSemantics": {

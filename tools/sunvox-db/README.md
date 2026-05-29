@@ -12,8 +12,8 @@ can either interpret it directly or generate conversion code from it later.
 - `bitflags`: maps stored flag bits to sparse named objects.
 - `structs`: describes fixed-size record arrays such as pattern notes and MIDI
   bindings. Pattern notes also declare the editable text layout used for
-  `patterns[].events`: a line-major tuple array with one tuple per
-  line/track cell.
+  `patterns[].events`: sparse semantic event objects with explicit `line` and
+  `track` fields, backed by a line-major tuple layout for binary round-trips.
 - `grammar`: maps semantic object paths to chunk IDs and emit order.
 - `modules`: describes module-specific controller layouts and data chunk
   layouts. Controller definitions can use `path` for nested semantic output and

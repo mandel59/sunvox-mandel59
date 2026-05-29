@@ -81,10 +81,14 @@
             "type": "object",
             "required": ["kind", "path", "tupleFields"],
             "properties": {
-              "kind": { "enum": ["lineMajorTupleArray"] },
+              "kind": { "enum": ["lineMajorTupleArray", "sparsePatternEvents"] },
               "path": { "type": "string" },
               "columnsPath": { "type": "string" },
               "rowsPath": { "type": "string" },
+              "positionFields": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
               "tupleFields": {
                 "type": "array",
                 "minItems": 1,

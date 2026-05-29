@@ -20,6 +20,7 @@ const CHUNK_DESCRIPTIONS = Object.fromEntries(
 const MODULE_CONTROLLER_CACHE = new Map();
 const PATTERN_CHUNKS = scopedChunkSet("pattern");
 const MODULE_CHUNKS = scopedChunkSet("module");
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 function chunkDefinition(id) {
   return CHUNKS_BY_ID.get(id);
@@ -138,6 +139,14 @@ function enumToValue(enumName, value) {
     throw new Error(`Unknown ${enumName} value: ${value}`);
   }
   return Number(entry[0]);
+}
+
+function tryEnumToValue(enumName, value) {
+  try {
+    return enumToValue(enumName, value);
+  } catch {
+    return undefined;
+  }
 }
 
 function bitMask(bits) {
@@ -318,6 +327,240 @@ function compactPatternNotes(pattern, definition) {
   return {
     events: pattern.events.map((event) => tupleFields.map((fieldName) => event[fieldName] ?? 0)),
   };
+}
+
+function patternNoteValueToText(value) {
+  if (value === 0) {
+    return undefined;
+  }
+  if (value > 0 && value < 128) {
+    const note = value - 1;
+    return `${NOTE_NAMES[note % 12]}${Math.floor(note / 12)}`;
+  }
+  const command = enumToName("sunvox_note_command", value);
+  return typeof command === "string" ? command : value;
+}
+
+function patternNoteTextToValue(value) {
+  if (value === undefined) {
+    return 0;
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value !== "string") {
+    throw new Error(`Invalid pattern note value: ${value}`);
+  }
+  const commandValue = tryEnumToValue("sunvox_note_command", value);
+  if (commandValue !== undefined) {
+    return commandValue;
+  }
+  const match = /^([A-G])(#?)(-?\d+)$/u.exec(value);
+  if (!match) {
+    throw new Error(`Invalid pattern note name: ${value}`);
+  }
+  const pitchClass = NOTE_NAMES.indexOf(`${match[1]}${match[2]}`);
+  if (pitchClass < 0) {
+    throw new Error(`Invalid pattern note pitch class: ${value}`);
+  }
+  const noteNumber = Number(match[3]) * 12 + pitchClass;
+  return noteNumber + 1;
+}
+
+function patternVelocityValueToText(value) {
+  return value === 0 ? undefined : value;
+}
+
+function patternVelocityTextToValue(value) {
+  return value === undefined || value === "default" ? 0 : value;
+}
+
+function patternModuleFromStored(value) {
+  return value === 0 ? undefined : value - 1;
+}
+
+function patternModuleToStored(value) {
+  return value === undefined ? 0 : value + 1;
+}
+
+function moduleControllerName(module, index) {
+  const definition = moduleControllerDefinitions(module?.type).find((controller) => controller.index === index);
+  return definition ? controllerPath(definition) : undefined;
+}
+
+function moduleControllerIndex(module, name) {
+  return moduleControllerDefinitions(module?.type).find((controller) => controllerPath(controller) === name || controller.name === name)?.index;
+}
+
+function decodePatternController(value, module, event) {
+  const controllerNumber = value >>> 8;
+  const effect = value & 0xff;
+  if (controllerNumber > 0 && controllerNumber < 128) {
+    const controllerIndex = controllerNumber - 1;
+    const controllerName = moduleControllerName(module, controllerIndex);
+    event.controller = controllerName ?? controllerIndex;
+    if (controllerName) {
+      event._controllerIndex = controllerIndex;
+    }
+  } else if (controllerNumber >= 128) {
+    event.midiController = controllerNumber - 128;
+  }
+  if (effect) {
+    event.effect = effect;
+  }
+}
+
+function encodePatternController(event, module) {
+  let controllerNumber = 0;
+  if (event.midiController !== undefined) {
+    controllerNumber = event.midiController + 128;
+  } else if (event.controller !== undefined) {
+    const controllerIndex =
+      typeof event.controller === "string" ? moduleControllerIndex(module, event.controller) : event.controller;
+    if (controllerIndex === undefined) {
+      throw new Error(`Unknown pattern controller: ${event.controller}`);
+    }
+    controllerNumber = controllerIndex + 1;
+  }
+  const effect = typeof event.effect === "number" ? event.effect : 0;
+  return ((controllerNumber & 0xff) << 8) | (effect & 0xff);
+}
+
+function emptyPatternRecord(definition) {
+  return Object.fromEntries(structTextTupleFields(definition).map((fieldName) => [fieldName, 0]));
+}
+
+function patternRecordIsEmpty(record, definition) {
+  const object = tupleRecordToObject(record, definition);
+  return structTextTupleFields(definition).every((fieldName) => (object?.[fieldName] ?? 0) === 0);
+}
+
+function patternRecordToSemanticEvent(record, index, columns, modules, definition) {
+  const object = tupleRecordToObject(record, definition);
+  const event = {
+    line: Math.floor(index / columns),
+    track: index % columns,
+  };
+  const note = patternNoteValueToText(object.note ?? 0);
+  if (note !== undefined) {
+    event.note = note;
+  }
+  const velocity = patternVelocityValueToText(object.velocity ?? 0);
+  if (velocity !== undefined) {
+    event.velocity = velocity;
+  }
+  const moduleIndex = patternModuleFromStored(object.module ?? 0);
+  const module = moduleIndex === undefined ? undefined : modules[moduleIndex];
+  if (moduleIndex !== undefined) {
+    event.module = moduleIndex;
+    if (module?.name) {
+      event._moduleName = module.name;
+    }
+    if (module?.type) {
+      event._moduleType = module.type;
+    }
+  }
+  decodePatternController(object.controller ?? 0, module, event);
+  if ((object.value ?? 0) !== 0 || object.controller !== 0) {
+    event.value = object.value ?? 0;
+  }
+  return event;
+}
+
+function patternEventColumns(pattern, records = []) {
+  if (pattern?.eventColumns !== undefined) {
+    return pattern.eventColumns;
+  }
+  if (records.length && pattern?.lines && records.length % pattern.lines === 0) {
+    return records.length / pattern.lines;
+  }
+  return pattern?.tracks ?? Math.max(1, records.length);
+}
+
+function patternEventRows(pattern, columns, records = []) {
+  if (pattern?.eventRows !== undefined) {
+    return pattern.eventRows;
+  }
+  if (records.length && columns && records.length % columns === 0) {
+    return records.length / columns;
+  }
+  return pattern?.lines ?? Math.ceil(records.length / columns);
+}
+
+function semanticPatternEvents(pattern, modules) {
+  if (!Array.isArray(pattern?.events)) {
+    return pattern;
+  }
+  const definition = SUNVOX_DB.structs.sunvox_note;
+  const records = pattern.events.map((event) => tupleRecordToObject(event, definition));
+  const columns = patternEventColumns(pattern, records);
+  const rows = patternEventRows(pattern, columns, records);
+  const events = records
+    .map((record, index) =>
+      patternRecordIsEmpty(record, definition)
+        ? undefined
+        : patternRecordToSemanticEvent(record, index, columns, modules, definition),
+    )
+    .filter(Boolean);
+
+  pattern.events = events;
+  if (columns !== pattern.tracks) {
+    pattern.eventColumns = columns;
+  }
+  if (rows !== pattern.lines) {
+    pattern.eventRows = rows;
+  }
+  return pattern;
+}
+
+function patternSemanticEventToRecord(event, modules, definition) {
+  if (!event || typeof event !== "object") {
+    return tupleRecordToObject(event, definition);
+  }
+  if (event.line === undefined && event.track === undefined) {
+    return tupleRecordToObject(event, definition);
+  }
+  const moduleIndex = event.module;
+  const module = moduleIndex === undefined ? undefined : modules?.[moduleIndex];
+  return {
+    note: patternNoteTextToValue(event.note),
+    velocity: patternVelocityTextToValue(event.velocity),
+    module: patternModuleToStored(moduleIndex),
+    controller: encodePatternController(event, module),
+    value: event.value ?? event.parameter ?? 0,
+  };
+}
+
+function patternEventRecords(pattern, modules) {
+  if (!Array.isArray(pattern?.events)) {
+    return undefined;
+  }
+  const definition = SUNVOX_DB.structs.sunvox_note;
+  const sparse =
+    pattern.events.length === 0
+      ? pattern.eventColumns !== undefined ||
+        pattern.eventRows !== undefined ||
+        pattern.tracks !== undefined ||
+        pattern.lines !== undefined
+      : pattern.events.some(
+          (event) => event && typeof event === "object" && !Array.isArray(event) && (event.line !== undefined || event.track !== undefined),
+        );
+  if (!sparse) {
+    return pattern.events.map((event) => tupleRecordToObject(event, definition));
+  }
+  const columns = patternEventColumns(pattern);
+  const rows = patternEventRows(pattern, columns);
+  const records = Array.from({ length: columns * rows }, () => emptyPatternRecord(definition));
+  for (const event of pattern.events) {
+    const line = event.line ?? 0;
+    const track = event.track ?? 0;
+    const index = line * columns + track;
+    if (index < 0 || index >= records.length) {
+      throw new Error(`Pattern event is outside the event grid: line ${line}, track ${track}`);
+    }
+    records[index] = patternSemanticEventToRecord(event, modules, definition);
+  }
+  return records;
 }
 
 function makeEditableChunk(id, data) {
@@ -1608,7 +1851,7 @@ function groupStructuredDocument(document) {
     headerTailHex: document.headerTailHex,
     _comments: [],
     project: makeProject(projectChunks),
-    patterns,
+    patterns: patterns.map((pattern) => semanticPatternEvents(pattern, modules)),
     modules,
     trailingChunks,
   };
@@ -1663,7 +1906,7 @@ function syncProject(project) {
   return chunks;
 }
 
-function syncPattern(pattern) {
+function syncPattern(pattern, modules = []) {
   if (Array.isArray(pattern?.chunks)) {
     return syncLegacyPattern(pattern);
   }
@@ -1676,6 +1919,14 @@ function syncPattern(pattern) {
     }
     if (token === terminator) {
       chunks.push({ id: terminator, _label: chunkLabel(terminator) });
+      continue;
+    }
+    if (token === "PDTA") {
+      const field = scopeGrammar("pattern").fields.find((candidate) => candidate.chunk === "PDTA");
+      const records = patternEventRecords(pattern, modules);
+      if (field && records !== undefined) {
+        chunks.push(makeSemanticChunk("PDTA", field.field, records, field));
+      }
       continue;
     }
     const chunk = emitScopeField("pattern", pattern, token);
@@ -1741,7 +1992,7 @@ function flattenStructuredDocument(document) {
   }
   return [
     ...syncProject(document.project),
-    ...(document.patterns ?? []).flatMap(syncPattern),
+    ...(document.patterns ?? []).flatMap((pattern) => syncPattern(pattern, document.modules ?? [])),
     ...(document.modules ?? []).flatMap(syncModule),
     ...(document.trailingChunks ?? []).map(cloneJson),
   ];

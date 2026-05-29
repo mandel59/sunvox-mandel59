@@ -6,10 +6,11 @@ export const SUPPORTED_MAGICS: Set<SunVoxMagic>;
 export type SunVoxMagic = "SVOX" | "SSYN";
 
 export interface SunVoxStructTextLayout {
-  kind: "lineMajorTupleArray";
+  kind: "lineMajorTupleArray" | "sparsePatternEvents";
   path: string;
   columnsPath?: string;
   rowsPath?: string;
+  positionFields?: string[];
   tupleFields: string[];
   emptyTuple?: number[];
   fieldSemantics?: Record<
@@ -136,9 +137,26 @@ export interface PatternNote {
   value: number;
 }
 
+export interface SemanticPatternEvent {
+  line: number;
+  track: number;
+  note?: string | number;
+  velocity?: number | "default";
+  module?: number;
+  _moduleName?: string;
+  _moduleType?: string;
+  controller?: string | number;
+  _controllerIndex?: number;
+  midiController?: number;
+  effect?: number;
+  value?: number;
+  parameter?: number;
+}
+
 export type EditablePatternEvent =
   | [note: number, velocity: number, module: number, controller: number, value: number]
-  | PatternNote;
+  | PatternNote
+  | SemanticPatternEvent;
 
 export interface PatternNotes {
   eventSize: 8;
@@ -220,6 +238,8 @@ export interface StructuredPattern {
   position?: { x?: number; y?: number };
   tracks?: number;
   lines?: number;
+  eventColumns?: number;
+  eventRows?: number;
   ySize?: number;
   displayFlags?: number;
   iconBase64?: string;
