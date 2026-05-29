@@ -56,6 +56,40 @@ treating slot arrays as separate links. The codec maps those parallel arrays to
 editable `inputs` / `outputs` link objects with local `slot`, target `module`,
 and peer `peerSlot` fields.
 
+## DB / Codec Boundary
+
+The DB should hold declarative SunVox knowledge. The codec should hold generic
+mechanics for reading bytes, walking chunk streams, applying DB plans, and
+running transformations that are easier to express as code.
+
+Move knowledge into the DB when it is stable, source-derived, or useful outside
+one function:
+
+- chunk IDs, labels, scopes, payload storage types, and signedness
+- chunk order, terminators, and small chunk-sequence grammars
+- structs, fixed record layouts, bitfields, bitflags, enums, and value aliases
+- module catalog data, controller definitions, data chunk layouts, and link
+  relations
+- runtime constraints or save-normalization rules once they can be tested
+  against SunVox Lib behavior
+
+Keep logic in code when it is mechanical, algorithmic, or still experimental:
+
+- binary parsing and writing primitives
+- generic DB interpreters such as scope emitters, struct decoders, and indexed
+  payload sequence handlers
+- transforms that require calculation, lookup context, or cross-object joins,
+  such as note names, module references, embedded MetaModule traversal, and
+  auxiliary display names
+- SunVox Lib compatibility probes and checks
+- one-off discoveries that are not yet confirmed enough to become schema
+
+Reducing codec line count is a secondary goal. A DB migration is worthwhile
+when it makes the text representation more correct, testable, inspectable, or
+reusable. Code should get shorter through shared interpreters and compiled DB
+plans after similar structures appear more than once; avoid adding a broad
+abstraction for a single special case.
+
 ## Inspection Tool
 
 Use `tools/sunvox-db-inspect.mjs` to make codec/DB coverage work repeatable.
