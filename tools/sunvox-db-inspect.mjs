@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { parseContainer, SUNVOX_DB } from "./sunvox-codec.mjs";
+import { parseContainer, SUNVOX_DB, validateContainer } from "./sunvox-codec.mjs";
 
 const DEFAULT_SAMPLE_ROOTS = ["music", "instruments", "test/fixtures/sunvox"];
 const DEFAULT_SOURCE_ROOT = "var/sunvox_lib/lib_sunvox/psynth";
@@ -1417,11 +1417,56 @@ function collectModuleCatalogMetrics(report) {
   };
 }
 
+function collectValidationMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS) {
+  const files = findFiles(sampleRoots, SAMPLE_EXTENSIONS);
+  const filesWithIssues = [];
+  let issues = 0;
+  let warnings = 0;
+  let errors = 0;
+  for (const file of files) {
+    try {
+      const result = validateContainer(parseContainer(readFileSync(file)));
+      if (result.issues.length === 0) {
+        continue;
+      }
+      filesWithIssues.push({
+        file: relative(process.cwd(), file),
+        issues: result.issues,
+      });
+      issues += result.issues.length;
+      warnings += result.issues.filter((issue) => issue.severity === "warning").length;
+      errors += result.issues.filter((issue) => issue.severity === "error").length;
+    } catch (error) {
+      errors += 1;
+      issues += 1;
+      filesWithIssues.push({
+        file: relative(process.cwd(), file),
+        issues: [
+          {
+            severity: "error",
+            rule: "parse",
+            path: "$",
+            message: error instanceof Error ? error.message : String(error),
+          },
+        ],
+      });
+    }
+  }
+  return {
+    files: files.length,
+    issues,
+    warnings,
+    errors,
+    filesWithIssues,
+  };
+}
+
 export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, sourceRoot = DEFAULT_SOURCE_ROOT) {
   const coverage = collectCoverage(sampleRoots);
   const report = collectSourceReport(sourceRoot);
   const controllerDiff = collectControllerDiff(sourceRoot);
   const dbCheck = collectDbCheck(sourceRoot);
+  const validation = collectValidationMetrics(sampleRoots);
   const chunkStorage = collectChunkStorageMetrics();
   const dataChunkLayouts = collectDataChunkLayoutMetrics();
   const moduleCatalog = collectModuleCatalogMetrics(report);
@@ -1454,6 +1499,10 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       dbCheckWarnings: dbCheck.summary.warnings,
       runtimeConstraints: SUNVOX_DB.runtimeConstraints?.length ?? 0,
       observedRuntimeBehaviors: (SUNVOX_DB.runtimeConstraints ?? []).filter((rule) => rule.observedBehavior).length,
+      validationFiles: validation.files,
+      validationIssues: validation.issues,
+      validationWarnings: validation.warnings,
+      validationErrors: validation.errors,
       chunks: chunkStorage.chunks,
       reviewedChunks: chunkStorage.reviewedChunks,
       scalarChunks: chunkStorage.scalarChunks,
@@ -1472,16 +1521,19 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       dbCheck: dbCheck.ok,
       coverage: coverageGateFailures.length === 0,
       controllerMetadata: controllerDiff.summary.mismatches === 0,
+      validation: validation.issues === 0,
       ok:
         report.missingFromDb.length === 0 &&
         report.missingFromSource.length === 0 &&
         dbCheck.ok &&
         coverageGateFailures.length === 0 &&
-        controllerDiff.summary.mismatches === 0,
+        controllerDiff.summary.mismatches === 0 &&
+        validation.issues === 0,
     },
     sampledDbModuleTypes,
     unsampledDbModuleTypes: coverage.unusedDbModuleTypes,
     moduleCatalog,
+    validation,
     chunkStorage,
     dataChunkLayouts,
     coverageGateFailures,
@@ -1848,6 +1900,10 @@ function formatProjectMetrics(metrics) {
     { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
     { metric: "Runtime constraints", value: metrics.summary.runtimeConstraints },
     { metric: "Observed runtime behaviors", value: metrics.summary.observedRuntimeBehaviors },
+    { metric: "Validation files", value: metrics.summary.validationFiles },
+    { metric: "Validation issues", value: metrics.summary.validationIssues },
+    { metric: "Validation warnings", value: metrics.summary.validationWarnings },
+    { metric: "Validation errors", value: metrics.summary.validationErrors },
     { metric: "Chunks", value: metrics.summary.chunks },
     { metric: "Reviewed chunks", value: metrics.summary.reviewedChunks },
     { metric: "Chunk storage review", value: formatPercent(metrics.summary.chunkStorageReviewPercent) },
@@ -1867,6 +1923,7 @@ function formatProjectMetrics(metrics) {
     { gate: "DB check", status: gateLabel(metrics.gates.dbCheck) },
     { gate: "coverage", status: gateLabel(metrics.gates.coverage) },
     { gate: "controller metadata", status: gateLabel(metrics.gates.controllerMetadata) },
+    { gate: "validation", status: gateLabel(metrics.gates.validation) },
     { gate: "overall", status: gateLabel(metrics.gates.ok) },
   ];
 
@@ -1891,6 +1948,18 @@ function formatProjectMetrics(metrics) {
     "Unsampled DB module types:",
     metrics.unsampledDbModuleTypes.length
       ? metrics.unsampledDbModuleTypes.map((moduleType) => `  - ${moduleType}`).join("\n")
+      : "(none)",
+    "",
+    "Validation issues:",
+    metrics.validation.filesWithIssues.length
+      ? metrics.validation.filesWithIssues
+          .map((entry) =>
+            [
+              `  - ${entry.file}`,
+              ...entry.issues.map((issue) => `    ${issue.severity}: ${issue.path}: ${issue.message} (${issue.rule})`),
+            ].join("\n"),
+          )
+          .join("\n")
       : "(none)",
     "",
     "Reviewed chunk storage:",

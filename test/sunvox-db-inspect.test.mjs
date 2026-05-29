@@ -38,6 +38,10 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 5);
   assert.equal(metrics.summary.observedRuntimeBehaviors, 2);
+  assert.equal(metrics.summary.validationFiles, 7);
+  assert.equal(metrics.summary.validationIssues, 0);
+  assert.equal(metrics.summary.validationWarnings, 0);
+  assert.equal(metrics.summary.validationErrors, 0);
   assert.equal(metrics.summary.moduleLinkIssues, 0);
   assert.equal(metrics.summary.coverageGateFailures, 0);
   assert.equal(metrics.summary.unsampledDbModules, 0);
@@ -58,6 +62,8 @@ test("project metrics summarize current coverage and gate state", () => {
     true,
   );
   assert.equal(metrics.gates.ok, true);
+  assert.equal(metrics.gates.validation, true);
+  assert.deepEqual(metrics.validation.filesWithIssues, []);
   assert.deepEqual(metrics.unsampledDbModuleTypes, []);
 });
 

@@ -135,7 +135,8 @@ npm run sunvox:verify:all
   machine-readable metrics for future CI or frontend tooling.
 - `metrics` summarizes coverage, source/DB consistency, controller metadata
   drift, chunk storage review coverage, module data chunk layout review
-  coverage, and gate status in one compact report for progress tracking.
+  coverage, validation issue counts, and gate status in one compact report for
+  progress tracking.
 - `sunvox:coverage:check` runs the coverage report as a CI gate. It fails on
   parse errors, missing DB module types, unexpected missing-STYP modules, raw
   controller arrays, controller extras, module extra chunks, or opaque data
