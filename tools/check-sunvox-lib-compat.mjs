@@ -88,6 +88,20 @@ function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function getPath(object, path) {
+  return path.split(".").reduce((value, key) => value?.[key], object);
+}
+
+function setPath(object, path, value) {
+  const keys = path.split(".");
+  let target = object;
+  for (const key of keys.slice(0, -1)) {
+    target[key] ??= {};
+    target = target[key];
+  }
+  target[keys.at(-1)] = value;
+}
+
 async function findFiles(paths) {
   const files = [];
   for (const input of paths) {
@@ -588,6 +602,51 @@ function makeEditedCompatibilityCase(filePath, buffer) {
   };
 }
 
+function projectRuntimeNormalizationRules() {
+  return (SUNVOX_DB.runtimeConstraints ?? []).filter(
+    (rule) => rule.scope === "project" && rule.observedBehavior?.savedValue !== undefined,
+  );
+}
+
+async function validateRuntimeNormalizationProbes(filePath, buffer) {
+  if (readMagic(buffer) !== "SVOX") {
+    return [];
+  }
+  const base = parseContainer(buffer);
+  const probes = [];
+  for (const rule of projectRuntimeNormalizationRules()) {
+    if (getPath(base.project, rule.path) === undefined) {
+      continue;
+    }
+    const document = cloneJson(base);
+    setPath(document.project, rule.path, rule.observedBehavior.probeValue);
+    const report = await inspectBufferWithSunVoxLib(buildContainer(document), {
+      filePath,
+      label: `${relative(process.cwd(), filePath)} (${rule.id} normalization)`,
+      saveToMemory: true,
+    });
+    validateLoad(report);
+    if (!report.savedBuffer) {
+      throw new Error(`SunVox lib did not save runtime normalization probe ${rule.id}`);
+    }
+    const savedDocument = parseContainer(report.savedBuffer);
+    const actual = getPath(savedDocument.project, rule.path);
+    const expected = rule.observedBehavior.savedValue;
+    if (actual !== expected) {
+      throw new Error(
+        `SunVox lib saved ${rule.path}=${actual} for normalization probe ${rule.id}; expected ${expected}`,
+      );
+    }
+    probes.push({
+      rule: rule.id,
+      path: rule.path,
+      probeValue: rule.observedBehavior.probeValue,
+      savedValue: actual,
+    });
+  }
+  return probes;
+}
+
 function resolveLoadedModuleExpectations(report, expectations) {
   const resolved = cloneJson(expectations);
   if (resolved.moduleName?.index === "$loaded") {
@@ -612,6 +671,7 @@ function makeSummary() {
     originalLoads: 0,
     codecEditLoads: 0,
     saveReloadLoads: 0,
+    runtimeNormalizationProbes: 0,
     behaviors: Object.fromEntries(
       COMPATIBILITY_BEHAVIORS.map((behavior) => [behavior.key, { codecEditLoads: 0, saveReloadLoads: 0 }]),
     ),
@@ -633,6 +693,7 @@ function printSummary(summary, fileCount) {
   console.log(`  original loads: ${summary.originalLoads}`);
   console.log(`  codec edit loads: ${summary.codecEditLoads}`);
   console.log(`  SunVox save/reload loads: ${summary.saveReloadLoads}`);
+  console.log(`  runtime normalization probes: ${summary.runtimeNormalizationProbes}`);
   console.log("  edit behaviors:");
   for (const behavior of COMPATIBILITY_BEHAVIORS) {
     const coverage = summary.behaviors[behavior.key];
@@ -653,14 +714,16 @@ async function main() {
 
   let failures = 0;
   const summary = makeSummary();
+  let normalizationProbesRun = false;
   for (const file of files) {
     try {
+      const buffer = readFileSync(file);
       const report = await inspectWithSunVoxLib(file);
       validateLoad(report);
       printReport(report);
       summary.originalLoads += 1;
 
-      const edited = makeEditedCompatibilityCase(file, readFileSync(file));
+      const edited = makeEditedCompatibilityCase(file, buffer);
       if (edited) {
         const editedReport = await inspectBufferWithSunVoxLib(edited.buffer, {
           filePath: edited.filePath,
@@ -686,6 +749,17 @@ async function main() {
           summary.saveReloadLoads += 1;
           recordBehaviorSummary(summary, savedExpectations, "saveReloadLoads");
         }
+      }
+      if (!normalizationProbesRun && report.magic === "SVOX") {
+        const probes = await validateRuntimeNormalizationProbes(file, buffer);
+        for (const probe of probes) {
+          console.log(
+            `${relative(process.cwd(), file)} (${probe.rule} normalization): ` +
+              `${probe.path} ${probe.probeValue} -> ${probe.savedValue}`,
+          );
+        }
+        summary.runtimeNormalizationProbes += probes.length;
+        normalizationProbesRun = true;
       }
     } catch (error) {
       failures += 1;

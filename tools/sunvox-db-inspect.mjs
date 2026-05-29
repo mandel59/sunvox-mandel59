@@ -1262,6 +1262,14 @@ function checkRuntimeConstraints(errors) {
     if (rule.kind === "maxUtf8Bytes" && !Number.isInteger(rule.maxBytes)) {
       errors.push(`runtime constraint ${rule.id} maxUtf8Bytes is missing maxBytes`);
     }
+    if (rule.observedBehavior) {
+      if (!Object.hasOwn(rule.observedBehavior, "probeValue")) {
+        errors.push(`runtime constraint ${rule.id} observedBehavior is missing probeValue`);
+      }
+      if (!Object.hasOwn(rule.observedBehavior, "savedValue")) {
+        errors.push(`runtime constraint ${rule.id} observedBehavior is missing savedValue`);
+      }
+    }
   }
 }
 
@@ -1444,6 +1452,8 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       controllerMetadataMismatches: controllerDiff.summary.mismatches,
       dbCheckErrors: dbCheck.summary.errors,
       dbCheckWarnings: dbCheck.summary.warnings,
+      runtimeConstraints: SUNVOX_DB.runtimeConstraints?.length ?? 0,
+      observedRuntimeBehaviors: (SUNVOX_DB.runtimeConstraints ?? []).filter((rule) => rule.observedBehavior).length,
       chunks: chunkStorage.chunks,
       reviewedChunks: chunkStorage.reviewedChunks,
       scalarChunks: chunkStorage.scalarChunks,
@@ -1836,6 +1846,8 @@ function formatProjectMetrics(metrics) {
     { metric: "Missing module catalog fields", value: metrics.summary.missingModuleCatalogFields },
     { metric: "Controller metadata mismatches", value: metrics.summary.controllerMetadataMismatches },
     { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
+    { metric: "Runtime constraints", value: metrics.summary.runtimeConstraints },
+    { metric: "Observed runtime behaviors", value: metrics.summary.observedRuntimeBehaviors },
     { metric: "Chunks", value: metrics.summary.chunks },
     { metric: "Reviewed chunks", value: metrics.summary.reviewedChunks },
     { metric: "Chunk storage review", value: formatPercent(metrics.summary.chunkStorageReviewPercent) },

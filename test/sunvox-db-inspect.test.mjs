@@ -36,6 +36,8 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.missingModuleCatalogFields, 0);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
+  assert.equal(metrics.summary.runtimeConstraints, 5);
+  assert.equal(metrics.summary.observedRuntimeBehaviors, 2);
   assert.equal(metrics.summary.moduleLinkIssues, 0);
   assert.equal(metrics.summary.coverageGateFailures, 0);
   assert.equal(metrics.summary.unsampledDbModules, 0);
@@ -194,6 +196,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
       path: "name",
       kind: "maxUtf8Bytes",
       severity: "warning",
+      observedBehavior: { probeValue: "too long" },
       description: "broken duplicate rule",
     },
   );
@@ -248,6 +251,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /runtime constraint broken\.runtime has invalid severity fatal/u);
     assert.match(errors, /runtime constraint broken\.runtime has invalid module link relation sideways/u);
     assert.match(errors, /runtime constraint broken\.runtime maxUtf8Bytes is missing maxBytes/u);
+    assert.match(errors, /runtime constraint broken\.runtime observedBehavior is missing savedValue/u);
     assert.match(
       errors,
       /bitfield:psynth_midi_input_flags: packed field field broken references missing bitflags __missing_bitfield_bitflags/u,

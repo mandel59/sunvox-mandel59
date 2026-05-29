@@ -248,6 +248,17 @@
           "maxBytes": { "type": "integer", "minimum": 0 },
           "severity": { "enum": ["warning", "error"] },
           "source": { "type": "string" },
+          "observedBehavior": {
+            "type": "object",
+            "required": ["probeValue", "savedValue"],
+            "properties": {
+              "probeValue": {},
+              "loadedValue": {},
+              "savedValue": {},
+              "description": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
           "description": { "type": "string" }
         },
         "additionalProperties": false

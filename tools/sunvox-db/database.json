@@ -1060,6 +1060,11 @@
       "min": 1,
       "severity": "warning",
       "source": "sunvox_engine::bpm",
+      "observedBehavior": {
+        "probeValue": 0,
+        "savedValue": 125,
+        "description": "SunVox Lib 2.1.4d loads BPM=0 and saves it back as the default 125 BPM."
+      },
       "description": "SunVox Lib expects project BPM to be positive; keep raw values round-trip safe but warn before runtime use."
     },
     {
@@ -1070,6 +1075,11 @@
       "min": 1,
       "severity": "warning",
       "source": "sunvox_engine::speed",
+      "observedBehavior": {
+        "probeValue": 0,
+        "savedValue": 6,
+        "description": "SunVox Lib 2.1.4d loads speed=0 and saves it back as the default 6 ticks per line."
+      },
       "description": "SunVox Lib expects project speed to be positive; keep raw values round-trip safe but warn before runtime use."
     },
     {

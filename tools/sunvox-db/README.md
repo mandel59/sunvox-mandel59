@@ -154,8 +154,10 @@ npm run sunvox:verify:all
   project/module/pattern names, representative controller values, module links,
   and pattern note/controller events are exposed as expected. Edited `.sunvox`
   variants are also saved through SunVox Lib and reloaded to catch runtime
-  normalization issues. The command prints a compact coverage summary so missing
-  edit-behavior checks are visible in the local and CI logs.
+  normalization issues. DB `runtimeConstraints` with `observedBehavior` are
+  also probed by writing the documented value, saving through SunVox Lib, and
+  checking the saved structured value. The command prints a compact coverage
+  summary so missing edit-behavior checks are visible in the local and CI logs.
 - `sunvox:validate` reports DB-driven runtime compatibility warnings for a
   binary SunVox file or decoded JSON document. The first rules cover positive
   project tempo values, module name byte budgets, and semantic link targets.
