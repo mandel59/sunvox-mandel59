@@ -41,10 +41,10 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.moduleCatalogCoveragePercent, 100);
   assert.equal(metrics.summary.missingModuleCatalogFields, 0);
   assert.equal(metrics.summary.sourcePatternEffects, 43);
-  assert.equal(metrics.summary.dbPatternEffects, 20);
-  assert.equal(metrics.summary.namedSourcePatternEffects, 20);
-  assert.equal(metrics.summary.unnamedSourcePatternEffects, 23);
-  assert.equal(metrics.summary.patternEffectNameCoveragePercent, 46.5);
+  assert.equal(metrics.summary.dbPatternEffects, 37);
+  assert.equal(metrics.summary.namedSourcePatternEffects, 37);
+  assert.equal(metrics.summary.unnamedSourcePatternEffects, 6);
+  assert.equal(metrics.summary.patternEffectNameCoveragePercent, 86);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 5);
@@ -87,20 +87,22 @@ test("pattern effect coverage exposes unnamed source cases", () => {
 
   assert.equal(coverage.sourceAvailable, true);
   assert.deepEqual(coverage.dbEntries.map((entry) => entry.name).slice(0, 4), [
+    "portamentoUp",
+    "portamentoDown",
     "tonePortamento",
     "vibrato",
-    "sampleOffsetFine",
-    "arpeggio",
   ]);
-  assert.deepEqual(coverage.missingCodes.slice(0, 4), [1, 2, 5, 6]);
-  assert.deepEqual(coverage.missingCases.slice(0, 4), [
-    { code: 1, lines: [709] },
-    { code: 2, lines: [715] },
-    { code: 5, lines: [450, 463, 750] },
-    { code: 6, lines: [451, 464, 751] },
+  assert.deepEqual(coverage.missingCodes, [36, 37, 38, 39, 40, 41]);
+  assert.deepEqual(coverage.missingCases, [
+    { code: 36, lines: [353] },
+    { code: 37, lines: [354] },
+    { code: 38, lines: [355] },
+    { code: 39, lines: [356] },
+    { code: 40, lines: [357] },
+    { code: 41, lines: [358] },
   ]);
   assert.deepEqual(coverage.unknownEntries, []);
-  assert.equal(coverage.coveragePercent, 46.5);
+  assert.equal(coverage.coveragePercent, 86);
 });
 
 test("synthetic coverage fixture is up to date", () => {
