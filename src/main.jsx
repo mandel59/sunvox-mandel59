@@ -279,6 +279,7 @@ function SynthKeyboardSection({ project }) {
               <span>{keyboardNote.name}</span>
             </button>
           ))}
+          <div className="keyboard-scroll-lane" aria-hidden="true" />
         </div>
       </div>
     </section>

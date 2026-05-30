@@ -59,6 +59,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       synthKeyboardBlackKeys: document.querySelectorAll('.virtual-keyboard .piano-key.is-black').length,
       synthOctaveButtons: document.querySelectorAll('.octave-button').length,
       synthKeyboardRange: document.querySelector('.octave-range')?.textContent ?? null,
+      synthScrollLaneHeight: document.querySelector('.keyboard-scroll-lane')?.getBoundingClientRect().height ?? null,
     }));
     if (initial.topbarButtons !== 2) {
       throw new Error(`Expected two topbar playback buttons, got ${initial.topbarButtons}`);
@@ -71,7 +72,8 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       initial.synthKeyboardWhiteKeys !== 15 ||
       initial.synthKeyboardBlackKeys !== 10 ||
       initial.synthOctaveButtons !== 2 ||
-      initial.synthKeyboardRange !== 'C4-C6'
+      initial.synthKeyboardRange !== 'C4-C6' ||
+      !(initial.synthScrollLaneHeight >= 18)
     ) {
       throw new Error(
         `Expected a two-octave synth keyboard with octave controls, got ${JSON.stringify(initial)}`,
@@ -117,10 +119,15 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         frameClientWidth: frame?.clientWidth ?? null,
         frameScrollWidth: frame?.scrollWidth ?? null,
         keyboardWidth: keyboard?.getBoundingClientRect().width ?? null,
+        scrollLaneHeight: document.querySelector('.keyboard-scroll-lane')?.getBoundingClientRect().height ?? null,
+        scrollLaneTouchAction: getComputedStyle(document.querySelector('.keyboard-scroll-lane')).touchAction,
       };
     });
     if (wideSynthKeyboard.frameScrollWidth > wideSynthKeyboard.frameClientWidth) {
       throw new Error(`Expected synth keyboard not to scroll at the wide viewport, got ${JSON.stringify(wideSynthKeyboard)}`);
+    }
+    if (wideSynthKeyboard.scrollLaneTouchAction !== 'pan-x' || !(wideSynthKeyboard.scrollLaneHeight >= 18)) {
+      throw new Error(`Expected synth keyboard to expose a horizontal scroll lane, got ${JSON.stringify(wideSynthKeyboard)}`);
     }
 
     await page.setViewportSize({ width: 390, height: 900 });
@@ -134,6 +141,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         frameClientWidth: frame?.clientWidth ?? null,
         frameScrollWidth: frame?.scrollWidth ?? null,
         keyboardWidth: keyboard?.getBoundingClientRect().width ?? null,
+        scrollLaneHeight: document.querySelector('.keyboard-scroll-lane')?.getBoundingClientRect().height ?? null,
       };
     });
     if (narrowSynthKeyboard.pageScrollWidth > narrowSynthKeyboard.viewportWidth + 1) {
@@ -141,6 +149,9 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     }
     if (!(narrowSynthKeyboard.frameScrollWidth > narrowSynthKeyboard.frameClientWidth)) {
       throw new Error(`Expected synth keyboard frame to scroll horizontally, got ${JSON.stringify(narrowSynthKeyboard)}`);
+    }
+    if (!(narrowSynthKeyboard.scrollLaneHeight >= 18)) {
+      throw new Error(`Expected synth keyboard scroll lane to remain touch-sized, got ${JSON.stringify(narrowSynthKeyboard)}`);
     }
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.waitForTimeout(100);
