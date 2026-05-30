@@ -121,3 +121,19 @@ test("numbers patterns from array order, not editable object fields", () => {
   assert.match(text, /#1 "Second"/u);
   assert.doesNotMatch(text, /#99 "First"/u);
 });
+
+test("keeps clone pattern metadata in outlines", () => {
+  const outline = buildOutline({
+    magic: "SVOX",
+    project: { name: "clone patterns" },
+    modules: [],
+    patterns: [
+      { name: "Source", lines: 16, tracks: 1, events: [] },
+      { lines: 16, tracks: 1, parent: 0, parentId: 12345, infoFlags: { clone: true }, events: [] },
+    ],
+  });
+
+  assert.deepEqual(outline.patterns[1].infoFlags, { clone: true });
+  assert.equal(outline.patterns[1].parent, 0);
+  assert.equal(outline.patterns[1].parentId, 12345);
+});

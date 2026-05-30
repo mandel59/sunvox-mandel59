@@ -13,7 +13,8 @@ test("builds graph layout from SunVox module positions and links", () => {
   assert.ok(graph);
   assert.equal(graph.nodes.length, 9);
   assert.equal(graph.edges.length, 10);
-  assert.equal(graph.viewBox, "80 160 592 720");
+  const [, , width, height] = graph.viewBox.split(" ").map(Number);
+  assert.equal(Number((width / height).toFixed(3)), 1.778);
   assert.equal(graph.edges.some((link) => link.fromName === "DrumSynth" && link.toName === "Reverb"), true);
 });
 

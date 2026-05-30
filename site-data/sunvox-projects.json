@@ -73,8 +73,15 @@
             "type": "project",
             "project": {
               "name": "Shepard tone",
+              "flags": {
+                "supertracks": true
+              },
               "bpm": 125,
               "speed": 6,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 160,
               "patternCount": 0,
               "moduleCount": 11
@@ -601,8 +608,13 @@
             "type": "project",
             "project": {
               "name": "SuperSaw by mandel59 (licensed under CC0)",
+              "flags": {},
               "bpm": 125,
               "speed": 6,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 256,
               "patternCount": 2,
               "moduleCount": 24
@@ -1736,7 +1748,7 @@
                 "lines": 256,
                 "tracks": 1,
                 "eventCount": 0,
-                "eventPreview": []
+                "moduleReferences": []
               },
               {
                 "index": 1,
@@ -1748,7 +1760,7 @@
                 "lines": 256,
                 "tracks": 1,
                 "eventCount": 0,
-                "eventPreview": []
+                "moduleReferences": []
               }
             ],
             "embedded": []
@@ -1763,8 +1775,15 @@
       "type": "project",
       "project": {
         "name": "",
+        "flags": {
+          "supertracks": true
+        },
         "bpm": 114,
         "speed": 6,
+        "timeline": {
+          "grid": 4,
+          "grid2": 4
+        },
         "globalVolume": 130,
         "patternCount": 57,
         "moduleCount": 16
@@ -2297,39 +2316,26 @@
           },
           "lines": 64,
           "tracks": 6,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 24,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "A2",
-              "velocity": 129,
-              "module": 5,
-              "moduleName": "SuperSaw"
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
             },
             {
-              "line": 0,
-              "track": 1,
-              "note": "E3",
-              "velocity": 129,
-              "module": 5,
-              "moduleName": "SuperSaw"
-            },
-            {
-              "line": 0,
-              "track": 2,
-              "note": "C4",
-              "velocity": 97,
-              "module": 5,
-              "moduleName": "SuperSaw"
-            },
-            {
-              "line": 0,
-              "track": 3,
-              "note": "E4",
-              "velocity": 97,
-              "module": 5,
-              "moduleName": "SuperSaw"
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
             }
           ]
         },
@@ -2341,39 +2347,19 @@
           },
           "lines": 32,
           "tracks": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 8,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "C3",
-              "velocity": 129,
-              "module": 2,
-              "moduleName": "Vox NOT-09"
-            },
-            {
-              "line": 4,
-              "track": 0,
-              "note": "C3",
-              "velocity": 129,
-              "module": 2,
-              "moduleName": "Vox NOT-09"
-            },
-            {
-              "line": 8,
-              "track": 0,
-              "note": "C3",
-              "velocity": 129,
-              "module": 2,
-              "moduleName": "Vox NOT-09"
-            },
-            {
-              "line": 12,
-              "track": 0,
-              "note": "C3",
-              "velocity": 129,
-              "module": 2,
-              "moduleName": "Vox NOT-09"
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
             }
           ]
         },
@@ -2383,8 +2369,27 @@
             "x": 32,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 3,
@@ -2394,33 +2399,19 @@
           },
           "lines": 64,
           "tracks": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAP0lEQVR4nH1PQQ4AIAiC/3+6TZPQWs4D4gQEskgUQivmlojm5hgcBQtoMhXD5iI1aQ/id31Mhu0IdkV/PdekFy/QAFlZw/6BAAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 20,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "C5",
-              "module": 1,
-              "moduleName": "Guitar"
-            },
-            {
-              "line": 1,
-              "track": 0,
-              "note": "B4",
-              "module": 1,
-              "moduleName": "Guitar"
-            },
-            {
-              "line": 2,
-              "track": 0,
-              "note": "A4",
-              "module": 1,
-              "moduleName": "Guitar"
-            },
-            {
-              "line": 3,
-              "track": 0,
-              "note": "noteOff"
+              "index": 1,
+              "name": "Guitar",
+              "type": "MetaModule",
+              "color": "#ff7800",
+              "eventCount": 17
             }
           ]
         },
@@ -2430,8 +2421,34 @@
             "x": 64,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 5,
@@ -2439,8 +2456,27 @@
             "x": 64,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 6,
@@ -2448,8 +2484,27 @@
             "x": 96,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 7,
@@ -2457,8 +2512,34 @@
             "x": 128,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 8,
@@ -2466,8 +2547,34 @@
             "x": 192,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 9,
@@ -2475,8 +2582,27 @@
             "x": 128,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 10,
@@ -2484,8 +2610,27 @@
             "x": 160,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 11,
@@ -2493,8 +2638,27 @@
             "x": 192,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 12,
@@ -2502,8 +2666,27 @@
             "x": 224,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 13,
@@ -2511,8 +2694,27 @@
             "x": 192,
             "y": 96
           },
+          "lines": 64,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 3,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAP0lEQVR4nH1PQQ4AIAiC/3+6TZPQWs4D4gQEskgUQivmlojm5hgcBQtoMhXD5iI1aQ/id31Mhu0IdkV/PdekFy/QAFlZw/6BAAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 1,
+              "name": "Guitar",
+              "type": "MetaModule",
+              "color": "#ff7800",
+              "eventCount": 17
+            }
+          ]
         },
         {
           "index": 14,
@@ -2520,8 +2722,34 @@
             "x": 256,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 15,
@@ -2529,8 +2757,34 @@
             "x": 320,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 16,
@@ -2538,8 +2792,34 @@
             "x": 384,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 17,
@@ -2547,8 +2827,34 @@
             "x": 448,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 18,
@@ -2556,8 +2862,27 @@
             "x": 256,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 19,
@@ -2565,8 +2890,27 @@
             "x": 288,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 20,
@@ -2574,8 +2918,27 @@
             "x": 320,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 21,
@@ -2583,8 +2946,27 @@
             "x": 352,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 22,
@@ -2592,8 +2974,27 @@
             "x": 384,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 23,
@@ -2601,8 +3002,27 @@
             "x": 416,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 24,
@@ -2610,8 +3030,27 @@
             "x": 448,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 25,
@@ -2619,8 +3058,27 @@
             "x": 480,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 26,
@@ -2630,35 +3088,26 @@
           },
           "lines": 64,
           "tracks": 3,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARklEQVR4nG2PAQ4AIQjDuv9/+hIHDM0ZE2nViUhoBhLYwGZmLjPcJpxbzZW7mM4qAN3Vu0Je+8/Yh6pM60f7l27Movbs+AA/JwBrX4dJCQAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 40,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "A3",
-              "module": 6,
-              "moduleName": "Kordz MM7 Keyboard"
+              "index": 6,
+              "name": "Kordz MM7 Keyboard",
+              "type": "MetaModule",
+              "color": "#7eff00",
+              "eventCount": 32
             },
             {
-              "line": 0,
-              "track": 1,
-              "note": "C4",
-              "module": 10,
-              "moduleName": "LowReso"
-            },
-            {
-              "line": 0,
-              "track": 2,
-              "note": "E4",
-              "module": 10,
-              "moduleName": "LowReso"
-            },
-            {
-              "line": 2,
-              "track": 0,
-              "note": "C4",
-              "module": 6,
-              "moduleName": "Kordz MM7 Keyboard"
+              "index": 10,
+              "name": "LowReso",
+              "type": "MetaModule",
+              "color": "#deff00",
+              "eventCount": 8
             }
           ]
         },
@@ -2668,8 +3117,34 @@
             "x": 320,
             "y": 128
           },
+          "lines": 64,
+          "tracks": 3,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 26,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARklEQVR4nG2PAQ4AIQjDuv9/+hIHDM0ZE2nViUhoBhLYwGZmLjPcJpxbzZW7mM4qAN3Vu0Je+8/Yh6pM60f7l27Movbs+AA/JwBrX4dJCQAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 6,
+              "name": "Kordz MM7 Keyboard",
+              "type": "MetaModule",
+              "color": "#7eff00",
+              "eventCount": 32
+            },
+            {
+              "index": 10,
+              "name": "LowReso",
+              "type": "MetaModule",
+              "color": "#deff00",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 28,
@@ -2677,8 +3152,27 @@
             "x": 384,
             "y": 96
           },
+          "lines": 64,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 3,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAP0lEQVR4nH1PQQ4AIAiC/3+6TZPQWs4D4gQEskgUQivmlojm5hgcBQtoMhXD5iI1aQ/id31Mhu0IdkV/PdekFy/QAFlZw/6BAAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 1,
+              "name": "Guitar",
+              "type": "MetaModule",
+              "color": "#ff7800",
+              "eventCount": 17
+            }
+          ]
         },
         {
           "index": 29,
@@ -2686,8 +3180,27 @@
             "x": 448,
             "y": 96
           },
+          "lines": 64,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 3,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAP0lEQVR4nH1PQQ4AIAiC/3+6TZPQWs4D4gQEskgUQivmlojm5hgcBQtoMhXD5iI1aQ/id31Mhu0IdkV/PdekFy/QAFlZw/6BAAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 1,
+              "name": "Guitar",
+              "type": "MetaModule",
+              "color": "#ff7800",
+              "eventCount": 17
+            }
+          ]
         },
         {
           "index": 30,
@@ -2697,35 +3210,19 @@
           },
           "lines": 128,
           "tracks": 2,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQklEQVR4nG2PCw4AIAhCn/e/dEt05cdlIg4yrAX3gEPUPeS8EpGaqoYegiRv12V1p09gadeIKRmm27NlsWX1+bkSB16QALHjN4e0AAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 16,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "C4",
-              "module": 10,
-              "moduleName": "LowReso"
-            },
-            {
-              "line": 0,
-              "track": 1,
-              "note": "E4",
-              "module": 10,
-              "moduleName": "LowReso"
-            },
-            {
-              "line": 16,
-              "track": 0,
-              "note": "D4",
-              "module": 10,
-              "moduleName": "LowReso"
-            },
-            {
-              "line": 16,
-              "track": 1,
-              "note": "G4",
-              "module": 10,
-              "moduleName": "LowReso"
+              "index": 10,
+              "name": "LowReso",
+              "type": "MetaModule",
+              "color": "#deff00",
+              "eventCount": 16
             }
           ]
         },
@@ -2735,8 +3232,27 @@
             "x": 512,
             "y": 160
           },
+          "lines": 128,
+          "tracks": 2,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 30,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQklEQVR4nG2PCw4AIAhCn/e/dEt05cdlIg4yrAX3gEPUPeS8EpGaqoYegiRv12V1p09gadeIKRmm27NlsWX1+bkSB16QALHjN4e0AAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 10,
+              "name": "LowReso",
+              "type": "MetaModule",
+              "color": "#deff00",
+              "eventCount": 16
+            }
+          ]
         },
         {
           "index": 32,
@@ -2744,8 +3260,27 @@
             "x": 512,
             "y": 96
           },
+          "lines": 64,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 3,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAP0lEQVR4nH1PQQ4AIAiC/3+6TZPQWs4D4gQEskgUQivmlojm5hgcBQtoMhXD5iI1aQ/id31Mhu0IdkV/PdekFy/QAFlZw/6BAAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 1,
+              "name": "Guitar",
+              "type": "MetaModule",
+              "color": "#ff7800",
+              "eventCount": 17
+            }
+          ]
         },
         {
           "index": 33,
@@ -2753,8 +3288,27 @@
             "x": 576,
             "y": 96
           },
+          "lines": 64,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 3,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAP0lEQVR4nH1PQQ4AIAiC/3+6TZPQWs4D4gQEskgUQivmlojm5hgcBQtoMhXD5iI1aQ/id31Mhu0IdkV/PdekFy/QAFlZw/6BAAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 1,
+              "name": "Guitar",
+              "type": "MetaModule",
+              "color": "#ff7800",
+              "eventCount": 17
+            }
+          ]
         },
         {
           "index": 34,
@@ -2762,8 +3316,27 @@
             "x": 512,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 35,
@@ -2771,8 +3344,27 @@
             "x": 544,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 36,
@@ -2780,8 +3372,27 @@
             "x": 576,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 37,
@@ -2789,8 +3400,27 @@
             "x": 608,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 38,
@@ -2798,8 +3428,34 @@
             "x": 512,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 39,
@@ -2807,8 +3463,34 @@
             "x": 576,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 40,
@@ -2816,8 +3498,34 @@
             "x": 640,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 41,
@@ -2825,8 +3533,34 @@
             "x": 704,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 42,
@@ -2834,8 +3568,27 @@
             "x": 640,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 43,
@@ -2843,8 +3596,27 @@
             "x": 672,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 44,
@@ -2852,8 +3624,27 @@
             "x": 704,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 45,
@@ -2861,8 +3652,27 @@
             "x": 736,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 46,
@@ -2870,8 +3680,27 @@
             "x": 640,
             "y": 160
           },
+          "lines": 128,
+          "tracks": 2,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 30,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQklEQVR4nG2PCw4AIAhCn/e/dEt05cdlIg4yrAX3gEPUPeS8EpGaqoYegiRv12V1p09gadeIKRmm27NlsWX1+bkSB16QALHjN4e0AAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 10,
+              "name": "LowReso",
+              "type": "MetaModule",
+              "color": "#deff00",
+              "eventCount": 16
+            }
+          ]
         },
         {
           "index": 47,
@@ -2879,8 +3708,34 @@
             "x": 768,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 48,
@@ -2888,8 +3743,34 @@
             "x": 832,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 6,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAASUlEQVR4nGVOBxIAIAiC/3+6UBxX1wAtARBaoE5ScYEqGhjvAS67Ub9TY81hQY7VLst0sXUIscFKDtZq5JAJXuH5w3t9HBPsqhxK+QCPycAKigAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 5,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 20
+            },
+            {
+              "index": 7,
+              "name": "Solo Cello1",
+              "type": "MetaModule",
+              "color": "#0053ff",
+              "eventCount": 4
+            }
+          ]
         },
         {
           "index": 49,
@@ -2897,8 +3778,27 @@
             "x": 768,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 50,
@@ -2906,8 +3806,27 @@
             "x": 800,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 51,
@@ -2915,8 +3834,27 @@
             "x": 832,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 52,
@@ -2924,8 +3862,27 @@
             "x": 864,
             "y": 64
           },
+          "lines": 32,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARElEQVR4nG2PWRYAIAgC4f6X7inSon0JJpMCIAkCTJFWZet4D3eEQhXwnBkZrKaNObhjwpnRGzPSofPbz2Lv6vO4dv4CRzAAhX0lv9IAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 53,
@@ -2935,31 +3892,19 @@
           },
           "lines": 128,
           "tracks": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQklEQVR4nG2PiwoAIAgDz///6ag5I00ItvORQgSRsTVckr6I8+cJSFahSuFtJZGMrWV44gt+LX1o+3YsNlafx7XzF0UQAIEanjJYAAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 128,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "A3",
-              "module": 11,
-              "moduleName": "KTRN Megastring",
-              "effect": "noteDelay"
-            },
-            {
-              "line": 1,
-              "track": 0,
-              "note": "noteOff",
-              "effect": "noteDelay"
-            },
-            {
-              "line": 2,
-              "track": 0,
-              "effect": "noteDelay"
-            },
-            {
-              "line": 3,
-              "track": 0,
-              "effect": "noteDelay"
+              "index": 11,
+              "name": "KTRN Megastring",
+              "type": "MetaModule",
+              "color": "#ff977f",
+              "eventCount": 51
             }
           ]
         },
@@ -2969,8 +3914,27 @@
             "x": 767,
             "y": 192
           },
+          "lines": 128,
+          "tracks": 1,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 53,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQklEQVR4nG2PiwoAIAgDz///6ag5I00ItvORQgSRsTVckr6I8+cJSFahSuFtJZGMrWV44gt+LX1o+3YsNlafx7XzF0UQAIEanjJYAAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 11,
+              "name": "KTRN Megastring",
+              "type": "MetaModule",
+              "color": "#ff977f",
+              "eventCount": 51
+            }
+          ]
         },
         {
           "index": 55,
@@ -2978,8 +3942,34 @@
             "x": 768,
             "y": 128
           },
+          "lines": 64,
+          "tracks": 3,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 26,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARklEQVR4nG2PAQ4AIQjDuv9/+hIHDM0ZE2nViUhoBhLYwGZmLjPcJpxbzZW7mM4qAN3Vu0Je+8/Yh6pM60f7l27Movbs+AA/JwBrX4dJCQAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 6,
+              "name": "Kordz MM7 Keyboard",
+              "type": "MetaModule",
+              "color": "#7eff00",
+              "eventCount": 32
+            },
+            {
+              "index": 10,
+              "name": "LowReso",
+              "type": "MetaModule",
+              "color": "#deff00",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 56,
@@ -2987,8 +3977,34 @@
             "x": 832,
             "y": 128
           },
+          "lines": 64,
+          "tracks": 3,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 26,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARklEQVR4nG2PAQ4AIQjDuv9/+hIHDM0ZE2nViUhoBhLYwGZmLjPcJpxbzZW7mM4qAN3Vu0Je+8/Yh6pM60f7l27Movbs+AA/JwBrX4dJCQAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 6,
+              "name": "Kordz MM7 Keyboard",
+              "type": "MetaModule",
+              "color": "#7eff00",
+              "eventCount": 32
+            },
+            {
+              "index": 10,
+              "name": "LowReso",
+              "type": "MetaModule",
+              "color": "#deff00",
+              "eventCount": 8
+            }
+          ]
         }
       ],
       "embedded": [
@@ -3004,8 +4020,13 @@
             "type": "project",
             "project": {
               "name": "Guitar",
+              "flags": {},
               "bpm": 125,
               "speed": 6,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 230,
               "patternCount": 0,
               "moduleCount": 16
@@ -3366,8 +4387,13 @@
             "type": "project",
             "project": {
               "name": "2020-10-04 09-17",
+              "flags": {},
               "bpm": 125,
               "speed": 3,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 280,
               "patternCount": 0,
               "moduleCount": 109
@@ -6891,8 +7917,13 @@
             "type": "project",
             "project": {
               "name": "SuperSaw",
+              "flags": {},
               "bpm": 125,
               "speed": 6,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 170,
               "patternCount": 2,
               "moduleCount": 18
@@ -7646,7 +8677,7 @@
                 "lines": 256,
                 "tracks": 1,
                 "eventCount": 0,
-                "eventPreview": []
+                "moduleReferences": []
               },
               {
                 "index": 1,
@@ -7658,7 +8689,7 @@
                 "lines": 256,
                 "tracks": 1,
                 "eventCount": 0,
-                "eventPreview": []
+                "moduleReferences": []
               }
             ],
             "embedded": []
@@ -7676,8 +8707,13 @@
             "type": "project",
             "project": {
               "name": "The Kordz MM7 (Fake Name) by KTRNMusic",
+              "flags": {},
               "bpm": 125,
               "speed": 6,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 150,
               "patternCount": 1,
               "moduleCount": 45
@@ -9227,35 +10263,19 @@
                 },
                 "lines": 32,
                 "tracks": 1,
+                "icon": {
+                  "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAS0lEQVR4nGWPURbAIAjDkvtfej6hTDc+sCpNFQBB97KrdZ/i3Fsbb0vb5NUzl/Ei3Z2kxCrumkTD8PuSM/iILHeaf2hgAy/d317qATUgAHEs9nydAAAAAElFTkSuQmCC",
+                  "width": 16,
+                  "height": 16
+                },
                 "eventCount": 13,
-                "eventPreview": [
+                "moduleReferences": [
                   {
-                    "line": 0,
-                    "track": 0,
-                    "note": "D2",
-                    "module": 2,
-                    "moduleName": "Preset 2 (M1 Organ2)"
-                  },
-                  {
-                    "line": 4,
-                    "track": 0,
-                    "note": "D2",
-                    "module": 2,
-                    "moduleName": "Preset 2 (M1 Organ2)"
-                  },
-                  {
-                    "line": 5,
-                    "track": 0,
-                    "note": "D2",
-                    "module": 2,
-                    "moduleName": "Preset 2 (M1 Organ2)"
-                  },
-                  {
-                    "line": 6,
-                    "track": 0,
-                    "note": "F2",
-                    "module": 2,
-                    "moduleName": "Preset 2 (M1 Organ2)"
+                    "index": 2,
+                    "name": "Preset 2 (M1 Organ2)",
+                    "type": "MultiSynth",
+                    "color": "#deff00",
+                    "eventCount": 13
                   }
                 ]
               }
@@ -9273,8 +10293,13 @@
                   "type": "project",
                   "project": {
                     "name": "sk0 Detune7",
+                    "flags": {},
                     "bpm": 125,
                     "speed": 6,
+                    "timeline": {
+                      "grid": 4,
+                      "grid2": 4
+                    },
                     "globalVolume": 256,
                     "patternCount": 0,
                     "moduleCount": 19
@@ -10126,8 +11151,13 @@
                   "type": "project",
                   "project": {
                     "name": "FM Bell (Taco Bell Bong Sound) by KTRNMusic",
+                    "flags": {},
                     "bpm": 125,
                     "speed": 6,
+                    "timeline": {
+                      "grid": 4,
+                      "grid2": 4
+                    },
                     "globalVolume": 256,
                     "patternCount": 0,
                     "moduleCount": 5
@@ -10305,8 +11335,13 @@
                         "type": "project",
                         "project": {
                           "name": "sk0 Detune7",
+                          "flags": {},
                           "bpm": 125,
                           "speed": 6,
+                          "timeline": {
+                            "grid": 4,
+                            "grid2": 4
+                          },
                           "globalVolume": 256,
                           "patternCount": 0,
                           "moduleCount": 19
@@ -11161,8 +12196,13 @@
                   "type": "project",
                   "project": {
                     "name": "sk0 Detune9",
+                    "flags": {},
                     "bpm": 125,
                     "speed": 6,
+                    "timeline": {
+                      "grid": 4,
+                      "grid2": 4
+                    },
                     "globalVolume": 256,
                     "patternCount": 0,
                     "moduleCount": 23
@@ -12212,8 +13252,13 @@
                   "type": "project",
                   "project": {
                     "name": "sk0 Detune7",
+                    "flags": {},
                     "bpm": 125,
                     "speed": 6,
+                    "timeline": {
+                      "grid": 4,
+                      "grid2": 4
+                    },
                     "globalVolume": 256,
                     "patternCount": 0,
                     "moduleCount": 19
@@ -13065,8 +14110,13 @@
                   "type": "project",
                   "project": {
                     "name": "fattener by autumnc (licensed under mit)",
+                    "flags": {},
                     "bpm": 125,
                     "speed": 6,
+                    "timeline": {
+                      "grid": 4,
+                      "grid2": 4
+                    },
                     "globalVolume": 256,
                     "patternCount": 2,
                     "moduleCount": 10
@@ -13415,8 +14465,13 @@
                       },
                       "lines": 64,
                       "tracks": 1,
+                      "icon": {
+                        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAO0lEQVR4nG2OSQ4AMAgCh/9/uukSFS0HlQkmwFc66j6J5ERqJIwn7lEIwl6YAAM70EDu2YPXoQAUY2oBQ0gAfB5kZY0AAAAASUVORK5CYII=",
+                        "width": 16,
+                        "height": 16
+                      },
                       "eventCount": 0,
-                      "eventPreview": []
+                      "moduleReferences": []
                     },
                     {
                       "index": 1,
@@ -13427,8 +14482,13 @@
                       },
                       "lines": 64,
                       "tracks": 1,
+                      "icon": {
+                        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAJklEQVR4nGNgIAMwogCQAIosGMMhI4oANhV4BBgICKBbi+4wkgEAJw4ASO5rnscAAAAASUVORK5CYII=",
+                        "width": 16,
+                        "height": 16
+                      },
                       "eventCount": 0,
-                      "eventPreview": []
+                      "moduleReferences": []
                     }
                   ],
                   "embedded": []
@@ -13446,8 +14506,13 @@
                   "type": "project",
                   "project": {
                     "name": "Hyper Chorus by SawZer",
+                    "flags": {},
                     "bpm": 125,
                     "speed": 6,
+                    "timeline": {
+                      "grid": 4,
+                      "grid2": 4
+                    },
                     "globalVolume": 256,
                     "patternCount": 1,
                     "moduleCount": 34
@@ -13456,7 +14521,7 @@
                     "modules": 34,
                     "activeModules": 33,
                     "links": 45,
-                    "patterns": 1,
+                    "patterns": 0,
                     "events": 0,
                     "embeddedContainers": 0
                   },
@@ -14649,19 +15714,7 @@
                       "valid": true
                     }
                   ],
-                  "patterns": [
-                    {
-                      "index": 0,
-                      "position": {
-                        "x": 0,
-                        "y": 0
-                      },
-                      "lines": 32,
-                      "tracks": 1,
-                      "eventCount": 0,
-                      "eventPreview": []
-                    }
-                  ],
+                  "patterns": [],
                   "embedded": []
                 }
               }
@@ -14680,8 +15733,13 @@
             "type": "project",
             "project": {
               "name": "Cello by Floepje",
+              "flags": {},
               "bpm": 133,
               "speed": 6,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 256,
               "patternCount": 1,
               "moduleCount": 9
@@ -15010,36 +16068,19 @@
                 },
                 "lines": 128,
                 "tracks": 2,
+                "icon": {
+                  "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAATUlEQVR4nFWOAQ4AIAgCuf9/ujSwmk0FkZRAErhUqqBBhQ7k1qbue5TZtb5NbdYwSW7mcyk+Ry7TMfWqz3ILQ5mYod5T4bsb4h4Y/a4LRZgAiZzL9mQAAAAASUVORK5CYII=",
+                  "width": 16,
+                  "height": 16
+                },
                 "eventCount": 72,
-                "eventPreview": [
+                "moduleReferences": [
                   {
-                    "line": 0,
-                    "track": 0,
-                    "note": "G3",
-                    "velocity": 99,
-                    "module": 1,
-                    "moduleName": "Input"
-                  },
-                  {
-                    "line": 2,
-                    "track": 0,
-                    "note": "noteOff"
-                  },
-                  {
-                    "line": 2,
-                    "track": 1,
-                    "note": "D4",
-                    "velocity": 84,
-                    "module": 1,
-                    "moduleName": "Input"
-                  },
-                  {
-                    "line": 4,
-                    "track": 0,
-                    "note": "B4",
-                    "velocity": 80,
-                    "module": 1,
-                    "moduleName": "Input"
+                    "index": 1,
+                    "name": "Input",
+                    "type": "MultiSynth",
+                    "color": "#deff00",
+                    "eventCount": 64
                   }
                 ]
               }
@@ -15057,8 +16098,13 @@
                   "type": "project",
                   "project": {
                     "name": "2018-12-01 15-05",
+                    "flags": {},
                     "bpm": 80,
                     "speed": 6,
+                    "timeline": {
+                      "grid": 4,
+                      "grid2": 4
+                    },
                     "globalVolume": 80,
                     "patternCount": 1,
                     "moduleCount": 14
@@ -15429,39 +16475,19 @@
                       },
                       "lines": 512,
                       "tracks": 3,
+                      "icon": {
+                        "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARUlEQVR4nG2PAQoAMAgCz/9/emzaGDWIMjErQAByPkjSRgo0qkgrj1gaXYgSqpxMUIosi/etnRgjH9O+th82T/89976/AE+wAJWEVcWdAAAAAElFTkSuQmCC",
+                        "width": 16,
+                        "height": 16
+                      },
                       "eventCount": 19,
-                      "eventPreview": [
+                      "moduleReferences": [
                         {
-                          "line": 0,
-                          "track": 2,
-                          "note": "D6",
-                          "velocity": 129,
-                          "module": 1,
-                          "moduleName": "input"
-                        },
-                        {
-                          "line": 6,
-                          "track": 2,
-                          "note": "D#6",
-                          "velocity": 129,
-                          "module": 1,
-                          "moduleName": "input"
-                        },
-                        {
-                          "line": 8,
-                          "track": 2,
-                          "note": "D6",
-                          "velocity": 115,
-                          "module": 1,
-                          "moduleName": "input"
-                        },
-                        {
-                          "line": 14,
-                          "track": 2,
-                          "note": "D#6",
-                          "velocity": 111,
-                          "module": 1,
-                          "moduleName": "input"
+                          "index": 1,
+                          "name": "input",
+                          "type": "Amplifier",
+                          "color": "#e47fff",
+                          "eventCount": 19
                         }
                       ]
                     }
@@ -15484,8 +16510,13 @@
             "type": "project",
             "project": {
               "name": "LowResonate by SolarLune",
+              "flags": {},
               "bpm": 139,
               "speed": 4,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 100,
               "patternCount": 1,
               "moduleCount": 25
@@ -15626,35 +16657,19 @@
                 },
                 "lines": 256,
                 "tracks": 2,
+                "icon": {
+                  "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARklEQVR4nFWOAQ4AMQjC6P8/fZmegkuM2AxUQqo64vYEo/0oGHMFQfthc5/mWAbUZwywcZs2YteRwBc28OkDupz0r41o8QEyeABtz3nQIwAAAABJRU5ErkJggg==",
+                  "width": 16,
+                  "height": 16
+                },
                 "eventCount": 16,
-                "eventPreview": [
+                "moduleReferences": [
                   {
-                    "line": 0,
-                    "track": 0,
-                    "note": "C2",
-                    "module": 12,
-                    "moduleName": "SpectraVoice2"
-                  },
-                  {
-                    "line": 0,
-                    "track": 1,
-                    "note": "D#2",
-                    "module": 12,
-                    "moduleName": "SpectraVoice2"
-                  },
-                  {
-                    "line": 64,
-                    "track": 0,
-                    "note": "D2",
-                    "module": 12,
-                    "moduleName": "SpectraVoice2"
-                  },
-                  {
-                    "line": 64,
-                    "track": 1,
-                    "note": "F2",
-                    "module": 12,
-                    "moduleName": "SpectraVoice2"
+                    "index": 12,
+                    "name": "SpectraVoice2",
+                    "type": "SpectraVoice",
+                    "color": "#ff00e8",
+                    "eventCount": 10
                   }
                 ]
               }
@@ -15674,8 +16689,13 @@
             "type": "project",
             "project": {
               "name": "MegaString Module by KTRNMusic",
+              "flags": {},
               "bpm": 125,
               "speed": 6,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 256,
               "patternCount": 1,
               "moduleCount": 21
@@ -16533,14 +17553,19 @@
                 },
                 "lines": 512,
                 "tracks": 1,
+                "icon": {
+                  "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAARklEQVR4nE2OAQ7AMAgC4f+fXjrlsGktEFEkye4TvIqvkJ4RfA2UaVgEy4x1X+Gf5AqQ93u3JgXRFsxNmliIQHo2dpBygB9CvQB/6P5cxQAAAABJRU5ErkJggg==",
+                  "width": 16,
+                  "height": 16
+                },
                 "eventCount": 1,
-                "eventPreview": [
+                "moduleReferences": [
                   {
-                    "line": 0,
-                    "track": 0,
-                    "note": "C1",
-                    "module": 1,
-                    "moduleName": "MultiSynth"
+                    "index": 1,
+                    "name": "MultiSynth",
+                    "type": "MultiSynth",
+                    "color": "#deff00",
+                    "eventCount": 1
                   }
                 ]
               }
@@ -16557,8 +17582,13 @@
       "type": "project",
       "project": {
         "name": "2022-04-17 03-24",
+        "flags": {},
         "bpm": 125,
         "speed": 6,
+        "timeline": {
+          "grid": 4,
+          "grid2": 4
+        },
         "globalVolume": 130,
         "patternCount": 1,
         "moduleCount": 9
@@ -16882,36 +17912,26 @@
           },
           "lines": 32,
           "tracks": 3,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQUlEQVR4nG2PCQ4AMAQEx/8/3dRqKBJkrLgwMOxG43ERIrgHOKagPoQikCCPIsW0KjM2obfMoX3tctg4fTz3v38AU/AAneJpUfwAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 28,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "C4",
-              "module": 2,
-              "moduleName": "DrumSynth"
+              "index": 1,
+              "name": "SuperSaw",
+              "type": "MetaModule",
+              "color": "#ff00b8",
+              "eventCount": 4
             },
             {
-              "line": 0,
-              "track": 1,
-              "note": "F#4",
-              "module": 2,
-              "moduleName": "DrumSynth"
-            },
-            {
-              "line": 0,
-              "track": 2,
-              "note": "F3",
-              "module": 1,
-              "moduleName": "SuperSaw"
-            },
-            {
-              "line": 2,
-              "track": 1,
-              "note": "F#4",
-              "velocity": 113,
-              "module": 2,
-              "moduleName": "DrumSynth"
+              "index": 2,
+              "name": "DrumSynth",
+              "type": "DrumSynth",
+              "color": "#00cbff",
+              "eventCount": 24
             }
           ]
         }
@@ -16929,8 +17949,13 @@
             "type": "project",
             "project": {
               "name": "SuperSaw by mandel59 (licensed under CC0)",
+              "flags": {},
               "bpm": 125,
               "speed": 6,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 18,
               "patternCount": 2,
               "moduleCount": 22
@@ -17898,7 +18923,7 @@
                 "lines": 256,
                 "tracks": 1,
                 "eventCount": 0,
-                "eventPreview": []
+                "moduleReferences": []
               },
               {
                 "index": 1,
@@ -17910,7 +18935,7 @@
                 "lines": 256,
                 "tracks": 1,
                 "eventCount": 0,
-                "eventPreview": []
+                "moduleReferences": []
               }
             ],
             "embedded": []
@@ -17925,8 +18950,15 @@
       "type": "project",
       "project": {
         "name": "2022-04-17 18-14",
+        "flags": {
+          "supertracks": true
+        },
         "bpm": 90,
         "speed": 6,
+        "timeline": {
+          "grid": 4,
+          "grid2": 4
+        },
         "globalVolume": 130,
         "patternCount": 6,
         "moduleCount": 7
@@ -18131,35 +19163,19 @@
           },
           "lines": 64,
           "tracks": 4,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQUlEQVR4nG2PCwoAMAhCn/e/9Ihm22pBH0LNEJIgU0Qj8xpi72KcqhkLh7C5BX9FzXfwWwxKF/2ebcaa9fFcf38BRRAAgflZ5MQAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 11,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "C3",
-              "module": 1,
-              "moduleName": "SawZer EPiano2"
-            },
-            {
-              "line": 2,
-              "track": 1,
-              "note": "G3",
-              "module": 1,
-              "moduleName": "SawZer EPiano2"
-            },
-            {
-              "line": 4,
-              "track": 2,
-              "note": "D#4",
-              "module": 1,
-              "moduleName": "SawZer EPiano2"
-            },
-            {
-              "line": 6,
-              "track": 3,
-              "note": "A#4",
-              "module": 1,
-              "moduleName": "SawZer EPiano2"
+              "index": 1,
+              "name": "SawZer EPiano2",
+              "type": "FMX",
+              "color": "#009bff",
+              "eventCount": 8
             }
           ]
         },
@@ -18171,35 +19187,19 @@
           },
           "lines": 64,
           "tracks": 2,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQklEQVR4nG1Phw0AIAhr/3/a2OJgkBDoEAEACSp2B2MozDz8MSlD8AwjVWnupYSBx3N9mIj6pA+t307L9dXTcfX8BT6wAHXVSnD6AAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 22,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "C2",
-              "module": 2,
-              "moduleName": "Vox NOT-09"
-            },
-            {
-              "line": 4,
-              "track": 1,
-              "note": "E3",
-              "module": 2,
-              "moduleName": "Vox NOT-09"
-            },
-            {
-              "line": 6,
-              "track": 0,
-              "note": "C2",
-              "module": 2,
-              "moduleName": "Vox NOT-09"
-            },
-            {
-              "line": 8,
-              "track": 0,
-              "note": "C2",
-              "module": 2,
-              "moduleName": "Vox NOT-09"
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 22
             }
           ]
         },
@@ -18211,35 +19211,19 @@
           },
           "lines": 64,
           "tracks": 4,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAP0lEQVR4nG2PCwoAMAhCn/e/9FgLGVZglNkPQBfqoCJh92DCuqc1ZOuunygtTeEE17UR2TKH5trlsDh9PhfvH0lQAIl0Ls44AAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 12,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "G#2",
-              "module": 1,
-              "moduleName": "SawZer EPiano2"
-            },
-            {
-              "line": 2,
-              "track": 1,
-              "note": "D#3",
-              "module": 1,
-              "moduleName": "SawZer EPiano2"
-            },
-            {
-              "line": 4,
-              "track": 2,
-              "note": "G3",
-              "module": 1,
-              "moduleName": "SawZer EPiano2"
-            },
-            {
-              "line": 6,
-              "track": 3,
-              "note": "C4",
-              "module": 1,
-              "moduleName": "SawZer EPiano2"
+              "index": 1,
+              "name": "SawZer EPiano2",
+              "type": "FMX",
+              "color": "#009bff",
+              "eventCount": 9
             }
           ]
         },
@@ -18249,8 +19233,27 @@
             "x": 64,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 2,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQklEQVR4nG1Phw0AIAhr/3/a2OJgkBDoEAEACSp2B2MozDz8MSlD8AwjVWnupYSBx3N9mIj6pA+t307L9dXTcfX8BT6wAHXVSnD6AAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 22
+            }
+          ]
         },
         {
           "index": 4,
@@ -18258,8 +19261,27 @@
             "x": 64,
             "y": 64
           },
+          "lines": 64,
+          "tracks": 4,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 0,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQUlEQVR4nG2PCwoAMAhCn/e/9Ihm22pBH0LNEJIgU0Qj8xpi72KcqhkLh7C5BX9FzXfwWwxKF/2ebcaa9fFcf38BRRAAgflZ5MQAAAAASUVORK5CYII=",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 1,
+              "name": "SawZer EPiano2",
+              "type": "FMX",
+              "color": "#009bff",
+              "eventCount": 8
+            }
+          ]
         },
         {
           "index": 5,
@@ -18267,8 +19289,27 @@
             "x": 128,
             "y": 32
           },
+          "lines": 64,
+          "tracks": 2,
+          "infoFlags": {
+            "clone": true
+          },
+          "parent": 1,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQklEQVR4nG1Phw0AIAhr/3/a2OJgkBDoEAEACSp2B2MozDz8MSlD8AwjVWnupYSBx3N9mIj6pA+t307L9dXTcfX8BT6wAHXVSnD6AAAAAElFTkSuQmCC",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 0,
-          "eventPreview": []
+          "moduleReferences": [
+            {
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 22
+            }
+          ]
         }
       ],
       "embedded": [
@@ -18284,8 +19325,13 @@
             "type": "project",
             "project": {
               "name": "2020-10-04 09-17",
+              "flags": {},
               "bpm": 125,
               "speed": 3,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 220,
               "patternCount": 0,
               "moduleCount": 109
@@ -21805,8 +22851,15 @@
       "type": "project",
       "project": {
         "name": "2022-04-20 16-36",
+        "flags": {
+          "supertracks": true
+        },
         "bpm": 135,
         "speed": 6,
+        "timeline": {
+          "grid": 4,
+          "grid2": 4
+        },
         "globalVolume": 130,
         "patternCount": 1,
         "moduleCount": 6
@@ -21950,36 +23003,19 @@
           },
           "lines": 64,
           "tracks": 4,
+          "icon": {
+            "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEX///8AAABVwtN+AAAAQElEQVR4nG2PSQ4AMAgC8f+fbsQasfTgMiSiAojIqAwMtzJ8SZgKlOlBtcyqF8OpDTt17yNm+lu7DrPT7bn3/QNccACtO4G7RQAAAABJRU5ErkJggg==",
+            "width": 16,
+            "height": 16
+          },
           "eventCount": 49,
-          "eventPreview": [
+          "moduleReferences": [
             {
-              "line": 0,
-              "track": 0,
-              "note": "C4",
-              "module": 2,
-              "moduleName": "Vox NOT-09"
-            },
-            {
-              "line": 0,
-              "track": 3,
-              "note": "B4",
-              "module": 2,
-              "moduleName": "Vox NOT-09"
-            },
-            {
-              "line": 1,
-              "track": 2,
-              "note": "F#4",
-              "module": 2,
-              "moduleName": "Vox NOT-09",
-              "effect": "noteDelay"
-            },
-            {
-              "line": 2,
-              "track": 2,
-              "note": "G#4",
-              "module": 2,
-              "moduleName": "Vox NOT-09"
+              "index": 2,
+              "name": "Vox NOT-09",
+              "type": "MetaModule",
+              "color": "#ffeb7f",
+              "eventCount": 49
             }
           ]
         }
@@ -21997,8 +23033,13 @@
             "type": "project",
             "project": {
               "name": "2020-10-04 09-17",
+              "flags": {},
               "bpm": 125,
               "speed": 3,
+              "timeline": {
+                "grid": 4,
+                "grid2": 4
+              },
               "globalVolume": 256,
               "patternCount": 0,
               "moduleCount": 109
