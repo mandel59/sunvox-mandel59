@@ -340,6 +340,14 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       throw new Error(`Expected one supertrack project button, found ${supertrackButtonCount}`);
     }
 
+    await page.evaluate(() => {
+      window.__browserCheckStopInstrumentNotesCalls = 0;
+      window.__browserCheckOriginalStopInstrumentNotes = window.stopInstrumentNotes;
+      window.stopInstrumentNotes = () => {
+        window.__browserCheckStopInstrumentNotesCalls += 1;
+        return window.__browserCheckOriginalStopInstrumentNotes?.() ?? false;
+      };
+    });
     await supertrackButton.click();
     await page.waitForTimeout(250);
 
@@ -359,7 +367,20 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       timelineClonePatterns: document.querySelectorAll('.timeline-pattern.is-clone').length,
       patternRows: document.querySelectorAll('.pattern-row').length,
       clonePatternRows: document.querySelectorAll('.pattern-row.is-clone').length,
+      stopInstrumentNotesCalls: window.__browserCheckStopInstrumentNotesCalls ?? null,
     }));
+    await page.evaluate(() => {
+      if (window.__browserCheckOriginalStopInstrumentNotes) {
+        window.stopInstrumentNotes = window.__browserCheckOriginalStopInstrumentNotes;
+      }
+      delete window.__browserCheckOriginalStopInstrumentNotes;
+      delete window.__browserCheckStopInstrumentNotesCalls;
+    });
+    if (supertrackTimeline.stopInstrumentNotesCalls !== 0) {
+      throw new Error(
+        `Expected project switching not to send instrument note cleanup, got ${supertrackTimeline.stopInstrumentNotesCalls}`,
+      );
+    }
     if (supertrackTimeline.timelineLaneNumbers.join(',') !== '1,2') {
       throw new Error(`Expected occupied supertrack lanes 1,2, got ${supertrackTimeline.timelineLaneNumbers.join(',')}`);
     }

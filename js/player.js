@@ -169,7 +169,7 @@ function stopSynthNote(/** @type {number} */ note) {
 }
 
 function stopInstrumentNotes() {
-    if (!playerReady) {
+    if (!playerReady || loadedSynthModule < 0) {
         return false;
     }
     sv_send_event(0, 0, ALL_NOTES_OFF, 0, 0, 0, 0);

@@ -145,7 +145,9 @@ function SynthKeyboardSection({ project }) {
     setKeyboardStartNote(SYNTH_KEYBOARD_BASE_START_NOTE);
     return () => {
       dragNoteRef.current = undefined;
-      window.stopInstrumentNotes?.();
+      if (project.type === "synth") {
+        window.stopInstrumentNotes?.();
+      }
     };
   }, [project.path]);
 
