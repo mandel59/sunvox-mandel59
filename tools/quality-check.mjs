@@ -10,6 +10,7 @@ const CHECKS = [
   ["SunVox lib compatibility", npmCommand, ["run", "sunvox:lib:check"]],
   ["Node tests", npmCommand, ["test"]],
   ["SunVox metrics", npmCommand, ["run", "sunvox:metrics"]],
+  ["Code metrics", npmCommand, ["run", "code:metrics"]],
   ["SunVox DB structure", npmCommand, ["run", "sunvox:inspect", "--", "check"]],
   ["SunVox coverage gate", npmCommand, ["run", "sunvox:coverage:check"]],
   ["SunVox controller metadata", npmCommand, ["run", "sunvox:controller-diff"]],

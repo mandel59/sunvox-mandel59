@@ -147,6 +147,7 @@ npm run sunvox:inspect -- check
 npm run sunvox:validate -- music/2022-04-17.sunvox
 npm run sunvox:validate:all
 npm run sunvox:verify:all
+npm run code:metrics
 ```
 
 - `coverage` decodes checked-in sample and fixture `.sunvox` and `.sunsynth`
@@ -264,9 +265,9 @@ npm run quality
 ```
 
 The command runs license notice checks, fixture regeneration, SunVox JS/WASM
-compatibility, Node tests, metrics, DB structure checks, coverage and controller
-metadata gates, sample round-trip verification, the frontend build, and
-`git diff --check`.
+compatibility, Node tests, SunVox project metrics, code metrics, DB structure
+checks, coverage and controller metadata gates, sample round-trip verification,
+the frontend build, and `git diff --check`.
 
 ## Round-Trip Policy
 

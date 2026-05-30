@@ -46,6 +46,7 @@ npm run sunvox:outline -- music/2022-04-17.sunvox
 npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
+npm run code:metrics
 ```
 
 `sunvox:outline` prints a human-readable outline of a SunVox/SunSynth file:
@@ -116,7 +117,8 @@ sample files and small codec-edited variants, so representative text edits are
 verified against the runtime API as well as byte-level round-trips. These checks
 cover project, module, pattern, controller, module link, pattern note,
 pattern controller, pattern effect edits, SunVox Lib save/reload compatibility,
-and DB-driven validation warnings across checked-in samples.
+DB-driven validation warnings, and code-size metrics across checked-in samples
+and local tooling.
 
 ### SunVox Lib Fixtures
 
