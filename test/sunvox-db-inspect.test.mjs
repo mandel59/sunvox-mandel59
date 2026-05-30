@@ -226,6 +226,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousModule = SUNVOX_DB.modules[moduleName];
   const projectFields = SUNVOX_DB.grammar.scopes.project.fields;
   const previousProjectFieldCount = projectFields.length;
+  const patternFields = SUNVOX_DB.grammar.scopes.pattern.fields;
+  const previousPatternFieldCount = patternFields.length;
   const linkSlotChunk = SUNVOX_DB.chunks.find((chunk) => chunk.id === "SLnK");
   const previousLinkSlots = linkSlotChunk.linkSlots;
   const dataChunkGrammar = SUNVOX_DB.moduleDataChunkGrammar;
@@ -301,6 +303,11 @@ test("DB check validates data chunk ranges and metadata references", () => {
     enum: "__missing_grammar_enum",
     bitfield: "__missing_grammar_bitfield",
     bitflags: "__missing_grammar_bitflags",
+  });
+  patternFields.push({
+    chunk: "PATN",
+    path: "brokenPatternCurrentPattern",
+    field: "value",
   });
   linkSlotChunk.linkSlots = { linkChunk: "NOPE" };
   dataChunkGrammar.countChunk = "NOPE";
@@ -425,6 +432,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
       /__BrokenDbCheckFixture: data chunk index 0 is defined by both data chunk brokenChunk#0 and data chunk range brokenRange#0-1/u,
     );
     assert.match(errors, /grammar scope project references missing chunk NOPE/u);
+    assert.match(errors, /grammar scope pattern references PATN with chunk scope project/u);
     assert.match(
       errors,
       /grammar:project: field brokenGrammarField fixed textSize 8 is missing matching maxUtf8Bytes runtime constraint/u,
@@ -510,6 +518,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /Amplifier: module catalog color mismatch source=#E47FFF db=#000000/u);
   } finally {
     projectFields.length = previousProjectFieldCount;
+    patternFields.length = previousPatternFieldCount;
     linkSlotChunk.linkSlots = previousLinkSlots;
     Object.assign(dataChunkGrammar, previousDataChunkGrammar);
     SUNVOX_DB.runtimeConstraints.length = 0;

@@ -1547,8 +1547,11 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
 
   for (const [scopeName, scope] of Object.entries(SUNVOX_DB.grammar.scopes ?? {})) {
     for (const field of scope.fields ?? []) {
+      const chunk = SUNVOX_DB.chunks.find((candidate) => candidate.id === field.chunk);
       if (!chunkIds.has(field.chunk)) {
         errors.push(`grammar scope ${scopeName} references missing chunk ${field.chunk}`);
+      } else if (chunk?.scope !== scopeName) {
+        errors.push(`grammar scope ${scopeName} references ${field.chunk} with chunk scope ${chunk.scope}`);
       }
       checkFixedTextSizeRuntimeConstraint(errors, scopeName, field);
       checkNamedReference(errors, `grammar:${scopeName}`, `field ${field.path}`, "enum", field.enum, SUNVOX_DB.enums);

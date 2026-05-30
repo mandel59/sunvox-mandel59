@@ -100,3 +100,24 @@ test("formats pattern effect parameters distinctly from controller values", () =
   assert.match(text, /L000 T0 module=#1 effect=vibrato parameter=\{speed=3,amplitude=4\}/u);
   assert.match(text, /L001 T0 module=#1 controller=volume value=321/u);
 });
+
+test("numbers patterns from array order, not editable object fields", () => {
+  const outline = buildOutline({
+    magic: "SVOX",
+    project: { name: "pattern numbers" },
+    modules: [],
+    patterns: [
+      { index: 99, name: "First", lines: 1, tracks: 1, events: [] },
+      { name: "Second", lines: 1, tracks: 1, events: [] },
+    ],
+  });
+  const text = formatOutline(outline);
+
+  assert.deepEqual(outline.patterns.map((pattern) => [pattern.index, pattern.name]), [
+    [0, "First"],
+    [1, "Second"],
+  ]);
+  assert.match(text, /#0 "First"/u);
+  assert.match(text, /#1 "Second"/u);
+  assert.doesNotMatch(text, /#99 "First"/u);
+});
