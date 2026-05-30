@@ -206,6 +206,10 @@
       "1": "channelPressure",
       "2": "pitchBendChange"
     },
+    "sunvox_note_cut_mode": {
+      "0": "noteOff",
+      "1": "volumeZero"
+    },
     "off_on": {
       "0": "off",
       "1": "on"
@@ -965,7 +969,7 @@
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x1C",
       "packedFields": [
         { "name": "ticks", "shift": 0, "bits": 5 },
-        { "name": "mode", "shift": 12, "bits": 4 }
+        { "name": "mode", "shift": 12, "bits": 4, "enum": "sunvox_note_cut_mode" }
       ]
     },
     "noteDelay": {

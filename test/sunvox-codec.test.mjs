@@ -748,7 +748,7 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
       line: 5,
       track: 0,
       effect: "noteCut",
-      parameter: { ticks: 4, mode: 1 },
+      parameter: { ticks: 4, mode: "volumeZero" },
     },
     {
       line: 6,
@@ -826,7 +826,7 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
   assert.deepEqual(reparsed.patterns[patternIndex].events[0].parameter, { speed: 3, amplitude: 4 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[1].parameter, { up: 5, down: 6 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[2].parameter, { firstOffset: 7, secondOffset: 12 });
-  assert.deepEqual(reparsed.patterns[patternIndex].events[3].parameter, { ticks: 4, mode: 1 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[3].parameter, { ticks: 4, mode: "volumeZero" });
   assert.deepEqual(reparsed.patterns[patternIndex].events[4].parameter, { from: 20, to: 40 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[5].parameter, { offset256: 3 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[6].parameter, {
