@@ -58,3 +58,6 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Check built license notices
+        run: npm run licenses:check:dist

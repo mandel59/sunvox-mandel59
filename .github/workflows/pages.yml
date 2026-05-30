@@ -91,6 +91,9 @@ jobs:
         env:
           PAGES_BASE_PATH: ./
 
+      - name: Check built license notices
+        run: npm run licenses:check:dist
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

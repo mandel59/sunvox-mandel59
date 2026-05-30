@@ -16,6 +16,7 @@ const CHECKS = [
   ["SunVox validation gate", npmCommand, ["run", "sunvox:validate:all"]],
   ["SunVox round-trip samples", npmCommand, ["run", "sunvox:verify:all"]],
   ["Frontend build", npmCommand, ["run", "build"]],
+  ["Built license notices", npmCommand, ["run", "licenses:check:dist"]],
   ["Whitespace check", "git", ["diff", "--check"]],
 ];
 

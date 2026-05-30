@@ -2,8 +2,18 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const pagePath = "index.html";
-const licenseDirectory = "sunvox_lib/sunvox_lib/docs/license";
+function optionValue(args, name, fallback) {
+  const index = args.indexOf(name);
+  return index >= 0 ? args[index + 1] : fallback;
+}
+
+const pagePath = optionValue(process.argv, "--page", "index.html");
+const licenseDirectory = optionValue(
+  process.argv,
+  "--license-directory",
+  "sunvox_lib/sunvox_lib/docs/license",
+);
+const linkPrefix = optionValue(process.argv, "--link-prefix", licenseDirectory);
 const sunvoxLicensePath = join(licenseDirectory, "LICENSE.txt");
 
 function normalizeText(text) {
@@ -59,12 +69,12 @@ const licenseFiles = readdirSync(licenseDirectory)
   .sort((a, b) => a.localeCompare(b, "en"));
 
 for (const licenseFile of licenseFiles) {
-  const linkPath = `${licenseDirectory}/${licenseFile}`;
+  const linkPath = `${linkPrefix}/${licenseFile}`;
   if (!page.includes(linkPath)) {
     fail(`${pagePath} does not link to ${linkPath}`);
   }
 }
 
 if (!process.exitCode) {
-  console.log(`License notice check passed for ${licenseFiles.length} license files.`);
+  console.log(`License notice check passed for ${pagePath} and ${licenseFiles.length} license files.`);
 }
