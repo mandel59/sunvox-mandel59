@@ -33,7 +33,12 @@
             color: var(--accent-3);
         }
 
-        button {
+        button,
+        .action-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
             min-height: 2.25rem;
             border: 1px solid var(--line);
             background: var(--panel);
@@ -42,10 +47,13 @@
             padding: 0.45rem 0.7rem;
             font: inherit;
             cursor: pointer;
+            text-decoration: none;
         }
 
         button:hover,
-        button:focus-visible {
+        button:focus-visible,
+        .action-link:hover,
+        .action-link:focus-visible {
             border-color: var(--accent);
             outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
             outline-offset: 1px;
@@ -96,7 +104,6 @@
             padding: 1rem;
         }
 
-        .player-controls,
         .project-actions {
             display: flex;
             flex-wrap: wrap;
@@ -310,14 +317,6 @@
 
     <main class="app-shell">
         <aside class="sidebar" aria-labelledby="project-list-heading">
-            <section aria-labelledby="player-heading">
-                <h2 id="player-heading">Player</h2>
-                <div class="player-controls">
-                    <button type="button" onclick="play();" aria-label="Play loaded project"><span aria-hidden="true">▶</span> Play</button>
-                    <button type="button" onclick="stop();" aria-label="Stop playback"><span aria-hidden="true">■</span> Stop</button>
-                </div>
-            </section>
-
             <section aria-labelledby="project-list-heading">
                 <h2 id="project-list-heading">Files</h2>
                 <div id="project-list" class="project-list" aria-live="polite"></div>

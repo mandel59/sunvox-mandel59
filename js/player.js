@@ -38,11 +38,11 @@ async function load(/** @type {string} */ url) {
     return true;
 }
 
-function play() {
+function playLoadedProject() {
     sv_play_from_beginning(0);
 }
 
-function stop() {
+function stopPlayback() {
     sv_stop(0);
 }
 
@@ -50,6 +50,10 @@ async function loadAndPlay(/** @type {string} */ url) {
     if (!await load(url)) {
         return false;
     }
-    sv_play_from_beginning(0);
+    playLoadedProject();
     return true;
 }
+
+window.playLoadedProject = playLoadedProject;
+window.stopPlayback = stopPlayback;
+window.loadAndPlay = loadAndPlay;

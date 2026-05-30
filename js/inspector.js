@@ -178,8 +178,11 @@
                     <div class="project-path">${escapeHtml(project.path)}</div>
                 </div>
                 <div class="project-actions">
-                    ${playable ? `<button type="button" id="selected-play"><span aria-hidden="true">▶</span> Play</button>` : ""}
-                    <a href="${escapeHtml(project.path)}" download>Download</a>
+                    ${playable ? `
+                        <button type="button" id="selected-play"><span aria-hidden="true">▶</span> Play</button>
+                        <button type="button" id="selected-stop"><span aria-hidden="true">■</span> Stop</button>
+                    ` : ""}
+                    <a class="action-link" href="${escapeHtml(project.path)}" download>Download</a>
                 </div>
             </div>
 
@@ -203,6 +206,11 @@
         document.getElementById("selected-play")?.addEventListener("click", () => {
             if (typeof window.loadAndPlay === "function") {
                 window.loadAndPlay(project.path);
+            }
+        });
+        document.getElementById("selected-stop")?.addEventListener("click", () => {
+            if (typeof window.stopPlayback === "function") {
+                window.stopPlayback();
             }
         });
     }
