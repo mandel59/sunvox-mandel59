@@ -108,6 +108,43 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       throw new Error(`Expected octave controls to shift the synth keyboard, got ${JSON.stringify(synthOctaveUi)}`);
     }
 
+    const wideSynthKeyboard = await page.evaluate(() => {
+      const frame = document.querySelector('.virtual-keyboard-frame');
+      const keyboard = document.querySelector('.virtual-keyboard');
+      return {
+        viewportWidth: window.innerWidth,
+        pageScrollWidth: document.documentElement.scrollWidth,
+        frameClientWidth: frame?.clientWidth ?? null,
+        frameScrollWidth: frame?.scrollWidth ?? null,
+        keyboardWidth: keyboard?.getBoundingClientRect().width ?? null,
+      };
+    });
+    if (wideSynthKeyboard.frameScrollWidth > wideSynthKeyboard.frameClientWidth) {
+      throw new Error(`Expected synth keyboard not to scroll at the wide viewport, got ${JSON.stringify(wideSynthKeyboard)}`);
+    }
+
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.waitForTimeout(100);
+    const narrowSynthKeyboard = await page.evaluate(() => {
+      const frame = document.querySelector('.virtual-keyboard-frame');
+      const keyboard = document.querySelector('.virtual-keyboard');
+      return {
+        viewportWidth: window.innerWidth,
+        pageScrollWidth: document.documentElement.scrollWidth,
+        frameClientWidth: frame?.clientWidth ?? null,
+        frameScrollWidth: frame?.scrollWidth ?? null,
+        keyboardWidth: keyboard?.getBoundingClientRect().width ?? null,
+      };
+    });
+    if (narrowSynthKeyboard.pageScrollWidth > narrowSynthKeyboard.viewportWidth + 1) {
+      throw new Error(`Expected narrow viewport not to overflow the page, got ${JSON.stringify(narrowSynthKeyboard)}`);
+    }
+    if (!(narrowSynthKeyboard.frameScrollWidth > narrowSynthKeyboard.frameClientWidth)) {
+      throw new Error(`Expected synth keyboard frame to scroll horizontally, got ${JSON.stringify(narrowSynthKeyboard)}`);
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.waitForTimeout(100);
+
     const synthGlissandoUi = await page.evaluate(async () => {
       const calls = {
         noteOn: [],
@@ -400,6 +437,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       url,
       headed,
       initial,
+      wideSynthKeyboard,
       synthGlissandoUi,
       afterSelect,
       supertrackTimeline,

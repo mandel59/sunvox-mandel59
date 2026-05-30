@@ -245,44 +245,41 @@ function SynthKeyboardSection({ project }) {
         </div>
         <output className="instrument-status">{keyboardStatus}</output>
       </div>
-      <div
-        ref={keyboardRef}
-        className="virtual-keyboard"
-        style={{ "--white-key-count": synthKeyboardWhiteKeys }}
-        aria-label={`${project.title} virtual keyboard`}
-      >
-        {synthKeyboardNotes.map((keyboardNote) => (
-          <button
-            key={keyboardNote.note}
-            type="button"
-            className={`piano-key ${keyboardNote.black ? "is-black" : "is-white"}${
-              activeNotes.has(keyboardNote.note) ? " is-active" : ""
-            }`}
-            style={{ "--white-index": keyboardNote.whiteIndex }}
-            aria-label={keyboardNote.name}
-            data-note={keyboardNote.note}
-            onContextMenu={(event) => event.preventDefault()}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              try {
-                event.currentTarget.setPointerCapture(event.pointerId);
-              } catch {
-                // Synthetic pointer events in tests do not always create a capturable pointer.
-              }
-              startNote(keyboardNote.note);
-            }}
-            onPointerMove={handlePointerMove}
-            onPointerUp={(event) => {
-              event.preventDefault();
-              stopCurrentNote();
-            }}
-            onPointerCancel={stopCurrentNote}
-            onLostPointerCapture={stopCurrentNote}
-            onBlur={stopCurrentNote}
-          >
-            <span>{keyboardNote.name}</span>
-          </button>
-        ))}
+      <div className="virtual-keyboard-frame" style={{ "--white-key-count": synthKeyboardWhiteKeys }}>
+        <div ref={keyboardRef} className="virtual-keyboard" aria-label={`${project.title} virtual keyboard`}>
+          {synthKeyboardNotes.map((keyboardNote) => (
+            <button
+              key={keyboardNote.note}
+              type="button"
+              className={`piano-key ${keyboardNote.black ? "is-black" : "is-white"}${
+                activeNotes.has(keyboardNote.note) ? " is-active" : ""
+              }`}
+              style={{ "--white-index": keyboardNote.whiteIndex }}
+              aria-label={keyboardNote.name}
+              data-note={keyboardNote.note}
+              onContextMenu={(event) => event.preventDefault()}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                try {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                } catch {
+                  // Synthetic pointer events in tests do not always create a capturable pointer.
+                }
+                startNote(keyboardNote.note);
+              }}
+              onPointerMove={handlePointerMove}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                stopCurrentNote();
+              }}
+              onPointerCancel={stopCurrentNote}
+              onLostPointerCapture={stopCurrentNote}
+              onBlur={stopCurrentNote}
+            >
+              <span>{keyboardNote.name}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   );
