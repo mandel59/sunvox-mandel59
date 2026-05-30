@@ -1133,6 +1133,12 @@ function checkTextLayoutPackedFields(errors, subject, packedFields = []) {
       errors.push(`${fieldSubject} has invalid stored range ${range.min}..${range.max}`);
       continue;
     }
+    if (field.omitStoredValue !== undefined && (!Number.isInteger(field.omitStoredValue) || field.omitStoredValue < range.min || field.omitStoredValue > range.max)) {
+      errors.push(`${fieldSubject} has invalid omitStoredValue ${field.omitStoredValue}`);
+    }
+    if (field.scale !== undefined && (!Number.isFinite(field.scale) || field.scale === 0)) {
+      errors.push(`${fieldSubject} has invalid scale ${field.scale}`);
+    }
 
     const windowKey = `${field.shift}:${field.bits}`;
     const peers = fieldsByWindow.get(windowKey) ?? [];

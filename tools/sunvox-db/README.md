@@ -16,6 +16,8 @@ can either interpret it directly or generate conversion code from it later.
   fully covered by a declared layout; values with unknown bits stay numeric for
   round-trip safety. Conditional effects can use ordered `variants`, such as
   effect `0F` selecting speed, timeline-grid, or BPM semantics by stored value.
+  Packed fields can also declare scaled values and stored sentinel bytes that
+  should be omitted from the editable form.
 - `bitfields`: describes packed integer fields such as `CMID`.
 - `bitflags`: maps stored flag bits to sparse named objects.
 - `structs`: describes fixed-size record arrays such as pattern notes and MIDI

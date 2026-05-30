@@ -84,6 +84,8 @@ export interface SunVoxStructTextLayout {
         shift: number;
         bits: number;
         offset?: number;
+        scale?: number;
+        omitStoredValue?: number;
         min?: number;
         max?: number;
         enum?: string;
@@ -118,6 +120,8 @@ export interface SunVoxPackedFieldDefinition {
   shift: number;
   bits: number;
   offset?: number;
+  scale?: number;
+  omitStoredValue?: number;
   min?: number;
   max?: number;
   enum?: string;

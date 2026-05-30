@@ -915,6 +915,14 @@
         { "name": "flags", "shift": 0, "bits": 9, "bitflags": "module_mute_solo_bypass_flags" }
       ]
     },
+    "finetune": {
+      "description": "0xRRFF where nonzero RR sets relative note and nonzero FF sets finetune in two-cent steps; zero bytes are omitted because SunVox leaves that part unchanged.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x15",
+      "packedFields": [
+        { "name": "relativeNote", "shift": 8, "bits": 8, "offset": -128, "omitStoredValue": 0 },
+        { "name": "finetune", "shift": 0, "bits": 8, "offset": -128, "scale": 2, "omitStoredValue": 0 }
+      ]
+    },
     "sampleOffsetFine": {
       "description": "Fine sample offset in samples.",
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x07",

@@ -45,8 +45,8 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.namedSourcePatternEffects, 43);
   assert.equal(metrics.summary.unnamedSourcePatternEffects, 0);
   assert.equal(metrics.summary.patternEffectNameCoveragePercent, 100);
-  assert.equal(metrics.summary.patternEffectParameterSchemas, 40);
-  assert.equal(metrics.summary.patternEffectParameterCoveragePercent, 93);
+  assert.equal(metrics.summary.patternEffectParameterSchemas, 41);
+  assert.equal(metrics.summary.patternEffectParameterCoveragePercent, 95.3);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 5);
@@ -303,6 +303,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     packedFields: [
       { name: "bad", shift: 0, bits: 8, enum: "__missing_parameter_enum" },
       { name: "badFlags", shift: 8, bits: 8, bitflags: "__missing_parameter_bitflags" },
+      { name: "badOmit", shift: 16, bits: 2, omitStoredValue: 4 },
+      { name: "badScale", shift: 18, bits: 2, scale: 0 },
     ],
     variants: [
       {
@@ -415,6 +417,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
       errors,
       /pattern effect parameter notSourceBackedParameter: packed field badFlags references missing bitflags __missing_parameter_bitflags/u,
     );
+    assert.match(errors, /pattern effect parameter notSourceBackedParameter packed field badOmit has invalid omitStoredValue 4/u);
+    assert.match(errors, /pattern effect parameter notSourceBackedParameter packed field badScale has invalid scale 0/u);
     assert.match(errors, /pattern effect parameter notSourceBackedParameter variant #0 match.value has bits outside match.mask/u);
     assert.match(errors, /pattern effect parameter notSourceBackedParameter variant #0 match.mask overlaps packed fields/u);
     assert.match(errors, /pattern effect parameter notSourceBackedParameter variant #0 valueRange has invalid range 4..3/u);

@@ -464,11 +464,13 @@ function packedFieldStoredValue(value, field) {
 }
 
 function packedFieldDecodedValue(storedValue, field) {
-  return storedValue + (field.offset ?? 0);
+  const offsetValue = storedValue + (field.offset ?? 0);
+  return field.scale === undefined ? offsetValue : offsetValue * field.scale;
 }
 
 function packedFieldEncodedValue(decodedValue, field) {
-  return decodedValue - (field.offset ?? 0);
+  const offsetValue = field.scale === undefined ? decodedValue : decodedValue / field.scale;
+  return offsetValue - (field.offset ?? 0);
 }
 
 function packedFieldContainsStoredValue(storedValue, field) {
@@ -584,16 +586,20 @@ function packedParameterVariantMatchesObject(value, variant) {
 }
 
 function decodePackedParameterFields(value, definition) {
-  return Object.fromEntries(
-    definition.packedFields.map((field) => {
-      const storedValue = packedFieldStoredValue(value, field);
-      const decodedValue = packedFieldDecodedValue(storedValue, field);
-      if (field.bitflags) {
-        return [field.name, decodeBitflags(field.bitflags, decodedValue)];
-      }
-      return [field.name, field.enum ? enumToName(field.enum, decodedValue) : decodedValue];
-    }),
-  );
+  const result = {};
+  for (const field of definition.packedFields) {
+    const storedValue = packedFieldStoredValue(value, field);
+    if (field.omitStoredValue !== undefined && storedValue === field.omitStoredValue) {
+      continue;
+    }
+    const decodedValue = packedFieldDecodedValue(storedValue, field);
+    result[field.name] = field.bitflags
+      ? decodeBitflags(field.bitflags, decodedValue)
+      : field.enum
+        ? enumToName(field.enum, decodedValue)
+        : decodedValue;
+  }
+  return result;
 }
 
 function decodePackedParameter(value, definition) {
@@ -610,6 +616,10 @@ function decodePackedParameter(value, definition) {
 function encodePackedParameterFields(value, definition) {
   let packedValue = definition.match?.value ?? 0;
   for (const field of definition.packedFields) {
+    if (value[field.name] === undefined && field.omitStoredValue !== undefined) {
+      packedValue = setPackedFieldValue(packedValue, field, field.omitStoredValue);
+      continue;
+    }
     const fieldValue = value[field.name] ?? 0;
     const decodedValue = field.bitflags
       ? encodeBitflags(field.bitflags, fieldValue)
@@ -617,6 +627,9 @@ function encodePackedParameterFields(value, definition) {
         ? enumToValue(field.enum, fieldValue)
         : fieldValue;
     const storedValue = packedFieldEncodedValue(decodedValue, field);
+    if (!Number.isInteger(storedValue)) {
+      throw new Error(`Pattern parameter ${field.name} value ${decodedValue} stores as non-integer ${storedValue}`);
+    }
     if (!packedFieldContainsStoredValue(storedValue, field)) {
       const { min, max } = packedFieldStoredRange(field);
       throw new Error(`Pattern parameter ${field.name} value ${decodedValue} stores as ${storedValue}; expected ${min}..${max}`);
