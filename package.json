@@ -23,6 +23,7 @@
     "sunvox:verify:all": "node tools/sunvox-verify-all.mjs",
     "sunvox:coverage:check": "node tools/sunvox-db-inspect.mjs coverage --check",
     "sunvox:controller-diff": "node tools/sunvox-db-inspect.mjs controller-diff",
+    "sunvox:enums": "node tools/sunvox-db-inspect.mjs enums",
     "sunvox:metrics": "node tools/sunvox-db-inspect.mjs metrics",
     "sunvox:inspect": "node tools/sunvox-db-inspect.mjs"
   },

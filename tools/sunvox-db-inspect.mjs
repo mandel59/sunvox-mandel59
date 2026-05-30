@@ -19,6 +19,7 @@ function usage() {
   node tools/sunvox-db-inspect.mjs coverage [--json] [--details] [--check] [sample-path ...]
   node tools/sunvox-db-inspect.mjs metrics [--json] [sample-path ...]
   node tools/sunvox-db-inspect.mjs report [--json] [source-root]
+  node tools/sunvox-db-inspect.mjs enums [--json] [strings-file]
   node tools/sunvox-db-inspect.mjs controller-diff [--json] [source-root]
   node tools/sunvox-db-inspect.mjs scaffold <module-name> [source-root]
   node tools/sunvox-db-inspect.mjs check [--json] [source-root]`);
@@ -763,6 +764,19 @@ function enumValuesFromLabel(label) {
     return undefined;
   }
   return Object.fromEntries(label.split(";").map((entry, index) => [String(index), enumValueName(entry)]));
+}
+
+export function collectSourceEnums(stringsFile = DEFAULT_STRINGS_FILE) {
+  const strings = loadStringTable(stringsFile);
+  return [...strings.entries()]
+    .filter(([, label]) => label.includes(";"))
+    .map(([macro, label]) => ({
+      macro,
+      enum: enumNameFromMacro(macro, label),
+      labels: label.split(";").map((entry) => entry.trim()),
+      values: enumValuesFromLabel(label),
+    }))
+    .sort((a, b) => compareText(a.enum, b.enum) || compareText(a.macro, b.macro));
 }
 
 function scaffoldController(call, index, strings, metadata = {}) {
@@ -2441,6 +2455,21 @@ function formatSourceReport(report) {
   ].join("\n");
 }
 
+function formatSourceEnums(enums) {
+  return [
+    "SunVox source enum candidates",
+    "",
+    `Enums: ${enums.length}`,
+    "",
+    formatTable(enums, [
+      { header: "enum", value: (row) => row.enum },
+      { header: "macro", value: (row) => row.macro },
+      { header: "values", value: (row) => Object.keys(row.values).length },
+      { header: "labels", value: (row) => row.labels.join(";") },
+    ]),
+  ].join("\n");
+}
+
 function formatControllerDiff(diff) {
   return [
     "SunVox controller source / DB diff",
@@ -2691,6 +2720,13 @@ function main(argv) {
     const paths = withoutFlags(args, ["--json"]);
     const report = collectSourceReport(paths[0] ?? DEFAULT_SOURCE_ROOT);
     console.log(json ? JSON.stringify(report, null, 2) : formatSourceReport(report));
+    return;
+  }
+  if (command === "enums") {
+    const json = args.includes("--json");
+    const paths = withoutFlags(args, ["--json"]);
+    const enums = collectSourceEnums(paths[0] ?? DEFAULT_STRINGS_FILE);
+    console.log(json ? JSON.stringify(enums, null, 2) : formatSourceEnums(enums));
     return;
   }
   if (command === "controller-diff") {

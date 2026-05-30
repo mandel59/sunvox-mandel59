@@ -139,6 +139,8 @@ npm run sunvox:metrics
 npm run sunvox:inspect -- metrics --json
 npm run sunvox:inspect -- report
 npm run sunvox:inspect -- report --json
+npm run sunvox:enums
+npm run sunvox:inspect -- enums --json
 npm run sunvox:controller-diff
 npm run sunvox:inspect -- controller-diff
 npm run sunvox:inspect -- controller-diff --json
@@ -162,6 +164,10 @@ npm run code:metrics
   module flags. It also reports `PS_CMD_GET_INFO` source coverage and
   `*_change_ctl_limits()` coverage so dynamic controller range rules stay tied
   back to source declarations.
+- `enums` extracts semicolon-delimited enum string candidates from
+  `psynth_strings.cpp` and normalizes value names with the same rules used by
+  the scaffold generator. The JSON output can be copied into DB review notes or
+  used as input for future enum/code generation.
 - `controller-diff` compares controller ranges, units, scales, display offsets,
   and source enum value sets against the DB. It is a triage report for deciding
   which declarative source facts should be copied into `database.json`; CI

@@ -46,6 +46,7 @@ npm run sunvox:outline -- music/2022-04-17.sunvox
 npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
+npm run sunvox:enums
 npm run code:metrics
 ```
 

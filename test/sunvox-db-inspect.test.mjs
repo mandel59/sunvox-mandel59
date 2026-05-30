@@ -11,6 +11,7 @@ import {
   collectPatternEffectCoverage,
   collectProjectMetrics,
   collectScaffold,
+  collectSourceEnums,
   collectSourceReport,
 } from "../tools/sunvox-db-inspect.mjs";
 import { SUNVOX_DB } from "../tools/sunvox-codec.mjs";
@@ -180,6 +181,30 @@ test("source report summarizes module catalog metadata gaps", () => {
   assert.equal(amplifier.inputs, 2);
   assert.equal(amplifier.outputs, 2);
   assert.deepEqual(amplifier.flags, ["effect"]);
+});
+
+test("source enum extraction lists semicolon-delimited string candidates", () => {
+  const enums = collectSourceEnums();
+  const adsrCurve = enums.find((row) => row.enum === "adsr_curve_type");
+
+  assert.ok(enums.length > 0);
+  assert.ok(adsrCurve);
+  assert.equal(adsrCurve.macro, "STR_PS_ADSR_CURVE_TYPES");
+  assert.deepEqual(adsrCurve.values, {
+    0: "linear",
+    1: "exp1",
+    2: "exp2",
+    3: "negExp1",
+    4: "negExp2",
+    5: "sin",
+    6: "rect",
+    7: "smoothRect",
+    8: "bit2",
+    9: "bit3",
+    10: "bit4",
+    11: "bit5",
+  });
+  assert.equal(enums.find((row) => row.enum === "smp_crossfade_or_cancel").values[0], "100");
 });
 
 test("scaffold preserves signed, unit, empty, and suffix enum value names", () => {
