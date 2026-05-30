@@ -12,6 +12,7 @@ const SOURCE_PATTERN_EFFECT_FILE = "../sunvox_engine_audio_callback.cpp";
 const DEFAULT_STRINGS_FILE = "var/sunvox_lib/lib_sunvox/psynth/psynth_strings.cpp";
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const MODULE_CATALOG_FIELDS = ["color", "inputs", "outputs", "flags", "flags2"];
+const MODULE_INFO_SCOPE_ID = "module.psCmdGetInfo";
 
 function usage() {
   console.error(`Usage:
@@ -433,6 +434,10 @@ function extractCaseReturnExpression(text, command) {
   return pattern.exec(text)?.[1]?.trim();
 }
 
+function hasCommandCase(text, command) {
+  return new RegExp(`case\\s+${command}\\b`, "u").test(text);
+}
+
 function extractLocalDefines(text) {
   const defines = new Map();
   for (const match of text.matchAll(/^#define\s+([A-Z0-9_]+)\s+(.+)$/gmu)) {
@@ -532,6 +537,7 @@ function scanSourceFile(file) {
     file: relative(process.cwd(), file),
     module: extractCaseReturnString(text, "PS_CMD_GET_NAME") ?? fallbackName,
     controllers: countMatches(text, /psynth_register_ctl\s*\(/gu),
+    hasInfo: hasCommandCase(text, "PS_CMD_GET_INFO"),
     showOffsets: countMatches(text, /psynth_set_ctl_show_offset\s*\(/gu),
     controlFlags: countMatches(text, /psynth_set_ctl_flags\s*\(/gu),
     dynamicLimitFunctions: [...text.matchAll(/static\s+void\s+([A-Za-z0-9_]+_change_ctl_limits)\s*\(/gu)]
@@ -542,6 +548,17 @@ function scanSourceFile(file) {
     outputs: resolveIntegerExpression(outputs, defines),
     flags: decodeFlagExpression(flags),
     flags2: decodeFlagExpression(flags2),
+  };
+}
+
+function collectModuleInfoScope(sourceModules) {
+  const sourceRows = sourceModules.filter((module) => module.hasInfo);
+  const policy = (SUNVOX_DB.knowledgeScopes ?? []).find((row) => row.id === MODULE_INFO_SCOPE_ID);
+  return {
+    sourceModules: sourceRows.length,
+    modulesMissingInfo: sourceModules.filter((module) => !module.hasInfo).map((module) => module.module),
+    policyStatus: policy?.status ?? "(missing)",
+    policy,
   };
 }
 
@@ -851,11 +868,15 @@ export function collectSourceReport(sourceRoot = DEFAULT_SOURCE_ROOT) {
     dbControllers: dbControllerCount(module),
     inSource: sourceByName.has(module),
   }));
+  const knowledgePolicies = SUNVOX_DB.knowledgeScopes ?? [];
+  const moduleInfoScope = collectModuleInfoScope(modules);
 
   return {
     sourceRoot,
     sourceFiles: files.map((file) => relative(process.cwd(), file)),
     sourceModules: modules,
+    knowledgePolicies,
+    moduleInfoScope,
     moduleCatalogGaps: collectModuleCatalogGaps(modules),
     sourceDynamicLimitFunctions,
     dbDynamicLimits,
@@ -1700,6 +1721,23 @@ function checkControllerDynamicLimits(errors, moduleName, controller, controller
   }
 }
 
+function checkKnowledgeScopes(errors, warnings, sourceReport) {
+  const ids = new Set();
+  for (const policy of sourceReport.knowledgePolicies ?? []) {
+    if (ids.has(policy.id)) {
+      errors.push(`duplicate knowledge scope id ${policy.id}`);
+    }
+    ids.add(policy.id);
+    if (policy.scope === "moduleInfo" && policy.source !== "PS_CMD_GET_INFO") {
+      errors.push(`knowledge scope ${policy.id} moduleInfo source must be PS_CMD_GET_INFO`);
+    }
+  }
+
+  if (sourceReport.moduleInfoScope.sourceModules > 0 && !sourceReport.moduleInfoScope.policy) {
+    warnings.push("source PS_CMD_GET_INFO module help is not covered by a knowledgeScopes policy");
+  }
+}
+
 export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const errors = [];
   const warnings = [];
@@ -1711,6 +1749,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   checkBitfieldDefinitions(errors);
   checkStructDefinitions(errors);
   checkRuntimeConstraints(errors);
+  checkKnowledgeScopes(errors, warnings, sourceReport);
   checkPatternEffectEnum(errors, warnings, sourceRoot);
   checkPatternEffectRanges(errors);
   checkPatternEffectParameterDefinitions(errors);
@@ -1931,6 +1970,9 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       sourceModules: report.sourceModules.length,
       sourceModulesMissingFromDb: report.missingFromDb.length,
       dbModulesMissingFromSource: report.missingFromSource.length,
+      knowledgePolicies: report.knowledgePolicies.length,
+      sourceModuleInfoBlocks: report.moduleInfoScope.sourceModules,
+      moduleInfoPolicy: report.moduleInfoScope.policyStatus,
       sourceDynamicLimitFunctions: report.sourceDynamicLimitFunctions.length,
       dbDynamicLimitSources: new Set(report.dbDynamicLimits.map((row) => row.source).filter(Boolean)).size,
       dbDynamicLimitControllers: report.dbDynamicLimits.length,
@@ -2253,6 +2295,9 @@ function formatSourceReport(report) {
     `Source controller declarations: ${sourceControllerTotal}`,
     `DB modules: ${report.dbModules.length}`,
     `DB controller definitions: ${dbControllerTotal}`,
+    `Source PS_CMD_GET_INFO blocks: ${report.moduleInfoScope.sourceModules}`,
+    `DB knowledge policies: ${report.knowledgePolicies.length}`,
+    `Module info policy: ${report.moduleInfoScope.policyStatus}`,
     `Source dynamic limit functions: ${report.sourceDynamicLimitFunctions.length}`,
     `DB dynamic limit controllers: ${report.dbDynamicLimits.length}`,
     "",
@@ -2380,6 +2425,9 @@ function formatProjectMetrics(metrics) {
     { metric: "Source modules", value: metrics.summary.sourceModules },
     { metric: "Source modules missing from DB", value: metrics.summary.sourceModulesMissingFromDb },
     { metric: "DB modules missing from source", value: metrics.summary.dbModulesMissingFromSource },
+    { metric: "DB knowledge policies", value: metrics.summary.knowledgePolicies },
+    { metric: "Source module info blocks", value: metrics.summary.sourceModuleInfoBlocks },
+    { metric: "Module info policy", value: metrics.summary.moduleInfoPolicy },
     { metric: "Source dynamic limit functions", value: metrics.summary.sourceDynamicLimitFunctions },
     { metric: "DB dynamic limit sources", value: metrics.summary.dbDynamicLimitSources },
     { metric: "DB dynamic limit controllers", value: metrics.summary.dbDynamicLimitControllers },

@@ -42,6 +42,10 @@ can either interpret it directly or generate conversion code from it later.
   and errors that are useful during editing before a build or runtime probe
   fails. These include project/module checks as well as pattern effect
   parameter values that SunVox accepts in the file but clamps at runtime.
+- `knowledgeScopes`: records source-backed knowledge that is intentionally in
+  or out of codec scope. The first policy tracks `PS_CMD_GET_INFO` module help
+  strings as source/user-facing information that should not be copied into the
+  codec DB until frontend/manual tooling needs a separate help-text database.
 - `modules`: describes module-specific controller layouts and data chunk
   layouts. Controller definitions can use `path` for nested semantic output and
   `repeat` for repeated layouts such as FMX operators.
@@ -148,8 +152,9 @@ npm run sunvox:verify:all
 - `report` scans `var/sunvox_lib/lib_sunvox/psynth/psynths_*.cpp`, compares
   source module/controller declaration counts with the DB, and summarizes
   source module catalog fields such as default color, input/output counts, and
-  module flags. It also reports `*_change_ctl_limits()` coverage so dynamic
-  controller range rules stay tied back to source declarations.
+  module flags. It also reports `PS_CMD_GET_INFO` source coverage and
+  `*_change_ctl_limits()` coverage so dynamic controller range rules stay tied
+  back to source declarations.
 - `controller-diff` compares controller ranges, units, scales, display offsets,
   and source enum value sets against the DB. It is a triage report for deciding
   which declarative source facts should be copied into `database.json`; CI

@@ -31,6 +31,9 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.dbModules, Object.keys(SUNVOX_DB.modules).length);
   assert.equal(metrics.summary.sourceModulesMissingFromDb, 0);
   assert.equal(metrics.summary.dbModulesMissingFromSource, 0);
+  assert.equal(metrics.summary.knowledgePolicies, 1);
+  assert.equal(metrics.summary.sourceModuleInfoBlocks, 42);
+  assert.equal(metrics.summary.moduleInfoPolicy, "outOfCodecScope");
   assert.equal(metrics.summary.sourceDynamicLimitFunctions, 5);
   assert.equal(metrics.summary.dbDynamicLimitSources, 5);
   assert.equal(metrics.summary.dbDynamicLimitControllers, 6);
@@ -124,6 +127,9 @@ test("source report summarizes module catalog metadata gaps", () => {
   const amplifier = report.sourceModules.find((module) => module.module === "Amplifier");
 
   assert.equal(report.sourceModules.length, 42);
+  assert.equal(report.moduleInfoScope.sourceModules, 42);
+  assert.equal(report.moduleInfoScope.policyStatus, "outOfCodecScope");
+  assert.deepEqual(report.moduleInfoScope.modulesMissingInfo, []);
   assert.equal(report.sourceDynamicLimitFunctions.length, 5);
   assert.equal(report.dbDynamicLimits.length, 6);
   assert.deepEqual(report.missingDynamicLimitSources, []);

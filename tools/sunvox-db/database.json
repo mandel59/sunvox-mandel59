@@ -1,5 +1,15 @@
 {
   "version": 1,
+  "knowledgeScopes": [
+    {
+      "id": "module.psCmdGetInfo",
+      "scope": "moduleInfo",
+      "source": "PS_CMD_GET_INFO",
+      "status": "outOfCodecScope",
+      "trackingIssue": 11,
+      "description": "SunVox module PS_CMD_GET_INFO strings are user-facing help text, not file-format or editability facts required by the codec. Track their source presence here, but keep the full help text out of the codec DB until a frontend/manual knowledge DB needs it."
+    }
+  ],
   "chunks": [
     { "id": "VERS", "scope": "project", "name": "version", "type": "uint32", "label": "SunVox engine version", "sourceType": "uint32", "valueKind": "version", "sourceSymbol": "SUNVOX_ENGINE_VERSION" },
     { "id": "BVER", "scope": "project", "name": "baseVersion", "type": "uint32", "label": "base engine version", "sourceType": "uint32", "valueKind": "version", "sourceSymbol": "sunvox_engine::base_version" },

@@ -177,8 +177,18 @@ export interface SunVoxRuntimeConstraintDefinition {
   description: string;
 }
 
+export interface SunVoxKnowledgeScopeDefinition {
+  id: string;
+  scope: "moduleInfo";
+  source: string;
+  status: "inCodecScope" | "outOfCodecScope" | "candidate";
+  trackingIssue?: number;
+  description: string;
+}
+
 export interface SunVoxDatabase {
   version: number;
+  knowledgeScopes?: SunVoxKnowledgeScopeDefinition[];
   chunks: Array<Record<string, unknown>>;
   enums: Record<string, Record<string, string>>;
   patternEffectRanges?: SunVoxPatternEffectRangeDefinition[];
