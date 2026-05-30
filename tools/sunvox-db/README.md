@@ -121,6 +121,12 @@ abstraction for a single special case.
 
 Use `tools/sunvox-db-inspect.mjs` to make codec/DB coverage work repeatable.
 
+Source-aware commands expect the SunVox Lib source fixture at
+`var/sunvox_lib/lib_sunvox/psynth/`. Run `sh scripts/install_sunvox_lib.sh` from
+the repository root to create it locally. CI uses the same script after restoring
+the pinned `var/sunvox_lib-2.1.4d.zip` cache, so local and CI checks inspect the
+same archive contents.
+
 ```sh
 npm run sunvox:inspect -- coverage
 npm run sunvox:inspect -- coverage --details

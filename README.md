@@ -118,6 +118,23 @@ cover project, module, pattern, controller, module link, pattern note,
 pattern controller, pattern effect edits, SunVox Lib save/reload compatibility,
 and DB-driven validation warnings across checked-in samples.
 
+### SunVox Lib Fixtures
+
+Source-aware codec checks use files extracted from the pinned SunVox Lib
+archive. For local development, run:
+
+```sh
+sh scripts/install_sunvox_lib.sh
+```
+
+The script downloads `sunvox_lib-2.1.4d.zip` into `var/`, verifies its SHA-256,
+extracts runtime JS and license files under `sunvox_lib/`, and extracts the
+source files used by DB inspection under `var/sunvox_lib/`.
+
+CI follows the same path. GitHub Actions caches only the pinned zip archive by
+version and SHA-256, then reruns the install script so extracted source files are
+always regenerated from the verified archive.
+
 ## Licenses
 
 ### Instruments under [instruments/](instruments/)
