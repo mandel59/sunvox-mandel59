@@ -377,7 +377,8 @@
         "required": ["id", "scope", "path", "kind", "severity", "description"],
         "properties": {
           "id": { "type": "string" },
-          "scope": { "enum": ["project", "module", "moduleLink"] },
+          "scope": { "enum": ["project", "module", "moduleLink", "patternEffectParameter"] },
+          "effect": { "type": "string" },
           "path": { "type": "string" },
           "relation": { "type": "string" },
           "kind": { "enum": ["integerRange", "maxUtf8Bytes"] },

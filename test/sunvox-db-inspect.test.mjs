@@ -53,7 +53,7 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.patternEffectParameterHandlingCoveragePercent, 100);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
-  assert.equal(metrics.summary.runtimeConstraints, 5);
+  assert.equal(metrics.summary.runtimeConstraints, 10);
   assert.equal(metrics.summary.observedRuntimeBehaviors, 3);
   assert.equal(metrics.summary.validationFiles, 7);
   assert.equal(metrics.summary.validationIssues, 0);
@@ -290,6 +290,16 @@ test("DB check validates data chunk ranges and metadata references", () => {
       observedBehavior: { probeValue: "too long" },
       description: "broken duplicate rule",
     },
+    {
+      id: "broken.patternEffectRuntime",
+      scope: "patternEffectParameter",
+      effect: "__missing_effect",
+      path: "parameter.nope",
+      kind: "integerRange",
+      min: 0,
+      severity: "warning",
+      description: "broken pattern effect runtime rule",
+    },
   );
   bitfield.fields = [...bitfield.fields, { name: "broken", shift: 7, bits: 1, bitflags: "__missing_bitfield_bitflags" }];
   packedFields.push(
@@ -399,6 +409,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /runtime constraint broken\.runtime has invalid module link relation sideways/u);
     assert.match(errors, /runtime constraint broken\.runtime maxUtf8Bytes is missing maxBytes/u);
     assert.match(errors, /runtime constraint broken\.runtime observedBehavior is missing savedValue/u);
+    assert.match(errors, /runtime constraint broken\.patternEffectRuntime references missing pattern effect __missing_effect/u);
     assert.match(
       errors,
       /__BrokenDbCheckFixture: controller brokenCtl dynamicLimits references missing controller missingCtl/u,

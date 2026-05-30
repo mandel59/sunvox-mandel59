@@ -1549,6 +1549,68 @@
       "source": "psynth_module::output_links",
       "trackingIssue": 2,
       "description": "Negative module numbers are empty link slots in stored arrays and should not appear in semantic output link objects."
+    },
+    {
+      "id": "pattern.effect.setSpeedOrBpm.speed.positive",
+      "scope": "patternEffectParameter",
+      "effect": "setSpeedOrBpm",
+      "path": "parameter.speed",
+      "kind": "integerRange",
+      "min": 1,
+      "severity": "warning",
+      "source": "sunvox_handle_command():ctl_eff 0x0F speed clamp",
+      "trackingIssue": 11,
+      "description": "Effect 0x0F speed value 0 is accepted in the file but SunVox runtime clamps it to speed 1."
+    },
+    {
+      "id": "pattern.effect.setSpeedOrBpm.timelineGrid.min2",
+      "scope": "patternEffectParameter",
+      "effect": "setSpeedOrBpm",
+      "path": "parameter.timelineGrid",
+      "kind": "integerRange",
+      "min": 2,
+      "severity": "warning",
+      "source": "sunvox_handle_command():ctl_eff 0x0F timeline grid clamp",
+      "trackingIssue": 11,
+      "description": "Effect 0x0F timeline grid values below 2 are accepted in the file but SunVox runtime clamps them to 2."
+    },
+    {
+      "id": "pattern.effect.setSpeedOrBpm.timelineGrid2.min2",
+      "scope": "patternEffectParameter",
+      "effect": "setSpeedOrBpm",
+      "path": "parameter.timelineGrid2",
+      "kind": "integerRange",
+      "min": 2,
+      "severity": "warning",
+      "source": "sunvox_handle_command():ctl_eff 0x0F secondary timeline grid clamp",
+      "trackingIssue": 11,
+      "description": "Effect 0x0F secondary timeline grid values below 2 are accepted in the file but SunVox runtime clamps them to 2."
+    },
+    {
+      "id": "pattern.effect.setSpeedOrBpm.bpm.runtimeRange",
+      "scope": "patternEffectParameter",
+      "effect": "setSpeedOrBpm",
+      "path": "parameter.bpm",
+      "kind": "integerRange",
+      "min": 1,
+      "max": 16000,
+      "severity": "warning",
+      "source": "sunvox_handle_command():ctl_eff 0x0F BPM clamp",
+      "trackingIssue": 11,
+      "description": "Effect 0x0F BPM requests outside 1..16000 are accepted in the file but SunVox runtime clamps them."
+    },
+    {
+      "id": "pattern.effect.setBpm.bpm.runtimeRange",
+      "scope": "patternEffectParameter",
+      "effect": "setBpm",
+      "path": "parameter.bpm",
+      "kind": "integerRange",
+      "min": 1,
+      "max": 16000,
+      "severity": "warning",
+      "source": "sunvox_handle_command():ctl_eff 0x1F BPM clamp",
+      "trackingIssue": 11,
+      "description": "Effect 0x1F BPM requests outside 1..16000 are accepted in the file but SunVox runtime clamps them."
     }
   ],
   "modules": {

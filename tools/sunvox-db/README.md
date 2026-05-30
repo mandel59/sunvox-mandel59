@@ -40,7 +40,8 @@ can either interpret it directly or generate conversion code from it later.
   sequence and optional metadata chunks such as `CHFF` and `CHFR`.
 - `runtimeConstraints`: records SunVox Lib runtime/save compatibility warnings
   and errors that are useful during editing before a build or runtime probe
-  fails.
+  fails. These include project/module checks as well as pattern effect
+  parameter values that SunVox accepts in the file but clamps at runtime.
 - `modules`: describes module-specific controller layouts and data chunk
   layouts. Controller definitions can use `path` for nested semantic output and
   `repeat` for repeated layouts such as FMX operators.

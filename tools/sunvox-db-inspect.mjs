@@ -1384,7 +1384,7 @@ const CHUNK_VALUE_KINDS = new Set([
   "version",
   "waveform",
 ]);
-const RUNTIME_CONSTRAINT_SCOPES = new Set(["project", "module", "moduleLink"]);
+const RUNTIME_CONSTRAINT_SCOPES = new Set(["project", "module", "moduleLink", "patternEffectParameter"]);
 const RUNTIME_CONSTRAINT_KINDS = new Set(["integerRange", "maxUtf8Bytes"]);
 const RUNTIME_CONSTRAINT_SEVERITIES = new Set(["warning", "error"]);
 const TEXT_LAYOUT_FIELD_ENCODINGS = new Set([
@@ -1548,6 +1548,17 @@ function checkRuntimeConstraints(errors) {
     }
     if (rule.scope === "moduleLink" && !["inputs", "outputs"].includes(rule.relation)) {
       errors.push(`runtime constraint ${rule.id} has invalid module link relation ${rule.relation}`);
+    }
+    if (rule.scope === "patternEffectParameter") {
+      const effectNames = new Set([
+        ...Object.values(SUNVOX_DB.enums.sunvox_pattern_effect ?? {}),
+        ...(SUNVOX_DB.patternEffectRanges ?? []).map((range) => range.name),
+      ]);
+      if (!rule.effect) {
+        errors.push(`runtime constraint ${rule.id} is missing pattern effect`);
+      } else if (!effectNames.has(rule.effect)) {
+        errors.push(`runtime constraint ${rule.id} references missing pattern effect ${rule.effect}`);
+      }
     }
     if (rule.kind === "integerRange" && rule.min === undefined && rule.max === undefined) {
       errors.push(`runtime constraint ${rule.id} integerRange is missing min or max`);

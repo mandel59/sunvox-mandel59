@@ -271,6 +271,66 @@ test("warns about ignored parameterless pattern effect values", () => {
   assert.equal(result.issues[0].trackingIssue, 1);
 });
 
+test("warns about runtime-clamped pattern effect parameters", () => {
+  const result = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [],
+    patterns: [
+      {
+        tracks: 1,
+        lines: 6,
+        events: [
+          { line: 0, track: 0, effect: "setSpeedOrBpm", parameter: { speed: 0 } },
+          { line: 1, track: 0, effect: "setSpeedOrBpm", parameter: { timelineGrid: 1 } },
+          { line: 2, track: 0, effect: "setSpeedOrBpm", parameter: { timelineGrid2: 1 } },
+          { line: 3, track: 0, effect: "setSpeedOrBpm", parameter: { bpm: 16001 } },
+          { line: 4, track: 0, effect: "setBpm", parameter: { bpm: 0 } },
+          { line: 5, track: 0, effect: "setBpm", parameter: { bpm: 16001 } },
+        ],
+      },
+      {
+        tracks: 1,
+        lines: 1,
+        events: [[0, 0, 0, 15, 0]],
+      },
+    ],
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.issues.map((issue) => issue.rule),
+    [
+      "pattern.effect.setSpeedOrBpm.speed.positive",
+      "pattern.effect.setSpeedOrBpm.timelineGrid.min2",
+      "pattern.effect.setSpeedOrBpm.timelineGrid2.min2",
+      "pattern.effect.setSpeedOrBpm.bpm.runtimeRange",
+      "pattern.effect.setBpm.bpm.runtimeRange",
+      "pattern.effect.setBpm.bpm.runtimeRange",
+      "pattern.effect.setSpeedOrBpm.speed.positive",
+    ],
+  );
+  assert.deepEqual(
+    result.issues.map((issue) => issue.path),
+    [
+      "patterns[0].events[0].parameter.speed",
+      "patterns[0].events[1].parameter.timelineGrid",
+      "patterns[0].events[2].parameter.timelineGrid2",
+      "patterns[0].events[3].parameter.bpm",
+      "patterns[0].events[4].parameter.bpm",
+      "patterns[0].events[5].parameter.bpm",
+      "patterns[1].events[0].parameter.speed",
+    ],
+  );
+  assert.deepEqual(
+    result.issues.map((issue) => issue.severity),
+    ["warning", "warning", "warning", "warning", "warning", "warning", "warning"],
+  );
+  assert.deepEqual(result.issues.map((issue) => issue.trackingIssue), [11, 11, 11, 11, 11, 11, 11]);
+  assert.match(result.issues[0].message, /expected >= 1/u);
+  assert.match(result.issues[3].message, /expected <= 16000/u);
+});
+
 test("recursively validates embedded MetaModule containers", () => {
   const result = validateContainer({
     magic: "SSYN",

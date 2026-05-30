@@ -1433,6 +1433,9 @@ function validateRuntimeConstraint(document, rule, basePath = "") {
       );
     });
   }
+  if (rule.scope === "patternEffectParameter") {
+    return [];
+  }
   return [validationIssue(rule, rule.path, undefined, `Unsupported runtime constraint scope: ${rule.scope}`)];
 }
 
@@ -1619,6 +1622,21 @@ function validatePatternRecordSemantics(record, definition, modules, path) {
   );
 }
 
+function patternEffectRuntimeConstraints(effect) {
+  return (SUNVOX_DB.runtimeConstraints ?? []).filter(
+    (rule) => rule.scope === "patternEffectParameter" && rule.effect === effect,
+  );
+}
+
+function validatePatternEffectRuntimeConstraints(event, path) {
+  if (!event?.effect) {
+    return [];
+  }
+  return patternEffectRuntimeConstraints(event.effect).flatMap((rule) =>
+    validateRuntimeValue(getPath(event, rule.path), rule, `${path}.${rule.path}`),
+  );
+}
+
 function validateParameterlessPatternEffectValue(event, path) {
   if (!event?.effect || !SUNVOX_DB.parameterlessPatternEffects?.[event.effect]) {
     return [];
@@ -1644,6 +1662,19 @@ function validatePatternRecordParameterlessEffects(records, pattern, definition,
       return [];
     }
     return validateParameterlessPatternEffectValue(
+      patternRecordToSemanticEvent(record, index, columns, modules, definition),
+      `${path}.events[${index}]`,
+    );
+  });
+}
+
+function validatePatternRecordRuntimeConstraints(records, pattern, definition, modules, path) {
+  const columns = patternEventColumns(pattern, definition, records);
+  return (records ?? []).flatMap((record, index) => {
+    if (patternRecordIsEmpty(record, definition)) {
+      return [];
+    }
+    return validatePatternEffectRuntimeConstraints(
       patternRecordToSemanticEvent(record, index, columns, modules, definition),
       `${path}.events[${index}]`,
     );
@@ -1685,7 +1716,10 @@ function validateSparsePatternSourceEvents(pattern, definition, modules, path) {
     }
     try {
       patternSemanticEventToRecord(event, modules, definition);
-      return validateParameterlessPatternEffectValue(event, eventPath);
+      return [
+        ...validateParameterlessPatternEffectValue(event, eventPath),
+        ...validatePatternEffectRuntimeConstraints(event, eventPath),
+      ];
     } catch (error) {
       return [
         patternValidationIssue(
@@ -1735,7 +1769,10 @@ function validatePatternEvents(document, basePath = "") {
       ]),
       ...(sourceIssues.length
         ? []
-        : validatePatternRecordParameterlessEffects(records, pattern, definition, document?.modules ?? [], path)),
+        : [
+            ...validatePatternRecordParameterlessEffects(records, pattern, definition, document?.modules ?? [], path),
+            ...validatePatternRecordRuntimeConstraints(records, pattern, definition, document?.modules ?? [], path),
+          ]),
     ];
   });
 }

@@ -155,6 +155,28 @@ export interface SunVoxPatternEffectRangeDefinition {
   };
 }
 
+export interface SunVoxRuntimeConstraintDefinition {
+  id: string;
+  scope: "project" | "module" | "moduleLink" | "patternEffectParameter";
+  path: string;
+  effect?: string;
+  relation?: string;
+  kind: "integerRange" | "maxUtf8Bytes";
+  min?: number;
+  max?: number;
+  maxBytes?: number;
+  severity: SunVoxValidationSeverity;
+  source?: string;
+  trackingIssue?: number;
+  observedBehavior?: {
+    probeValue?: unknown;
+    loadedValue?: unknown;
+    savedValue?: unknown;
+    description?: string;
+  };
+  description: string;
+}
+
 export interface SunVoxDatabase {
   version: number;
   chunks: Array<Record<string, unknown>>;
@@ -166,6 +188,7 @@ export interface SunVoxDatabase {
   bitflags?: Record<string, Array<{ name: string; bit: number }>>;
   structs?: Record<string, SunVoxStructDefinition>;
   grammar: Record<string, unknown>;
+  runtimeConstraints: SunVoxRuntimeConstraintDefinition[];
   modules: Record<string, unknown>;
 }
 
