@@ -7,6 +7,7 @@ const isWindows = process.platform === "win32";
 const CHECKS = [
   ["License notices", npmCommand, ["run", "licenses:check"]],
   ["Regenerate SunVox fixtures", npmCommand, ["run", "sunvox:fixtures:generate"]],
+  ["Regenerate site data", npmCommand, ["run", "site:data:generate"]],
   ["SunVox lib compatibility", npmCommand, ["run", "sunvox:lib:check"]],
   ["Node tests", npmCommand, ["test"]],
   ["SunVox metrics", npmCommand, ["run", "sunvox:metrics"]],

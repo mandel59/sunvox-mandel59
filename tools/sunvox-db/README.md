@@ -270,10 +270,11 @@ Run the combined quality loop before committing codec or DB changes:
 npm run quality
 ```
 
-The command runs license notice checks, fixture regeneration, SunVox JS/WASM
-compatibility, Node tests, SunVox project metrics, code metrics, DB structure
-checks, coverage and controller metadata gates, sample round-trip verification,
-the frontend build, and `git diff --check`.
+The command runs license notice checks, fixture regeneration, GitHub Pages
+project-index regeneration, SunVox JS/WASM compatibility, Node tests, SunVox
+project metrics, code metrics, DB structure checks, coverage and controller
+metadata gates, sample round-trip verification, the frontend build, and
+`git diff --check`.
 
 ## Round-Trip Policy
 

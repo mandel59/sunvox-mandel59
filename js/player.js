@@ -24,13 +24,13 @@ async function load(/** @type {string} */ url) {
     updateStatus("Loading the file...");
     const req = await fetch(url);
     if (!req.ok) {
-        updateStatus(`Music file ${filePath} not found`);
+        updateStatus(`Music file ${url} not found`);
         return false;
     }
     const arrayBuffer = await req.arrayBuffer();
     const byteArray = new Uint8Array(arrayBuffer);
     if (sv_load_from_memory(0, byteArray) < 0) {
-        updateStatus(`Failed to load the music file ${filePath}`);
+        updateStatus(`Failed to load the music file ${url}`);
         return false;
     }
     fileSize = byteArray.byteLength;

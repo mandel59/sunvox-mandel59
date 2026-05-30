@@ -47,6 +47,7 @@ npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 npm run sunvox:enums
+npm run site:data:generate
 npm run code:metrics
 ```
 
@@ -107,6 +108,11 @@ the DB rule ID, source hint, and tracking issue when available. Clean samples
 print `no validation issues`; warnings are used for values that can still
 round-trip but may be clamped or ignored by SunVox at runtime.
 
+`site:data:generate` builds `site-data/sunvox-projects.json` from checked-in
+`.sunvox` and `.sunsynth` files. The GitHub Pages frontend uses this generated
+index to show project modules, graph links, patterns, event previews, and
+embedded MetaModule containers without decoding binary files in the browser.
+
 Run the local quality gate before committing codec, DB, or frontend changes:
 
 ```sh
@@ -118,8 +124,8 @@ sample files and small codec-edited variants, so representative text edits are
 verified against the runtime API as well as byte-level round-trips. These checks
 cover project, module, pattern, controller, module link, pattern note,
 pattern controller, pattern effect edits, SunVox Lib save/reload compatibility,
-DB-driven validation warnings, and code-size metrics across checked-in samples
-and local tooling.
+DB-driven validation warnings, regenerated GitHub Pages project index data, and
+code-size metrics across checked-in samples and local tooling.
 
 ### SunVox Lib Fixtures
 

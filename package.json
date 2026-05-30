@@ -11,6 +11,7 @@
     "code:metrics": "node tools/code-metrics.mjs",
     "quality": "node tools/quality-check.mjs",
     "test": "node --test",
+    "site:data:generate": "node tools/generate-site-data.mjs",
     "sunvox:encode": "node tools/sunvox-codec.mjs encode",
     "sunvox:decode": "node tools/sunvox-codec.mjs decode",
     "sunvox:fixtures:generate": "node tools/generate-sunvox-coverage-fixtures.mjs",
@@ -29,6 +30,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "vite": "^7.0.0"
   }
 }
