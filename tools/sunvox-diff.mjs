@@ -106,6 +106,37 @@ export function diffDocuments(before, after, options = {}) {
   return diffValues(left, right);
 }
 
+function labelText(value) {
+  return typeof value === "string" && value ? ` "${value}"` : "";
+}
+
+function moduleDiffLabel(module, index) {
+  const name = labelText(module?.name);
+  const type = typeof module?.type === "string" && module.type ? ` [${module.type}]` : "";
+  return `Module #${index}${name}${type}`;
+}
+
+function patternDiffLabel(pattern, index) {
+  return `Pattern #${index}${labelText(pattern?.name)}`;
+}
+
+function collectArrayLabels(beforeItems, afterItems, prefix, labelFn) {
+  const labels = {};
+  const length = Math.max(beforeItems?.length ?? 0, afterItems?.length ?? 0);
+  for (let index = 0; index < length; index += 1) {
+    const item = afterItems?.[index] ?? beforeItems?.[index];
+    labels[`${prefix}[${index}]`] = labelFn(item, index);
+  }
+  return labels;
+}
+
+export function collectDiffLabels(before, after) {
+  return {
+    ...collectArrayLabels(before?.modules, after?.modules, "modules", moduleDiffLabel),
+    ...collectArrayLabels(before?.patterns, after?.patterns, "patterns", patternDiffLabel),
+  };
+}
+
 async function readDocument(filePath) {
   const buffer = await readFile(filePath);
   if (filePath.toLowerCase().endsWith(".json")) {
@@ -120,6 +151,7 @@ export async function diffFiles(beforePath, afterPath, options = {}) {
     before: relative(process.cwd(), resolve(beforePath)),
     after: relative(process.cwd(), resolve(afterPath)),
     includeAux: Boolean(options.includeAux),
+    labels: collectDiffLabels(before, after),
     changes: diffDocuments(before, after, options),
   };
 }
@@ -150,38 +182,46 @@ function formatChange(change) {
   return `~ ${path}: ${summarizeValue(change.before)} -> ${summarizeValue(change.after)}`;
 }
 
-function changeGroup(path) {
+function changeGroup(path, labels = {}) {
   if (!path || path === "$") {
     return "Document";
   }
   if (path.startsWith("project.")) {
     return "Project";
   }
-  const moduleMatch = /^modules\[(\d+)\](?:\.(controllers|inputs|outputs)\b)?/u.exec(path);
+  const moduleMatch = /^(modules\[(\d+)\])(?:\.(controllers|inputs|outputs|dataChunks)\b)?/u.exec(path);
   if (moduleMatch) {
-    const [, moduleIndex, section] = moduleMatch;
+    const [, modulePath, moduleIndex, section] = moduleMatch;
+    const label = labels[modulePath] ?? `Module #${moduleIndex}`;
     if (section === "controllers") {
-      return `Module #${moduleIndex} controllers`;
+      return `${label} controllers`;
     }
-    if (section === "inputs" || section === "outputs") {
-      return `Module #${moduleIndex} ${section}`;
+    if (section === "inputs") {
+      return `${label} input links`;
     }
-    return `Module #${moduleIndex}`;
+    if (section === "outputs") {
+      return `${label} output links`;
+    }
+    if (section === "dataChunks") {
+      return `${label} data chunks`;
+    }
+    return label;
   }
-  const patternMatch = /^patterns\[(\d+)\](?:\.events\b)?/u.exec(path);
+  const patternMatch = /^(patterns\[(\d+)\])(?:\.events\b)?/u.exec(path);
   if (patternMatch) {
-    const [, patternIndex] = patternMatch;
+    const [, patternPath, patternIndex] = patternMatch;
+    const label = labels[patternPath] ?? `Pattern #${patternIndex}`;
     return path.startsWith(`patterns[${patternIndex}].events`)
-      ? `Pattern #${patternIndex} events`
-      : `Pattern #${patternIndex}`;
+      ? `${label} events`
+      : label;
   }
   return "Document";
 }
 
-function formatGroupedChanges(changes) {
+function formatGroupedChanges(changes, labels = {}) {
   const groups = new Map();
   for (const change of changes) {
-    const group = changeGroup(change.path);
+    const group = changeGroup(change.path, labels);
     groups.set(group, [...(groups.get(group) ?? []), change]);
   }
   return [...groups.entries()]
@@ -196,7 +236,7 @@ export function formatDiff(result) {
     `After: ${result.after}`,
     `Changes: ${result.changes.length}`,
     "",
-    result.changes.length ? formatGroupedChanges(result.changes) : "(none)",
+    result.changes.length ? formatGroupedChanges(result.changes, result.labels) : "(none)",
     "",
   ].join("\n");
 }

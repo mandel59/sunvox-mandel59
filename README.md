@@ -57,9 +57,10 @@ or `--no-embedded` to keep the report shallow.
 
 `sunvox:diff` compares two SunVox binaries or decoded JSON documents at the
 structured text level. By default it ignores `_...` auxiliary helper fields so
-the output focuses on round-trip-relevant edits; use `--json` for
-machine-readable change records or `--include-aux` when helper text should be
-included.
+the output focuses on round-trip-relevant edits. Text output groups changes by
+project, named module/controller/link sections, and named pattern events; use
+`--json` for machine-readable change records or `--include-aux` when helper
+text should be included.
 
 Run the local quality gate before committing codec, DB, or frontend changes:
 

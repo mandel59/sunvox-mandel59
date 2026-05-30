@@ -202,7 +202,9 @@ npm run sunvox:verify:all
   missing edit-behavior checks are visible in the local and CI logs.
 - `sunvox:diff` compares two SunVox binaries or decoded JSON documents after
   converting them to structured text. `_...` auxiliary helper fields are ignored
-  by default so the output focuses on round-trip-relevant edits.
+  by default so the output focuses on round-trip-relevant edits. Text output
+  groups changes by project, named modules, controller/link sections, module
+  data chunks, and named pattern events.
 - `sunvox:validate` reports DB-driven runtime compatibility warnings for a
   binary SunVox file or decoded JSON document, including embedded MetaModule
   containers. The first rules cover positive project tempo values, module name
