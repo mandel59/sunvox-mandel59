@@ -7,6 +7,7 @@ import {
   collectControllerDiff,
   collectCoverage,
   collectDbCheck,
+  collectChunkSemanticReview,
   collectPatternEffectCoverage,
   collectProjectMetrics,
   collectScaffold,
@@ -68,6 +69,8 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.sampleCoveragePercent, 100);
   assert.equal(metrics.summary.chunks, SUNVOX_DB.chunks.length);
   assert.equal(metrics.summary.reviewedChunks, metrics.summary.chunks);
+  assert.equal(metrics.summary.sourceSemanticChunks, 17);
+  assert.equal(metrics.summary.sourceSemanticChunkMismatches, 0);
   assert.equal(metrics.summary.chunkStorageReviewPercent, 100);
   assert.ok(metrics.summary.scalarChunks > 0);
   assert.equal(metrics.summary.reviewedScalarChunks, metrics.summary.scalarChunks);
@@ -91,6 +94,32 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.deepEqual(metrics.validation.filesWithIssues, []);
   assert.deepEqual(metrics.unsampledDbModuleTypes, []);
   assert.deepEqual(metrics.patternEffectCoverage.unknownEntries, []);
+});
+
+test("chunk semantic review protects source-derived chunk meanings", () => {
+  const review = collectChunkSemanticReview();
+
+  assert.equal(review.reviewedChunks, 17);
+  assert.deepEqual(review.mismatches, []);
+  assert.deepEqual(
+    review.entries
+      .filter((entry) => ["PATN", "PATT", "PATL"].includes(entry.id))
+      .map((entry) => [entry.id, entry.actual.scope, entry.actual.name]),
+    [
+      ["PATN", "project", "currentPattern"],
+      ["PATT", "project", "currentPatternTrack"],
+      ["PATL", "project", "currentPatternLine"],
+    ],
+  );
+  assert.deepEqual(
+    review.entries
+      .filter((entry) => ["SLnK", "SLnk"].includes(entry.id))
+      .map((entry) => [entry.id, entry.actual.valueKind, entry.actual["linkSlots.semanticPath"]]),
+    [
+      ["SLnK", "linkSlots", "inputs"],
+      ["SLnk", "linkSlots", "outputs"],
+    ],
+  );
 });
 
 test("pattern effect coverage exposes unnamed source cases", () => {

@@ -1417,6 +1417,88 @@ const TEXT_LAYOUT_FIELD_ENCODINGS = new Set([
 ]);
 const TEXT_LAYOUT_FIELD_REFERENCES = new Set(["modules"]);
 const PACKED_FIELD_REFERENCES = new Set(["module.controllers"]);
+const CHUNK_SOURCE_SEMANTIC_FIXTURES = [
+  { id: "CURL", scope: "project", name: "currentLayer", sourceSymbol: "sunvox_engine::cur_layer" },
+  { id: "TIME", scope: "project", name: "lineCounter", sourceSymbol: "sunvox_engine::line_counter" },
+  { id: "REPS", scope: "project", name: "restartPosition", sourceSymbol: "sunvox_engine::restart_pos" },
+  { id: "SELS", scope: "project", name: "selectedModule", sourceSymbol: "sunvox_engine::selected_module" },
+  { id: "PATN", scope: "project", name: "currentPattern", sourceSymbol: "sunvox_engine::pat_num" },
+  { id: "PATT", scope: "project", name: "currentPatternTrack", sourceSymbol: "sunvox_engine::pat_track" },
+  { id: "PATL", scope: "project", name: "currentPatternLine", sourceSymbol: "sunvox_engine::pat_line" },
+  { id: "PFLG", scope: "pattern", name: "flags", sourceSymbol: "sunvox_pattern::flags" },
+  { id: "PFFF", scope: "pattern", name: "infoFlags", sourceSymbol: "sunvox_pattern_info::flags" },
+  {
+    id: "SLnK",
+    scope: "module",
+    name: "inputLinkSlots",
+    valueKind: "linkSlots",
+    sourceSymbol: "get_links2(input_links)",
+    "linkSlots.linkChunk": "SLNK",
+    "linkSlots.localLinksPath": "inputLinks",
+    "linkSlots.remoteLinksPath": "outputLinks",
+    "linkSlots.semanticPath": "inputs",
+  },
+  {
+    id: "SLnk",
+    scope: "module",
+    name: "outputLinkSlots",
+    valueKind: "linkSlots",
+    sourceSymbol: "get_links2(output_links)",
+    "linkSlots.linkChunk": "SLNk",
+    "linkSlots.localLinksPath": "outputLinks",
+    "linkSlots.remoteLinksPath": "inputLinks",
+    "linkSlots.semanticPath": "outputs",
+  },
+  { id: "SVPR", scope: "module", name: "visualizerParameters", sourceSymbol: "psynth_module::visualizer_pars" },
+  { id: "SMII", scope: "module", name: "midiInputFlags", sourceSymbol: "psynth_module::midi_in_flags" },
+  { id: "SMIN", scope: "module", name: "midiOutputName", sourceSymbol: "psynth_module::midi_out_name" },
+  { id: "SMIC", scope: "module", name: "midiOutputChannel", sourceSymbol: "psynth_module::midi_out_ch" },
+  { id: "SMIB", scope: "module", name: "midiOutputBank", sourceSymbol: "psynth_module::midi_out_bank" },
+  { id: "SMIP", scope: "module", name: "midiOutputProgram", sourceSymbol: "psynth_module::midi_out_prog" },
+];
+
+function getPropertyPath(object, path) {
+  return path.split(".").reduce((value, key) => value?.[key], object);
+}
+
+function formatExpectedValue(value) {
+  return value === undefined ? "undefined" : JSON.stringify(value);
+}
+
+export function collectChunkSemanticReview() {
+  const chunks = new Map(SUNVOX_DB.chunks.map((chunk) => [chunk.id, chunk]));
+  const entries = CHUNK_SOURCE_SEMANTIC_FIXTURES.map((fixture) => {
+    const chunk = chunks.get(fixture.id);
+    const mismatches = [];
+    const actual = {};
+
+    if (!chunk) {
+      mismatches.push({ field: "id", expected: fixture.id, actual: undefined });
+      return { id: fixture.id, expected: fixture, actual, mismatches };
+    }
+
+    for (const [field, expected] of Object.entries(fixture)) {
+      if (field === "id") {
+        continue;
+      }
+      const actualValue = getPropertyPath(chunk, field);
+      actual[field] = actualValue;
+      if (actualValue !== expected) {
+        mismatches.push({ field, expected, actual: actualValue });
+      }
+    }
+
+    return { id: fixture.id, expected: fixture, actual, mismatches };
+  });
+
+  return {
+    entries,
+    reviewedChunks: entries.length,
+    mismatches: entries.flatMap((entry) =>
+      entry.mismatches.map((mismatch) => ({ id: entry.id, ...mismatch })),
+    ),
+  };
+}
 
 function checkStorageMetadata(errors, subject, definition) {
   if (definition.sourceType && !CHUNK_SOURCE_TYPES.has(definition.sourceType)) {
@@ -1454,6 +1536,13 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
         }
       }
     }
+  }
+  for (const mismatch of collectChunkSemanticReview().mismatches) {
+    errors.push(
+      `chunk ${mismatch.id} source semantic ${mismatch.field} expected ${formatExpectedValue(
+        mismatch.expected,
+      )} but found ${formatExpectedValue(mismatch.actual)}`,
+    );
   }
 
   for (const [scopeName, scope] of Object.entries(SUNVOX_DB.grammar.scopes ?? {})) {
@@ -1944,6 +2033,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
   const dbCheck = collectDbCheck(sourceRoot);
   const validation = collectValidationMetrics(sampleRoots);
   const chunkStorage = collectChunkStorageMetrics();
+  const chunkSemanticReview = collectChunkSemanticReview();
   const dataChunkLayouts = collectDataChunkLayoutMetrics();
   const moduleCatalog = collectModuleCatalogMetrics(report);
   const patternEffectCoverage = collectPatternEffectCoverage(sourceRoot);
@@ -2008,6 +2098,8 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       validationErrors: validation.errors,
       chunks: chunkStorage.chunks,
       reviewedChunks: chunkStorage.reviewedChunks,
+      sourceSemanticChunks: chunkSemanticReview.reviewedChunks,
+      sourceSemanticChunkMismatches: chunkSemanticReview.mismatches.length,
       scalarChunks: chunkStorage.scalarChunks,
       reviewedScalarChunks: chunkStorage.reviewedScalarChunks,
       signedRoundTripChunks: chunkStorage.signedRoundTripChunks,
@@ -2049,6 +2141,7 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
     },
     validation,
     chunkStorage,
+    chunkSemanticReview,
     dataChunkLayouts,
     coverageGateFailures,
   };
@@ -2462,6 +2555,8 @@ function formatProjectMetrics(metrics) {
     { metric: "Chunks", value: metrics.summary.chunks },
     { metric: "Reviewed chunks", value: metrics.summary.reviewedChunks },
     { metric: "Chunk storage review", value: formatPercent(metrics.summary.chunkStorageReviewPercent) },
+    { metric: "Source semantic chunks", value: metrics.summary.sourceSemanticChunks },
+    { metric: "Source semantic mismatches", value: metrics.summary.sourceSemanticChunkMismatches },
     { metric: "Scalar chunks", value: metrics.summary.scalarChunks },
     { metric: "Reviewed scalar chunks", value: metrics.summary.reviewedScalarChunks },
     { metric: "Scalar chunk storage review", value: formatPercent(metrics.summary.scalarChunkStorageReviewPercent) },
@@ -2538,6 +2633,18 @@ function formatProjectMetrics(metrics) {
     "Reviewed chunk storage:",
     metrics.chunkStorage.reviewedChunkIds.length
       ? metrics.chunkStorage.reviewedChunkIds.map((chunkId) => `  - ${chunkId}`).join("\n")
+      : "(none)",
+    "",
+    "Source semantic chunk mismatches:",
+    metrics.chunkSemanticReview.mismatches.length
+      ? metrics.chunkSemanticReview.mismatches
+          .map(
+            (mismatch) =>
+              `  - ${mismatch.id}.${mismatch.field}: expected ${formatExpectedValue(
+                mismatch.expected,
+              )}, found ${formatExpectedValue(mismatch.actual)}`,
+          )
+          .join("\n")
       : "(none)",
     "",
     "Reviewed data chunk layouts:",
