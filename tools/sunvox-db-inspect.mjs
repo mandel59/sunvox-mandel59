@@ -1288,6 +1288,10 @@ function collectSourcePatternEffectCodes(sourceRoot) {
   return { sourcePath, codes, cases };
 }
 
+function patternEffectRangeCodes(range) {
+  return Array.from({ length: range.max - range.min + 1 }, (_, index) => range.min + index);
+}
+
 export function collectPatternEffectCoverage(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const sourceEffects = collectSourcePatternEffectCodes(sourceRoot);
   const sourceCodes = sourceEffects.codes ? [...sourceEffects.codes].sort((a, b) => a - b) : [];
@@ -1296,6 +1300,14 @@ export function collectPatternEffectCoverage(sourceRoot = DEFAULT_SOURCE_ROOT) {
     .map(([value, name]) => ({ code: Number(value), name }))
     .filter((entry) => Number.isInteger(entry.code))
     .sort((a, b) => a.code - b.code);
+  const rangeEntries = (SUNVOX_DB.patternEffectRanges ?? [])
+    .map((range) => ({
+      ...range,
+      codes: Number.isInteger(range.min) && Number.isInteger(range.max) && range.max >= range.min
+        ? patternEffectRangeCodes(range)
+        : [],
+    }))
+    .sort((a, b) => a.min - b.min);
   const dbCodeSet = new Set(dbEntries.map((entry) => entry.code));
   const namedEntries = dbEntries.filter((entry) => sourceCodeSet.has(entry.code));
   const missingCodes = sourceCodes.filter((code) => !dbCodeSet.has(code));
@@ -1313,6 +1325,8 @@ export function collectPatternEffectCoverage(sourceRoot = DEFAULT_SOURCE_ROOT) {
     sourceAvailable: Boolean(sourceEffects.codes),
     sourceCodes,
     dbEntries,
+    rangeEntries,
+    rangeCodes: rangeEntries.flatMap((range) => range.codes),
     namedEntries,
     missingCodes,
     missingCases,
@@ -1573,8 +1587,40 @@ function checkPatternEffectEnum(errors, warnings, sourceRoot) {
   }
 }
 
-function checkPatternEffectParameterDefinitions(errors) {
+function checkPatternEffectRanges(errors) {
   const effectNames = new Set(Object.values(SUNVOX_DB.enums.sunvox_pattern_effect ?? {}));
+  const seenNames = new Set();
+  for (const [index, range] of (SUNVOX_DB.patternEffectRanges ?? []).entries()) {
+    const subject = `pattern effect range #${index} ${range.name ?? "(unnamed)"}`;
+    if (!range.name) {
+      errors.push(`${subject} is missing name`);
+    }
+    if (range.name && effectNames.has(range.name)) {
+      errors.push(`${subject} duplicates a sunvox_pattern_effect enum name`);
+    }
+    if (range.name && seenNames.has(range.name)) {
+      errors.push(`${subject} duplicates another pattern effect range`);
+    }
+    if (range.name) {
+      seenNames.add(range.name);
+    }
+    if (!Number.isInteger(range.min) || !Number.isInteger(range.max) || range.min < 0 || range.max < range.min || range.max > 255) {
+      errors.push(`${subject} has invalid range ${range.min}..${range.max}`);
+    }
+    if (!range.field?.name) {
+      errors.push(`${subject} is missing field.name`);
+    }
+    if (range.field?.scale !== undefined && (!Number.isFinite(range.field.scale) || range.field.scale === 0)) {
+      errors.push(`${subject} field ${range.field.name} has invalid scale ${range.field.scale}`);
+    }
+  }
+}
+
+function checkPatternEffectParameterDefinitions(errors) {
+  const effectNames = new Set([
+    ...Object.values(SUNVOX_DB.enums.sunvox_pattern_effect ?? {}),
+    ...(SUNVOX_DB.patternEffectRanges ?? []).map((range) => range.name),
+  ]);
   const parameterizedEffects = new Set(Object.keys(SUNVOX_DB.patternEffectParameters ?? {}));
   for (const [effectName, definition] of Object.entries(SUNVOX_DB.patternEffectParameters ?? {})) {
     const subject = `pattern effect parameter ${effectName}`;
@@ -1654,6 +1700,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   checkStructDefinitions(errors);
   checkRuntimeConstraints(errors);
   checkPatternEffectEnum(errors, warnings, sourceRoot);
+  checkPatternEffectRanges(errors);
   checkPatternEffectParameterDefinitions(errors);
   for (const row of sourceReport.missingDynamicLimitSources) {
     errors.push(`source dynamic limit ${row.source} (${row.module}) is missing from DB dynamicLimits`);
@@ -1883,6 +1930,8 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       missingModuleCatalogFields: moduleCatalog.missingFields,
       sourcePatternEffects: patternEffectCoverage.sourceCodes.length,
       dbPatternEffects: patternEffectCoverage.dbEntries.length,
+      patternEffectRanges: patternEffectCoverage.rangeEntries.length,
+      patternEffectRangeCodes: patternEffectCoverage.rangeCodes.length,
       namedSourcePatternEffects: patternEffectCoverage.namedEntries.length,
       unnamedSourcePatternEffects: patternEffectCoverage.missingCodes.length,
       patternEffectNameCoveragePercent: patternEffectCoverage.coveragePercent,
@@ -2330,6 +2379,8 @@ function formatProjectMetrics(metrics) {
     { metric: "Missing module catalog fields", value: metrics.summary.missingModuleCatalogFields },
     { metric: "Source pattern effects", value: metrics.summary.sourcePatternEffects },
     { metric: "DB pattern effect names", value: metrics.summary.dbPatternEffects },
+    { metric: "DB pattern effect ranges", value: metrics.summary.patternEffectRanges },
+    { metric: "DB pattern effect range codes", value: metrics.summary.patternEffectRangeCodes },
     { metric: "Named source pattern effects", value: metrics.summary.namedSourcePatternEffects },
     { metric: "Unnamed source pattern effects", value: metrics.summary.unnamedSourcePatternEffects },
     { metric: "Pattern effect name coverage", value: formatPercent(metrics.summary.patternEffectNameCoveragePercent) },

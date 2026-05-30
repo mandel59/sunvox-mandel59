@@ -18,6 +18,9 @@ can either interpret it directly or generate conversion code from it later.
   effect `0F` selecting speed, timeline-grid, or BPM semantics by stored value.
   Packed fields can also declare scaled values and stored sentinel bytes that
   should be omitted from the editable form.
+- `patternEffectRanges`: describes manual/source-backed effect code ranges
+  where the effect code itself carries a value, such as `40..5F` event delays
+  represented as `delayEvent` with `delayLine32nds`.
 - `parameterlessPatternEffects`: records source-backed effects that do not read
   the stored parameter value, so metrics can distinguish them from missing
   parameter schemas and the codec can warn when editable events carry an

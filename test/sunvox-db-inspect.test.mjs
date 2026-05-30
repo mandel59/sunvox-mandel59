@@ -42,6 +42,8 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.missingModuleCatalogFields, 0);
   assert.equal(metrics.summary.sourcePatternEffects, 43);
   assert.equal(metrics.summary.dbPatternEffects, 43);
+  assert.equal(metrics.summary.patternEffectRanges, 1);
+  assert.equal(metrics.summary.patternEffectRangeCodes, 32);
   assert.equal(metrics.summary.namedSourcePatternEffects, 43);
   assert.equal(metrics.summary.unnamedSourcePatternEffects, 0);
   assert.equal(metrics.summary.patternEffectNameCoveragePercent, 100);
@@ -99,6 +101,8 @@ test("pattern effect coverage exposes unnamed source cases", () => {
   assert.deepEqual(coverage.missingCodes, []);
   assert.deepEqual(coverage.missingCases, []);
   assert.deepEqual(coverage.unknownEntries, []);
+  assert.deepEqual(coverage.rangeEntries.map((entry) => [entry.name, entry.min, entry.max]), [["delayEvent", 64, 95]]);
+  assert.equal(coverage.rangeCodes.length, 32);
   assert.equal(coverage.coveragePercent, 100);
 });
 
@@ -212,6 +216,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousPatternEffectParameters = JSON.parse(JSON.stringify(patternEffectParameters));
   const parameterlessPatternEffects = SUNVOX_DB.parameterlessPatternEffects;
   const previousParameterlessPatternEffects = JSON.parse(JSON.stringify(parameterlessPatternEffects));
+  const patternEffectRanges = SUNVOX_DB.patternEffectRanges;
+  const previousPatternEffectRanges = JSON.parse(JSON.stringify(patternEffectRanges));
   const amplifier = SUNVOX_DB.modules.Amplifier;
   const previousAmplifierColor = amplifier.color;
   SUNVOX_DB.modules[moduleName] = {
@@ -321,6 +327,20 @@ test("DB check validates data chunk ranges and metadata references", () => {
   parameterlessPatternEffects.notSourceBackedParameter = {
     description: "broken duplicate parameterless effect",
   };
+  patternEffectRanges.push(
+    {
+      name: "vibrato",
+      min: 1,
+      max: 0,
+      field: { name: "brokenRangeValue", scale: 0 },
+    },
+    {
+      name: "brokenRange",
+      min: 300,
+      max: 301,
+      field: {},
+    },
+  );
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
   storageChunk.signedRoundTrip = true;
@@ -431,6 +451,11 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /pattern effect parameter notSourceBackedParameter variant #0 valueRange has invalid range 4..3/u);
     assert.match(errors, /parameterless pattern effect notSourceBackedParameter references missing sunvox_pattern_effect name/u);
     assert.match(errors, /parameterless pattern effect notSourceBackedParameter is also defined in patternEffectParameters/u);
+    assert.match(errors, /pattern effect range #1 vibrato duplicates a sunvox_pattern_effect enum name/u);
+    assert.match(errors, /pattern effect range #1 vibrato has invalid range 1..0/u);
+    assert.match(errors, /pattern effect range #1 vibrato field brokenRangeValue has invalid scale 0/u);
+    assert.match(errors, /pattern effect range #2 brokenRange has invalid range 300..301/u);
+    assert.match(errors, /pattern effect range #2 brokenRange is missing field\.name/u);
     assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
     assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);
     assert.match(errors, /chunk SMIC is marked signedRoundTrip but uses uint32 payload type/u);
@@ -462,6 +487,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
       delete parameterlessPatternEffects[key];
     }
     Object.assign(parameterlessPatternEffects, previousParameterlessPatternEffects);
+    patternEffectRanges.length = 0;
+    patternEffectRanges.push(...previousPatternEffectRanges);
     Object.assign(storageChunk, previousStorageMetadata, { type: "int32" });
     amplifier.color = previousAmplifierColor;
     if (previousModule) {

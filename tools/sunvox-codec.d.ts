@@ -142,10 +142,24 @@ export interface SunVoxPatternEffectParameterDefinition {
   }>;
 }
 
+export interface SunVoxPatternEffectRangeDefinition {
+  name: string;
+  min: number;
+  max: number;
+  description?: string;
+  sourceSymbol?: string;
+  field: {
+    name: string;
+    offset?: number;
+    scale?: number;
+  };
+}
+
 export interface SunVoxDatabase {
   version: number;
   chunks: Array<Record<string, unknown>>;
   enums: Record<string, Record<string, string>>;
+  patternEffectRanges?: SunVoxPatternEffectRangeDefinition[];
   patternEffectParameters?: Record<string, SunVoxPatternEffectParameterDefinition>;
   parameterlessPatternEffects?: Record<string, { description?: string; sourceSymbol?: string }>;
   bitfields?: Record<string, unknown>;

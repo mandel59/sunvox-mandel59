@@ -765,7 +765,7 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
 
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
-  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 16);
+  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 18);
   assert.ok(patternIndex >= 0);
   const pattern = document.patterns[patternIndex];
 
@@ -863,6 +863,18 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
       effect: "finetune",
       parameter: { relativeNote: -12, finetune: 4 },
     },
+    {
+      line: 17,
+      track: 0,
+      effect: "sampleOffsetFraction",
+      parameter: { fraction32768: 32768 },
+    },
+    {
+      line: 18,
+      track: 0,
+      effect: "delayEvent",
+      delayLine32nds: 16,
+    },
   ];
 
   const reparsed = parseContainer(buildContainer(document));
@@ -885,6 +897,10 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
   assert.deepEqual(reparsed.patterns[patternIndex].events[12].parameter, { timelineGrid2: 12 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[13].parameter, { bpm: 125 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[14].parameter, { relativeNote: -12, finetune: 4 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[15].parameter, { fraction32768: 32768 });
+  assert.equal(reparsed.patterns[patternIndex].events[16].effect, "delayEvent");
+  assert.equal(reparsed.patterns[patternIndex].events[16].delayLine32nds, 16);
+  assert.equal(reparsed.patterns[patternIndex].events[16].value, undefined);
 });
 
 test("can still build editable chunk documents", async () => {

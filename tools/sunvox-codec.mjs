@@ -151,6 +151,14 @@ function tryEnumToValue(enumName, value) {
   }
 }
 
+function patternEffectRangeForCode(value) {
+  return (SUNVOX_DB.patternEffectRanges ?? []).find((range) => value >= range.min && value <= range.max);
+}
+
+function patternEffectRangeForName(name) {
+  return (SUNVOX_DB.patternEffectRanges ?? []).find((range) => range.name === name);
+}
+
 function bitMask(bits) {
   return bits === 32 ? 0xffffffff : (2 ** bits) - 1;
 }
@@ -489,6 +497,21 @@ function decodePatternPackedField(value, module, event, field) {
     return;
   }
   const decodedValue = packedFieldDecodedValue(storedValue, field);
+  if (field.name === "effect" && field.enum === "sunvox_pattern_effect") {
+    const exactEffect = enumToName(field.enum, decodedValue);
+    if (exactEffect !== decodedValue) {
+      event[field.name] = exactEffect;
+      return;
+    }
+    const range = patternEffectRangeForCode(decodedValue);
+    if (range) {
+      event[field.name] = range.name;
+      event[range.field.name] = packedFieldDecodedValue(decodedValue, range.field);
+      return;
+    }
+    event[field.name] = decodedValue;
+    return;
+  }
   if (field.reference === "module.controllers") {
     const controllerName = moduleControllerName(module, decodedValue);
     event[field.name] = controllerName ?? decodedValue;
@@ -525,6 +548,31 @@ function eventPackedFieldValue(event, module, field) {
       throw new Error(`Unknown pattern controller: ${value}`);
     }
     return controllerIndex;
+  }
+  if (field.name === "effect" && field.enum === "sunvox_pattern_effect") {
+    if (typeof value === "number") {
+      return value;
+    }
+    const exactValue = tryEnumToValue(field.enum, value);
+    if (exactValue !== undefined) {
+      return exactValue;
+    }
+    const range = patternEffectRangeForName(value);
+    if (!range) {
+      throw new Error(`Unknown ${field.enum} value: ${value}`);
+    }
+    const rangeValue = event[range.field.name];
+    if (rangeValue === undefined) {
+      throw new Error(`Pattern effect ${value} requires ${range.field.name}`);
+    }
+    const storedValue = packedFieldEncodedValue(rangeValue, range.field);
+    if (!Number.isInteger(storedValue)) {
+      throw new Error(`Pattern effect ${value} stores as non-integer ${storedValue}`);
+    }
+    if (storedValue < range.min || storedValue > range.max) {
+      throw new Error(`Pattern effect ${value} stores as ${storedValue}; expected ${range.min}..${range.max}`);
+    }
+    return storedValue;
   }
   if (field.bitflags) {
     return encodeBitflags(field.bitflags, value);
@@ -679,9 +727,17 @@ function semanticEventFieldValue(event, fieldName, semantics) {
   return undefined;
 }
 
-function shouldKeepDecodedPatternField(fieldName, value, semantics, rawRecord) {
+function shouldKeepDecodedPatternField(fieldName, value, semantics, rawRecord, event) {
   if (value !== 0) {
     return true;
+  }
+  if (
+    fieldName === "value" &&
+    rawRecord.controller !== 0 &&
+    typeof semantics.zero === "string" &&
+    (SUNVOX_DB.parameterlessPatternEffects?.[event.effect] || patternEffectRangeForName(event.effect))
+  ) {
+    return false;
   }
   if (semantics.zero === "omitUnlessController") {
     return (rawRecord.controller ?? 0) !== 0;
@@ -725,7 +781,7 @@ function applyDecodedPatternField(event, fieldName, value, context) {
       decodePatternController(value, context.module, event, semantics);
       return;
     default:
-      if (shouldKeepDecodedPatternField(fieldName, value, semantics, context.rawRecord)) {
+      if (shouldKeepDecodedPatternField(fieldName, value, semantics, context.rawRecord, event)) {
         if (fieldName === "value" && event.effect !== undefined) {
           const parameter = decodePatternEffectParameter(event.effect, value);
           if (parameter !== value) {
