@@ -112,6 +112,8 @@ round-trip but may be clamped or ignored by SunVox at runtime.
 `.sunvox` and `.sunsynth` files. The GitHub Pages frontend uses this generated
 index to show project modules, graph links, patterns, event previews, and
 embedded MetaModule containers without decoding binary files in the browser.
+The inspector UI is a Vite/React app under [src/](src/) while the SunVox
+JS/WASM player bridge remains a small classic script under [js/](js/).
 
 Run the local quality gate before committing codec, DB, or frontend changes:
 
