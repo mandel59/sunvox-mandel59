@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 
+import { buildGraphLayout, shortLabel } from "./project-graph.js";
 import "./styles.css";
 
 const PROJECT_INDEX_PATH = "site-data/sunvox-projects.json";
@@ -64,6 +65,59 @@ function ProjectList({ projects, selectedPath, onSelect }) {
         </div>
       </section>
     </aside>
+  );
+}
+
+function ModuleGraphSection({ project }) {
+  const graph = useMemo(() => buildGraphLayout(project), [project]);
+  if (!graph) {
+    return null;
+  }
+  return (
+    <section className="section-grid" aria-labelledby="graph-heading">
+      <h3 id="graph-heading">Module Graph</h3>
+      <div className="graph-panel">
+        <svg className="module-graph" viewBox={graph.viewBox} role="img" aria-label="Module graph">
+          <defs>
+            <marker id="module-arrow" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 z" />
+            </marker>
+          </defs>
+          <g className="graph-edges">
+            {graph.edges.map((link, index) => {
+              const from = graph.nodes.find((module) => module.index === link.from);
+              const to = graph.nodes.find((module) => module.index === link.to);
+              return (
+                <line
+                  key={`${link.from}-${link.to}-${index}`}
+                  x1={from.position.x}
+                  y1={from.position.y}
+                  x2={to.position.x}
+                  y2={to.position.y}
+                  markerEnd="url(#module-arrow)"
+                >
+                  <title>
+                    #{link.from} {link.fromName} to #{link.to} {link.toName}
+                  </title>
+                </line>
+              );
+            })}
+          </g>
+          <g className="graph-nodes">
+            {graph.nodes.map((module) => (
+              <g key={module.index} transform={`translate(${module.position.x} ${module.position.y})`}>
+                <rect x="-48" y="-18" width="96" height="36" rx="7" style={{ "--module-color": module.color }} />
+                <text y="-2">#{module.index}</text>
+                <text y="11">{shortLabel(module.name)}</text>
+                <title>
+                  #{module.index} {module.name} [{module.type || module.kind}]
+                </title>
+              </g>
+            ))}
+          </g>
+        </svg>
+      </div>
+    </section>
   );
 }
 
@@ -238,6 +292,7 @@ function ProjectDetails({ project, error }) {
       </div>
 
       <div className="section-grid">
+        <ModuleGraphSection project={project} />
         <ModuleSection project={project} />
         <LinkSection project={project} />
         <PatternSection project={project} />
