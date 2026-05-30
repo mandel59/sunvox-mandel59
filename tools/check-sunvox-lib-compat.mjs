@@ -27,6 +27,12 @@ const EDITED_PATTERN_EVENT = {
   velocity: 64,
 };
 const EDITED_PATTERN_CONTROLLER_VALUE = 321;
+const EDITED_PATTERN_EFFECT_EVENT = {
+  effect: "delayEvent",
+  delayLine32nds: 16,
+  controller: 0x50,
+  value: 0,
+};
 const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
 const SV_INIT_FLAG_OFFLINE = 1 << 1;
 const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
@@ -40,6 +46,7 @@ const COMPATIBILITY_BEHAVIORS = [
   { key: "controllerValue", label: "module controller value" },
   { key: "patternEvent", label: "pattern note event" },
   { key: "patternControllerEvent", label: "pattern controller event" },
+  { key: "patternEffectEvent", label: "pattern effect event" },
   { key: "moduleLink", label: "module link graph" },
 ];
 
@@ -380,6 +387,9 @@ function validateEditedCompatibility(report, expectations) {
   if (expectations.patternControllerEvent) {
     validatePatternEvent(report, expectations.patternControllerEvent);
   }
+  if (expectations.patternEffectEvent) {
+    validatePatternEvent(report, expectations.patternEffectEvent);
+  }
   if (expectations.moduleLink) {
     const { source, destination, destinationSlot } = expectations.moduleLink;
     const destinationInput = report.modules[destination]?.inputs?.[destinationSlot];
@@ -559,6 +569,29 @@ function applyPatternEventEdit(document, moduleIndex, expectations) {
       value: EDITED_PATTERN_CONTROLLER_VALUE,
     },
   };
+
+  const effectPosition = nextPatternEventPosition(pattern, usedPositions);
+  if (!effectPosition) {
+    return;
+  }
+  pattern.events.push({
+    line: effectPosition.line,
+    track: effectPosition.track,
+    effect: EDITED_PATTERN_EFFECT_EVENT.effect,
+    delayLine32nds: EDITED_PATTERN_EFFECT_EVENT.delayLine32nds,
+  });
+  expectations.patternEffectEvent = {
+    patternIndex,
+    line: effectPosition.line,
+    track: effectPosition.track,
+    event: {
+      note: 0,
+      velocity: 0,
+      module: 0,
+      controller: EDITED_PATTERN_EFFECT_EVENT.controller,
+      value: EDITED_PATTERN_EFFECT_EVENT.value,
+    },
+  };
 }
 
 function makeEditedCompatibilityCase(filePath, buffer) {
@@ -598,11 +631,17 @@ function makeEditedCompatibilityCase(filePath, buffer) {
     label: `${relative(process.cwd(), filePath)} (codec edit)`,
     buffer: buildContainer(document),
     expectations,
-    patternEventProbes: [expectations.patternEvent, expectations.patternControllerEvent].filter(Boolean).map((event) => ({
-      patternIndex: event.patternIndex,
-      line: event.line,
-      track: event.track,
-    })),
+    patternEventProbes: [
+      expectations.patternEvent,
+      expectations.patternControllerEvent,
+      expectations.patternEffectEvent,
+    ]
+      .filter(Boolean)
+      .map((event) => ({
+        patternIndex: event.patternIndex,
+        line: event.line,
+        track: event.track,
+      })),
   };
 }
 

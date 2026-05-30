@@ -192,7 +192,7 @@ npm run sunvox:verify:all
   and types, not just that the codec can round-trip the bytes. The check also
   builds small codec-edited variants and verifies through SunVox Lib that edited
   project/module/pattern names, representative controller values, module links,
-  and pattern note/controller events are exposed as expected. Edited `.sunvox`
+  and pattern note/controller/effect events are exposed as expected. Edited `.sunvox`
   variants are also saved through SunVox Lib and reloaded to catch runtime
   normalization issues. DB `runtimeConstraints` with `observedBehavior` are
   also probed by writing the documented value, saving through SunVox Lib, and
