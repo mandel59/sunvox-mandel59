@@ -1,0 +1,16 @@
+{
+  "name": "@sunvox-mandel59/browser-debug",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node check-site.mjs",
+    "check:local": "node check-local.mjs",
+    "check:local:headed": "node check-local.mjs --headed",
+    "check:dist": "node check-dist.mjs",
+    "check:dist:headed": "node check-dist.mjs --headed",
+    "check:headed": "node check-site.mjs --headed"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}
