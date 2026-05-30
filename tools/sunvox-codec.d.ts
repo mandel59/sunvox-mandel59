@@ -147,6 +147,7 @@ export interface SunVoxDatabase {
   chunks: Array<Record<string, unknown>>;
   enums: Record<string, Record<string, string>>;
   patternEffectParameters?: Record<string, SunVoxPatternEffectParameterDefinition>;
+  parameterlessPatternEffects?: Record<string, { description?: string; sourceSymbol?: string }>;
   bitfields?: Record<string, unknown>;
   bitflags?: Record<string, Array<{ name: string; bit: number }>>;
   structs?: Record<string, SunVoxStructDefinition>;

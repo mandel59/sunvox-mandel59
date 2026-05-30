@@ -1135,6 +1135,16 @@
       ]
     }
   },
+  "parameterlessPatternEffects": {
+    "stop": {
+      "description": "Effect 0x30 turns the note into a stop command and does not read ctl_val.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x30"
+    },
+    "slotSync": {
+      "description": "Effect 0x33 synchronizes the sound stream to the event offset and does not read ctl_val.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x33"
+    }
+  },
   "bitfields": {
     "midi_pars1": {
       "type": "uint32",

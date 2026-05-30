@@ -1575,6 +1575,7 @@ function checkPatternEffectEnum(errors, warnings, sourceRoot) {
 
 function checkPatternEffectParameterDefinitions(errors) {
   const effectNames = new Set(Object.values(SUNVOX_DB.enums.sunvox_pattern_effect ?? {}));
+  const parameterizedEffects = new Set(Object.keys(SUNVOX_DB.patternEffectParameters ?? {}));
   for (const [effectName, definition] of Object.entries(SUNVOX_DB.patternEffectParameters ?? {})) {
     const subject = `pattern effect parameter ${effectName}`;
     if (!effectNames.has(effectName)) {
@@ -1588,6 +1589,15 @@ function checkPatternEffectParameterDefinitions(errors) {
     }
     for (const [index, variant] of (definition.variants ?? []).entries()) {
       checkPackedParameterVariant(errors, `${subject} variant #${index}`, variant);
+    }
+  }
+  for (const effectName of Object.keys(SUNVOX_DB.parameterlessPatternEffects ?? {})) {
+    const subject = `parameterless pattern effect ${effectName}`;
+    if (!effectNames.has(effectName)) {
+      errors.push(`${subject} references missing sunvox_pattern_effect name`);
+    }
+    if (parameterizedEffects.has(effectName)) {
+      errors.push(`${subject} is also defined in patternEffectParameters`);
     }
   }
 }
@@ -1840,6 +1850,8 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
   const moduleCatalog = collectModuleCatalogMetrics(report);
   const patternEffectCoverage = collectPatternEffectCoverage(sourceRoot);
   const patternEffectParameterSchemas = Object.keys(SUNVOX_DB.patternEffectParameters ?? {}).length;
+  const parameterlessPatternEffects = Object.keys(SUNVOX_DB.parameterlessPatternEffects ?? {}).length;
+  const handledPatternEffectParameters = patternEffectParameterSchemas + parameterlessPatternEffects;
   const coverageGateFailures = coverageFailures(coverage);
   const sampledDbModuleTypes = coverage.moduleTypes
     .map(([moduleType]) => moduleType)
@@ -1875,8 +1887,12 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       unnamedSourcePatternEffects: patternEffectCoverage.missingCodes.length,
       patternEffectNameCoveragePercent: patternEffectCoverage.coveragePercent,
       patternEffectParameterSchemas,
+      parameterlessPatternEffects,
       patternEffectParameterCoveragePercent: patternEffectCoverage.dbEntries.length
         ? Number(((patternEffectParameterSchemas / patternEffectCoverage.dbEntries.length) * 100).toFixed(1))
+        : 0,
+      patternEffectParameterHandlingCoveragePercent: patternEffectCoverage.dbEntries.length
+        ? Number(((handledPatternEffectParameters / patternEffectCoverage.dbEntries.length) * 100).toFixed(1))
         : 0,
       controllerMetadataMismatches: controllerDiff.summary.mismatches,
       dbCheckErrors: dbCheck.summary.errors,
@@ -2318,7 +2334,12 @@ function formatProjectMetrics(metrics) {
     { metric: "Unnamed source pattern effects", value: metrics.summary.unnamedSourcePatternEffects },
     { metric: "Pattern effect name coverage", value: formatPercent(metrics.summary.patternEffectNameCoveragePercent) },
     { metric: "Pattern effect parameter schemas", value: metrics.summary.patternEffectParameterSchemas },
+    { metric: "Parameterless pattern effects", value: metrics.summary.parameterlessPatternEffects },
     { metric: "Pattern effect parameter coverage", value: formatPercent(metrics.summary.patternEffectParameterCoveragePercent) },
+    {
+      metric: "Pattern effect parameter handling",
+      value: formatPercent(metrics.summary.patternEffectParameterHandlingCoveragePercent),
+    },
     { metric: "Controller metadata mismatches", value: metrics.summary.controllerMetadataMismatches },
     { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
     { metric: "Runtime constraints", value: metrics.summary.runtimeConstraints },

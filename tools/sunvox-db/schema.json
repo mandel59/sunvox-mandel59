@@ -130,6 +130,17 @@
         "additionalProperties": false
       }
     },
+    "parameterlessPatternEffects": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "sourceSymbol": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
     "bitfields": {
       "type": "object",
       "additionalProperties": {
