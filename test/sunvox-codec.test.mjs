@@ -721,7 +721,7 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
 
   const buffer = await readFile("music/2022-04-17.sunvox");
   const document = parseContainer(buffer);
-  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 11);
+  const patternIndex = document.patterns.findIndex((pattern) => pattern.tracks > 0 && pattern.lines > 15);
   assert.ok(patternIndex >= 0);
   const pattern = document.patterns[patternIndex];
 
@@ -789,6 +789,30 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
       effect: "setJumpAddressMode",
       parameter: { mode: "nextLineMinus" },
     },
+    {
+      line: 12,
+      track: 0,
+      effect: "setSpeedOrBpm",
+      parameter: { speed: 6 },
+    },
+    {
+      line: 13,
+      track: 0,
+      effect: "setSpeedOrBpm",
+      parameter: { timelineGrid: 8 },
+    },
+    {
+      line: 14,
+      track: 0,
+      effect: "setSpeedOrBpm",
+      parameter: { timelineGrid2: 12 },
+    },
+    {
+      line: 15,
+      track: 0,
+      effect: "setSpeedOrBpm",
+      parameter: { bpm: 125 },
+    },
   ];
 
   const reparsed = parseContainer(buildContainer(document));
@@ -806,6 +830,10 @@ test("decodes and encodes DB-described pattern effect parameters", async () => {
   assert.deepEqual(reparsed.patterns[patternIndex].events[7].parameter, { message: "pitchBendChange", controller: 131 });
   assert.deepEqual(reparsed.patterns[patternIndex].events[8].parameter, { flags: { mute: true, bypass: true } });
   assert.deepEqual(reparsed.patterns[patternIndex].events[9].parameter, { mode: "nextLineMinus" });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[10].parameter, { speed: 6 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[11].parameter, { timelineGrid: 8 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[12].parameter, { timelineGrid2: 12 });
+  assert.deepEqual(reparsed.patterns[patternIndex].events[13].parameter, { bpm: 125 });
 });
 
 test("can still build editable chunk documents", async () => {

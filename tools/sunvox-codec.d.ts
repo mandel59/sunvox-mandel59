@@ -128,7 +128,14 @@ export interface SunVoxPackedFieldDefinition {
 export interface SunVoxPatternEffectParameterDefinition {
   description?: string;
   sourceSymbol?: string;
-  packedFields: SunVoxPackedFieldDefinition[];
+  packedFields?: SunVoxPackedFieldDefinition[];
+  variants?: Array<{
+    description?: string;
+    sourceSymbol?: string;
+    match?: { mask: number; value: number };
+    valueRange?: { min: number; max: number };
+    packedFields: SunVoxPackedFieldDefinition[];
+  }>;
 }
 
 export interface SunVoxDatabase {

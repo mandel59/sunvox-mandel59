@@ -45,8 +45,8 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.namedSourcePatternEffects, 43);
   assert.equal(metrics.summary.unnamedSourcePatternEffects, 0);
   assert.equal(metrics.summary.patternEffectNameCoveragePercent, 100);
-  assert.equal(metrics.summary.patternEffectParameterSchemas, 39);
-  assert.equal(metrics.summary.patternEffectParameterCoveragePercent, 90.7);
+  assert.equal(metrics.summary.patternEffectParameterSchemas, 40);
+  assert.equal(metrics.summary.patternEffectParameterCoveragePercent, 93);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 5);
@@ -304,6 +304,13 @@ test("DB check validates data chunk ranges and metadata references", () => {
       { name: "bad", shift: 0, bits: 8, enum: "__missing_parameter_enum" },
       { name: "badFlags", shift: 8, bits: 8, bitflags: "__missing_parameter_bitflags" },
     ],
+    variants: [
+      {
+        match: { mask: 0xff, value: 0x1ff },
+        valueRange: { min: 4, max: 3 },
+        packedFields: [{ name: "badOverlap", shift: 0, bits: 8 }],
+      },
+    ],
   };
   storageChunk.sourceType = "__missing_source_type";
   storageChunk.valueKind = "__missing_value_kind";
@@ -408,6 +415,9 @@ test("DB check validates data chunk ranges and metadata references", () => {
       errors,
       /pattern effect parameter notSourceBackedParameter: packed field badFlags references missing bitflags __missing_parameter_bitflags/u,
     );
+    assert.match(errors, /pattern effect parameter notSourceBackedParameter variant #0 match.value has bits outside match.mask/u);
+    assert.match(errors, /pattern effect parameter notSourceBackedParameter variant #0 match.mask overlaps packed fields/u);
+    assert.match(errors, /pattern effect parameter notSourceBackedParameter variant #0 valueRange has invalid range 4..3/u);
     assert.match(errors, /chunk SMIC has invalid sourceType __missing_source_type/u);
     assert.match(errors, /chunk SMIC has invalid valueKind __missing_value_kind/u);
     assert.match(errors, /chunk SMIC is marked signedRoundTrip but uses uint32 payload type/u);

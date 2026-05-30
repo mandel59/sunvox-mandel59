@@ -557,14 +557,33 @@ function packedFieldsKnownMask(fields = []) {
   return fields.reduce((mask, field) => mask | (packedFieldMask(field) << field.shift), 0);
 }
 
-function decodePackedParameter(value, definition) {
-  if (typeof value !== "number" || !definition?.packedFields?.length) {
-    return value;
+function parameterDefinitionVariants(definition) {
+  if (definition?.variants?.length) {
+    return definition.variants;
   }
-  const knownMask = packedFieldsKnownMask(definition.packedFields);
-  if ((value & ~knownMask) !== 0) {
-    return value;
+  if (definition?.packedFields?.length) {
+    return [definition];
   }
+  return [];
+}
+
+function packedParameterVariantMatchesValue(value, variant) {
+  const range = variant.valueRange;
+  if (range && (value < range.min || value > range.max)) {
+    return false;
+  }
+  if (variant.match && (value & variant.match.mask) !== variant.match.value) {
+    return false;
+  }
+  const knownMask = packedFieldsKnownMask(variant.packedFields) | (variant.match?.mask ?? 0);
+  return (value & ~knownMask) === 0;
+}
+
+function packedParameterVariantMatchesObject(value, variant) {
+  return variant.packedFields?.some((field) => value[field.name] !== undefined);
+}
+
+function decodePackedParameterFields(value, definition) {
   return Object.fromEntries(
     definition.packedFields.map((field) => {
       const storedValue = packedFieldStoredValue(value, field);
@@ -577,11 +596,19 @@ function decodePackedParameter(value, definition) {
   );
 }
 
-function encodePackedParameter(value, definition) {
-  if (typeof value === "number" || !definition?.packedFields?.length || !value || typeof value !== "object") {
+function decodePackedParameter(value, definition) {
+  if (typeof value !== "number") {
     return value;
   }
-  let packedValue = 0;
+  const variant = parameterDefinitionVariants(definition).find((candidate) => packedParameterVariantMatchesValue(value, candidate));
+  if (!variant) {
+    return value;
+  }
+  return decodePackedParameterFields(value, variant);
+}
+
+function encodePackedParameterFields(value, definition) {
+  let packedValue = definition.match?.value ?? 0;
   for (const field of definition.packedFields) {
     const fieldValue = value[field.name] ?? 0;
     const decodedValue = field.bitflags
@@ -596,7 +623,23 @@ function encodePackedParameter(value, definition) {
     }
     packedValue = setPackedFieldValue(packedValue, field, storedValue);
   }
+  const range = definition.valueRange;
+  if (range && (packedValue < range.min || packedValue > range.max)) {
+    throw new Error(`Pattern parameter stores as ${packedValue}; expected ${range.min}..${range.max}`);
+  }
   return packedValue;
+}
+
+function encodePackedParameter(value, definition) {
+  if (typeof value === "number" || !value || typeof value !== "object") {
+    return value;
+  }
+  const variants = parameterDefinitionVariants(definition);
+  if (variants.length === 0) {
+    return value;
+  }
+  const variant = variants.find((candidate) => packedParameterVariantMatchesObject(value, candidate)) ?? variants[0];
+  return encodePackedParameterFields(value, variant);
 }
 
 function patternEffectParameterDefinition(effect) {

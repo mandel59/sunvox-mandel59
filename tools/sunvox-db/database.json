@@ -854,6 +854,39 @@
         { "name": "down", "shift": 0, "bits": 8 }
       ]
     },
+    "setSpeedOrBpm": {
+      "description": "Effect 0x0F switches between speed, timeline grid, secondary timeline grid, and BPM by stored value range.",
+      "sourceSymbol": "sunvox_handle_command():ctl_eff 0x0F",
+      "variants": [
+        {
+          "description": "Values below 32 set project speed.",
+          "valueRange": { "min": 0, "max": 31 },
+          "packedFields": [
+            { "name": "speed", "shift": 0, "bits": 5 }
+          ]
+        },
+        {
+          "description": "0xF0GG sets timeline grid.",
+          "match": { "mask": 65280, "value": 61440 },
+          "packedFields": [
+            { "name": "timelineGrid", "shift": 0, "bits": 8 }
+          ]
+        },
+        {
+          "description": "0xF1GG sets secondary timeline grid.",
+          "match": { "mask": 65280, "value": 61696 },
+          "packedFields": [
+            { "name": "timelineGrid2", "shift": 0, "bits": 8 }
+          ]
+        },
+        {
+          "description": "Other values request a BPM change before SunVox runtime clamping.",
+          "packedFields": [
+            { "name": "bpm", "shift": 0, "bits": 16 }
+          ]
+        }
+      ]
+    },
     "finePortamentoUp": {
       "description": "Fine portamento-up speed stored before SunVox scales it internally.",
       "sourceSymbol": "sunvox_handle_command():ctl_eff 0x11",

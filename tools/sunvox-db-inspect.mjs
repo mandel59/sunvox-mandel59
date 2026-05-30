@@ -1148,6 +1148,33 @@ function checkTextLayoutPackedFields(errors, subject, packedFields = []) {
   }
 }
 
+function packedFieldsMask(packedFields = []) {
+  return packedFields.reduce((mask, field) => mask | ((2 ** field.bits - 1) << field.shift), 0);
+}
+
+function checkPackedParameterVariant(errors, subject, variant) {
+  checkTextLayoutPackedFields(errors, subject, variant.packedFields);
+  if (variant.match) {
+    for (const field of ["mask", "value"]) {
+      if (!Number.isInteger(variant.match[field]) || variant.match[field] < 0) {
+        errors.push(`${subject} match.${field} has invalid value ${variant.match[field]}`);
+      }
+    }
+    if ((variant.match.value & ~variant.match.mask) !== 0) {
+      errors.push(`${subject} match.value has bits outside match.mask`);
+    }
+    if ((packedFieldsMask(variant.packedFields) & variant.match.mask) !== 0) {
+      errors.push(`${subject} match.mask overlaps packed fields`);
+    }
+  }
+  if (variant.valueRange) {
+    const { min, max } = variant.valueRange;
+    if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || max < min) {
+      errors.push(`${subject} valueRange has invalid range ${min}..${max}`);
+    }
+  }
+}
+
 function checkTextLayoutDefinition(errors, structName, definition) {
   const layout = definition.textLayout;
   if (!layout) {
@@ -1547,7 +1574,15 @@ function checkPatternEffectParameterDefinitions(errors) {
     if (!effectNames.has(effectName)) {
       errors.push(`${subject} references missing sunvox_pattern_effect name`);
     }
-    checkTextLayoutPackedFields(errors, subject, definition.packedFields);
+    if (!definition.packedFields?.length && !definition.variants?.length) {
+      errors.push(`${subject} must define packedFields or variants`);
+    }
+    if (definition.packedFields) {
+      checkPackedParameterVariant(errors, subject, definition);
+    }
+    for (const [index, variant] of (definition.variants ?? []).entries()) {
+      checkPackedParameterVariant(errors, `${subject} variant #${index}`, variant);
+    }
   }
 }
 

@@ -53,7 +53,6 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["packedFields"],
         "properties": {
           "description": { "type": "string" },
           "sourceSymbol": { "type": "string" },
@@ -71,6 +70,54 @@
                 "max": { "type": "integer" },
                 "enum": { "type": "string" },
                 "bitflags": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["packedFields"],
+              "properties": {
+                "description": { "type": "string" },
+                "sourceSymbol": { "type": "string" },
+                "match": {
+                  "type": "object",
+                  "required": ["mask", "value"],
+                  "properties": {
+                    "mask": { "type": "integer", "minimum": 0 },
+                    "value": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "valueRange": {
+                  "type": "object",
+                  "required": ["min", "max"],
+                  "properties": {
+                    "min": { "type": "integer", "minimum": 0 },
+                    "max": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "packedFields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "shift", "bits"],
+                    "properties": {
+                      "name": { "type": "string" },
+                      "shift": { "type": "integer", "minimum": 0 },
+                      "bits": { "type": "integer", "minimum": 1, "maximum": 31 },
+                      "offset": { "type": "integer" },
+                      "min": { "type": "integer" },
+                      "max": { "type": "integer" },
+                      "enum": { "type": "string" },
+                      "bitflags": { "type": "string" }
+                    },
+                    "additionalProperties": false
+                  }
+                }
               },
               "additionalProperties": false
             }
