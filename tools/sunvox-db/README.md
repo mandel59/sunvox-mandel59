@@ -20,7 +20,8 @@ can either interpret it directly or generate conversion code from it later.
   should be omitted from the editable form.
 - `parameterlessPatternEffects`: records source-backed effects that do not read
   the stored parameter value, so metrics can distinguish them from missing
-  parameter schemas.
+  parameter schemas and the codec can warn when editable events carry an
+  ignored nonzero `value`.
 - `bitfields`: describes packed integer fields such as `CMID`.
 - `bitflags`: maps stored flag bits to sparse named objects.
 - `structs`: describes fixed-size record arrays such as pattern notes and MIDI

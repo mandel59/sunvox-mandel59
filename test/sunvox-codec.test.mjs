@@ -227,6 +227,50 @@ test("reports DB-driven pattern event encoding errors", () => {
   assert.deepEqual(result.issues.map((issue) => issue.trackingIssue), [1, 1, 1, 1]);
 });
 
+test("warns about ignored parameterless pattern effect values", () => {
+  const result = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [],
+    patterns: [
+      {
+        tracks: 1,
+        lines: 2,
+        events: [
+          { line: 0, track: 0, effect: "stop", value: 7 },
+          { line: 1, track: 0, effect: "slotSync", value: 9 },
+        ],
+      },
+      {
+        tracks: 1,
+        lines: 1,
+        events: [[0, 0, 0, 48, 5]],
+      },
+    ],
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(
+    result.issues.map((issue) => issue.rule),
+    [
+      "pattern.effect.parameterlessValue",
+      "pattern.effect.parameterlessValue",
+      "pattern.effect.parameterlessValue",
+    ],
+  );
+  assert.deepEqual(
+    result.issues.map((issue) => issue.path),
+    ["patterns[0].events[0].value", "patterns[0].events[1].value", "patterns[1].events[0].value"],
+  );
+  assert.deepEqual(
+    result.issues.map((issue) => issue.severity),
+    ["warning", "warning", "warning"],
+  );
+  assert.match(result.issues[0].message, /stop ignores/u);
+  assert.match(result.issues[1].message, /slotSync ignores/u);
+  assert.equal(result.issues[0].trackingIssue, 1);
+});
+
 test("recursively validates embedded MetaModule containers", () => {
   const result = validateContainer({
     magic: "SSYN",

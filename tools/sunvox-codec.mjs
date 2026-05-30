@@ -1471,6 +1471,13 @@ function patternValidationIssue(rule, path, value, message) {
   };
 }
 
+function patternWarningIssue(rule, path, value, message) {
+  return {
+    ...patternValidationIssue(rule, path, value, message),
+    severity: "warning",
+  };
+}
+
 const STRUCT_FIELD_RANGES = {
   int8: { min: -128, max: 127 },
   uint8: { min: 0, max: 255 },
@@ -1542,6 +1549,37 @@ function validatePatternRecordSemantics(record, definition, modules, path) {
   );
 }
 
+function validateParameterlessPatternEffectValue(event, path) {
+  if (!event?.effect || !SUNVOX_DB.parameterlessPatternEffects?.[event.effect]) {
+    return [];
+  }
+  const value = event.value ?? 0;
+  if (value === 0) {
+    return [];
+  }
+  return [
+    patternWarningIssue(
+      "pattern.effect.parameterlessValue",
+      `${path}.value`,
+      value,
+      `Pattern effect ${event.effect} ignores parameter value ${value}`,
+    ),
+  ];
+}
+
+function validatePatternRecordParameterlessEffects(records, pattern, definition, modules, path) {
+  const columns = patternEventColumns(pattern, definition, records);
+  return (records ?? []).flatMap((record, index) => {
+    if (patternRecordIsEmpty(record, definition)) {
+      return [];
+    }
+    return validateParameterlessPatternEffectValue(
+      patternRecordToSemanticEvent(record, index, columns, modules, definition),
+      `${path}.events[${index}]`,
+    );
+  });
+}
+
 function validateSparsePatternSourceEvents(pattern, definition, modules, path) {
   const sparseEvents = sparsePatternEventEntries(pattern, definition);
   if (sparseEvents.length === 0) {
@@ -1577,7 +1615,7 @@ function validateSparsePatternSourceEvents(pattern, definition, modules, path) {
     }
     try {
       patternSemanticEventToRecord(event, modules, definition);
-      return [];
+      return validateParameterlessPatternEffectValue(event, eventPath);
     } catch (error) {
       return [
         patternValidationIssue(
@@ -1601,7 +1639,7 @@ function validatePatternEvents(document, basePath = "") {
       return [];
     }
     const sourceIssues = validateSparsePatternSourceEvents(pattern, definition, document?.modules ?? [], path);
-    if (sourceIssues.length) {
+    if (sourceIssues.some((issue) => issue.severity === "error")) {
       return sourceIssues;
     }
     let records;
@@ -1617,14 +1655,18 @@ function validatePatternEvents(document, basePath = "") {
         ),
       ];
     }
-    return (records ?? []).flatMap((record, index) =>
-      [
+    return [
+      ...sourceIssues,
+      ...(records ?? []).flatMap((record, index) => [
         ...(definition.fields ?? []).flatMap((field) =>
           validatePatternRecordField(record, field, `${path}.events[${index}].${field.name}`),
         ),
         ...validatePatternRecordSemantics(record, definition, document?.modules ?? [], `${path}.events[${index}]`),
-      ],
-    );
+      ]),
+      ...(sourceIssues.length
+        ? []
+        : validatePatternRecordParameterlessEffects(records, pattern, definition, document?.modules ?? [], path)),
+    ];
   });
 }
 
