@@ -79,6 +79,14 @@ function readUInt32Array(data) {
   return values;
 }
 
+function readFloat32Array(data) {
+  const values = [];
+  for (let offset = 0; offset + 4 <= data.length; offset += 4) {
+    values.push(data.readFloatLE(offset));
+  }
+  return values;
+}
+
 function readUInt16Array(data) {
   const values = [];
   for (let offset = 0; offset + 2 <= data.length; offset += 2) {
@@ -124,6 +132,12 @@ function writeUInt16Array(values) {
 function writeUInt32Array(values) {
   const buffer = Buffer.alloc(values.length * 4);
   values.forEach((value, index) => buffer.writeUInt32LE(value, index * 4));
+  return buffer;
+}
+
+function writeFloat32Array(values) {
+  const buffer = Buffer.alloc(values.length * 4);
+  values.forEach((value, index) => buffer.writeFloatLE(value, index * 4));
   return buffer;
 }
 
@@ -2395,6 +2409,20 @@ const MODULE_DATA_CODECS = {
     },
     encode(dataChunk) {
       return Array.isArray(dataChunk.values) ? writeUInt16Array(dataChunk.values) : undefined;
+    },
+  },
+  float32Array: {
+    decode(data, definition) {
+      if (data.length % 4 !== 0) {
+        return undefined;
+      }
+      return {
+        count: definition.count ?? data.length / 4,
+        values: readFloat32Array(data),
+      };
+    },
+    encode(dataChunk) {
+      return Array.isArray(dataChunk.values) ? writeFloat32Array(dataChunk.values) : undefined;
     },
   },
 };

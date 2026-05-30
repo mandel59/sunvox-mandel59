@@ -538,6 +538,55 @@ test("decodes module visualizer parameter bitfields", () => {
   assert.equal(sha256(buildContainer(parsed)), sha256(buffer));
 });
 
+test("decodes FMX and Vorbis player source-backed data chunks", () => {
+  const waveform = Array.from({ length: 256 }, (_, index) => {
+    if (index === 1) {
+      return 0.5;
+    }
+    if (index === 2) {
+      return -0.25;
+    }
+    if (index === 255) {
+      return 1;
+    }
+    return 0;
+  });
+  const fmxDocument = {
+    format: TEXT_FORMAT,
+    magic: "SSYN",
+    headerTailHex: "00000000",
+    module: {
+      type: "FMX",
+      dataChunks: [{ index: 0, values: waveform }],
+    },
+  };
+  const oggPayload = Buffer.from("OggS\0sunvox-test", "latin1");
+  const vorbisDocument = {
+    format: TEXT_FORMAT,
+    magic: "SSYN",
+    headerTailHex: "00000000",
+    module: {
+      type: "Vorbis player",
+      dataChunks: [{ index: 0, bytesBase64: oggPayload.toString("base64") }],
+    },
+  };
+
+  const fmxBuffer = buildContainer(fmxDocument);
+  const parsedFmx = parseContainer(fmxBuffer);
+  const vorbisBuffer = buildContainer(vorbisDocument);
+  const parsedVorbis = parseContainer(vorbisBuffer);
+
+  assert.equal(parsedFmx.module.dataChunks[0].name, "customWaveform");
+  assert.equal(parsedFmx.module.dataChunks[0].count, 256);
+  assert.deepEqual(parsedFmx.module.dataChunks[0].values.slice(0, 4), [0, 0.5, -0.25, 0]);
+  assert.equal(parsedFmx.module.dataChunks[0].values[255], 1);
+  assert.equal(parsedVorbis.module.dataChunks[0].name, "oggVorbisPayload");
+  assert.equal(parsedVorbis.module.dataChunks[0].byteLength, oggPayload.length);
+  assert.equal(parsedVorbis.module.dataChunks[0].bytesBase64, oggPayload.toString("base64"));
+  assert.equal(sha256(buildContainer(parsedFmx)), sha256(fmxBuffer));
+  assert.equal(sha256(buildContainer(parsedVorbis)), sha256(vorbisBuffer));
+});
+
 test("parses synth into a structured module", async () => {
   const buffer = await readFile("instruments/mandel59 shepard.sunsynth");
   const document = parseContainer(buffer);

@@ -1919,6 +1919,17 @@
       "inputs": 1,
       "outputs": 2,
       "flags": ["generator", "effect"],
+      "dataChunks": [
+        {
+          "index": 0,
+          "name": "customWaveform",
+          "type": "float32Array",
+          "sourceType": "float32",
+          "valueKind": "waveform",
+          "sourceSymbol": "psynths_fm2.cpp:WAVETABLE_SIZE/custom_wave",
+          "count": 256
+        }
+      ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 32768, "default": 16384, "normal": -1, "group": 0 },
         { "index": 1, "name": "panning", "label": "Panning", "type": "int32", "min": 0, "max": 256, "default": 128, "normal": 128, "group": 0, "displayOffset": -128 },
@@ -2358,6 +2369,16 @@
       "inputs": 0,
       "outputs": 2,
       "flags": ["generator", "useMutex"],
+      "dataChunks": [
+        {
+          "index": 0,
+          "name": "oggVorbisPayload",
+          "type": "bytes",
+          "sourceType": "bytes",
+          "valueKind": "sampleData",
+          "sourceSymbol": "psynths_vorbis_player.cpp:psynth_new_chunk(mod_num,0,fsize)"
+        }
+      ],
       "controllers": [
         { "index": 0, "name": "volume", "label": "Volume", "type": "int32", "min": 0, "max": 512, "default": 256, "normal": 256, "group": 0 },
         { "index": 1, "name": "originalSpeed", "label": "Original speed", "type": "enum", "enum": "off_on", "min": 0, "max": 1, "default": 1, "normal": -1, "group": 0 },

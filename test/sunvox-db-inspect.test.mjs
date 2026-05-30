@@ -72,6 +72,8 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.ok(metrics.summary.dataChunkLayouts > 0);
   assert.equal(metrics.summary.reviewedDataChunkLayouts, metrics.summary.dataChunkLayouts);
   assert.equal(metrics.summary.dataChunkLayoutReviewPercent, 100);
+  assert.equal(metrics.dataChunkLayouts.reviewedDataChunkLayoutIds.includes("FMX:customWaveform#0"), true);
+  assert.equal(metrics.dataChunkLayouts.reviewedDataChunkLayoutIds.includes("Vorbis player:oggVorbisPayload#0"), true);
   assert.deepEqual(
     ["CHFR", "PDTA", "PPAR", "SLnK", "SMIB", "SMIC", "SMIP"].every((chunkId) =>
       metrics.chunkStorage.reviewedChunkIds.includes(chunkId),

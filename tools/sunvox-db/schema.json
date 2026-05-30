@@ -427,8 +427,8 @@
               "properties": {
                 "index": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["bytes", "container", "int8Array", "packedUInt32Array", "recordArray", "samplerEnvelope", "string", "struct", "uint8Array", "uint16Array"] },
-                "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "int8", "bytes", "string", "container", "empty"] },
+                "type": { "enum": ["bytes", "container", "float32Array", "int8Array", "packedUInt32Array", "recordArray", "samplerEnvelope", "string", "struct", "uint8Array", "uint16Array"] },
+                "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "int8", "float32", "bytes", "string", "container", "empty"] },
                 "valueKind": {
                   "enum": ["container", "controllerLinks", "curve", "envelope", "harmonics", "instrument", "mapping", "options", "sample", "sampleData", "slots", "text", "waveform"]
                 },
@@ -484,8 +484,8 @@
                 "start": { "type": "integer", "minimum": 0 },
                 "end": { "type": "integer", "minimum": 0 },
                 "name": { "type": "string" },
-                "type": { "enum": ["bytes", "container", "int8Array", "packedUInt32Array", "recordArray", "samplerEnvelope", "string", "struct", "uint8Array", "uint16Array"] },
-                "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "int8", "bytes", "string", "container", "empty"] },
+                "type": { "enum": ["bytes", "container", "float32Array", "int8Array", "packedUInt32Array", "recordArray", "samplerEnvelope", "string", "struct", "uint8Array", "uint16Array"] },
+                "sourceType": { "enum": ["int32", "uint32", "uint16", "uint8", "int8", "float32", "bytes", "string", "container", "empty"] },
                 "valueKind": {
                   "enum": ["container", "controllerLinks", "curve", "envelope", "harmonics", "instrument", "mapping", "options", "sample", "sampleData", "slots", "text", "waveform"]
                 },

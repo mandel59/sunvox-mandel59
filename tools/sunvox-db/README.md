@@ -61,13 +61,14 @@ options, and custom controller names through reusable layout types such as
 that metadata with CVAL chunks so user controller values appear under
 `controllers.user`, with auxiliary target module/controller names resolved
 from embedded MetaModule projects when possible. FMX uses a repeated operator
-template so the editable text
-contains an `operators` array instead of a long raw controller list. Module data
-chunk layouts now cover sampled curves, compact option structures, and Sampler
-instrument/sample/envelope records. Analog generator and Sampler option chunks
-also record the original chunk byte length as `dataSize` so SunVox's
-trailing-zero trimming can round-trip exactly. Sampler PCM payloads are treated
-as known byte payloads with decoded chunk flags and sample rates; the raw bytes
+template so the editable text contains an `operators` array instead of a long
+raw controller list; its custom waveform chunk is decoded as a 256-value
+`float32Array`. Module data chunk layouts now cover sampled curves, compact
+option structures, and Sampler instrument/sample/envelope records. Analog
+generator and Sampler option chunks also record the original chunk byte length
+as `dataSize` so SunVox's trailing-zero trimming can round-trip exactly.
+Sampler PCM and Vorbis player OGG payloads are treated as known byte payloads
+with decoded chunk flags and sample rates where applicable; the raw bytes
 remain in `bytesBase64` until a higher-level audio sample representation is
 added. Module link slot chunks (`SLnK` and `SLnk`) declare which link array they
 annotate and which semantic path they populate, so graph tooling can avoid

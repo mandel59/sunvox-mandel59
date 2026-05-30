@@ -1341,6 +1341,7 @@ const CHUNK_SOURCE_TYPES = new Set([
   "uint16",
   "uint8",
   "int8",
+  "float32",
   "bytes",
   "string",
   "container",
