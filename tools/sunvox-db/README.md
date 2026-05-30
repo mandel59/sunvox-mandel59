@@ -205,6 +205,19 @@ npm run sunvox:verify:all
   by default so the output focuses on round-trip-relevant edits. Text output
   groups changes by project, named modules, controller/link sections, module
   data chunks, and named pattern events.
+- Typical diff output is grouped by review target:
+
+  ```text
+  Module #0 Amp [Amplifier] controllers
+    ~ modules[0].controllers.volume: 256 -> 300
+
+  Module #0 Amp [Amplifier] input links
+    ~ modules[0].inputs[0].module: 1 -> 2
+
+  Pattern #1 Lead events
+    ~ patterns[1].events[3].note: "C4" -> "D4"
+  ```
+
 - `sunvox:validate` reports DB-driven runtime compatibility warnings for a
   binary SunVox file or decoded JSON document, including embedded MetaModule
   containers. The first rules cover positive project tempo values, module name
@@ -214,6 +227,10 @@ npm run sunvox:verify:all
   outside the module list. Validation issues also carry a `trackingIssue` number
   so newly detected warnings can be routed back to the relevant source/DB gap or
   quality tracking issue.
+- A clean validation run prints `no validation issues`. Warning paths point to
+  editable document fields, so an out-of-range pattern effect parameter is
+  reported at a path such as `patterns[0].events[0].parameter.bpm` rather than
+  as an opaque chunk offset.
 - `sunvox:validate:all` applies the same validation to every checked-in
   `.sunvox` and `.sunsynth` sample, and treats any warning or error as a quality
   gate failure.

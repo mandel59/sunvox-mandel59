@@ -55,12 +55,55 @@ peer slot chunks are not mistaken for extra edges. Use `--json` for
 machine-readable output, `--events <count>` to control pattern event previews,
 or `--no-embedded` to keep the report shallow.
 
+Example outline excerpt:
+
+```text
+SunVox Outline: music\2022-04-17.sunvox
+
+Project
+  Name: 2022-04-17 03-24
+  BPM/Speed: 125 / 6
+  Patterns: 1
+  Modules: 9
+  Graph: active=9 edges=10 dangling=0
+
+Modules
+  #1 SuperSaw [MetaModule] ... dataChunks=15 embedded=1 userControllers=7
+  #8 MultiCtl [MultiCtl] ... dataChunks=4
+
+Patterns
+  #0 lines=32 tracks=3 events=28 pos=(0,0)
+    L000 T0 note=C4 module=#2 DrumSynth
+```
+
 `sunvox:diff` compares two SunVox binaries or decoded JSON documents at the
 structured text level. By default it ignores `_...` auxiliary helper fields so
 the output focuses on round-trip-relevant edits. Text output groups changes by
 project, named module/controller/link sections, and named pattern events; use
 `--json` for machine-readable change records or `--include-aux` when helper
 text should be included.
+
+Example diff excerpt:
+
+```text
+SunVox semantic diff
+Changes: 3
+
+Module #0 Amp [Amplifier] controllers
+  ~ modules[0].controllers.volume: 256 -> 300
+
+Module #0 Amp [Amplifier] input links
+  ~ modules[0].inputs[0].module: 1 -> 2
+
+Pattern #1 Lead events
+  ~ patterns[1].events[3].note: "C4" -> "D4"
+```
+
+`sunvox:validate` checks DB-backed editability and runtime compatibility rules
+without rebuilding the file. It reports paths into the structured document plus
+the DB rule ID, source hint, and tracking issue when available. Clean samples
+print `no validation issues`; warnings are used for values that can still
+round-trip but may be clamped or ignored by SunVox at runtime.
 
 Run the local quality gate before committing codec, DB, or frontend changes:
 
