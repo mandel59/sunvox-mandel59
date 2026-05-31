@@ -156,6 +156,10 @@ button:disabled:hover {
   gap: 0.5rem;
 }
 
+.project-permalink {
+  min-width: 6.75rem;
+}
+
 .project-list {
   display: grid;
   gap: 0.5rem;

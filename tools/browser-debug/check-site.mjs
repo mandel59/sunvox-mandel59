@@ -302,16 +302,49 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       topbarVolumeOutput: document.querySelector('#topbar-controls output')?.textContent ?? null,
       playerVolume: window.getMasterVolume?.() ?? null,
       locationHash: window.location.hash,
-      permalinkHref: document.querySelector('.project-permalink')?.getAttribute('href') ?? null,
+      copyLinkText: document.querySelector('.project-permalink')?.textContent.trim() ?? null,
+      permalinkHash: document.querySelector('.project-permalink')?.dataset.permalinkHash ?? null,
+      copyLinkWidth: document.querySelector('.project-permalink')?.getBoundingClientRect().width ?? null,
     }));
     if (afterSelect.topbarPlayDisabled !== false) {
       throw new Error(`Expected selected project to enable topbar play, got disabled=${afterSelect.topbarPlayDisabled}`);
     }
     if (
       afterSelect.locationHash !== '#file=music%2F2022-04-17.sunvox' ||
-      afterSelect.permalinkHref !== '#file=music%2F2022-04-17.sunvox'
+      afterSelect.copyLinkText !== 'Copy link' ||
+      afterSelect.permalinkHash !== '#file=music%2F2022-04-17.sunvox'
     ) {
       throw new Error(`Expected music file permalink hash, got ${JSON.stringify(afterSelect)}`);
+    }
+    await page.evaluate(() => {
+      window.__browserCheckCopiedLink = '';
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText: async (text) => {
+            window.__browserCheckCopiedLink = text;
+          },
+        },
+      });
+    });
+    const copyLinkButton = page.locator('.project-permalink');
+    const copyLinkButtonCount = await copyLinkButton.count();
+    if (copyLinkButtonCount !== 1) {
+      throw new Error(`Expected one copy link button, found ${copyLinkButtonCount}`);
+    }
+    await copyLinkButton.click();
+    await page.waitForTimeout(50);
+    const copiedLink = await page.evaluate(() => ({
+      copied: window.__browserCheckCopiedLink,
+      label: document.querySelector('.project-permalink')?.textContent.trim() ?? null,
+      width: document.querySelector('.project-permalink')?.getBoundingClientRect().width ?? null,
+    }));
+    const expectedCopiedLink = new URL('#file=music%2F2022-04-17.sunvox', url).href;
+    if (copiedLink.copied !== expectedCopiedLink || copiedLink.label !== 'Copied') {
+      throw new Error(`Expected copy link button to copy ${expectedCopiedLink}, got ${JSON.stringify(copiedLink)}`);
+    }
+    if (Math.abs(copiedLink.width - afterSelect.copyLinkWidth) > 0.5) {
+      throw new Error(`Expected copy link button width to stay stable, got ${afterSelect.copyLinkWidth} -> ${copiedLink.width}`);
     }
     if (afterSelect.topbarVolume !== '128' || afterSelect.topbarVolumeOutput !== '50%' || afterSelect.playerVolume !== 128) {
       throw new Error(
@@ -477,13 +510,15 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       selected: document.querySelector('#project-details h2')?.textContent ?? null,
       selectedButtonPath: document.querySelector('.project-button[aria-current="true"] .project-path')?.textContent ?? null,
       locationHash: window.location.hash,
-      permalinkHref: document.querySelector('.project-permalink')?.getAttribute('href') ?? null,
+      copyLinkText: document.querySelector('.project-permalink')?.textContent.trim() ?? null,
+      permalinkHash: document.querySelector('.project-permalink')?.dataset.permalinkHash ?? null,
     }));
     if (
       directLink.selected !== '2022-04-17 18-14' ||
       directLink.selectedButtonPath !== 'music/2022-04-18.sunvox' ||
       directLink.locationHash !== '#file=music%2F2022-04-18.sunvox' ||
-      directLink.permalinkHref !== '#file=music%2F2022-04-18.sunvox'
+      directLink.copyLinkText !== 'Copy link' ||
+      directLink.permalinkHash !== '#file=music%2F2022-04-18.sunvox'
     ) {
       throw new Error(`Expected direct file permalink to select music/2022-04-18.sunvox, got ${JSON.stringify(directLink)}`);
     }

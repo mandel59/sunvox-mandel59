@@ -30,6 +30,41 @@ function projectPermalinkHash(path) {
   return `${FILE_HASH_PREFIX}${encodeURIComponent(path)}`;
 }
 
+function projectPermalinkUrl(path) {
+  const hash = projectPermalinkHash(path);
+  if (typeof window === "undefined") {
+    return hash;
+  }
+  const url = new URL(window.location.href);
+  url.hash = hash;
+  return url.href;
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall back for embedded browsers that expose Clipboard API but reject writes.
+    }
+  }
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  document.body.append(textArea);
+  textArea.focus();
+  textArea.select();
+  textArea.setSelectionRange(0, text.length);
+  const copied = document.execCommand("copy");
+  textArea.remove();
+  if (!copied) {
+    throw new Error("Copy command failed");
+  }
+}
+
 function selectedPathFromLocation() {
   if (typeof window === "undefined" || !window.location.hash.startsWith(FILE_HASH_PREFIX)) {
     return "";
@@ -557,6 +592,27 @@ function ModuleGraphSection({ project }) {
 
 function ProjectActions({ project }) {
   const playable = canPlay(project);
+  const [copyLabel, setCopyLabel] = useState("Copy link");
+  const copyResetTimerRef = useRef(undefined);
+
+  useEffect(() => {
+    setCopyLabel("Copy link");
+    return () => {
+      window.clearTimeout(copyResetTimerRef.current);
+    };
+  }, [project.path]);
+
+  async function copyProjectLink() {
+    window.clearTimeout(copyResetTimerRef.current);
+    try {
+      await copyText(projectPermalinkUrl(project.path));
+      setCopyLabel("Copied");
+    } catch {
+      setCopyLabel("Copy failed");
+    }
+    copyResetTimerRef.current = window.setTimeout(() => setCopyLabel("Copy link"), 1600);
+  }
+
   return (
     <div className="project-actions">
       {playable ? (
@@ -572,9 +628,14 @@ function ProjectActions({ project }) {
       <a className="action-link" href={project.path} download>
         Download
       </a>
-      <a className="action-link project-permalink" href={projectPermalinkHash(project.path)}>
-        Permalink
-      </a>
+      <button
+        type="button"
+        className="project-permalink"
+        data-permalink-hash={projectPermalinkHash(project.path)}
+        onClick={copyProjectLink}
+      >
+        {copyLabel}
+      </button>
     </div>
   );
 }
