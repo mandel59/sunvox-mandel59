@@ -301,9 +301,17 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       topbarVolume: document.querySelector('#topbar-controls input[type="range"]')?.value ?? null,
       topbarVolumeOutput: document.querySelector('#topbar-controls output')?.textContent ?? null,
       playerVolume: window.getMasterVolume?.() ?? null,
+      locationHash: window.location.hash,
+      permalinkHref: document.querySelector('.project-permalink')?.getAttribute('href') ?? null,
     }));
     if (afterSelect.topbarPlayDisabled !== false) {
       throw new Error(`Expected selected project to enable topbar play, got disabled=${afterSelect.topbarPlayDisabled}`);
+    }
+    if (
+      afterSelect.locationHash !== '#file=music%2F2022-04-17.sunvox' ||
+      afterSelect.permalinkHref !== '#file=music%2F2022-04-17.sunvox'
+    ) {
+      throw new Error(`Expected music file permalink hash, got ${JSON.stringify(afterSelect)}`);
     }
     if (afterSelect.topbarVolume !== '128' || afterSelect.topbarVolumeOutput !== '50%' || afterSelect.playerVolume !== 128) {
       throw new Error(
@@ -462,6 +470,24 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       throw new Error(`Expected 64-line ticks for dense timeline, got ${denseTimeline.tickLabels.join(',')}`);
     }
 
+    const directLinkUrl = new URL(url);
+    directLinkUrl.hash = 'file=music%2F2022-04-18.sunvox';
+    await page.goto(directLinkUrl.href, { waitUntil: 'networkidle' });
+    const directLink = await page.evaluate(() => ({
+      selected: document.querySelector('#project-details h2')?.textContent ?? null,
+      selectedButtonPath: document.querySelector('.project-button[aria-current="true"] .project-path')?.textContent ?? null,
+      locationHash: window.location.hash,
+      permalinkHref: document.querySelector('.project-permalink')?.getAttribute('href') ?? null,
+    }));
+    if (
+      directLink.selected !== '2022-04-17 18-14' ||
+      directLink.selectedButtonPath !== 'music/2022-04-18.sunvox' ||
+      directLink.locationHash !== '#file=music%2F2022-04-18.sunvox' ||
+      directLink.permalinkHref !== '#file=music%2F2022-04-18.sunvox'
+    ) {
+      throw new Error(`Expected direct file permalink to select music/2022-04-18.sunvox, got ${JSON.stringify(directLink)}`);
+    }
+
     await mkdir(path.dirname(screenshotPath), { recursive: true });
     await page.screenshot({ path: screenshotPath, fullPage: true });
 
@@ -474,6 +500,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       afterSelect,
       supertrackTimeline,
       denseTimeline,
+      directLink,
       errors,
       badResponses,
       screenshot: path.relative(repoRoot, screenshotPath).replaceAll('\\', '/'),

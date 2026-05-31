@@ -24,6 +24,22 @@ const SYNTH_KEYBOARD_MAX_START_NOTE = 96;
 const SYNTH_KEYBOARD_VELOCITY = 128;
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const BLACK_KEY_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
+const FILE_HASH_PREFIX = "#file=";
+
+function projectPermalinkHash(path) {
+  return `${FILE_HASH_PREFIX}${encodeURIComponent(path)}`;
+}
+
+function selectedPathFromLocation() {
+  if (typeof window === "undefined" || !window.location.hash.startsWith(FILE_HASH_PREFIX)) {
+    return "";
+  }
+  try {
+    return decodeURIComponent(window.location.hash.slice(FILE_HASH_PREFIX.length));
+  } catch {
+    return "";
+  }
+}
 
 function compact(value) {
   return value === undefined || value === null || value === "" ? "-" : value;
@@ -556,6 +572,9 @@ function ProjectActions({ project }) {
       <a className="action-link" href={project.path} download>
         Download
       </a>
+      <a className="action-link project-permalink" href={projectPermalinkHash(project.path)}>
+        Permalink
+      </a>
     </div>
   );
 }
@@ -842,8 +861,10 @@ function App() {
         return;
       }
       const nextProjects = data.projects ?? [];
+      const hashPath = selectedPathFromLocation();
+      const initialProject = nextProjects.find((project) => project.path === hashPath) ?? nextProjects[0];
       setProjects(nextProjects);
-      setSelectedPath(nextProjects[0]?.path ?? "");
+      setSelectedPath(initialProject?.path ?? "");
     }
     loadProjectIndex().catch((loadError) => {
       if (alive) {
@@ -859,6 +880,31 @@ function App() {
     () => projects.find((project) => project.path === selectedPath),
     [projects, selectedPath],
   );
+
+  useEffect(() => {
+    if (!projects.length) {
+      return undefined;
+    }
+    function applyHashSelection() {
+      const hashPath = selectedPathFromLocation();
+      const nextProject = projects.find((project) => project.path === hashPath) ?? projects[0];
+      setSelectedPath(nextProject?.path ?? "");
+    }
+    window.addEventListener("hashchange", applyHashSelection);
+    window.addEventListener("popstate", applyHashSelection);
+    return () => {
+      window.removeEventListener("hashchange", applyHashSelection);
+      window.removeEventListener("popstate", applyHashSelection);
+    };
+  }, [projects]);
+
+  function selectProjectPath(path) {
+    setSelectedPath(path);
+    const nextHash = projectPermalinkHash(path);
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, "", nextHash);
+    }
+  }
 
   useEffect(() => {
     function applyVolume() {
@@ -880,7 +926,7 @@ function App() {
           )
         : null}
       <main className="app-shell">
-        <ProjectList projects={projects} selectedPath={selectedPath} onSelect={setSelectedPath} />
+        <ProjectList projects={projects} selectedPath={selectedPath} onSelect={selectProjectPath} />
         <ProjectDetails project={selectedProject} error={error} />
       </main>
     </>
