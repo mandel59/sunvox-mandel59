@@ -12,6 +12,10 @@
       "title": "Scratch Acid Bass",
       "magic": "SSYN",
       "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunsynth/scratch-assorted-instruments.mjs",
+        "name": "scratch-assorted-instruments.mjs"
+      },
       "synth": {
         "index": 0,
         "name": "Scratch Acid Bass",
@@ -998,6 +1002,10 @@
       "title": "Scratch Analog",
       "magic": "SSYN",
       "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunsynth/scratch-analog.mjs",
+        "name": "scratch-analog.mjs"
+      },
       "synth": {
         "index": 0,
         "name": "Scratch Analog",
@@ -1548,6 +1556,10 @@
       "title": "Scratch FMX Pluck",
       "magic": "SSYN",
       "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunsynth/scratch-fmx.mjs",
+        "name": "scratch-fmx.mjs"
+      },
       "synth": {
         "index": 0,
         "name": "Scratch FMX Pluck",
@@ -3139,6 +3151,10 @@
       "title": "Scratch FMX Tines",
       "magic": "SSYN",
       "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunsynth/scratch-fmx.mjs",
+        "name": "scratch-fmx.mjs"
+      },
       "synth": {
         "index": 0,
         "name": "Scratch FMX Tines",
@@ -4730,6 +4746,10 @@
       "title": "Scratch Glass Bell",
       "magic": "SSYN",
       "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunsynth/scratch-assorted-instruments.mjs",
+        "name": "scratch-assorted-instruments.mjs"
+      },
       "synth": {
         "index": 0,
         "name": "Scratch Glass Bell",
@@ -4781,64 +4801,64 @@
         "userControllers": [
           {
             "index": 0,
-            "label": "Carrier volume",
-            "value": 158,
-            "link": {
-              "module": 2,
-              "controller": 0,
-              "_moduleName": "Bell FM",
-              "_moduleType": "FM",
-              "_controllerName": "cVolume",
-              "_controllerLabel": "C.Volume"
-            }
-          },
-          {
-            "index": 1,
-            "label": "Mod volume",
-            "value": 122,
+            "label": "Strike",
+            "value": 236,
             "link": {
               "module": 2,
               "controller": 1,
-              "_moduleName": "Bell FM",
+              "_moduleName": "Glass Strike",
               "_moduleType": "FM",
               "_controllerName": "mVolume",
               "_controllerLabel": "M.Volume"
             }
           },
           {
-            "index": 2,
-            "label": "Mod ratio",
-            "value": 3,
+            "index": 1,
+            "label": "Body",
+            "value": 126,
             "link": {
-              "module": 2,
-              "controller": 4,
-              "_moduleName": "Bell FM",
+              "module": 3,
+              "controller": 0,
+              "_moduleName": "Crystal Body",
               "_moduleType": "FM",
-              "_controllerName": "mFreqRatio",
-              "_controllerLabel": "M.Freq ratio"
+              "_controllerName": "cVolume",
+              "_controllerLabel": "C.Volume"
+            }
+          },
+          {
+            "index": 2,
+            "label": "Air",
+            "value": 46,
+            "link": {
+              "module": 4,
+              "controller": 0,
+              "_moduleName": "Air Ring",
+              "_moduleType": "FM",
+              "_controllerName": "cVolume",
+              "_controllerLabel": "C.Volume"
             }
           },
           {
             "index": 3,
-            "label": "Mod self",
-            "value": 18,
+            "label": "Brightness",
+            "value": 540,
             "link": {
-              "module": 2,
-              "controller": 5,
-              "_moduleName": "Bell FM",
-              "_moduleType": "FM",
-              "_controllerName": "mSelfModulation",
-              "_controllerLabel": "M.Self-modulation"
+              "module": 5,
+              "controller": 2,
+              "_moduleName": "Glass Polish",
+              "_moduleType": "Filter Pro",
+              "_controllerName": "freq",
+              "_controllerLabel": "Frequency"
             }
           },
           {
             "index": 4,
-            "label": "Reverb wet",
-            "value": 54,
+            "label": "Hall wet",
+            "value": 86,
             "link": {
-              "module": 3,
+              "module": 6,
               "controller": 1,
-              "_moduleName": "Small Hall",
+              "_moduleName": "Crystal Hall",
               "_moduleType": "Reverb",
               "_controllerName": "wet",
               "_controllerLabel": "Wet"
@@ -4847,9 +4867,9 @@
           {
             "index": 5,
             "label": "Output trim",
-            "value": 224,
+            "value": 292,
             "link": {
-              "module": 4,
+              "module": 7,
               "controller": 0,
               "_moduleName": "Bell Trim",
               "_moduleType": "Amplifier",
@@ -4966,64 +4986,64 @@
           "userControllers": [
             {
               "index": 0,
-              "label": "Carrier volume",
-              "value": 158,
-              "link": {
-                "module": 2,
-                "controller": 0,
-                "_moduleName": "Bell FM",
-                "_moduleType": "FM",
-                "_controllerName": "cVolume",
-                "_controllerLabel": "C.Volume"
-              }
-            },
-            {
-              "index": 1,
-              "label": "Mod volume",
-              "value": 122,
+              "label": "Strike",
+              "value": 236,
               "link": {
                 "module": 2,
                 "controller": 1,
-                "_moduleName": "Bell FM",
+                "_moduleName": "Glass Strike",
                 "_moduleType": "FM",
                 "_controllerName": "mVolume",
                 "_controllerLabel": "M.Volume"
               }
             },
             {
-              "index": 2,
-              "label": "Mod ratio",
-              "value": 3,
+              "index": 1,
+              "label": "Body",
+              "value": 126,
               "link": {
-                "module": 2,
-                "controller": 4,
-                "_moduleName": "Bell FM",
+                "module": 3,
+                "controller": 0,
+                "_moduleName": "Crystal Body",
                 "_moduleType": "FM",
-                "_controllerName": "mFreqRatio",
-                "_controllerLabel": "M.Freq ratio"
+                "_controllerName": "cVolume",
+                "_controllerLabel": "C.Volume"
+              }
+            },
+            {
+              "index": 2,
+              "label": "Air",
+              "value": 46,
+              "link": {
+                "module": 4,
+                "controller": 0,
+                "_moduleName": "Air Ring",
+                "_moduleType": "FM",
+                "_controllerName": "cVolume",
+                "_controllerLabel": "C.Volume"
               }
             },
             {
               "index": 3,
-              "label": "Mod self",
-              "value": 18,
+              "label": "Brightness",
+              "value": 540,
               "link": {
-                "module": 2,
-                "controller": 5,
-                "_moduleName": "Bell FM",
-                "_moduleType": "FM",
-                "_controllerName": "mSelfModulation",
-                "_controllerLabel": "M.Self-modulation"
+                "module": 5,
+                "controller": 2,
+                "_moduleName": "Glass Polish",
+                "_moduleType": "Filter Pro",
+                "_controllerName": "freq",
+                "_controllerLabel": "Frequency"
               }
             },
             {
               "index": 4,
-              "label": "Reverb wet",
-              "value": 54,
+              "label": "Hall wet",
+              "value": 86,
               "link": {
-                "module": 3,
+                "module": 6,
                 "controller": 1,
-                "_moduleName": "Small Hall",
+                "_moduleName": "Crystal Hall",
                 "_moduleType": "Reverb",
                 "_controllerName": "wet",
                 "_controllerLabel": "Wet"
@@ -5032,9 +5052,9 @@
             {
               "index": 5,
               "label": "Output trim",
-              "value": 224,
+              "value": 292,
               "link": {
-                "module": 4,
+                "module": 7,
                 "controller": 0,
                 "_moduleName": "Bell Trim",
                 "_moduleType": "Amplifier",
@@ -5119,12 +5139,12 @@
               },
               "globalVolume": 256,
               "patternCount": 0,
-              "moduleCount": 5
+              "moduleCount": 8
             },
             "stats": {
-              "modules": 5,
-              "activeModules": 5,
-              "links": 4,
+              "modules": 8,
+              "activeModules": 8,
+              "links": 9,
               "patterns": 0,
               "events": 0,
               "embeddedContainers": 0
@@ -5135,7 +5155,7 @@
                 "name": "Output",
                 "kind": "output",
                 "position": {
-                  "x": 864,
+                  "x": 1152,
                   "y": 512,
                   "z": 0
                 },
@@ -5229,15 +5249,15 @@
               },
               {
                 "index": 2,
-                "name": "Bell FM",
+                "name": "Glass Strike",
                 "kind": "FM",
                 "type": "FM",
                 "position": {
-                  "x": 240,
-                  "y": 512,
+                  "x": 224,
+                  "y": 352,
                   "z": 0
                 },
-                "color": "#58dfff",
+                "color": "#86f5ff",
                 "flags": [
                   "exists",
                   "generator",
@@ -5251,13 +5271,13 @@
                     "index": 0,
                     "path": "cVolume",
                     "label": "C.Volume",
-                    "value": 158
+                    "value": 92
                   },
                   {
                     "index": 1,
                     "path": "mVolume",
                     "label": "M.Volume",
-                    "value": 122
+                    "value": 236
                   },
                   {
                     "index": 2,
@@ -5270,19 +5290,19 @@
                     "index": 3,
                     "path": "cFreqRatio",
                     "label": "C.Freq ratio",
-                    "value": 1
+                    "value": 2
                   },
                   {
                     "index": 4,
                     "path": "mFreqRatio",
                     "label": "M.Freq ratio",
-                    "value": 3
+                    "value": 11
                   },
                   {
                     "index": 5,
                     "path": "mSelfModulation",
                     "label": "M.Self-modulation",
-                    "value": 18
+                    "value": 62
                   },
                   {
                     "index": 6,
@@ -5294,7 +5314,7 @@
                     "index": 7,
                     "path": "cDecay",
                     "label": "C.Decay",
-                    "value": 86
+                    "value": 26
                   },
                   {
                     "index": 8,
@@ -5306,7 +5326,7 @@
                     "index": 9,
                     "path": "cRelease",
                     "label": "C.Release",
-                    "value": 180
+                    "value": 130
                   },
                   {
                     "index": 10,
@@ -5318,7 +5338,7 @@
                     "index": 11,
                     "path": "mDecay",
                     "label": "M.Decay",
-                    "value": 68
+                    "value": 18
                   },
                   {
                     "index": 12,
@@ -5330,19 +5350,19 @@
                     "index": 13,
                     "path": "mRelease",
                     "label": "M.Release",
-                    "value": 210
+                    "value": 70
                   },
                   {
                     "index": 14,
                     "path": "mScalingPerKey",
                     "label": "M.Scaling per key",
-                    "value": 1
+                    "value": 2
                   },
                   {
                     "index": 15,
                     "path": "polyphony",
                     "label": "Polyphony",
-                    "value": 8,
+                    "value": 12,
                     "unit": "ch."
                   },
                   {
@@ -5357,15 +5377,403 @@
               },
               {
                 "index": 3,
-                "name": "Small Hall",
-                "kind": "Reverb",
-                "type": "Reverb",
+                "name": "Crystal Body",
+                "kind": "FM",
+                "type": "FM",
                 "position": {
-                  "x": 448,
+                  "x": 224,
                   "y": 512,
                   "z": 0
                 },
-                "color": "#ffd37f",
+                "color": "#5ee8ff",
+                "flags": [
+                  "exists",
+                  "generator",
+                  "initialized"
+                ],
+                "inputCount": 1,
+                "outputCount": 0,
+                "controllerCount": 17,
+                "controllers": [
+                  {
+                    "index": 0,
+                    "path": "cVolume",
+                    "label": "C.Volume",
+                    "value": 126
+                  },
+                  {
+                    "index": 1,
+                    "path": "mVolume",
+                    "label": "M.Volume",
+                    "value": 116
+                  },
+                  {
+                    "index": 2,
+                    "path": "panning",
+                    "label": "Panning",
+                    "value": 108,
+                    "displayValue": -20
+                  },
+                  {
+                    "index": 3,
+                    "path": "cFreqRatio",
+                    "label": "C.Freq ratio",
+                    "value": 1
+                  },
+                  {
+                    "index": 4,
+                    "path": "mFreqRatio",
+                    "label": "M.Freq ratio",
+                    "value": 5
+                  },
+                  {
+                    "index": 5,
+                    "path": "mSelfModulation",
+                    "label": "M.Self-modulation",
+                    "value": 24
+                  },
+                  {
+                    "index": 6,
+                    "path": "cAttack",
+                    "label": "C.Attack",
+                    "value": 0
+                  },
+                  {
+                    "index": 7,
+                    "path": "cDecay",
+                    "label": "C.Decay",
+                    "value": 190
+                  },
+                  {
+                    "index": 8,
+                    "path": "cSustain",
+                    "label": "C.Sustain",
+                    "value": 0
+                  },
+                  {
+                    "index": 9,
+                    "path": "cRelease",
+                    "label": "C.Release",
+                    "value": 380
+                  },
+                  {
+                    "index": 10,
+                    "path": "mAttack",
+                    "label": "M.Attack",
+                    "value": 0
+                  },
+                  {
+                    "index": 11,
+                    "path": "mDecay",
+                    "label": "M.Decay",
+                    "value": 72
+                  },
+                  {
+                    "index": 12,
+                    "path": "mSustain",
+                    "label": "M.Sustain",
+                    "value": 0
+                  },
+                  {
+                    "index": 13,
+                    "path": "mRelease",
+                    "label": "M.Release",
+                    "value": 180
+                  },
+                  {
+                    "index": 14,
+                    "path": "mScalingPerKey",
+                    "label": "M.Scaling per key",
+                    "value": 1
+                  },
+                  {
+                    "index": 15,
+                    "path": "polyphony",
+                    "label": "Polyphony",
+                    "value": 12,
+                    "unit": "ch."
+                  },
+                  {
+                    "index": 16,
+                    "path": "mode",
+                    "label": "Mode",
+                    "value": "hq"
+                  }
+                ],
+                "dataChunkCount": 0,
+                "embeddedCount": 0
+              },
+              {
+                "index": 4,
+                "name": "Air Ring",
+                "kind": "FM",
+                "type": "FM",
+                "position": {
+                  "x": 224,
+                  "y": 672,
+                  "z": 0
+                },
+                "color": "#c8fbff",
+                "flags": [
+                  "exists",
+                  "generator",
+                  "initialized"
+                ],
+                "inputCount": 1,
+                "outputCount": 0,
+                "controllerCount": 17,
+                "controllers": [
+                  {
+                    "index": 0,
+                    "path": "cVolume",
+                    "label": "C.Volume",
+                    "value": 46
+                  },
+                  {
+                    "index": 1,
+                    "path": "mVolume",
+                    "label": "M.Volume",
+                    "value": 184
+                  },
+                  {
+                    "index": 2,
+                    "path": "panning",
+                    "label": "Panning",
+                    "value": 156,
+                    "displayValue": 28
+                  },
+                  {
+                    "index": 3,
+                    "path": "cFreqRatio",
+                    "label": "C.Freq ratio",
+                    "value": 3
+                  },
+                  {
+                    "index": 4,
+                    "path": "mFreqRatio",
+                    "label": "M.Freq ratio",
+                    "value": 13
+                  },
+                  {
+                    "index": 5,
+                    "path": "mSelfModulation",
+                    "label": "M.Self-modulation",
+                    "value": 86
+                  },
+                  {
+                    "index": 6,
+                    "path": "cAttack",
+                    "label": "C.Attack",
+                    "value": 0
+                  },
+                  {
+                    "index": 7,
+                    "path": "cDecay",
+                    "label": "C.Decay",
+                    "value": 122
+                  },
+                  {
+                    "index": 8,
+                    "path": "cSustain",
+                    "label": "C.Sustain",
+                    "value": 0
+                  },
+                  {
+                    "index": 9,
+                    "path": "cRelease",
+                    "label": "C.Release",
+                    "value": 440
+                  },
+                  {
+                    "index": 10,
+                    "path": "mAttack",
+                    "label": "M.Attack",
+                    "value": 0
+                  },
+                  {
+                    "index": 11,
+                    "path": "mDecay",
+                    "label": "M.Decay",
+                    "value": 46
+                  },
+                  {
+                    "index": 12,
+                    "path": "mSustain",
+                    "label": "M.Sustain",
+                    "value": 0
+                  },
+                  {
+                    "index": 13,
+                    "path": "mRelease",
+                    "label": "M.Release",
+                    "value": 160
+                  },
+                  {
+                    "index": 14,
+                    "path": "mScalingPerKey",
+                    "label": "M.Scaling per key",
+                    "value": 3
+                  },
+                  {
+                    "index": 15,
+                    "path": "polyphony",
+                    "label": "Polyphony",
+                    "value": 12,
+                    "unit": "ch."
+                  },
+                  {
+                    "index": 16,
+                    "path": "mode",
+                    "label": "Mode",
+                    "value": "hq"
+                  }
+                ],
+                "dataChunkCount": 0,
+                "embeddedCount": 0
+              },
+              {
+                "index": 5,
+                "name": "Glass Polish",
+                "kind": "Filter Pro",
+                "type": "Filter Pro",
+                "position": {
+                  "x": 472,
+                  "y": 512,
+                  "z": 0
+                },
+                "color": "#b4f6ff",
+                "flags": [
+                  "exists",
+                  "effect",
+                  "initialized",
+                  "getSpeedChanges"
+                ],
+                "inputCount": 3,
+                "outputCount": 0,
+                "controllerCount": 17,
+                "controllers": [
+                  {
+                    "index": 0,
+                    "path": "volume",
+                    "label": "Volume",
+                    "value": 32768
+                  },
+                  {
+                    "index": 1,
+                    "path": "type",
+                    "label": "Type",
+                    "value": "hp6db"
+                  },
+                  {
+                    "index": 2,
+                    "path": "freq",
+                    "label": "Frequency",
+                    "value": 540,
+                    "unit": "Hz"
+                  },
+                  {
+                    "index": 3,
+                    "path": "freqFinetune",
+                    "label": "Frequency finetune",
+                    "value": 1000,
+                    "unit": "Hz/1000",
+                    "displayValue": 0
+                  },
+                  {
+                    "index": 4,
+                    "path": "freqScale",
+                    "label": "Frequency scale",
+                    "value": 100,
+                    "unit": "%"
+                  },
+                  {
+                    "index": 5,
+                    "path": "expFreq",
+                    "label": "Exponential frequency",
+                    "value": "off"
+                  },
+                  {
+                    "index": 6,
+                    "path": "q",
+                    "label": "Q",
+                    "value": 16384
+                  },
+                  {
+                    "index": 7,
+                    "path": "gain",
+                    "label": "Gain",
+                    "value": 16384,
+                    "displayValue": 0
+                  },
+                  {
+                    "index": 8,
+                    "path": "rolloff",
+                    "label": "Rolloff",
+                    "value": "db12"
+                  },
+                  {
+                    "index": 9,
+                    "path": "response",
+                    "label": "Response",
+                    "value": 110
+                  },
+                  {
+                    "index": 10,
+                    "path": "mode",
+                    "label": "Mode",
+                    "value": "stereoSmoothing"
+                  },
+                  {
+                    "index": 11,
+                    "path": "mix",
+                    "label": "Mix",
+                    "value": 32768
+                  },
+                  {
+                    "index": 12,
+                    "path": "lfoFreq",
+                    "label": "LFO frequency",
+                    "value": 8
+                  },
+                  {
+                    "index": 13,
+                    "path": "lfoAmp",
+                    "label": "LFO amplitude",
+                    "value": 0
+                  },
+                  {
+                    "index": 14,
+                    "path": "lfoWaveform",
+                    "label": "LFO waveform",
+                    "value": "sin"
+                  },
+                  {
+                    "index": 15,
+                    "path": "setLfoPhase",
+                    "label": "Set LFO phase",
+                    "value": 0
+                  },
+                  {
+                    "index": 16,
+                    "path": "lfoFreqUnit",
+                    "label": "LFO frequency unit",
+                    "value": "hz002"
+                  }
+                ],
+                "dataChunkCount": 0,
+                "embeddedCount": 0
+              },
+              {
+                "index": 6,
+                "name": "Crystal Hall",
+                "kind": "Reverb",
+                "type": "Reverb",
+                "position": {
+                  "x": 688,
+                  "y": 512,
+                  "z": 0
+                },
+                "color": "#78cfff",
                 "flags": [
                   "exists",
                   "effect",
@@ -5385,25 +5793,25 @@
                     "index": 1,
                     "path": "wet",
                     "label": "Wet",
-                    "value": 54
+                    "value": 86
                   },
                   {
                     "index": 2,
                     "path": "feedback",
                     "label": "Feedback",
-                    "value": 182
+                    "value": 226
                   },
                   {
                     "index": 3,
                     "path": "damp",
                     "label": "Damp",
-                    "value": 148
+                    "value": 78
                   },
                   {
                     "index": 4,
                     "path": "stereoWidth",
                     "label": "Stereo width",
-                    "value": 230
+                    "value": 256
                   },
                   {
                     "index": 5,
@@ -5427,7 +5835,7 @@
                     "index": 8,
                     "path": "roomSize",
                     "label": "Room size",
-                    "value": 24
+                    "value": 46
                   },
                   {
                     "index": 9,
@@ -5440,16 +5848,16 @@
                 "embeddedCount": 0
               },
               {
-                "index": 4,
+                "index": 7,
                 "name": "Bell Trim",
                 "kind": "Amplifier",
                 "type": "Amplifier",
                 "position": {
-                  "x": 656,
+                  "x": 920,
                   "y": 512,
                   "z": 0
                 },
-                "color": "#e47fff",
+                "color": "#a8f4ff",
                 "flags": [
                   "exists",
                   "effect",
@@ -5463,7 +5871,7 @@
                     "index": 0,
                     "path": "volume",
                     "label": "Volume",
-                    "value": 224
+                    "value": 292
                   },
                   {
                     "index": 1,
@@ -5489,7 +5897,7 @@
                     "index": 4,
                     "path": "stereoWidth",
                     "label": "Stereo width",
-                    "value": 154
+                    "value": 190
                   },
                   {
                     "index": 5,
@@ -5523,7 +5931,7 @@
             ],
             "links": [
               {
-                "from": 4,
+                "from": 7,
                 "to": 0,
                 "kind": "input",
                 "toSlot": 0,
@@ -5537,24 +5945,69 @@
                 "kind": "input",
                 "toSlot": 0,
                 "fromName": "Input",
-                "toName": "Bell FM",
+                "toName": "Glass Strike",
+                "valid": true
+              },
+              {
+                "from": 1,
+                "to": 3,
+                "kind": "input",
+                "toSlot": 0,
+                "fromName": "Input",
+                "toName": "Crystal Body",
+                "valid": true
+              },
+              {
+                "from": 1,
+                "to": 4,
+                "kind": "input",
+                "toSlot": 0,
+                "fromName": "Input",
+                "toName": "Air Ring",
                 "valid": true
               },
               {
                 "from": 2,
-                "to": 3,
+                "to": 5,
                 "kind": "input",
                 "toSlot": 0,
-                "fromName": "Bell FM",
-                "toName": "Small Hall",
+                "fromName": "Glass Strike",
+                "toName": "Glass Polish",
                 "valid": true
               },
               {
                 "from": 3,
-                "to": 4,
+                "to": 5,
+                "kind": "input",
+                "toSlot": 1,
+                "fromName": "Crystal Body",
+                "toName": "Glass Polish",
+                "valid": true
+              },
+              {
+                "from": 4,
+                "to": 5,
+                "kind": "input",
+                "toSlot": 2,
+                "fromName": "Air Ring",
+                "toName": "Glass Polish",
+                "valid": true
+              },
+              {
+                "from": 5,
+                "to": 6,
                 "kind": "input",
                 "toSlot": 0,
-                "fromName": "Small Hall",
+                "fromName": "Glass Polish",
+                "toName": "Crystal Hall",
+                "valid": true
+              },
+              {
+                "from": 6,
+                "to": 7,
+                "kind": "input",
+                "toSlot": 0,
+                "fromName": "Crystal Hall",
                 "toName": "Bell Trim",
                 "valid": true
               }
@@ -5570,6 +6023,10 @@
       "title": "Scratch Kick Snap",
       "magic": "SSYN",
       "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunsynth/scratch-assorted-instruments.mjs",
+        "name": "scratch-assorted-instruments.mjs"
+      },
       "synth": {
         "index": 0,
         "name": "Scratch Kick Snap",
@@ -6308,6 +6765,10 @@
       "title": "Scratch Layered Pad",
       "magic": "SSYN",
       "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunsynth/scratch-layered-pad.mjs",
+        "name": "scratch-layered-pad.mjs"
+      },
       "synth": {
         "index": 0,
         "name": "Scratch Layered Pad",
@@ -7778,6 +8239,10 @@
       "title": "Scratch PWM Organ",
       "magic": "SSYN",
       "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunsynth/scratch-assorted-instruments.mjs",
+        "name": "scratch-assorted-instruments.mjs"
+      },
       "synth": {
         "index": 0,
         "name": "Scratch PWM Organ",

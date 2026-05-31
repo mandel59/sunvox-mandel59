@@ -1,13 +1,19 @@
 #!/usr/bin/env node
-import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
-import { dirname, extname, join, relative, resolve } from "node:path";
+import { extname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import vm from "node:vm";
 
 import { COVERAGE_MODULE_TYPES } from "./generate-sunvox-coverage-fixtures.mjs";
 import { buildContainer, parseContainer, SUNVOX_DB } from "./sunvox-codec.mjs";
+import {
+  DEFAULT_OFFLINE_INIT_FLAGS,
+  DEFAULT_SLOT as SLOT,
+  loadBufferIntoSlot,
+  readCString,
+  readMagic,
+  withSunVoxSlot,
+} from "./sunvox-node.mjs";
 
 const DEFAULT_INPUT_PATH = "test/fixtures/sunvox/unsampled-modules.sunvox";
 const DEFAULT_INPUTS = [
@@ -18,8 +24,6 @@ const DEFAULT_INPUTS = [
   "test/fixtures/sunvox",
 ];
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
-const SUNVOX_JS_PATH = "sunvox_lib/sunvox_lib/js/lib/sunvox.js";
-const SLOT = 0;
 const EDITED_PROJECT_NAME = "Codec compat project";
 const EDITED_MODULE_NAME = "CodecCompatModule";
 const EDITED_PATTERN_NAME = "Codec compat pattern";
@@ -39,10 +43,6 @@ const EDITED_PATTERN_EFFECT_EVENT = {
   controller: 0x50,
   value: 0,
 };
-const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
-const SV_INIT_FLAG_OFFLINE = 1 << 1;
-const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
-const SV_INIT_FLAGS = SV_INIT_FLAG_NO_DEBUG_OUTPUT | SV_INIT_FLAG_OFFLINE | SV_INIT_FLAG_ONE_THREAD;
 const SV_MODULE_INPUTS_OFF = 16;
 const SV_MODULE_OUTPUTS_OFF = 24;
 const COMPATIBILITY_BEHAVIORS = [
@@ -55,47 +55,6 @@ const COMPATIBILITY_BEHAVIORS = [
   { key: "patternEffectEvent", label: "pattern effect event" },
   { key: "moduleLink", label: "module link graph" },
 ];
-
-async function loadSunVoxLib() {
-  const sunvoxJsPath = resolve(SUNVOX_JS_PATH);
-  const sunvoxJsDir = dirname(sunvoxJsPath);
-  const module = { exports: {} };
-  const context = {
-    module,
-    exports: module.exports,
-    require: createRequire(pathToFileURL(sunvoxJsPath)),
-    __filename: sunvoxJsPath,
-    __dirname: sunvoxJsDir,
-    clearTimeout,
-    console,
-    Date,
-    performance,
-    process,
-    setTimeout,
-    TextDecoder,
-    TextEncoder,
-    URL,
-    WebAssembly,
-  };
-  context.globalThis = context;
-
-  vm.runInNewContext(readFileSync(sunvoxJsPath, "utf8"), context, { filename: sunvoxJsPath });
-
-  const SunVoxLib = module.exports.default ?? module.exports;
-  return SunVoxLib({
-    locateFile: (fileName) => resolve(sunvoxJsDir, fileName),
-    print: () => {},
-    printErr: () => {},
-  });
-}
-
-function readCString(module, pointer) {
-  return pointer ? module.UTF8ToString(pointer) : undefined;
-}
-
-function readMagic(buffer) {
-  return buffer.subarray(0, 4).toString("latin1");
-}
 
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
@@ -248,30 +207,14 @@ function inspectLoadedState(module, moduleCount, magic, options = {}) {
 export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
   const magic = readMagic(buffer);
   const expectedModuleType = options.expectedModuleType ?? (magic === "SSYN" ? parseContainer(buffer).module.type : undefined);
-  const module = await loadSunVoxLib();
-  const initResult = module._sv_init(0, 44100, 2, SV_INIT_FLAGS);
-  if (initResult < 0) {
-    throw new Error(`sv_init failed with ${initResult}`);
-  }
-
-  try {
-    const openResult = module._sv_open_slot(SLOT);
-    if (openResult !== 0) {
-      throw new Error(`sv_open_slot(${SLOT}) failed with ${openResult}`);
-    }
-
-    let dataPointer;
-    try {
-      dataPointer = module._malloc(buffer.length);
-      if (!dataPointer) {
-        throw new Error(`malloc failed for ${buffer.length} bytes`);
-      }
-      module.HEAPU8.set(buffer, dataPointer);
-      const loadApi = magic === "SSYN" ? "sv_load_module_from_memory" : "sv_load_from_memory";
-      const loadResult =
-        loadApi === "sv_load_module_from_memory"
-          ? module._sv_load_module_from_memory(SLOT, dataPointer, buffer.length, 0, 0, 0)
-          : module._sv_load_from_memory(SLOT, dataPointer, buffer.length);
+  return withSunVoxSlot({ flags: DEFAULT_OFFLINE_INIT_FLAGS, slot: SLOT }, async ({ module, engineVersion }) => {
+      const { loadApi, loadResult } = loadBufferIntoSlot(module, buffer, {
+        slot: SLOT,
+        x: 0,
+        y: 0,
+        z: 0,
+        connectToOutput: false,
+      });
       const moduleCount = module._sv_get_number_of_modules(SLOT);
       const state = inspectLoadedState(module, moduleCount, magic, options);
       const savedBuffer = options.saveToMemory && magic === "SVOX" ? saveSlotToMemory(module) : undefined;
@@ -279,7 +222,7 @@ export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
         filePath: options.filePath ? resolve(options.filePath) : undefined,
         label: options.label,
         magic,
-        engineVersion: initResult,
+        engineVersion,
         expectedModuleType,
         loadApi,
         loadResult,
@@ -293,15 +236,7 @@ export async function inspectBufferWithSunVoxLib(buffer, options = {}) {
         savedBuffer,
         savedBytes: savedBuffer?.length,
       };
-    } finally {
-      if (dataPointer !== undefined) {
-        module._free(dataPointer);
-      }
-      module._sv_close_slot(SLOT);
-    }
-  } finally {
-    module._sv_deinit();
-  }
+  });
 }
 
 export async function inspectWithSunVoxLib(inputPath = DEFAULT_INPUT_PATH) {

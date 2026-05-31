@@ -10,14 +10,15 @@ const recipe = {
       create: { volume: 256, bpm: 124, tpl: 6, color: "#9be13d" },
       apply(synth) {
         synth
-          .addOutput({
+          .setOutput({
             name: "Output",
             position: { x: 992, y: 512, z: 0 },
           })
-          .addInput({
-            name: "Input",
+          .addModule("MultiSynth", {
+            name: "Note Input",
             position: { x: 0, y: 512, z: 0 },
           })
+          .setInputModule("Note Input")
           .addModule("Analog generator", {
             name: "Bass Osc",
             color: "#a5f03a",
@@ -70,7 +71,7 @@ const recipe = {
               mode: "peak",
             },
           })
-          .connect("Input", "Bass Osc")
+          .connect("Note Input", "Bass Osc")
           .connect("Bass Osc", "Acid Filter")
           .connect("Acid Filter", "Soft Clip")
           .connect("Soft Clip", "Bass Glue")
@@ -89,70 +90,139 @@ const recipe = {
       create: { volume: 256, bpm: 120, tpl: 6, color: "#62d9ff" },
       apply(synth) {
         synth
-          .addOutput({
+          .setOutput({
             name: "Output",
-            position: { x: 864, y: 512, z: 0 },
+            position: { x: 1152, y: 512, z: 0 },
           })
-          .addInput({
-            name: "Input",
+          .addModule("MultiSynth", {
+            name: "Note Input",
             position: { x: 0, y: 512, z: 0 },
           })
+          .setInputModule("Note Input")
           .addModule("FM", {
-            name: "Bell FM",
-            color: "#58dfff",
-            position: { x: 240, y: 512, z: 0 },
+            name: "Glass Strike",
+            color: "#86f5ff",
+            position: { x: 224, y: 352, z: 0 },
             controllers: {
-              cVolume: 158,
-              mVolume: 122,
+              cVolume: 92,
+              mVolume: 236,
               panning: 128,
-              cFreqRatio: 1,
-              mFreqRatio: 3,
-              mSelfModulation: 18,
+              cFreqRatio: 2,
+              mFreqRatio: 11,
+              mSelfModulation: 62,
               cAttack: 0,
-              cDecay: 86,
+              cDecay: 26,
               cSustain: 0,
-              cRelease: 180,
+              cRelease: 130,
               mAttack: 0,
-              mDecay: 68,
+              mDecay: 18,
               mSustain: 0,
-              mRelease: 210,
-              mScalingPerKey: 1,
-              polyphony: 8,
+              mRelease: 70,
+              mScalingPerKey: 2,
+              polyphony: 12,
               mode: "hq",
             },
           })
+          .addModule("FM", {
+            name: "Crystal Body",
+            color: "#5ee8ff",
+            position: { x: 224, y: 512, z: 0 },
+            controllers: {
+              cVolume: 126,
+              mVolume: 116,
+              panning: 108,
+              cFreqRatio: 1,
+              mFreqRatio: 5,
+              mSelfModulation: 24,
+              cAttack: 0,
+              cDecay: 190,
+              cSustain: 0,
+              cRelease: 380,
+              mAttack: 0,
+              mDecay: 72,
+              mSustain: 0,
+              mRelease: 180,
+              mScalingPerKey: 1,
+              polyphony: 12,
+              mode: "hq",
+            },
+          })
+          .addModule("FM", {
+            name: "Air Ring",
+            color: "#c8fbff",
+            position: { x: 224, y: 672, z: 0 },
+            controllers: {
+              cVolume: 46,
+              mVolume: 184,
+              panning: 156,
+              cFreqRatio: 3,
+              mFreqRatio: 13,
+              mSelfModulation: 86,
+              cAttack: 0,
+              cDecay: 122,
+              cSustain: 0,
+              cRelease: 440,
+              mAttack: 0,
+              mDecay: 46,
+              mSustain: 0,
+              mRelease: 160,
+              mScalingPerKey: 3,
+              polyphony: 12,
+              mode: "hq",
+            },
+          })
+          .addModule("Filter Pro", {
+            name: "Glass Polish",
+            color: "#b4f6ff",
+            position: { x: 472, y: 512, z: 0 },
+            controllers: {
+              type: "hp6db",
+              freq: 540,
+              q: 16384,
+              rolloff: "db12",
+              mode: "stereoSmoothing",
+              response: 110,
+            },
+          })
           .addModule("Reverb", {
-            name: "Small Hall",
-            position: { x: 448, y: 512, z: 0 },
+            name: "Crystal Hall",
+            color: "#78cfff",
+            position: { x: 688, y: 512, z: 0 },
             controllers: {
               dry: 256,
-              wet: 54,
-              feedback: 182,
-              damp: 148,
-              stereoWidth: 230,
+              wet: 86,
+              feedback: 226,
+              damp: 78,
+              stereoWidth: 256,
               mode: "hq",
               allpassFilter: "improved",
-              roomSize: 24,
+              roomSize: 46,
             },
           })
           .addModule("Amplifier", {
             name: "Bell Trim",
-            position: { x: 656, y: 512, z: 0 },
+            color: "#a8f4ff",
+            position: { x: 920, y: 512, z: 0 },
             controllers: {
-              volume: 224,
-              stereoWidth: 154,
+              volume: 292,
+              stereoWidth: 190,
               fineVolume: 32768,
             },
           })
-          .connect("Input", "Bell FM")
-          .connect("Bell FM", "Small Hall")
-          .connect("Small Hall", "Bell Trim")
+          .connect("Note Input", "Glass Strike")
+          .connect("Note Input", "Crystal Body")
+          .connect("Note Input", "Air Ring")
+          .connect("Glass Strike", "Glass Polish", { slot: 0 })
+          .connect("Crystal Body", "Glass Polish", { slot: 1 })
+          .connect("Air Ring", "Glass Polish", { slot: 2 })
+          .connect("Glass Polish", "Crystal Hall")
+          .connect("Crystal Hall", "Bell Trim")
           .connect("Bell Trim", "Output")
-          .exposeController("Carrier volume", "Bell FM", "cVolume")
-          .exposeController("Mod volume", "Bell FM", "mVolume")
-          .exposeController("Mod ratio", "Bell FM", "mFreqRatio")
-          .exposeController("Mod self", "Bell FM", "mSelfModulation")
-          .exposeController("Reverb wet", "Small Hall", "wet")
+          .exposeController("Strike", "Glass Strike", "mVolume")
+          .exposeController("Body", "Crystal Body", "cVolume")
+          .exposeController("Air", "Air Ring", "cVolume")
+          .exposeController("Brightness", "Glass Polish", "freq")
+          .exposeController("Hall wet", "Crystal Hall", "wet")
           .exposeController("Output trim", "Bell Trim", "volume");
       },
     },
@@ -162,14 +232,15 @@ const recipe = {
       create: { volume: 256, bpm: 120, tpl: 6, color: "#e8dd5c" },
       apply(synth) {
         synth
-          .addOutput({
+          .setOutput({
             name: "Output",
             position: { x: 1104, y: 512, z: 0 },
           })
-          .addInput({
-            name: "Input",
+          .addModule("MultiSynth", {
+            name: "Note Input",
             position: { x: 0, y: 512, z: 0 },
           })
+          .setInputModule("Note Input")
           .addModule("Analog generator", {
             name: "Pulse A",
             color: "#e4ff72",
@@ -236,8 +307,8 @@ const recipe = {
               roomSize: 12,
             },
           })
-          .connect("Input", "Pulse A")
-          .connect("Input", "Pulse B")
+          .connect("Note Input", "Pulse A")
+          .connect("Note Input", "Pulse B")
           .connect("Pulse A", "Tone Filter", { slot: 0 })
           .connect("Pulse B", "Tone Filter", { slot: 1 })
           .connect("Tone Filter", "Organ Width")
@@ -257,14 +328,15 @@ const recipe = {
       create: { volume: 256, bpm: 128, tpl: 6, color: "#ff626e" },
       apply(synth) {
         synth
-          .addOutput({
+          .setOutput({
             name: "Output",
             position: { x: 944, y: 512, z: 0 },
           })
-          .addInput({
-            name: "Input",
+          .addModule("MultiSynth", {
+            name: "Note Input",
             position: { x: 0, y: 512, z: 0 },
           })
+          .setInputModule("Note Input")
           .addModule("Kicker", {
             name: "Kick",
             color: "#58a2ff",
@@ -304,7 +376,7 @@ const recipe = {
               mode: "peak",
             },
           })
-          .connect("Input", "Kick")
+          .connect("Note Input", "Kick")
           .connect("Kick", "Transient Clip")
           .connect("Transient Clip", "Kick Punch")
           .connect("Kick Punch", "Output")

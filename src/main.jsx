@@ -1063,6 +1063,12 @@ function ProjectPropertiesSection({ project }) {
         {synthInfo ? (
           <>
             <ModuleReferencePill module={synthInfo} className="graph-detail-module-pill" />
+            {project.sourceRecipe ? (
+              <div className="property-block">
+                <h4>Source</h4>
+                <a href={project.sourceRecipe.path}>{project.sourceRecipe.name}</a>
+              </div>
+            ) : null}
             <div className="property-block">
               <h4>Data</h4>
               <DataChunkList chunks={synthInfo.dataChunks} total={synthInfo.dataChunkCount} />

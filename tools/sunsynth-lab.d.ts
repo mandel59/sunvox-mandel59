@@ -42,6 +42,7 @@ export interface ScratchCreateOptions {
   bpm?: number;
   tpl?: number;
   color?: HexColor;
+  output?: ModuleOptions;
   inputModule?: number;
   version?: number;
   baseVersion?: number;
@@ -112,8 +113,8 @@ export class SunSynthLab {
   rename(name: string): this;
   embeddedProject(): unknown;
   modules(): SunSynthModule[];
-  addOutput(nameOrOptions?: string | ModuleOptions, options?: ModuleOptions): this;
-  addInput(nameOrOptions?: string | ModuleOptions, options?: ModuleOptions): this;
+  setOutput(nameOrOptions?: string | ModuleOptions, options?: ModuleOptions): this;
+  setInputModule(selector: ModuleSelector): this;
   addModule(type: string, options?: ModuleOptions): this;
   findModules(selector: ModuleSelector): Array<{ module: SunSynthModule; index: number }>;
   findModule(selector: ModuleSelector): { module: SunSynthModule; index: number };

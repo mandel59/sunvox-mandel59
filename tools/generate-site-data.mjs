@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, extname, join, relative, resolve } from "node:path";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { deflateSync } from "node:zlib";
 
 import { buildOutlineFromFile } from "./sunvox-outline.mjs";
+import { loadRecipe, variantFileName } from "./sunsynth-generate.mjs";
 
 const DEFAULT_ROOTS = ["music", "instruments", "generated/music", "generated/instruments"];
+const DEFAULT_RECIPE_ROOTS = ["generated/recipes"];
 const DEFAULT_OUTPUT = "site-data/sunvox-projects.json";
 const SUNVOX_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
+const RECIPE_EXTENSIONS = new Set([".mjs"]);
 const PATTERN_ICON_SIZE = 16;
 
 async function findSunVoxFiles(paths) {
@@ -29,6 +32,47 @@ async function findSunVoxFiles(paths) {
     }
   }
   return files.sort((a, b) => a.localeCompare(b, "en"));
+}
+
+async function findRecipeFiles(paths) {
+  const files = [];
+  for (const input of paths) {
+    const path = resolve(input);
+    let entries;
+    try {
+      entries = await readdir(path, { withFileTypes: true });
+    } catch {
+      if (RECIPE_EXTENSIONS.has(extname(path).toLowerCase())) {
+        files.push(path);
+      }
+      continue;
+    }
+    for (const entry of entries) {
+      files.push(...await findRecipeFiles([join(path, entry.name)]));
+    }
+  }
+  return files.sort((a, b) => a.localeCompare(b, "en"));
+}
+
+async function collectGeneratedSourceRecipes(paths = DEFAULT_RECIPE_ROOTS) {
+  const recipeFiles = await findRecipeFiles(paths);
+  const sources = new Map();
+  for (const recipeFile of recipeFiles) {
+    const recipe = await loadRecipe(recipeFile);
+    const recipePath = relative(process.cwd(), recipeFile).replaceAll("\\", "/");
+    for (const variant of recipe.variants) {
+      const fileName = variantFileName(variant);
+      if (extname(fileName).toLowerCase() !== ".sunsynth") {
+        continue;
+      }
+      const generatedPath = `generated/instruments/${basename(fileName)}`;
+      sources.set(generatedPath, {
+        path: recipePath,
+        name: basename(recipePath),
+      });
+    }
+  }
+  return sources;
 }
 
 function fileTitle(path, outline) {
@@ -215,7 +259,7 @@ function embeddedSummary(embedded) {
   };
 }
 
-function documentSummary(outline, path) {
+function documentSummary(outline, path, metadata = {}) {
   const modules = outline.modules ?? [];
   const visiblePatterns = (outline.patterns ?? []).filter(isVisiblePattern);
   const patternsByIndex = new Map((outline.patterns ?? []).map((pattern) => [pattern.index, pattern]));
@@ -224,6 +268,7 @@ function documentSummary(outline, path) {
     title: fileTitle(path, outline),
     magic: outline.magic,
     type: outline.magic === "SSYN" ? "synth" : "project",
+    ...(metadata.sourceRecipe ? { sourceRecipe: metadata.sourceRecipe } : {}),
     ...(outline.project ? { project: outline.project } : {}),
     ...(outline.synth ? { synth: moduleSummary(outline.synth) } : {}),
     stats: outlineStats(outline),
@@ -236,11 +281,12 @@ function documentSummary(outline, path) {
 
 export async function collectSiteData(paths = DEFAULT_ROOTS) {
   const files = await findSunVoxFiles(paths);
+  const generatedSourceRecipes = await collectGeneratedSourceRecipes();
   const projects = [];
   for (const file of files) {
     const outline = await buildOutlineFromFile(file);
     const path = relative(process.cwd(), file).replaceAll("\\", "/");
-    projects.push(documentSummary(outline, path));
+    projects.push(documentSummary(outline, path, { sourceRecipe: generatedSourceRecipes.get(path) }));
   }
   return {
     schemaVersion: 1,

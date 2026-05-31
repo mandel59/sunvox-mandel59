@@ -10,14 +10,15 @@ const recipe = {
       create: { volume: 256, bpm: 120, tpl: 6, color: "#a7d84f" },
       apply(synth) {
         synth
-          .addOutput({
+          .setOutput({
             name: "Output",
             position: { x: 1088, y: 512, z: 0 },
           })
-          .addInput({
-            name: "Input",
+          .addModule("MultiSynth", {
+            name: "Note Input",
             position: { x: 0, y: 512, z: 0 },
           })
+          .setInputModule("Note Input")
           .addModule("Analog generator", {
             name: "Saw L",
             color: "#9ad92d",
@@ -111,9 +112,9 @@ const recipe = {
               mode: "rms",
             },
           })
-          .connect("Input", "Saw L")
-          .connect("Input", "Saw R")
-          .connect("Input", "Sine Body")
+          .connect("Note Input", "Saw L")
+          .connect("Note Input", "Saw R")
+          .connect("Note Input", "Sine Body")
           .connect("Saw L", "Pad Filter", { slot: 0 })
           .connect("Saw R", "Pad Filter", { slot: 1 })
           .connect("Sine Body", "Pad Filter", { slot: 2 })

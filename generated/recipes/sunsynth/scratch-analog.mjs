@@ -10,8 +10,12 @@ const recipe = {
       create: { color: "#ff9a4a" },
       apply(synth) {
         synth
-          .addOutput()
-          .addInput()
+          .setOutput()
+          .addModule("MultiSynth", {
+            name: "Note Input",
+            position: { x: 0, y: 512, z: 0 },
+          })
+          .setInputModule("Note Input")
           .addModule("Analog generator", {
             name: "Tone",
             controllers: {
@@ -21,7 +25,7 @@ const recipe = {
               polyphony: 8,
             },
           })
-          .connect("Input", "Tone")
+          .connect("Note Input", "Tone")
           .connect("Tone", "Output")
           .exposeController("Tone volume", "Tone", "volume");
       },

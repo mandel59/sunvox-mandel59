@@ -347,7 +347,7 @@ function makeScratchDocument(name, options = {}) {
               currentPatternLine: 0,
             },
             patterns: [],
-            modules: [],
+            modules: [makeOutputModule(0, options.output)],
             trailingChunks: [],
           },
         },
@@ -505,24 +505,24 @@ export class SunSynthLab {
     return this.embeddedProject()?.modules ?? [];
   }
 
-  addOutput(nameOrOptions = "Output", options = {}) {
+  setOutput(nameOrOptions = "Output", options = {}) {
     const normalized = normalizeNameOptions(nameOrOptions, options);
     const modules = this.modules();
-    modules.push(makeOutputModule(modules.length, normalized));
+    modules[0] ??= makeOutputModule(0);
+    const output = modules[0];
+    output.name = normalized.name ?? output.name ?? "Output";
+    output.flags = { exists: true, output: true, initialized: true, ...(normalized.flags ?? {}) };
+    if (normalized.finetune !== undefined) output.finetune = normalized.finetune;
+    if (normalized.relativeNote !== undefined) output.relativeNote = normalized.relativeNote;
+    if (normalized.position !== undefined) output.position = normalized.position;
+    if (normalized.scale !== undefined) output.scale = normalized.scale;
+    if (normalized.visualizerParameters !== undefined) output.visualizerParameters = normalized.visualizerParameters;
+    if (normalized.color !== undefined) output.color = normalized.color;
     return this;
   }
 
-  addInput(nameOrOptions = "Input", options = {}) {
-    const normalized = normalizeNameOptions(nameOrOptions, options);
-    const modules = this.modules();
-    const index = modules.length;
-    modules.push(
-      makeTypedModule(index, "MultiSynth", {
-        name: "Input",
-        ...normalized,
-        position: normalized.position ?? defaultPosition(index, "input"),
-      }),
-    );
+  setInputModule(selector) {
+    const { index } = this.findModule(selector);
     this.setRootController("inputModule", index);
     this.embeddedProject().project.lastSelectedGenerator = index;
     return this;

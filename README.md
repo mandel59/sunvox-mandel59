@@ -113,6 +113,16 @@ stereo side-to-mid ratio, attack and release timing, plus coarse tags such as
 change the trigger velocity. Pass `--probe <note>:<velocity>:<gateSeconds>`
 multiple times to compare several input conditions in one run.
 
+SunVox Lib integration code shared by Node tools lives in
+[tools/sunvox-node.mjs](tools/sunvox-node.mjs). It wraps the JS/WASM runtime
+load, `sv_init` / slot open / cleanup lifecycle, malloc/free buffer transfer,
+project and synth loading, pattern event creation, time-map lookup, and offline
+Float32 rendering. Tools that need to ask SunVox Lib about runtime behavior
+should use this helper rather than reimplementing slot setup, memory handling,
+or probe playback. Probe rendering is pattern-based, so offline analysis follows
+the same sequencer path as project playback instead of relying on realtime
+`sv_send_event` timestamps.
+
 `sunsynth:generate` applies JavaScript recipes to `.sunsynth` templates and
 writes generated variants. Recipes can use object shorthand for simple edits,
 or use the lab API directly for more expressive experiments:
@@ -129,7 +139,9 @@ bundled
 [supersaw-variants recipe](generated/recipes/sunsynth/supersaw-variants.mjs)
 shows the function recipe and sweep style.
 The [scratch-analog recipe](generated/recipes/sunsynth/scratch-analog.mjs)
-shows how to create a small `.sunsynth` from an empty MetaModule project.
+shows how to create a small `.sunsynth` from a MetaModule project that starts
+with SunVox's default `#0 Output` module. Scratch recipes configure that module
+with `setOutput(...)`, then add input and generator modules that route into it.
 The [scratch-layered-pad recipe](generated/recipes/sunsynth/scratch-layered-pad.mjs)
 shows a larger scratch-built patch with multiple generators, filter, delay,
 compressor, and exposed user controllers.
@@ -144,6 +156,14 @@ format by adding `// @ts-check` and annotating the exported value with
 `@satisfies {import("../../../tools/sunsynth-recipe.d.ts").SunSynthRecipe}`.
 Function-style recipes can use `SunSynthRecipeFactory` instead, which also
 infers `sweep(...)` parameter names and value types inside `build(...)`.
+
+`sunvox:edit-recipe` is the prototype for the next recipe model. SunVox Edit
+Recipe files describe `.sunvox` / `.sunsynth` creation and editing as one
+workflow, with plain JavaScript recipe files that need no runtime imports.
+Recipes can still use `apply(editor)` for procedural edits; the MVP exposes
+`SunSynthEditor` and `SunVoxProjectEditor` facades backed by the existing
+SunSynth lab implementation. Type inference comes from
+`tools/sunvox-edit-recipe.d.ts`.
 
 The repository uses these data locations:
 
@@ -216,16 +236,14 @@ Built by project tooling from Codex-generated recipes under
 
 Distributed under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 
+The generated site index automatically records each generated `.sunsynth`
+file's source recipe by reading checked-in recipe `variants[].fileName` values.
+The GitHub Pages app shows that source recipe in each generated synth's detail
+view instead of maintaining a hand-written list in the license notice.
+
 ### Human-authored music under [music/](music/)
 
 Music by Ryusei Yamaguchi (@mandel59).
-
-Distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-
-### Generated music under [generated/music/](generated/music/)
-
-Built by project tooling from Codex-generated recipes under
-[generated/recipes/](generated/recipes/).
 
 Distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 

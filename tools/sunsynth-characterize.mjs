@@ -1,28 +1,28 @@
 #!/usr/bin/env node
-import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
-import { readFileSync } from "node:fs";
-import { basename, dirname, extname, relative, resolve } from "node:path";
+import { basename, extname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import vm from "node:vm";
 
-const DEFAULT_SAMPLE_RATE = 44100;
-const DEFAULT_CHANNELS = 2;
-const DEFAULT_BLOCK_FRAMES = 128;
+import {
+  DEFAULT_BLOCK_FRAMES,
+  DEFAULT_CHANNELS,
+  DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
+  DEFAULT_SAMPLE_RATE,
+  DEFAULT_SLOT as SLOT,
+  assertSunVoxOk,
+  createNoteProbePattern,
+  loadSynthModuleFromBuffer,
+  renderSlotAudio,
+  withSunVoxSlot,
+} from "./sunvox-node.mjs";
+
 const DEFAULT_DURATION_SECONDS = 6;
 const DEFAULT_NOTE_OFF_SECONDS = 3.2;
 const DEFAULT_NOTE_SECONDS = 0.2;
 const DEFAULT_NOTE = 48;
 const DEFAULT_VELOCITY = 96;
 const SPECTRUM_SIZE = 4096;
-const SLOT = 0;
-const NOTE_OFF = 128;
-const ALL_NOTES_OFF = 129;
-const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
-const SV_INIT_FLAG_OFFLINE = 1 << 1;
-const SV_INIT_FLAG_AUDIO_FLOAT32 = 1 << 3;
-const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
-const SUNVOX_JS_PATH = "sunvox_lib/sunvox_lib/js/lib/sunvox.js";
+const PATTERN_LINE_COUNT = 256;
 const SAMPLE_EXTENSIONS = new Set([".sunsynth"]);
 const NOTE_NAMES = new Map([
   ["C", 0],
@@ -47,7 +47,7 @@ const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 
 function usage() {
   console.error(`Usage:
-  node tools/sunsynth-characterize.mjs [--json] [--note <note|midi>] [--velocity <1..129>] <input.sunsynth> [...]
+  node tools/sunsynth-characterize.mjs [--json] [--detail] [--note <note|midi>] [--velocity <1..129>] <input.sunsynth> [...]
 
 Examples:
   node tools/sunsynth-characterize.mjs instruments/*.sunsynth
@@ -85,6 +85,10 @@ function noteLabel(note) {
   const octave = Math.floor(midiNote / 12) - 1;
   const pitchClass = ((midiNote % 12) + 12) % 12;
   return `${NOTE_LABELS[pitchClass]}${octave}`;
+}
+
+function noteFrequency(note) {
+  return 440 * 2 ** ((note - 69) / 12);
 }
 
 function normalizeProbe(probe, label = "probe") {
@@ -131,6 +135,7 @@ export function parseProbe(value) {
 function parseArgs(argv) {
   const options = {
     json: false,
+    detail: false,
     note: DEFAULT_NOTE,
     velocity: DEFAULT_VELOCITY,
     durationSeconds: DEFAULT_DURATION_SECONDS,
@@ -142,6 +147,8 @@ function parseArgs(argv) {
     const arg = argv[index];
     if (arg === "--json") {
       options.json = true;
+    } else if (arg === "--detail") {
+      options.detail = true;
     } else if (arg === "--note") {
       index += 1;
       if (!argv[index]) {
@@ -199,132 +206,44 @@ function parseArgs(argv) {
   return options;
 }
 
-async function loadSunVoxLib() {
-  const sunvoxJsPath = resolve(SUNVOX_JS_PATH);
-  const sunvoxJsDir = dirname(sunvoxJsPath);
-  const module = { exports: {} };
-  const context = {
-    module,
-    exports: module.exports,
-    require: createRequire(pathToFileURL(sunvoxJsPath)),
-    __filename: sunvoxJsPath,
-    __dirname: sunvoxJsDir,
-    clearTimeout,
-    console,
-    Date,
-    performance,
-    process,
-    setTimeout,
-    TextDecoder,
-    TextEncoder,
-    URL,
-    WebAssembly,
-  };
-  context.globalThis = context;
-  vm.runInNewContext(readFileSync(sunvoxJsPath, "utf8"), context, { filename: sunvoxJsPath });
-  const SunVoxLib = module.exports.default ?? module.exports;
-  return SunVoxLib({
-    locateFile: (fileName) => resolve(sunvoxJsDir, fileName),
-    print: () => {},
-    printErr: () => {},
-  });
-}
-
-function assertSunVoxOk(value, label) {
-  if (value < 0) {
-    throw new Error(`${label} failed: ${value}`);
-  }
-  return value;
-}
-
-function mallocCopy(module, bytes) {
-  const pointer = module._malloc(bytes.length);
-  if (!pointer) {
-    throw new Error("SunVox malloc failed");
-  }
-  module.HEAPU8.set(bytes, pointer);
-  return pointer;
-}
-
-function sendNote(module, moduleIndex, track, note, velocity) {
-  const noteValue = Math.max(1, Math.min(127, Math.round(note) + 1));
-  module._sv_send_event(SLOT, track, noteValue, velocity, moduleIndex + 1, 0, 0);
-}
-
-function sendNoteOff(module, moduleIndex, track) {
-  module._sv_send_event(SLOT, track, NOTE_OFF, 0, moduleIndex + 1, 0, 0);
-}
-
 async function renderSynth(filePath, probe) {
-  const module = await loadSunVoxLib();
-  const initFlags =
-    SV_INIT_FLAG_NO_DEBUG_OUTPUT | SV_INIT_FLAG_OFFLINE | SV_INIT_FLAG_AUDIO_FLOAT32 | SV_INIT_FLAG_ONE_THREAD;
-  assertSunVoxOk(module._sv_init(0, DEFAULT_SAMPLE_RATE, DEFAULT_CHANNELS, initFlags), "sv_init");
-  try {
-    assertSunVoxOk(module._sv_open_slot(SLOT), "sv_open_slot");
-    const bytes = await readFile(filePath);
-    const dataPointer = mallocCopy(module, bytes);
-    let moduleIndex;
-    try {
-      moduleIndex = assertSunVoxOk(
-        module._sv_load_module_from_memory(SLOT, dataPointer, bytes.length, 256, 256, 0),
-        "sv_load_module_from_memory",
-      );
-    } finally {
-      module._free(dataPointer);
-    }
-    assertSunVoxOk(module._sv_connect_module(SLOT, moduleIndex, 0), "sv_connect_module");
-    assertSunVoxOk(module._sv_volume(SLOT, 256), "sv_volume");
-    assertSunVoxOk(module._sv_play(SLOT), "sv_play");
-
-    const totalFrames = Math.round(probe.durationSeconds * DEFAULT_SAMPLE_RATE);
-    const outputPointer = module._malloc(DEFAULT_BLOCK_FRAMES * DEFAULT_CHANNELS * 4);
-    if (!outputPointer) {
-      throw new Error("SunVox audio output malloc failed");
-    }
-    const samples = new Float32Array(totalFrames * DEFAULT_CHANNELS);
-    const events = [
-      { frame: Math.round(DEFAULT_NOTE_SECONDS * DEFAULT_SAMPLE_RATE), type: "note" },
-      { frame: Math.round(probe.noteOffSeconds * DEFAULT_SAMPLE_RATE), type: "off" },
-      { frame: Math.round((probe.durationSeconds - 0.5) * DEFAULT_SAMPLE_RATE), type: "allOff" },
-    ];
-    let eventIndex = 0;
-    let writeFrame = 0;
-    try {
-      while (writeFrame < totalFrames) {
-        const frames = Math.min(DEFAULT_BLOCK_FRAMES, totalFrames - writeFrame);
-        while (eventIndex < events.length && events[eventIndex].frame <= writeFrame) {
-          const event = events[eventIndex];
-          if (event.type === "note") {
-            sendNote(module, moduleIndex, 0, probe.note, probe.velocity);
-          } else if (event.type === "off") {
-            sendNoteOff(module, moduleIndex, 0);
-          } else {
-            module._sv_send_event(SLOT, 0, ALL_NOTES_OFF, 0, 0, 0, 0);
-          }
-          eventIndex += 1;
-        }
-        assertSunVoxOk(module._sv_audio_callback(outputPointer, frames, 0, writeFrame / DEFAULT_SAMPLE_RATE), "sv_audio_callback");
-        samples.set(
-          module.HEAPF32.subarray(outputPointer >> 2, (outputPointer >> 2) + frames * DEFAULT_CHANNELS),
-          writeFrame * DEFAULT_CHANNELS,
-        );
-        writeFrame += frames;
-      }
-    } finally {
-      module._free(outputPointer);
-    }
-    return {
-      samples,
+  return withSunVoxSlot(
+    {
       sampleRate: DEFAULT_SAMPLE_RATE,
       channels: DEFAULT_CHANNELS,
-      noteOnFrame: Math.round(DEFAULT_NOTE_SECONDS * DEFAULT_SAMPLE_RATE),
-      noteOffFrame: Math.round(probe.noteOffSeconds * DEFAULT_SAMPLE_RATE),
-    };
-  } finally {
-    module._sv_close_slot(SLOT);
-    module._sv_deinit();
-  }
+      flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
+      slot: SLOT,
+    },
+    async ({ module, slot, sampleRate, channels }) => {
+      const bytes = await readFile(filePath);
+      const moduleIndex = loadSynthModuleFromBuffer(module, bytes, { slot });
+      assertSunVoxOk(module._sv_volume(slot, 256), "sv_volume");
+      const pattern = createNoteProbePattern(module, {
+        slot,
+        moduleIndex,
+        note: probe.note,
+        velocity: probe.velocity,
+        gateSeconds: probe.gateSeconds,
+        sampleRate,
+        lineCount: PATTERN_LINE_COUNT,
+        name: "sunsynth-characterize",
+      });
+      assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
+      const rendered = renderSlotAudio(module, {
+        slot,
+        sampleRate,
+        channels,
+        durationSeconds: probe.durationSeconds,
+        blockFrames: DEFAULT_BLOCK_FRAMES,
+      });
+      return {
+        ...rendered,
+        note: probe.note,
+        noteOnFrame: pattern.noteOnFrame,
+        noteOffFrame: pattern.noteOffFrame,
+      };
+    },
+  );
 }
 
 function frameRms(samples, channels, startFrame, endFrame) {
@@ -417,7 +336,19 @@ function fft(real, imag) {
   }
 }
 
-function spectrum(samples, channels, sampleRate, startFrame, size = SPECTRUM_SIZE) {
+function nearestHarmonic(frequency, fundamentalHz) {
+  if (!fundamentalHz || frequency <= 0) {
+    return undefined;
+  }
+  const harmonic = Math.max(1, Math.round(frequency / fundamentalHz));
+  const harmonicHz = harmonic * fundamentalHz;
+  return {
+    harmonic,
+    cents: 1200 * Math.log2(frequency / harmonicHz),
+  };
+}
+
+function spectrum(samples, channels, sampleRate, startFrame, size = SPECTRUM_SIZE, fundamentalHz = 0) {
   const frameCount = Math.floor(samples.length / channels);
   const real = new Float64Array(size);
   const imag = new Float64Array(size);
@@ -463,12 +394,43 @@ function spectrum(samples, channels, sampleRate, startFrame, size = SPECTRUM_SIZ
     }
   }
 
+  const strongestPower = bins.reduce((max, bin) => Math.max(max, bin.power), 0);
+  const peakThreshold = Math.max(strongestPower * 0.001, totalPower * 0.0001);
+  const peaks = [];
+  for (let index = 1; index < bins.length - 1; index += 1) {
+    const previous = bins[index - 1];
+    const current = bins[index];
+    const next = bins[index + 1];
+    if (current.frequency < 20 || current.power < peakThreshold) {
+      continue;
+    }
+    if (current.power >= previous.power && current.power >= next.power) {
+      const harmonic = nearestHarmonic(current.frequency, fundamentalHz);
+      peaks.push({
+        frequency: current.frequency,
+        relativeDb: strongestPower ? 10 * Math.log10(current.power / strongestPower) : 0,
+        ...(harmonic ? { harmonic: harmonic.harmonic, cents: harmonic.cents } : {}),
+        power: current.power,
+      });
+    }
+  }
+  peaks.sort((a, b) => b.power - a.power);
+  const dominantPeaks = peaks.slice(0, 8).map(({ power: _power, ...peak }) => peak);
+  const inharmonicPeaks = dominantPeaks.filter((peak) => peak.cents !== undefined && peak.relativeDb >= -36);
+  const inharmonicityCents = inharmonicPeaks.length
+    ? inharmonicPeaks.reduce((sum, peak) => sum + Math.abs(peak.cents), 0) / inharmonicPeaks.length
+    : 0;
+
   return {
+    startSeconds: clampedStart / sampleRate,
+    totalPower,
     centroidHz: totalPower ? weightedPower / totalPower : 0,
     rolloff85Hz: rolloff85,
     lowRatio: totalPower ? lowPower / totalPower : 0,
     midRatio: totalPower ? midPower / totalPower : 0,
     highRatio: totalPower ? highPower / totalPower : 0,
+    inharmonicityCents,
+    dominantPeaks,
   };
 }
 
@@ -516,6 +478,32 @@ function stereoFeatures(samples, channels) {
   };
 }
 
+function dominantWindow(windows, startFrame, endFrame) {
+  return windows
+    .filter((window) => window.centerFrame >= startFrame && window.centerFrame < endFrame)
+    .reduce((max, window) => (window.rms > (max?.rms ?? -1) ? window : max), undefined);
+}
+
+function diagnosticNotes(features) {
+  const notes = [];
+  if (features.spectrum.highRatio > 0.42) {
+    notes.push("high-band energy is strong, so the tone can read as hard or metallic");
+  }
+  if (features.spectrum.inharmonicityCents > 65) {
+    notes.push("dominant peaks are far from harmonic multiples of the played note");
+  }
+  if (features.crestFactor > 7.5) {
+    notes.push("the transient is spiky compared with the body level");
+  }
+  if (features.releaseMs !== undefined && features.releaseMs > 900) {
+    notes.push("the tail rings for a long time");
+  }
+  if (features.tailToSustainRatio > 0.75) {
+    notes.push("tail energy is close to the held-note body level");
+  }
+  return notes;
+}
+
 function tagFeatures(features) {
   const tags = [];
   if (features.rms < 0.06) {
@@ -553,11 +541,14 @@ function tagFeatures(features) {
   } else if (features.stereo.sideToMidRatio < 0.1) {
     tags.push("narrow");
   }
+  if (features.spectrum.highRatio > 0.42 && features.spectrum.inharmonicityCents > 65) {
+    tags.push("metallic");
+  }
   return tags;
 }
 
 export function analyzeRenderedAudio(rendered) {
-  const { samples, sampleRate, channels, noteOnFrame, noteOffFrame } = rendered;
+  const { samples, sampleRate, channels, noteOnFrame, noteOffFrame, note } = rendered;
   const frameCount = Math.floor(samples.length / channels);
   let peak = 0;
   let sumSquares = 0;
@@ -566,22 +557,31 @@ export function analyzeRenderedAudio(rendered) {
     sumSquares += sample * sample;
   }
   const windows = envelope(samples, channels, sampleRate);
-  const spectrumStart = Math.round(noteOnFrame + (noteOffFrame - noteOnFrame) * 0.58);
+  const activeEndFrame = Math.min(frameCount, Math.max(noteOffFrame, noteOnFrame + sampleRate * 0.75));
+  const loudestWindow = dominantWindow(windows, noteOnFrame, activeEndFrame);
+  const spectrumCenterFrame = loudestWindow?.centerFrame ?? noteOnFrame + (noteOffFrame - noteOnFrame) * 0.5;
+  const spectrumStart = Math.round(spectrumCenterFrame - SPECTRUM_SIZE / 2);
+  const transientRms = frameRms(samples, channels, noteOnFrame, noteOnFrame + Math.round(sampleRate * 0.12));
+  const sustainRms = frameRms(samples, channels, Math.max(noteOnFrame, noteOffFrame - sampleRate), noteOffFrame);
+  const tailRms = frameRms(samples, channels, noteOffFrame, frameCount);
   const features = {
     peak,
     rms: samples.length ? Math.sqrt(sumSquares / samples.length) : 0,
     crestFactor: sumSquares ? peak / Math.sqrt(sumSquares / samples.length) : 0,
-    sustainRms: frameRms(samples, channels, Math.max(noteOnFrame, noteOffFrame - sampleRate), noteOffFrame),
-    tailRms: frameRms(samples, channels, noteOffFrame, frameCount),
+    transientRms,
+    sustainRms,
+    tailRms,
+    tailToSustainRatio: sustainRms ? tailRms / sustainRms : 0,
     attackMs: attackMs(windows, noteOnFrame, noteOffFrame, sampleRate),
     releaseMs: releaseMs(windows, noteOffFrame, sampleRate),
-    spectrum: spectrum(samples, channels, sampleRate, spectrumStart),
+    spectrum: spectrum(samples, channels, sampleRate, spectrumStart, SPECTRUM_SIZE, noteFrequency(note ?? DEFAULT_NOTE)),
     zeroCrossingRate: zeroCrossingRate(samples, channels, spectrumStart, SPECTRUM_SIZE),
     stereo: stereoFeatures(samples, channels),
   };
   return {
     ...features,
     tags: tagFeatures(features),
+    diagnosis: diagnosticNotes(features),
   };
 }
 
@@ -624,6 +624,8 @@ function formatTable(results) {
       "Crest",
       "Centroid",
       "Rolloff",
+      "High",
+      "Inharm",
       "Stereo",
       "Attack",
       "Release",
@@ -643,6 +645,8 @@ function formatTable(results) {
       fixed(features.crestFactor, 2),
       `${rounded(features.spectrum.centroidHz)}Hz`,
       `${rounded(features.spectrum.rolloff85Hz)}Hz`,
+      `${rounded(features.spectrum.highRatio * 100)}%`,
+      `${rounded(features.spectrum.inharmonicityCents)}c`,
       fixed(features.stereo.sideToMidRatio, 2),
       features.attackMs === undefined ? "-" : `${rounded(features.attackMs)}ms`,
       features.releaseMs === undefined ? "-" : `${rounded(features.releaseMs)}ms`,
@@ -659,6 +663,27 @@ function formatTable(results) {
       return line;
     })
     .join("\n");
+}
+
+function formatPeak(peak) {
+  const harmonic = peak.harmonic === undefined ? "" : ` ~${peak.harmonic}x ${fixed(peak.cents, 0)}c`;
+  return `${rounded(peak.frequency)}Hz ${fixed(peak.relativeDb, 1)}dB${harmonic}`;
+}
+
+function formatDetails(results) {
+  return results
+    .map((result) => {
+      const { features } = result;
+      const diagnosis = features.diagnosis.length ? features.diagnosis : ["no obvious spectral issue detected"];
+      return [
+        `${basename(result.file)} ${result.probe}`,
+        `  level: peak=${fixed(features.peak)} rms=${fixed(features.rms)} crest=${fixed(features.crestFactor, 2)} transient=${fixed(features.transientRms)} sustain=${fixed(features.sustainRms)} tail=${fixed(features.tailRms)} tail/sustain=${fixed(features.tailToSustainRatio, 2)}`,
+        `  spectrum: centroid=${rounded(features.spectrum.centroidHz)}Hz rolloff85=${rounded(features.spectrum.rolloff85Hz)}Hz high=${rounded(features.spectrum.highRatio * 100)}% inharmonicity=${rounded(features.spectrum.inharmonicityCents)}c measuredAt=${fixed(features.spectrum.startSeconds, 2)}s`,
+        `  peaks: ${features.spectrum.dominantPeaks.map(formatPeak).join("; ") || "-"}`,
+        `  diagnosis: ${diagnosis.join("; ")}`,
+      ].join("\n");
+    })
+    .join("\n\n");
 }
 
 async function main(argv) {
@@ -698,6 +723,9 @@ async function main(argv) {
     console.log(JSON.stringify(results, null, 2));
   } else if (results.length) {
     console.log(formatTable(results));
+    if (options.detail) {
+      console.log(`\n${formatDetails(results)}`);
+    }
   }
   if (failures > 0) {
     process.exitCode = 1;

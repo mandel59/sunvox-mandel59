@@ -65,13 +65,13 @@ test("creates a playable SunSynth from scratch", async () => {
   const outputPath = join(tempDir, "scratch.sunsynth");
 
   await SunSynthLab.create("Scratch Analog", { color: "#ff9a4a" })
-    .addOutput()
-    .addInput()
+    .addModule("MultiSynth", { name: "Note Input", position: { x: 0, y: 512, z: 0 } })
+    .setInputModule("Note Input")
     .addModule("Analog generator", {
       name: "Tone",
       controllers: { waveform: "saw", volume: 128, release: 32, polyphony: 8 },
     })
-    .connect("Input", "Tone")
+    .connect("Note Input", "Tone")
     .connect("Tone", "Output")
     .exposeController("Tone volume", "Tone", "volume")
     .exposeController("Tone release", "Tone", "release")
@@ -97,9 +97,25 @@ test("creates a playable SunSynth from scratch", async () => {
   ]);
   assert.equal(project.modules[0].name, "Output");
   assert.equal(project.modules[1].type, "MultiSynth");
+  assert.equal(project.modules[1].name, "Note Input");
   assert.equal(project.modules[2].type, "Analog generator");
   assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
   assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
+});
+
+test("configures the default scratch Output module instead of adding one", () => {
+  const synth = SunSynthLab.create("Scratch Output", {
+    output: { position: { x: 640, y: 512, z: 0 }, color: "#222222" },
+  });
+
+  synth.setOutput({ position: { x: 1024, y: 512, z: 0 }, color: "#444444" }).setOutput();
+  const project = synth.embeddedProject();
+
+  assert.equal(project.modules.length, 1);
+  assert.equal(project.modules[0].name, "Output");
+  assert.deepEqual(project.modules[0].flags, { exists: true, output: true, initialized: true });
+  assert.deepEqual(project.modules[0].position, { x: 1024, y: 512, z: 0 });
+  assert.equal(project.modules[0].color, "#444444");
 });
 
 test("creates a root module SunSynth from scratch", async () => {
@@ -249,13 +265,14 @@ test("runs a scratch recipe without a template", async () => {
         create: true,
         apply(synth) {
           synth
-            .addOutput()
-            .addInput()
+            .setOutput()
+            .addModule("MultiSynth", { name: "Note Input", position: { x: 0, y: 512, z: 0 } })
+            .setInputModule("Note Input")
             .addModule("Analog generator", {
               name: "Tone",
               controllers: { waveform: "saw", volume: 120, release: 24 }
             })
-            .connect("Input", "Tone")
+            .connect("Note Input", "Tone")
             .connect("Tone", "Output")
             .exposeController("Tone volume", "Tone", "volume");
         }

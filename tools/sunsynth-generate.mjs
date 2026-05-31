@@ -28,8 +28,9 @@ The basic recipe shape is:
 
 For generated parameter grids, use sweep({ params, name, fileName, build }).
 For scratch MetaModule synths, omit template and set create: true on each
-variant. To create a root module `.sunsynth`, use
-create: { moduleType: "FMX" }.
+variant. Scratch MetaModule projects start with SunVox's default #0 Output
+module; use setOutput(...) to configure it. To create a root module
+`.sunsynth`, use create: { moduleType: "FMX" }.
 Use var/synth-lab for temporary drafts and generated/instruments for generated
 instrument files that should be checked in.`);
 }
@@ -92,7 +93,7 @@ function createRecipeContext() {
   return { create: SunSynthLab.create, createModule: SunSynthLab.createModule, sweep };
 }
 
-async function loadRecipe(recipePath) {
+export async function loadRecipe(recipePath) {
   const module = await import(pathToFileURL(recipePath));
   const exported = module.default ?? module.recipe;
   const recipe = typeof exported === "function" ? await exported(createRecipeContext()) : exported;
@@ -158,7 +159,7 @@ async function generateVariant(template, recipe, variant, options) {
 
   const name = variant?.name ?? synth.document.module.name ?? "sunsynth-variant";
   const outDir = resolve(options.outDir ?? recipe.outDir ?? "var/synth-lab");
-  const fileName = variant?.fileName ?? `${slug(name) || "sunsynth-variant"}.sunsynth`;
+  const fileName = variantFileName(variant, name);
   const outputPath = resolve(outDir, fileName);
   await mkdir(dirname(outputPath), { recursive: true });
   await synth.writeSunsynth(outputPath);
@@ -168,6 +169,10 @@ async function generateVariant(template, recipe, variant, options) {
     await synth.writeJson(`${outputPath}.json`);
   }
   return outputPath;
+}
+
+export function variantFileName(variant, fallbackName = variant?.name ?? "sunsynth-variant") {
+  return variant?.fileName ?? `${slug(fallbackName) || "sunsynth-variant"}.sunsynth`;
 }
 
 function parseArgs(argv) {

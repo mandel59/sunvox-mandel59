@@ -97,10 +97,18 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(generatedRootFmx);
   assert.equal(generatedRootFmx.type, "synth");
   assert.equal(generatedRootFmx.synth.type, "FMX");
+  assert.deepEqual(generatedRootFmx.sourceRecipe, {
+    path: "generated/recipes/sunsynth/scratch-fmx.mjs",
+    name: "scratch-fmx.mjs",
+  });
   assert.equal(generatedRootFmx.embedded.length, 0);
   assert.ok(generatedMetaModule);
   assert.equal(generatedMetaModule.type, "synth");
   assert.equal(generatedMetaModule.synth.type, "MetaModule");
+  assert.deepEqual(generatedMetaModule.sourceRecipe, {
+    path: "generated/recipes/sunsynth/scratch-layered-pad.mjs",
+    name: "scratch-layered-pad.mjs",
+  });
   assert.equal(generatedMetaModule.embedded.length, 1);
   assert.equal(generatedMetaModule.embedded[0].document.stats.activeModules, 9);
   assert.ok(synthWithNamedPatterns);
