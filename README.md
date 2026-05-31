@@ -44,6 +44,7 @@ npm run sunvox:decode -- var/2022-04-17.sunvox.json var/2022-04-17.sunvox
 npm run sunvox:verify -- music/2022-04-17.sunvox
 npm run sunvox:outline -- music/2022-04-17.sunvox
 npm run sunvox:diff -- before.sunvox after.sunvox
+npm run sunsynth:characterize -- instruments/mandel59\ SuperSaw.sunsynth
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 npm run sunvox:enums
@@ -101,6 +102,15 @@ Module #0 Amp [Amplifier] input links
 Pattern #1 Lead events
   ~ patterns[1].events[3].note: "C4" -> "D4"
 ```
+
+`sunsynth:characterize` renders `.sunsynth` files through SunVox Lib with a
+fixed probe note and prints the probe parameters together with objective timbre
+features: peak/RMS loudness, crest factor, spectral centroid and rolloff,
+stereo side-to-mid ratio, attack and release timing, plus coarse tags such as
+`dark`, `wide`, or `slow-attack`. Use `--json` for machine-readable reports,
+`--note <note|midi>` to change the probe pitch, and `--velocity <1..129>` to
+change the trigger velocity. Pass `--probe <note>:<velocity>:<gateSeconds>`
+multiple times to compare several input conditions in one run.
 
 `sunvox:validate` checks DB-backed editability and runtime compatibility rules
 without rebuilding the file. It reports paths into the structured document plus
