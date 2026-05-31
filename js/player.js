@@ -7,6 +7,7 @@ let masterVolume = DEFAULT_MASTER_VOLUME;
 let playerReady = false;
 let loadedResourceUrl = "";
 let loadedSynthModule = -1;
+const synthControllerPresets = new Map();
 
 svlib.then(async function (Module) {
     //
@@ -115,8 +116,58 @@ function connectSynthModule(/** @type {number} */ moduleIndex) {
     }
 }
 
+function normalizedControllerIndex(/** @type {number} */ controllerIndex) {
+    return Math.max(0, Math.min(126, Math.round(controllerIndex)));
+}
+
+function normalizedControllerValue(/** @type {number} */ value) {
+    return Math.max(0, Math.min(32768, Math.round(value)));
+}
+
+function setLoadedSynthController(
+    /** @type {number} */ moduleIndex,
+    /** @type {number} */ controllerIndex,
+    /** @type {number} */ value,
+) {
+    const controllerNumber = normalizedControllerIndex(controllerIndex);
+    const controllerValue = normalizedControllerValue(value);
+    if (typeof sv_set_module_ctl_value === "function") {
+        return sv_set_module_ctl_value(0, moduleIndex, controllerNumber, controllerValue, 0) >= 0;
+    }
+    sv_send_event(0, 0, 0, 0, moduleIndex + 1, (controllerNumber + 1) << 8, controllerValue);
+    return true;
+}
+
+function applySynthControllerPreset(/** @type {string} */ url, /** @type {number} */ moduleIndex) {
+    const preset = synthControllerPresets.get(url);
+    if (!preset) {
+        return true;
+    }
+    let applied = true;
+    for (const [controllerIndex, value] of preset) {
+        applied = setLoadedSynthController(moduleIndex, controllerIndex, value) && applied;
+    }
+    return applied;
+}
+
+function configureSynthControllers(/** @type {string} */ url, /** @type {Array<{ controllerIndex: number, value: number }>} */ controllers) {
+    const preset = new Map();
+    for (const controller of controllers) {
+        if (!Number.isFinite(controller?.controllerIndex) || !Number.isFinite(controller?.value)) {
+            continue;
+        }
+        preset.set(normalizedControllerIndex(controller.controllerIndex), normalizedControllerValue(controller.value));
+    }
+    synthControllerPresets.set(url, preset);
+    if (loadedResourceUrl === url && loadedSynthModule >= 0) {
+        return applySynthControllerPreset(url, loadedSynthModule);
+    }
+    return true;
+}
+
 async function loadSynthForKeyboard(/** @type {string} */ url) {
     if (loadedResourceUrl === url && loadedSynthModule >= 0) {
+        applySynthControllerPreset(url, loadedSynthModule);
         return loadedSynthModule;
     }
     updateStatus("Loading the instrument...");
@@ -140,6 +191,7 @@ async function loadSynthForKeyboard(/** @type {string} */ url) {
     applyMasterVolume();
     loadedResourceUrl = url;
     loadedSynthModule = moduleIndex;
+    applySynthControllerPreset(url, moduleIndex);
     updateStatus(`${url}`);
     return moduleIndex;
 }
@@ -176,6 +228,24 @@ function stopInstrumentNotes() {
     return true;
 }
 
+async function setSynthController(
+    /** @type {string} */ url,
+    /** @type {number} */ controllerIndex,
+    /** @type {number} */ value,
+) {
+    resumeAudioContext();
+    const moduleIndex = await loadSynthForKeyboard(url);
+    if (moduleIndex < 0) {
+        return false;
+    }
+    const controllerNumber = normalizedControllerIndex(controllerIndex);
+    const controllerValue = normalizedControllerValue(value);
+    const preset = synthControllerPresets.get(url) ?? new Map();
+    preset.set(controllerNumber, controllerValue);
+    synthControllerPresets.set(url, preset);
+    return setLoadedSynthController(moduleIndex, controllerNumber, controllerValue);
+}
+
 async function loadAndPlay(/** @type {string} */ url) {
     resumeAudioContext();
     if (!await load(url)) {
@@ -192,5 +262,7 @@ window.getMasterVolume = getMasterVolume;
 window.playSynthNote = playSynthNote;
 window.stopSynthNote = stopSynthNote;
 window.stopInstrumentNotes = stopInstrumentNotes;
+window.setSynthController = setSynthController;
+window.configureSynthControllers = configureSynthControllers;
 window.loadAndPlay = loadAndPlay;
 window.dispatchEvent(new Event("sunvox-player-api-ready"));

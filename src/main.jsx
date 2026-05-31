@@ -22,6 +22,9 @@ const SYNTH_KEYBOARD_OCTAVE_STEP = 12;
 const SYNTH_KEYBOARD_MIN_START_NOTE = 0;
 const SYNTH_KEYBOARD_MAX_START_NOTE = 96;
 const SYNTH_KEYBOARD_VELOCITY = 128;
+const SYNTH_VOLUME_CONTROLLER_MAX = 1024;
+const SYNTH_USER_CONTROLLER_MAX = 32768;
+const METAMODULE_USER_CONTROLLER_BASE_INDEX = 5;
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const BLACK_KEY_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
 const FILE_HASH_PREFIX = "#file=";
@@ -158,6 +161,55 @@ function clampKeyboardStartNote(note) {
   return Math.min(SYNTH_KEYBOARD_MAX_START_NOTE, Math.max(SYNTH_KEYBOARD_MIN_START_NOTE, note));
 }
 
+function numericControllerValue(value, fallback = 0) {
+  return Number.isFinite(value) ? Math.round(value) : fallback;
+}
+
+function synthControllerTarget(controller) {
+  const link = controller.link;
+  if (!link) {
+    return undefined;
+  }
+  return [link._moduleName, link._controllerLabel].filter(Boolean).join(" · ");
+}
+
+function synthInstrumentControls(project) {
+  if (project?.type !== "synth") {
+    return [];
+  }
+  const controls = [];
+  const volume = project.synth?.controllers?.find((controller) => controller.index === 0 || controller.path === "volume");
+  if (Number.isFinite(volume?.value)) {
+    controls.push({
+      key: "controller-volume",
+      label: volume.label ?? "Volume",
+      controllerIndex: 0,
+      value: numericControllerValue(volume.value, 256),
+      min: 0,
+      max: SYNTH_VOLUME_CONTROLLER_MAX,
+      step: 1,
+    });
+  }
+  for (const controller of project.synth?.userControllers ?? []) {
+    const index = Number.isInteger(controller.index) ? controller.index : controls.length;
+    controls.push({
+      key: `user-controller-${index}`,
+      label: controller.label ?? `User ${index + 1}`,
+      controllerIndex: METAMODULE_USER_CONTROLLER_BASE_INDEX + index,
+      value: numericControllerValue(controller.value),
+      min: 0,
+      max: SYNTH_USER_CONTROLLER_MAX,
+      step: 1,
+      target: synthControllerTarget(controller),
+    });
+  }
+  return controls;
+}
+
+function synthControllerValueMap(controls) {
+  return Object.fromEntries(controls.map((control) => [control.key, control.value]));
+}
+
 function TopbarControls({ project, volume, onVolumeChange }) {
   const playable = canPlay(project);
   return (
@@ -191,6 +243,8 @@ function SynthKeyboardSection({ project }) {
   const [activeNotes, setActiveNotes] = useState(() => new Set());
   const [keyboardStatus, setKeyboardStatus] = useState("Ready");
   const [keyboardStartNote, setKeyboardStartNote] = useState(SYNTH_KEYBOARD_BASE_START_NOTE);
+  const instrumentControls = useMemo(() => synthInstrumentControls(project), [project]);
+  const [controllerValues, setControllerValues] = useState(() => synthControllerValueMap(instrumentControls));
   const keyboardRef = useRef(null);
   const dragNoteRef = useRef(undefined);
   const synthKeyboardNotes = useMemo(() => keyboardNotes(keyboardStartNote), [keyboardStartNote]);
@@ -206,13 +260,20 @@ function SynthKeyboardSection({ project }) {
     setActiveNotes(new Set());
     setKeyboardStatus("Ready");
     setKeyboardStartNote(SYNTH_KEYBOARD_BASE_START_NOTE);
+    setControllerValues(synthControllerValueMap(instrumentControls));
+    if (project.type === "synth") {
+      window.configureSynthControllers?.(
+        project.path,
+        instrumentControls.map((control) => ({ controllerIndex: control.controllerIndex, value: control.value })),
+      );
+    }
     return () => {
       dragNoteRef.current = undefined;
       if (project.type === "synth") {
         window.stopInstrumentNotes?.();
       }
     };
-  }, [project.path]);
+  }, [instrumentControls, project.path]);
 
   if (project.type !== "synth") {
     return null;
@@ -271,6 +332,17 @@ function SynthKeyboardSection({ project }) {
     setKeyboardStartNote((note) => clampKeyboardStartNote(note + direction * SYNTH_KEYBOARD_OCTAVE_STEP));
   }
 
+  function changeController(control, rawValue) {
+    const value = Math.max(control.min, Math.min(control.max, numericControllerValue(rawValue, control.value)));
+    setControllerValues((current) => ({ ...current, [control.key]: value }));
+    void (async () => {
+      const changed = await window.setSynthController?.(project.path, control.controllerIndex, value);
+      if (changed === false) {
+        setKeyboardStatus("Unavailable");
+      }
+    })();
+  }
+
   function handlePointerMove(event) {
     if (event.buttons !== 1) {
       return;
@@ -285,30 +357,58 @@ function SynthKeyboardSection({ project }) {
     <section className="section-grid" aria-labelledby="instrument-heading">
       <div className="instrument-header">
         <h3 id="instrument-heading">Instrument</h3>
-        <div className="octave-controls" aria-label="Keyboard octave">
-          <button
-            type="button"
-            className="octave-button"
-            disabled={!canShiftDown}
-            aria-label="Octave down"
-            onClick={() => shiftKeyboardOctave(-1)}
-          >
-            -
-          </button>
-          <output className="octave-range" aria-label="Keyboard range">
-            {noteName(keyboardStartNote)}-{noteName(keyboardStartNote + SYNTH_KEYBOARD_NOTE_SPAN)}
-          </output>
-          <button
-            type="button"
-            className="octave-button"
-            disabled={!canShiftUp}
-            aria-label="Octave up"
-            onClick={() => shiftKeyboardOctave(1)}
-          >
-            +
-          </button>
-        </div>
         <output className="instrument-status">{keyboardStatus}</output>
+      </div>
+      <div className="instrument-controls" aria-label="Instrument controllers">
+        <div className="instrument-control instrument-octave-control">
+          <span className="instrument-control-header">
+            <span className="instrument-control-label">Octave</span>
+            <output className="instrument-control-value octave-range" aria-label="Keyboard range">
+              {noteName(keyboardStartNote)}-{noteName(keyboardStartNote + SYNTH_KEYBOARD_NOTE_SPAN)}
+            </output>
+          </span>
+          <div className="octave-controls" aria-label="Keyboard octave">
+            <button
+              type="button"
+              className="octave-button"
+              disabled={!canShiftDown}
+              aria-label="Octave down"
+              onClick={() => shiftKeyboardOctave(-1)}
+            >
+              -
+            </button>
+            <button
+              type="button"
+              className="octave-button"
+              disabled={!canShiftUp}
+              aria-label="Octave up"
+              onClick={() => shiftKeyboardOctave(1)}
+            >
+              +
+            </button>
+          </div>
+        </div>
+        {instrumentControls.map((control) => {
+          const value = controllerValues[control.key] ?? control.value;
+          return (
+            <label className="instrument-control" key={control.key}>
+              <span className="instrument-control-header">
+                <span className="instrument-control-label">{control.label}</span>
+                <output className="instrument-control-value">{value}</output>
+              </span>
+              <input
+                type="range"
+                min={control.min}
+                max={control.max}
+                step={control.step}
+                value={value}
+                aria-label={`${control.label} controller`}
+                onChange={(event) => changeController(control, event.target.valueAsNumber)}
+              />
+              {control.target ? <span className="instrument-control-target">{control.target}</span> : null}
+            </label>
+          );
+        })}
       </div>
       <div className="virtual-keyboard-frame" style={{ "--white-key-count": synthKeyboardWhiteKeys }}>
         <div ref={keyboardRef} className="virtual-keyboard" aria-label={`${project.title} virtual keyboard`}>
@@ -963,9 +1063,6 @@ function ProjectPropertiesSection({ project }) {
         {synthInfo ? (
           <>
             <ModuleReferencePill module={synthInfo} className="graph-detail-module-pill" />
-            <dl className="property-grid">
-              <PropertyRow label="Controllers" value={synthInfo.controllerCount} />
-            </dl>
             <div className="property-block">
               <h4>Data</h4>
               <DataChunkList chunks={synthInfo.dataChunks} total={synthInfo.dataChunkCount} />

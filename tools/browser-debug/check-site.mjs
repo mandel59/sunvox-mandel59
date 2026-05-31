@@ -66,6 +66,15 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       synthOctaveButtons: document.querySelectorAll('.octave-button').length,
       synthKeyboardRange: document.querySelector('.octave-range')?.textContent ?? null,
       synthScrollLaneHeight: document.querySelector('.keyboard-scroll-lane')?.getBoundingClientRect().height ?? null,
+      synthControlsBeforeKeyboard: (() => {
+        const controls = document.querySelector('.instrument-controls')?.getBoundingClientRect();
+        const keyboard = document.querySelector('.virtual-keyboard-frame')?.getBoundingClientRect();
+        return controls && keyboard ? controls.top < keyboard.top : false;
+      })(),
+      synthControllerInputs: document.querySelectorAll('.instrument-control input[type="range"]').length,
+      synthControllerLabels: Array.from(document.querySelectorAll('.instrument-control-label')).map((element) =>
+        element.textContent.trim(),
+      ),
       propertiesHeading: document.querySelector('#properties-heading')?.textContent ?? null,
       propertiesText: document.querySelector('[aria-labelledby="properties-heading"] .properties-panel')?.textContent ?? null,
       embeddedMeta: document.querySelector('[aria-labelledby="embedded-heading"] .section-meta')?.textContent ?? null,
@@ -91,16 +100,20 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       initial.synthKeyboardBlackKeys !== 10 ||
       initial.synthOctaveButtons !== 2 ||
       initial.synthKeyboardRange !== 'C4-C6' ||
-      !(initial.synthScrollLaneHeight >= 18)
+      !(initial.synthScrollLaneHeight >= 18) ||
+      !initial.synthControlsBeforeKeyboard ||
+      initial.synthControllerInputs < 1 ||
+      !initial.synthControllerLabels.includes('Octave') ||
+      !initial.synthControllerLabels.includes('Volume')
     ) {
       throw new Error(
-        `Expected a two-octave synth keyboard with octave controls, got ${JSON.stringify(initial)}`,
+        `Expected a two-octave synth keyboard with octave and controller controls, got ${JSON.stringify(initial)}`,
       );
     }
     if (
       initial.propertiesHeading !== 'Synth Properties' ||
       !initial.propertiesText.includes('Shepard tone') ||
-      !initial.propertiesText.includes('Controllers5') ||
+      initial.propertiesText.includes('Controllers') ||
       initial.propertiesText.includes('Data chunks') ||
       initial.propertiesText.includes('Embedded projects') ||
       !initial.propertiesText.includes('Embedded project') ||
@@ -254,15 +267,51 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       throw new Error(`Expected synth drag to stop prior/current notes, got ${JSON.stringify(synthGlissandoUi)}`);
     }
 
+    const synthControllerUi = await page.evaluate(async () => {
+      const calls = [];
+      const originalSetSynthController = window.setSynthController;
+      window.setSynthController = async (url, controllerIndex, value) => {
+        calls.push({ url, controllerIndex, value });
+        return true;
+      };
+      try {
+        const input = document.querySelector('.instrument-control input[aria-label="Volume controller"]');
+        const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+        valueSetter.call(input, '128');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return {
+          value: input.value,
+          output: input.closest('.instrument-control')?.querySelector('.instrument-control-value')?.textContent ?? null,
+          calls,
+        };
+      } finally {
+        window.setSynthController = originalSetSynthController;
+      }
+    });
+    const synthControllerUiCall = synthControllerUi.calls.at(-1);
+    if (
+      synthControllerUi.value !== '128' ||
+      synthControllerUi.output !== '128' ||
+      synthControllerUiCall?.url !== 'instruments/mandel59 shepard.sunsynth' ||
+      synthControllerUiCall?.controllerIndex !== 0 ||
+      synthControllerUiCall?.value !== 128
+    ) {
+      throw new Error(`Expected synth controller UI to call the player API, got ${JSON.stringify(synthControllerUi)}`);
+    }
+
     const synthPlayback = await page.evaluate(async () => {
       const calls = {
         loadModule: [],
         connectModule: [],
         sendEvent: [],
+        setModuleCtlValue: [],
       };
       const originalLoadModule = window.sv_load_module_from_memory;
       const originalConnectModule = window.sv_connect_module;
       const originalSendEvent = window.sv_send_event;
+      const originalSetModuleCtlValue = window.sv_set_module_ctl_value;
       window.sv_load_module_from_memory = (slot, byteArray, x, y, z) => {
         const moduleIndex = originalLoadModule(slot, byteArray, x, y, z);
         calls.loadModule.push({ slot, bytes: byteArray.byteLength, x, y, z, moduleIndex });
@@ -276,30 +325,118 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         calls.sendEvent.push({ slot, track, note, velocity, module, controller, value });
         return originalSendEvent(slot, track, note, velocity, module, controller, value);
       };
+      window.sv_set_module_ctl_value = (slot, moduleIndex, controllerIndex, value, scaled) => {
+        calls.setModuleCtlValue.push({ slot, moduleIndex, controllerIndex, value, scaled });
+        return originalSetModuleCtlValue(slot, moduleIndex, controllerIndex, value, scaled);
+      };
       try {
         const noteOn = await window.playSynthNote('instruments/mandel59 shepard.sunsynth', 60, 128);
+        const controller = await window.setSynthController('instruments/mandel59 shepard.sunsynth', 0, 144);
         const noteOff = window.stopSynthNote(60);
         window.stopInstrumentNotes?.();
-        return { noteOn, noteOff, calls };
+        return { noteOn, controller, noteOff, calls };
       } finally {
         window.sv_load_module_from_memory = originalLoadModule;
         window.sv_connect_module = originalConnectModule;
         window.sv_send_event = originalSendEvent;
+        window.sv_set_module_ctl_value = originalSetModuleCtlValue;
       }
     });
     const loadedSynthModule = synthPlayback.calls.loadModule[0]?.moduleIndex;
     const noteOnEvent = synthPlayback.calls.sendEvent.find((event) => event.note === 61);
+    const controllerEvent = synthPlayback.calls.setModuleCtlValue.find(
+      (event) => event.controllerIndex === 0 && event.value === 144,
+    );
     const noteOffEvent = synthPlayback.calls.sendEvent.find((event) => event.note === 128);
     if (
       !synthPlayback.noteOn ||
+      !synthPlayback.controller ||
       !synthPlayback.noteOff ||
       !(loadedSynthModule > 0) ||
       synthPlayback.calls.connectModule[0]?.destination !== 0 ||
       noteOnEvent?.module !== loadedSynthModule + 1 ||
       noteOnEvent?.velocity !== 128 ||
+      controllerEvent?.moduleIndex !== loadedSynthModule ||
+      controllerEvent?.scaled !== 0 ||
       noteOffEvent?.module !== loadedSynthModule + 1
     ) {
-      throw new Error(`Expected synth keyboard to load/connect/send note events, got ${JSON.stringify(synthPlayback)}`);
+      throw new Error(
+        `Expected synth keyboard to load/connect/send note and controller events, got ${JSON.stringify(synthPlayback)}`,
+      );
+    }
+
+    const superSawButton = page.locator('.project-button', { hasText: 'instruments/mandel59 SuperSaw.sunsynth' });
+    await superSawButton.click();
+    await page.waitForTimeout(100);
+    const superSawControllers = await page.evaluate(() => ({
+      labels: Array.from(document.querySelectorAll('.instrument-control-label')).map((element) =>
+        element.textContent.trim(),
+      ),
+      targets: Array.from(document.querySelectorAll('.instrument-control-target')).map((element) =>
+        element.textContent.trim(),
+      ),
+      values: Array.from(document.querySelectorAll('.instrument-control-value')).map((element) =>
+        element.textContent.trim(),
+      ),
+    }));
+    if (
+      superSawControllers.labels.length !== 11 ||
+      !superSawControllers.labels.includes('Octave') ||
+      !superSawControllers.labels.includes('Detune 1') ||
+      !superSawControllers.labels.includes('Filter freq') ||
+      !superSawControllers.targets.includes('Filter Pro · Frequency') ||
+      !superSawControllers.values.includes('13680')
+    ) {
+      throw new Error(`Expected SuperSaw user controllers under Instrument, got ${JSON.stringify(superSawControllers)}`);
+    }
+
+    const synthControllerChanged = await page.evaluate(async () => {
+      const changed = await window.setSynthController('instruments/mandel59 SuperSaw.sunsynth', 0, 96);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const modules = [];
+      const count = window.sv_get_number_of_modules?.(0) ?? 0;
+      for (let index = 0; index < count; index += 1) {
+        modules.push({
+          index,
+          name: window.sv_get_module_name?.(0, index),
+          type: window.sv_get_module_type?.(0, index),
+          volume: window.sv_get_module_ctl_value?.(0, index, 0, 0),
+        });
+      }
+      const loaded = modules.find((module) => module.type === 'MetaModule' || module.name === 'SuperSaw');
+      return { changed, loaded };
+    });
+    if (!synthControllerChanged.changed || synthControllerChanged.loaded?.volume !== 96) {
+      throw new Error(`Expected SuperSaw volume to change before reopen, got ${JSON.stringify(synthControllerChanged)}`);
+    }
+    const shepardButton = page.locator('.project-button', { hasText: 'instruments/mandel59 shepard.sunsynth' });
+    await shepardButton.click();
+    await page.waitForTimeout(100);
+    await superSawButton.click();
+    await page.waitForTimeout(250);
+    const synthControllerReopened = await page.evaluate(() => {
+      const modules = [];
+      const count = window.sv_get_number_of_modules?.(0) ?? 0;
+      for (let index = 0; index < count; index += 1) {
+        modules.push({
+          index,
+          name: window.sv_get_module_name?.(0, index),
+          type: window.sv_get_module_type?.(0, index),
+          volume: window.sv_get_module_ctl_value?.(0, index, 0, 0),
+        });
+      }
+      const loaded = modules.find((module) => module.type === 'MetaModule' || module.name === 'SuperSaw');
+      return {
+        uiValue: document.querySelector('.instrument-control input[aria-label="Volume controller"]')?.value ?? null,
+        loaded,
+      };
+    });
+    if (synthControllerReopened.uiValue !== '256' || synthControllerReopened.loaded?.volume !== 256) {
+      throw new Error(
+        `Expected reopening SuperSaw to reset UI and loaded SunVox controller state, got ${JSON.stringify(
+          synthControllerReopened,
+        )}`,
+      );
     }
 
     const musicButton = page.locator('.project-button', { hasText: 'music/2022-04-17.sunvox' });
