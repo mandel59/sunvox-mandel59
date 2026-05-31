@@ -133,6 +133,9 @@ shows how to create a small `.sunsynth` from an empty MetaModule project.
 The [scratch-layered-pad recipe](generated/recipes/sunsynth/scratch-layered-pad.mjs)
 shows a larger scratch-built patch with multiple generators, filter, delay,
 compressor, and exposed user controllers.
+The
+[scratch-assorted-instruments recipe](generated/recipes/sunsynth/scratch-assorted-instruments.mjs)
+collects small scratch-built bass, bell, organ, and kick experiments.
 
 The repository uses these data locations:
 
