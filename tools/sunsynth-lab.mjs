@@ -302,6 +302,7 @@ function makeScratchDocument(name, options = {}) {
       },
       name,
       type: "MetaModule",
+      color: options.color,
       controllers: {
         volume,
         inputModule: options.inputModule ?? 1,

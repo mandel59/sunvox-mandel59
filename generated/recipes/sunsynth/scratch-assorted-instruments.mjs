@@ -3,8 +3,8 @@ export default {
   variants: [
     {
       name: "Scratch Acid Bass",
-      fileName: "mandel59 Scratch Acid Bass.sunsynth",
-      create: { volume: 256, bpm: 124, tpl: 6 },
+      fileName: "Scratch Acid Bass.sunsynth",
+      create: { volume: 256, bpm: 124, tpl: 6, color: "#9be13d" },
       apply(synth) {
         synth
           .addOutput({
@@ -82,8 +82,8 @@ export default {
     },
     {
       name: "Scratch Glass Bell",
-      fileName: "mandel59 Scratch Glass Bell.sunsynth",
-      create: { volume: 256, bpm: 120, tpl: 6 },
+      fileName: "Scratch Glass Bell.sunsynth",
+      create: { volume: 256, bpm: 120, tpl: 6, color: "#62d9ff" },
       apply(synth) {
         synth
           .addOutput({
@@ -155,8 +155,8 @@ export default {
     },
     {
       name: "Scratch PWM Organ",
-      fileName: "mandel59 Scratch PWM Organ.sunsynth",
-      create: { volume: 256, bpm: 120, tpl: 6 },
+      fileName: "Scratch PWM Organ.sunsynth",
+      create: { volume: 256, bpm: 120, tpl: 6, color: "#e8dd5c" },
       apply(synth) {
         synth
           .addOutput({
@@ -250,8 +250,8 @@ export default {
     },
     {
       name: "Scratch Kick Snap",
-      fileName: "mandel59 Scratch Kick Snap.sunsynth",
-      create: { volume: 256, bpm: 128, tpl: 6 },
+      fileName: "Scratch Kick Snap.sunsynth",
+      create: { volume: 256, bpm: 128, tpl: 6, color: "#ff626e" },
       apply(synth) {
         synth
           .addOutput({

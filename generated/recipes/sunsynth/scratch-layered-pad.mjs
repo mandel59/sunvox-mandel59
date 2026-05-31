@@ -3,8 +3,8 @@ export default {
   variants: [
     {
       name: "Scratch Layered Pad",
-      fileName: "mandel59 Scratch Layered Pad.sunsynth",
-      create: { volume: 256, bpm: 120, tpl: 6 },
+      fileName: "Scratch Layered Pad.sunsynth",
+      create: { volume: 256, bpm: 120, tpl: 6, color: "#a7d84f" },
       apply(synth) {
         synth
           .addOutput({

@@ -3,7 +3,7 @@ export default {
   variants: [
     {
       name: "Scratch FMX Tines",
-      fileName: "mandel59 Scratch FMX Tines.sunsynth",
+      fileName: "Scratch FMX Tines.sunsynth",
       create: {
         moduleType: "FMX",
         color: "#4aa8ff",
@@ -109,7 +109,7 @@ export default {
     },
     {
       name: "Scratch FMX Pluck",
-      fileName: "mandel59 Scratch FMX Pluck.sunsynth",
+      fileName: "Scratch FMX Pluck.sunsynth",
       create: {
         moduleType: "FMX",
         color: "#8fdcff",

@@ -42,10 +42,16 @@ test("site data summarizes project structure without embedding full event grids"
   const synthWithNamedPatterns = data.projects.find(
     (candidate) => candidate.path === "instruments/mandel59 SuperSaw.sunsynth",
   );
+  const generatedRootFmx = data.projects.find(
+    (candidate) => candidate.path === "generated/instruments/Scratch FMX Tines.sunsynth",
+  );
+  const generatedMetaModule = data.projects.find(
+    (candidate) => candidate.path === "generated/instruments/Scratch Layered Pad.sunsynth",
+  );
 
   assert.equal(data.schemaVersion, 1);
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
-  assert.equal(data.projects.length, 6);
+  assert.equal(data.projects.length, 14);
   assert.ok(project);
   assert.equal(project.type, "project");
   assert.deepEqual(project.project.flags, {});
@@ -88,6 +94,15 @@ test("site data summarizes project structure without embedding full event grids"
   assert.equal(synth.type, "synth");
   assert.equal(synth.embedded.length, 1);
   assert.equal(synth.embedded[0].document.type, "project");
+  assert.ok(generatedRootFmx);
+  assert.equal(generatedRootFmx.type, "synth");
+  assert.equal(generatedRootFmx.synth.type, "FMX");
+  assert.equal(generatedRootFmx.embedded.length, 0);
+  assert.ok(generatedMetaModule);
+  assert.equal(generatedMetaModule.type, "synth");
+  assert.equal(generatedMetaModule.synth.type, "MetaModule");
+  assert.equal(generatedMetaModule.embedded.length, 1);
+  assert.equal(generatedMetaModule.embedded[0].document.stats.activeModules, 9);
   assert.ok(synthWithNamedPatterns);
   assert.deepEqual(
     synthWithNamedPatterns.embedded[0].document.patterns.map((pattern) => [pattern.name, pattern.eventCount]),

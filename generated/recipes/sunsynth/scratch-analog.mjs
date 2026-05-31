@@ -3,8 +3,8 @@ export default {
   variants: [
     {
       name: "Scratch Analog",
-      fileName: "mandel59 Scratch Analog.sunsynth",
-      create: true,
+      fileName: "Scratch Analog.sunsynth",
+      create: { color: "#ff9a4a" },
       apply(synth) {
         synth
           .addOutput()

@@ -64,7 +64,7 @@ test("creates a playable SunSynth from scratch", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-scratch-"));
   const outputPath = join(tempDir, "scratch.sunsynth");
 
-  await SunSynthLab.create("Scratch Analog")
+  await SunSynthLab.create("Scratch Analog", { color: "#ff9a4a" })
     .addOutput()
     .addInput()
     .addModule("Analog generator", {
@@ -83,6 +83,7 @@ test("creates a playable SunSynth from scratch", async () => {
   const options = document.module.dataChunks.find((chunk) => chunk.name === "options");
 
   assert.equal(document.module.name, "Scratch Analog");
+  assert.equal(document.module.color, "#ff9a4a");
   assert.equal(document.module.controllers.inputModule, 1);
   assert.equal(document.module.controllers.user[0]._label, "Tone volume");
   assert.equal(document.module.controllers.user[0].value, 128);
