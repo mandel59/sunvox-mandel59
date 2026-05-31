@@ -5,7 +5,13 @@ import { pathToFileURL } from "node:url";
 
 import { formatValidationIssue, parseContainer, validateContainer } from "./sunvox-codec.mjs";
 
-const DEFAULT_ROOTS = ["music", "instruments", "test/fixtures/sunvox"];
+const DEFAULT_ROOTS = [
+  "music",
+  "instruments",
+  "generated/music",
+  "generated/instruments",
+  "test/fixtures/sunvox",
+];
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 
 async function findFiles(paths) {

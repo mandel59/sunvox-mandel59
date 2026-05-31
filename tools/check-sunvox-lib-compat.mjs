@@ -10,7 +10,13 @@ import { COVERAGE_MODULE_TYPES } from "./generate-sunvox-coverage-fixtures.mjs";
 import { buildContainer, parseContainer, SUNVOX_DB } from "./sunvox-codec.mjs";
 
 const DEFAULT_INPUT_PATH = "test/fixtures/sunvox/unsampled-modules.sunvox";
-const DEFAULT_INPUTS = ["music", "instruments", "test/fixtures/sunvox"];
+const DEFAULT_INPUTS = [
+  "music",
+  "instruments",
+  "generated/music",
+  "generated/instruments",
+  "test/fixtures/sunvox",
+];
 const SAMPLE_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const SUNVOX_JS_PATH = "sunvox_lib/sunvox_lib/js/lib/sunvox.js";
 const SLOT = 0;

@@ -2,7 +2,9 @@
   "schemaVersion": 1,
   "sourceRoots": [
     "music",
-    "instruments"
+    "instruments",
+    "generated/music",
+    "generated/instruments"
   ],
   "projects": [
     {

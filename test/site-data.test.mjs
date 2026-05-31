@@ -44,7 +44,7 @@ test("site data summarizes project structure without embedding full event grids"
   );
 
   assert.equal(data.schemaVersion, 1);
-  assert.deepEqual(data.sourceRoots, ["music", "instruments"]);
+  assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
   assert.equal(data.projects.length, 6);
   assert.ok(project);
   assert.equal(project.type, "project");

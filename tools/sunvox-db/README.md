@@ -194,8 +194,8 @@ npm run code:metrics
   chunks. Output and empty module slots without `STYP` are reported separately
   and do not fail the gate.
 - `sunvox:verify:all` recursively verifies every checked-in `.sunvox` and
-  `.sunsynth` sample under `music/`, `instruments/`, and
-  `test/fixtures/sunvox/`.
+  `.sunsynth` sample under `music/`, `instruments/`, `generated/music/`,
+  `generated/instruments/`, and `test/fixtures/sunvox/`.
 - `sunvox:fixtures:generate` regenerates the synthetic coverage fixture used to
   keep every DB module type represented in the default coverage corpus.
 - `sunvox:lib:check` loads checked-in `.sunvox` projects with

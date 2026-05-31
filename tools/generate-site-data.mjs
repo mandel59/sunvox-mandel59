@@ -6,7 +6,7 @@ import { deflateSync } from "node:zlib";
 
 import { buildOutlineFromFile } from "./sunvox-outline.mjs";
 
-const DEFAULT_ROOTS = ["music", "instruments"];
+const DEFAULT_ROOTS = ["music", "instruments", "generated/music", "generated/instruments"];
 const DEFAULT_OUTPUT = "site-data/sunvox-projects.json";
 const SUNVOX_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const PATTERN_ICON_SIZE = 16;

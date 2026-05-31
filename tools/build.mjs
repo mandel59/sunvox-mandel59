@@ -6,7 +6,7 @@ import { writeSiteData } from "./generate-site-data.mjs";
 
 const root = process.cwd();
 const outDir = resolve(root, "dist");
-const staticDirectories = ["js", "music", "instruments", "sunvox_lib", "site-data"];
+const staticDirectories = ["js", "music", "instruments", "generated", "sunvox_lib", "site-data"];
 
 await writeSiteData();
 

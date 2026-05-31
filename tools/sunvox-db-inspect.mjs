@@ -5,7 +5,13 @@ import { pathToFileURL } from "node:url";
 
 import { parseContainer, SUNVOX_DB, validateContainer } from "./sunvox-codec.mjs";
 
-const DEFAULT_SAMPLE_ROOTS = ["music", "instruments", "test/fixtures/sunvox"];
+const DEFAULT_SAMPLE_ROOTS = [
+  "music",
+  "instruments",
+  "generated/music",
+  "generated/instruments",
+  "test/fixtures/sunvox",
+];
 const DEFAULT_SOURCE_ROOT = "var/sunvox_lib/lib_sunvox/psynth";
 const SOURCE_BLOCK_ID_FILE = "../sunvox_engine.cpp";
 const SOURCE_PATTERN_EFFECT_FILE = "../sunvox_engine_audio_callback.cpp";
