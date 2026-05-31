@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { loadSunsynthTemplate } from "../tools/sunsynth-lab.mjs";
+import { loadSunsynthTemplate, SunSynthLab } from "../tools/sunsynth-lab.mjs";
 import { runRecipe } from "../tools/sunsynth-generate.mjs";
 import { parseContainer } from "../tools/sunvox-codec.mjs";
 
@@ -58,6 +58,47 @@ test("uses fluent module and user-controller handles", async () => {
   assert.equal(synth.module("Filter Pro").get("freq"), 6500);
   assert.equal(synth.userController("Filter freq").get(), 6500);
   assert.equal(synth.userController("Release").get(), 2400);
+});
+
+test("creates a playable SunSynth from scratch", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-scratch-"));
+  const outputPath = join(tempDir, "scratch.sunsynth");
+
+  await SunSynthLab.create("Scratch Analog")
+    .addOutput()
+    .addInput()
+    .addModule("Analog generator", {
+      name: "Tone",
+      controllers: { waveform: "saw", volume: 128, release: 32, polyphony: 8 },
+    })
+    .connect("Input", "Tone")
+    .connect("Tone", "Output")
+    .exposeController("Tone volume", "Tone", "volume")
+    .exposeController("Tone release", "Tone", "release")
+    .writeSunsynth(outputPath);
+
+  const document = await parseFile(outputPath);
+  const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
+  const controllerLinks = document.module.dataChunks.find((chunk) => chunk.name === "controllerLinks");
+  const options = document.module.dataChunks.find((chunk) => chunk.name === "options");
+
+  assert.equal(document.module.name, "Scratch Analog");
+  assert.equal(document.module.controllers.inputModule, 1);
+  assert.equal(document.module.controllers.user[0]._label, "Tone volume");
+  assert.equal(document.module.controllers.user[0].value, 128);
+  assert.equal(document.module.controllers.user[1]._label, "Tone release");
+  assert.equal(document.module.controllers.user[1].value, 32);
+  assert.equal(document.module.dataChunkCount, 10);
+  assert.equal(options.options.userControllers, 2);
+  assert.deepEqual(controllerLinks.links.map((link) => [link.index, link.module, link.controller]), [
+    [0, 2, 0],
+    [1, 2, 4],
+  ]);
+  assert.equal(project.modules[0].name, "Output");
+  assert.equal(project.modules[1].type, "MultiSynth");
+  assert.equal(project.modules[2].type, "Analog generator");
+  assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
+  assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
 });
 
 test("runs a JS synth recipe and writes synth plus JSON output", async () => {
@@ -126,4 +167,41 @@ test("runs a function recipe with sweep variants", async () => {
   assert.equal(firstDocument.module.name, "Sweep F5000 R1800");
   assert.equal(firstDocument.module.controllers.user[8].value, 1800);
   assert.equal(firstProject.modules[2].controllers.freq, 5000);
+});
+
+test("runs a scratch recipe without a template", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-scratch-recipe-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    `export default {
+      outDir: ${JSON.stringify(tempDir)},
+      variants: [{
+        name: "Scratch Recipe",
+        fileName: "scratch-recipe.sunsynth",
+        create: true,
+        apply(synth) {
+          synth
+            .addOutput()
+            .addInput()
+            .addModule("Analog generator", {
+              name: "Tone",
+              controllers: { waveform: "saw", volume: 120, release: 24 }
+            })
+            .connect("Input", "Tone")
+            .connect("Tone", "Output")
+            .exposeController("Tone volume", "Tone", "volume");
+        }
+      }]
+    };`,
+    "utf8",
+  );
+
+  const [outputPath] = await runRecipe(recipePath);
+  const document = await parseFile(outputPath);
+
+  assert.equal(outputPath, join(tempDir, "scratch-recipe.sunsynth"));
+  assert.equal(document.module.name, "Scratch Recipe");
+  assert.equal(document.module.controllers.inputModule, 1);
+  assert.equal(document.module.controllers.user[0].value, 120);
 });

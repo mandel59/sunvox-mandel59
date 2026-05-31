@@ -2813,7 +2813,10 @@ function consumeModuleDataChunks(chunks, target, used, type) {
 function makeModuleDataChunks(module) {
   const grammar = moduleDataChunkGrammar();
   const dataChunks = module?.dataChunks;
-  const declaredCount = getPath(module, grammar.countPath) ?? dataChunks?.length;
+  const inferredCount = Array.isArray(dataChunks)
+    ? dataChunks.reduce((max, chunk) => Math.max(max, (Number.isInteger(chunk.index) ? chunk.index : 0) + 1), 0)
+    : undefined;
+  const declaredCount = getPath(module, grammar.countPath) ?? inferredCount;
   if (declaredCount === undefined && !Array.isArray(dataChunks)) {
     return [];
   }
