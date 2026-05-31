@@ -1,4 +1,7 @@
-export default {
+// @ts-check
+
+/** @satisfies {import("../../../tools/sunsynth-recipe.d.ts").SunSynthRecipe} */
+const recipe = {
   outDir: "var/synth-lab",
   variants: [
     {
@@ -211,3 +214,5 @@ export default {
     },
   ],
 };
+
+export default recipe;

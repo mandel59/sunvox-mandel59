@@ -1,4 +1,7 @@
-export default ({ sweep }) => ({
+// @ts-check
+
+/** @satisfies {import("../../../tools/sunsynth-recipe.d.ts").SunSynthRecipeFactory} */
+const recipe = ({ sweep }) => ({
   template: "instruments/mandel59 SuperSaw.sunsynth",
   outDir: "var/synth-lab",
   variants: [
@@ -59,3 +62,5 @@ export default ({ sweep }) => ({
     }),
   ],
 });
+
+export default recipe;
