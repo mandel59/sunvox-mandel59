@@ -45,6 +45,7 @@ npm run sunvox:verify -- music/2022-04-17.sunvox
 npm run sunvox:outline -- music/2022-04-17.sunvox
 npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunsynth:characterize -- instruments/mandel59\ SuperSaw.sunsynth
+npm run sunsynth:generate -- --json tools/sunsynth-recipes/supersaw-variants.mjs
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 npm run sunvox:enums
@@ -111,6 +112,17 @@ stereo side-to-mid ratio, attack and release timing, plus coarse tags such as
 `--note <note|midi>` to change the probe pitch, and `--velocity <1..129>` to
 change the trigger velocity. Pass `--probe <note>:<velocity>:<gateSeconds>`
 multiple times to compare several input conditions in one run.
+
+`sunsynth:generate` applies JavaScript recipes to `.sunsynth` templates and
+writes generated variants. Recipes can use object shorthand for simple edits,
+or use the lab API directly for more expressive experiments:
+`synth.module("Filter Pro").set(...)`,
+`synth.userController("Release").set(...)`, and `sweep(...)` for parameter
+grids. This keeps synth experiments scriptable while still writing ordinary
+`.sunsynth` files that can be opened by SunVox. Generated drafts should
+normally go under `var/synth-lab/`; the bundled
+[supersaw-variants recipe](tools/sunsynth-recipes/supersaw-variants.mjs) shows
+the function recipe and sweep style.
 
 `sunvox:validate` checks DB-backed editability and runtime compatibility rules
 without rebuilding the file. It reports paths into the structured document plus

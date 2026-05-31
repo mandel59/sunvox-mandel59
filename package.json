@@ -27,6 +27,7 @@
     "sunvox:verify": "node tools/sunvox-codec.mjs verify",
     "sunvox:verify:all": "node tools/sunvox-verify-all.mjs",
     "sunsynth:characterize": "node tools/sunsynth-characterize.mjs",
+    "sunsynth:generate": "node tools/sunsynth-generate.mjs",
     "sunvox:coverage:check": "node tools/sunvox-db-inspect.mjs coverage --check",
     "sunvox:controller-diff": "node tools/sunvox-db-inspect.mjs controller-diff",
     "sunvox:enums": "node tools/sunvox-db-inspect.mjs enums",

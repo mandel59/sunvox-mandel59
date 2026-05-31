@@ -1,0 +1,129 @@
+import assert from "node:assert/strict";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+
+import { loadSunsynthTemplate } from "../tools/sunsynth-lab.mjs";
+import { runRecipe } from "../tools/sunsynth-generate.mjs";
+import { parseContainer } from "../tools/sunvox-codec.mjs";
+
+async function parseFile(filePath) {
+  return parseContainer(await readFile(filePath));
+}
+
+test("edits a SunSynth template through lab helpers", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-lab-"));
+  const outputPath = join(tempDir, "lab-pad.sunsynth");
+  const template = await loadSunsynthTemplate("instruments/mandel59 SuperSaw.sunsynth");
+
+  await template
+    .clone()
+    .rename("Lab Pad")
+    .setRootControllers({ volume: 192 })
+    .module("Filter Pro")
+    .set({ freq: 6400, q: 9200 })
+    .setModulesByType("Analog generator", (_module, _index, ordinal) => ({ volume: 80 + ordinal }))
+    .userController("Detune 1")
+    .set({ label: "Lab spread", value: 7777, group: 6 })
+    .writeSunsynth(outputPath);
+
+  const document = await parseFile(outputPath);
+  const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
+
+  assert.equal(document.module.name, "Lab Pad");
+  assert.equal(document.module.controllers.volume, 192);
+  assert.equal(document.module.controllers.user[0].value, 7777);
+  assert.equal(document.module.controllers.user[0]._label, "Lab spread");
+  assert.equal(document.module.dataChunks.find((chunk) => chunk.name === "userControllerName").label, "Lab spread");
+  assert.equal(project.project.name, "Lab Pad");
+  assert.equal(project.modules[2].controllers.freq, 6400);
+  assert.equal(project.modules[2].controllers.q, 9200);
+  assert.equal(project.modules[3].controllers.volume, 80);
+  assert.equal(project.modules[4].controllers.volume, 81);
+});
+
+test("uses fluent module and user-controller handles", async () => {
+  const template = await loadSunsynthTemplate("instruments/mandel59 SuperSaw.sunsynth");
+  const synth = template.clone();
+
+  synth
+    .module("Filter Pro")
+    .set({ freq: 6500 })
+    .userController("Filter freq")
+    .set(6500)
+    .userController("Release")
+    .set({ value: 2400 });
+
+  assert.equal(synth.module("Filter Pro").get("freq"), 6500);
+  assert.equal(synth.userController("Filter freq").get(), 6500);
+  assert.equal(synth.userController("Release").get(), 2400);
+});
+
+test("runs a JS synth recipe and writes synth plus JSON output", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-recipe-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    `export default {
+      template: "instruments/mandel59 SuperSaw.sunsynth",
+      outDir: ${JSON.stringify(tempDir)},
+      variants: [{
+        name: "Recipe Pad",
+        fileName: "recipe-pad.sunsynth",
+        rootControllers: { volume: 200 },
+        modules: [{ selector: { index: 2 }, controllers: { freq: 7000 } }],
+        userControllers: [{ index: 0, label: "Recipe spread", value: 8000 }]
+      }]
+    };`,
+    "utf8",
+  );
+
+  const [outputPath] = await runRecipe(recipePath, { json: true });
+  const document = await parseFile(outputPath);
+
+  assert.equal(outputPath, join(tempDir, "recipe-pad.sunsynth"));
+  assert.equal(document.module.name, "Recipe Pad");
+  assert.equal(document.module.controllers.volume, 200);
+  assert.equal(document.module.controllers.user[0]._label, "Recipe spread");
+  assert.equal(document.module.controllers.user[0].value, 8000);
+  assert.equal(document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container.modules[2].controllers.freq, 7000);
+  assert.match(await readFile(`${outputPath}.json`, "utf8"), /"Recipe Pad"/u);
+});
+
+test("runs a function recipe with sweep variants", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-sweep-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    `export default ({ sweep }) => ({
+      template: "instruments/mandel59 SuperSaw.sunsynth",
+      outDir: ${JSON.stringify(tempDir)},
+      variants: sweep({
+        name: "Sweep F{freq} R{release}",
+        fileName: "sweep-{freq}-{release}.sunsynth",
+        params: { freq: [5000, 6200], release: [1800] },
+        build(synth, params) {
+          synth
+            .module("Filter Pro")
+            .set({ freq: params.freq })
+            .userController("Release")
+            .set(params.release);
+        }
+      })
+    });`,
+    "utf8",
+  );
+
+  const outputPaths = await runRecipe(recipePath);
+  const firstDocument = await parseFile(outputPaths[0]);
+  const firstProject = firstDocument.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
+
+  assert.deepEqual(
+    outputPaths.map((outputPath) => outputPath.split(/[\\\\/]/u).at(-1)),
+    ["sweep-5000-1800.sunsynth", "sweep-6200-1800.sunsynth"],
+  );
+  assert.equal(firstDocument.module.name, "Sweep F5000 R1800");
+  assert.equal(firstDocument.module.controllers.user[8].value, 1800);
+  assert.equal(firstProject.modules[2].controllers.freq, 5000);
+});
