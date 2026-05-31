@@ -3,14 +3,14 @@ import { mkdir } from "node:fs/promises";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { loadSunsynthTemplate } from "./sunsynth-lab.mjs";
+import { loadSunsynthTemplate, SunSynthLab } from "./sunsynth-lab.mjs";
 
 function usage() {
   console.error(`Usage:
   node tools/sunsynth-generate.mjs [--out <directory>] [--json] <recipe.mjs>
 
 Recipe modules can export either a recipe object or a function receiving
-{ sweep } and returning one.
+{ create, sweep } and returning one.
 The basic recipe shape is:
   {
     template: "instruments/mandel59 SuperSaw.sunsynth",
@@ -26,7 +26,10 @@ The basic recipe shape is:
     ]
   }
 
-For generated parameter grids, use sweep({ params, name, fileName, build }).`);
+For generated parameter grids, use sweep({ params, name, fileName, build }).
+For scratch synths, omit template and set create: true on each variant.
+Use var/synth-lab for temporary drafts and generated/instruments for generated
+instrument files that should be checked in.`);
 }
 
 function slug(value) {
@@ -39,9 +42,6 @@ function slug(value) {
 function normalizeRecipe(value) {
   if (!value || typeof value !== "object") {
     throw new Error("Recipe must be an object");
-  }
-  if (!value.template) {
-    throw new Error("Recipe must include template");
   }
   if (!Array.isArray(value.variants) || !value.variants.length) {
     throw new Error("Recipe must include at least one variant");
@@ -87,7 +87,7 @@ export function sweep(config) {
 }
 
 function createRecipeContext() {
-  return { sweep };
+  return { create: SunSynthLab.create, sweep };
 }
 
 async function loadRecipe(recipePath) {
@@ -122,8 +122,24 @@ function applyObjectVariant(synth, variant) {
   }
 }
 
+function createScratchSynth(recipe, variant) {
+  const createOptions =
+    variant?.create && typeof variant.create === "object"
+      ? variant.create
+      : recipe.create && typeof recipe.create === "object"
+        ? recipe.create
+        : {};
+  const name =
+    typeof variant?.create === "string"
+      ? variant.create
+      : typeof recipe.create === "string"
+        ? recipe.create
+        : variant?.name ?? recipe.name ?? "Scratch Synth";
+  return SunSynthLab.create(name, createOptions);
+}
+
 async function generateVariant(template, recipe, variant, options) {
-  const synth = template.clone();
+  const synth = template ? template.clone() : createScratchSynth(recipe, variant);
   if (typeof variant === "function") {
     await variant(synth, { recipe, options });
   } else {
@@ -180,7 +196,9 @@ export async function runRecipe(recipePath, options = {}) {
   const absoluteRecipePath = resolve(recipePath);
   const recipe = await loadRecipe(absoluteRecipePath);
   const recipeDir = dirname(absoluteRecipePath);
-  const template = await loadSunsynthTemplate(resolveRecipePath(recipe.template, recipeDir));
+  const template = recipe.template
+    ? await loadSunsynthTemplate(resolveRecipePath(recipe.template, recipeDir))
+    : undefined;
   const outputs = [];
   for (const variant of recipe.variants) {
     outputs.push(await generateVariant(template, recipe, variant, options));
