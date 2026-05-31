@@ -179,6 +179,7 @@ button:disabled:hover {
 }
 
 .project-title,
+.embedded-title,
 .module-name,
 .pattern-name {
   font-weight: 650;
@@ -216,6 +217,7 @@ button:disabled:hover {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: start;
+  margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--line);
 }
@@ -256,12 +258,26 @@ button:disabled:hover {
   gap: 1rem;
 }
 
+.section-meta {
+  margin: -0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .graph-panel {
   aspect-ratio: 16 / 9;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbfcfa;
   overflow: hidden;
+}
+
+.graph-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
+  gap: 0.75rem;
+  align-items: start;
 }
 
 .module-graph {
@@ -275,14 +291,100 @@ button:disabled:hover {
   stroke-width: 3;
   stroke-linecap: square;
   opacity: 0.58;
+  transition:
+    opacity 120ms ease,
+    stroke 120ms ease,
+    stroke-width 120ms ease;
 }
 
-.module-graph marker path {
+.graph-edges line.is-selected {
+  stroke: var(--accent);
+  stroke-width: 3.4;
+  opacity: 0.94;
+}
+
+.graph-edges line.is-dimmed {
+  opacity: 0.16;
+}
+
+.module-graph marker .graph-arrow {
   fill: color-mix(in srgb, var(--accent) 58%, var(--muted));
+}
+
+.module-graph marker .graph-arrow-selected {
+  fill: var(--accent);
+}
+
+.graph-node {
+  cursor: pointer;
+}
+
+.graph-node-focus-ring {
+  fill: none;
+  stroke: #303835;
+  stroke-width: 1.2;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.graph-node:focus .graph-node-focus-ring,
+.graph-node:focus-visible .graph-node-focus-ring,
+.graph-node:focus-within .graph-node-focus-ring {
+  opacity: 0.45;
+}
+
+.graph-node-hit-area {
+  overflow: visible;
+  pointer-events: all;
+}
+
+.graph-node-button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: transparent;
+  outline: none;
+}
+
+.graph-node-button:hover,
+.graph-node-button:focus-visible {
+  border-color: transparent;
+  outline: none;
 }
 
 .graph-node-box {
   fill: color-mix(in srgb, var(--module-color, var(--panel)) 58%, var(--ink));
+  stroke: #0e1110;
+  stroke-width: 1;
+  transition:
+    fill 120ms ease,
+    opacity 120ms ease,
+    stroke 120ms ease,
+    stroke-width 120ms ease;
+}
+
+.graph-node.is-selected .graph-node-box {
+  stroke: #0e1110;
+  stroke-width: 1.5;
+}
+
+.graph-node.is-connected .graph-node-box {
+  stroke: #0e1110;
+  stroke-width: 1;
+}
+
+.graph-node:focus,
+.graph-node:focus-visible {
+  outline: none;
+}
+
+.graph-node:focus .graph-node-box,
+.graph-node:focus-visible .graph-node-box {
   stroke: #0e1110;
   stroke-width: 1;
 }
@@ -302,6 +404,13 @@ button:disabled:hover {
   font-weight: 700;
 }
 
+.graph-node.is-selected .graph-node-id,
+.graph-node:focus .graph-node-id,
+.graph-node:focus-visible .graph-node-id,
+.graph-node:focus-within .graph-node-id {
+  fill: #303835;
+}
+
 .graph-nodes .graph-node-name {
   fill: color-mix(in srgb, var(--module-color, var(--panel)) 42%, #ffffff);
   font-size: 8px;
@@ -312,6 +421,216 @@ button:disabled:hover {
   fill: color-mix(in srgb, var(--module-color, var(--panel)) 26%, #ffffff);
   font-size: 7px;
   font-weight: 500;
+}
+
+.graph-detail {
+  display: grid;
+  align-content: start;
+  gap: 0.65rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffefa;
+  padding: 0.75rem;
+}
+
+.graph-detail-heading {
+  display: flex;
+  min-width: 0;
+}
+
+.graph-detail-module-pill {
+  border-radius: 4px;
+  padding: 0.18rem 0.45rem;
+  font-size: 0.9rem;
+}
+
+.graph-detail-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.graph-detail-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.graph-detail-fields div {
+  min-width: 0;
+}
+
+.graph-detail-fields dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.graph-detail-fields dd {
+  margin: 0;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.graph-detail-section {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.graph-detail-section h4 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.graph-detail-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.graph-detail-links .module-reference-pill {
+  border-radius: 999px;
+}
+
+.properties-panel {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffefa;
+  padding: 0.75rem;
+}
+
+.property-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.property-row {
+  min-width: 0;
+}
+
+.property-row dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.property-row dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.property-block {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.property-block h4 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.property-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.property-flag {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  padding: 0.1rem 0.45rem;
+  font-size: 0.78rem;
+}
+
+.data-chunk-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.data-chunk-pill {
+  display: inline-flex;
+  align-items: baseline;
+  max-width: 100%;
+  min-width: 0;
+  gap: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 7%, #fff);
+  color: var(--ink);
+  padding: 0.1rem 0.45rem;
+  font-size: 0.78rem;
+}
+
+.data-chunk-pill.is-muted {
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.data-chunk-label,
+.data-chunk-meta {
+  overflow-wrap: anywhere;
+}
+
+.data-chunk-label {
+  font-weight: 650;
+}
+
+.data-chunk-meta {
+  color: var(--muted);
+}
+
+.controller-list {
+  display: grid;
+  max-height: 14rem;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+}
+
+.controller-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: baseline;
+  min-width: 0;
+  padding: 0.24rem 0.45rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  font-size: 0.8rem;
+}
+
+.controller-row:last-child {
+  border-bottom: 0;
+}
+
+.controller-label {
+  min-width: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.controller-value {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .instrument-header {
@@ -633,6 +952,17 @@ button:disabled:hover {
   align-items: start;
 }
 
+.embedded-title {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.embedded-host {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
 .embedded-graph-panel {
   border-radius: 4px;
 }
@@ -679,19 +1009,35 @@ button:disabled:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  align-items: flex-start;
   margin-top: 0.2rem;
+}
+
+.module-reference {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.12rem 0.3rem;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  vertical-align: top;
 }
 
 .module-reference-pill {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.3rem;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid color-mix(in srgb, var(--module-color, #9aa3aa) 55%, #d5d9df);
   background: color-mix(in srgb, var(--module-color, #9aa3aa) 14%, #ffffff);
   color: #25323a;
   border-radius: 999px;
   padding: 0.1rem 0.45rem;
   font-size: 0.8rem;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
@@ -706,10 +1052,17 @@ button:disabled:hover {
 }
 
 .module-reference-id,
-.module-reference-count {
+.module-reference-meta {
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+.module-reference-name {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .module-reference-type {
@@ -802,6 +1155,16 @@ button:disabled:hover {
 
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .graph-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1180px) {
+  .graph-workspace {
+    grid-template-columns: 1fr;
   }
 }
 

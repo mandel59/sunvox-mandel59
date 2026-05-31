@@ -47,9 +47,15 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       h1: document.querySelector('h1')?.textContent ?? null,
       projectButtons: document.querySelectorAll('.project-button').length,
       selected: document.querySelector('#project-details h2')?.textContent ?? null,
+      detailsHeaderGap: (() => {
+        const header = document.querySelector('.details-header')?.getBoundingClientRect();
+        const heading = document.querySelector('#properties-heading')?.getBoundingClientRect();
+        return header && heading ? heading.top - header.bottom : null;
+      })(),
       graphSections: document.querySelectorAll('.module-graph').length,
       graphNodes: document.querySelectorAll('.graph-nodes g').length,
       graphEdges: document.querySelectorAll('.graph-edges line').length,
+      topLevelMetrics: document.querySelectorAll('#project-details > .metrics').length,
       licenseLinks: document.querySelectorAll('.licenses a').length,
       topbarButtons: document.querySelectorAll('#topbar-controls button').length,
       topbarVolume: document.querySelector('#topbar-controls input[type="range"]')?.value ?? null,
@@ -60,9 +66,21 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       synthOctaveButtons: document.querySelectorAll('.octave-button').length,
       synthKeyboardRange: document.querySelector('.octave-range')?.textContent ?? null,
       synthScrollLaneHeight: document.querySelector('.keyboard-scroll-lane')?.getBoundingClientRect().height ?? null,
+      propertiesHeading: document.querySelector('#properties-heading')?.textContent ?? null,
+      propertiesText: document.querySelector('[aria-labelledby="properties-heading"] .properties-panel')?.textContent ?? null,
+      embeddedMeta: document.querySelector('[aria-labelledby="embedded-heading"] .section-meta')?.textContent ?? null,
+      propertyFlags: Array.from(
+        document.querySelectorAll('[aria-labelledby="properties-heading"] .property-flag'),
+      ).map((element) => element.textContent.trim()),
     }));
     if (initial.topbarButtons !== 2) {
       throw new Error(`Expected two topbar playback buttons, got ${initial.topbarButtons}`);
+    }
+    if (!(initial.detailsHeaderGap >= 12)) {
+      throw new Error(`Expected details header divider to have bottom spacing, got ${initial.detailsHeaderGap}`);
+    }
+    if (initial.topLevelMetrics !== 0) {
+      throw new Error(`Expected no top-level file metrics summary, got ${initial.topLevelMetrics}`);
     }
     if (initial.topbarVolume !== '256' || initial.topbarVolumeOutput !== '100%') {
       throw new Error(`Expected initial master volume 100%, got ${initial.topbarVolume}/${initial.topbarVolumeOutput}`);
@@ -78,6 +96,21 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       throw new Error(
         `Expected a two-octave synth keyboard with octave controls, got ${JSON.stringify(initial)}`,
       );
+    }
+    if (
+      initial.propertiesHeading !== 'Synth Properties' ||
+      !initial.propertiesText.includes('Shepard tone') ||
+      !initial.propertiesText.includes('Controllers5') ||
+      initial.propertiesText.includes('Data chunks') ||
+      initial.propertiesText.includes('Embedded projects') ||
+      !initial.propertiesText.includes('Embedded project') ||
+      !initial.propertiesText.includes('Controller links') ||
+      !initial.propertiesText.includes('Options') ||
+      !initial.propertiesText.includes('Other data') ||
+      initial.embeddedMeta !== 'Embedded projects 1' ||
+      !initial.propertyFlags.includes('generator')
+    ) {
+      throw new Error(`Expected synth properties summary, got ${JSON.stringify(initial)}`);
     }
 
     const synthOctaveUi = await page.evaluate(async () => {
@@ -288,9 +321,15 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
 
     const afterSelect = await page.evaluate(() => ({
       selected: document.querySelector('#project-details h2')?.textContent ?? null,
+      detailsHeaderGap: (() => {
+        const header = document.querySelector('.details-header')?.getBoundingClientRect();
+        const heading = document.querySelector('#properties-heading')?.getBoundingClientRect();
+        return header && heading ? heading.top - header.bottom : null;
+      })(),
       graphSections: document.querySelectorAll('.module-graph').length,
       graphNodes: document.querySelectorAll('.graph-nodes g').length,
       graphEdges: document.querySelectorAll('.graph-edges line').length,
+      topLevelMetrics: document.querySelectorAll('#project-details > .metrics').length,
       patternRows: document.querySelectorAll('.pattern-row').length,
       moduleRows: document.querySelectorAll('.module-row').length,
       timelineLaneNumbers: Array.from(document.querySelectorAll('.timeline-lane-number')).map((element) =>
@@ -305,9 +344,27 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       copyLinkText: document.querySelector('.project-permalink')?.textContent.trim() ?? null,
       permalinkHash: document.querySelector('.project-permalink')?.dataset.permalinkHash ?? null,
       copyLinkWidth: document.querySelector('.project-permalink')?.getBoundingClientRect().width ?? null,
+      propertiesHeading: document.querySelector('#properties-heading')?.textContent ?? null,
+      propertiesText: document.querySelector('[aria-labelledby="properties-heading"] .properties-panel')?.textContent ?? null,
+      graphMeta: document.querySelector('[aria-labelledby="graph-heading"] .section-meta')?.textContent ?? null,
+      patternsMeta: document.querySelector('[aria-labelledby="patterns-heading"] .section-meta')?.textContent ?? null,
+      embeddedMeta: document.querySelector('[aria-labelledby="embedded-heading"] .section-meta')?.textContent ?? null,
+      embeddedTitle: document.querySelector('[aria-labelledby="embedded-heading"] .embedded-title')?.textContent.trim() ?? null,
+      embeddedHost: document
+        .querySelector('[aria-labelledby="embedded-heading"] .embedded-host .module-reference')
+        ?.textContent.trim() ?? null,
+      embeddedHostStyle:
+        document.querySelector('[aria-labelledby="embedded-heading"] .embedded-host .module-reference')?.getAttribute('style') ??
+        null,
     }));
     if (afterSelect.topbarPlayDisabled !== false) {
       throw new Error(`Expected selected project to enable topbar play, got disabled=${afterSelect.topbarPlayDisabled}`);
+    }
+    if (!(afterSelect.detailsHeaderGap >= 12)) {
+      throw new Error(`Expected details header divider to have bottom spacing, got ${afterSelect.detailsHeaderGap}`);
+    }
+    if (afterSelect.topLevelMetrics !== 0) {
+      throw new Error(`Expected no top-level file metrics summary, got ${afterSelect.topLevelMetrics}`);
     }
     if (
       afterSelect.locationHash !== '#file=music%2F2022-04-17.sunvox' ||
@@ -315,6 +372,85 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       afterSelect.permalinkHash !== '#file=music%2F2022-04-17.sunvox'
     ) {
       throw new Error(`Expected music file permalink hash, got ${JSON.stringify(afterSelect)}`);
+    }
+    if (
+      afterSelect.propertiesHeading !== 'Project Properties' ||
+      afterSelect.propertiesText.includes('Name') ||
+      afterSelect.propertiesText.includes('Stored modules') ||
+      afterSelect.propertiesText.includes('Stored patterns') ||
+      afterSelect.propertiesText.includes('Embedded projects') ||
+      !afterSelect.propertiesText.includes('BPM125') ||
+      !afterSelect.propertiesText.includes('Speed6') ||
+      !afterSelect.propertiesText.includes('Global volume130') ||
+      !afterSelect.propertiesText.includes('Timeline grid4 / 4') ||
+      afterSelect.graphMeta !== 'Stored modules 9' ||
+      afterSelect.patternsMeta !== 'Stored patterns 1' ||
+      afterSelect.embeddedMeta !== 'Embedded projects 1' ||
+      afterSelect.embeddedTitle !== 'SuperSaw by mandel59 (licensed under CC0)' ||
+      !afterSelect.embeddedHost.includes('01SuperSawMetaModule') ||
+      afterSelect.embeddedHost.includes('embeddedProject') ||
+      !afterSelect.embeddedHostStyle?.includes('--module-color')
+    ) {
+      throw new Error(`Expected project properties summary, got ${JSON.stringify(afterSelect)}`);
+    }
+    await page.evaluate(() => {
+      document
+        .querySelector('[aria-labelledby="graph-heading"] .graph-node[data-module-index="5"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await page.waitForTimeout(50);
+    const graphSelection = await page.evaluate(() => ({
+      detailId:
+        document.querySelector('[aria-labelledby="graph-heading"] .graph-detail-heading .module-reference-id')?.textContent.trim() ?? null,
+      detailName:
+        document.querySelector('[aria-labelledby="graph-heading"] .graph-detail-heading .module-reference-name')?.textContent.trim() ?? null,
+      detailType:
+        document.querySelector('[aria-labelledby="graph-heading"] .graph-detail-heading .module-reference-type')?.textContent.trim() ?? null,
+      detailText: document.querySelector('[aria-labelledby="graph-heading"] .graph-detail')?.textContent ?? '',
+      sectionHeadings: Array.from(
+        document.querySelectorAll('[aria-labelledby="graph-heading"] .graph-detail-section h4'),
+      ).map((element) => element.textContent.trim().replace(/\s+\(\d+\)$/u, '')),
+      controllerRows: Array.from(
+        document.querySelectorAll('[aria-labelledby="graph-heading"] .controller-row'),
+      ).map((element) => element.textContent.trim()),
+      selectedNodePressed: document
+        .querySelector('[aria-labelledby="graph-heading"] .graph-node-button[data-module-index="5"]')
+        ?.getAttribute('aria-pressed') ?? null,
+      selectedEdges: document.querySelectorAll('[aria-labelledby="graph-heading"] .graph-edge.is-selected').length,
+      dimmedEdges: document.querySelectorAll('[aria-labelledby="graph-heading"] .graph-edge.is-dimmed').length,
+      linkChips: Array.from(
+        document.querySelectorAll('[aria-labelledby="graph-heading"] .graph-detail-links .module-reference'),
+      ).map((element) => ({
+        text: element.textContent.trim(),
+        pillText: element.querySelector('.module-reference-pill')?.textContent.trim() ?? null,
+        metaText: element.querySelector('.module-reference-meta')?.textContent.trim() ?? null,
+        color: element.getAttribute('style'),
+        pillRadius: getComputedStyle(element.querySelector('.module-reference-pill')).borderRadius,
+      })),
+      linkText: document.querySelector('[aria-labelledby="graph-heading"] .graph-detail')?.textContent ?? '',
+    }));
+    if (
+      graphSelection.detailId !== '05' ||
+      graphSelection.detailName !== 'Sound2Ctl' ||
+      graphSelection.detailType !== null ||
+      graphSelection.detailText.includes('Position') ||
+      graphSelection.detailText.includes('Color') ||
+      graphSelection.detailText.includes('Data chunks') ||
+      !graphSelection.detailText.includes('Options') ||
+      !graphSelection.detailText.includes('Other data') ||
+      graphSelection.sectionHeadings.join(',') !== 'Controllers,Data,Inputs,Outputs' ||
+      graphSelection.controllerRows.length !== 9 ||
+      !graphSelection.controllerRows.some((row) => row.includes('Modehq')) ||
+      graphSelection.selectedNodePressed !== 'true' ||
+      graphSelection.selectedEdges !== 2 ||
+      graphSelection.linkChips.length !== 2 ||
+      !graphSelection.linkChips.every((chip) => chip.color?.includes('--module-color')) ||
+      graphSelection.linkChips.some((chip) => chip.pillText?.includes('slot')) ||
+      !graphSelection.linkChips.some((chip) => chip.metaText?.includes('slot')) ||
+      !graphSelection.linkText.includes('Compressor') ||
+      !graphSelection.linkText.includes('MultiCtl')
+    ) {
+      throw new Error(`Expected graph selection details for Sound2Ctl, got ${JSON.stringify(graphSelection)}`);
     }
     await page.evaluate(() => {
       window.__browserCheckCopiedLink = '';

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { basename, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { parseContainer } from "./sunvox-codec.mjs";
+import { parseContainer, SUNVOX_DB } from "./sunvox-codec.mjs";
 
 const DEFAULT_EVENT_LIMIT = 8;
 
@@ -66,8 +66,170 @@ function userControllerSummary(module) {
   });
 }
 
+function expandedControllerDefinitions(moduleType) {
+  const controllers = SUNVOX_DB.modules[moduleType]?.controllers ?? [];
+  const expanded = [];
+  for (const controller of controllers) {
+    if (!controller.repeat) {
+      expanded.push({
+        ...controller,
+        path: controller.path ?? controller.name,
+      });
+      continue;
+    }
+
+    const repeat = controller.repeat;
+    for (let repeatIndex = 0; repeatIndex < repeat.count; repeatIndex += 1) {
+      for (const [itemIndex, item] of repeat.items.entries()) {
+        const displayIndex = repeatIndex + 1;
+        expanded.push({
+          ...item,
+          index: repeat.startIndex + repeatIndex * repeat.items.length + itemIndex,
+          label: `Operator ${displayIndex} ${item.label ?? item.name}`,
+          path: repeat.pathTemplate
+            .replaceAll("{i}", String(repeatIndex))
+            .replaceAll("{n}", String(displayIndex))
+            .replaceAll("{name}", item.name),
+        });
+      }
+    }
+  }
+  return expanded;
+}
+
+function getPath(value, path) {
+  return path.split(".").reduce((current, token) => current?.[token], value);
+}
+
+function displayControllerValue(value, controller) {
+  if (typeof value === "number" && Number.isFinite(controller.displayOffset)) {
+    return value + controller.displayOffset;
+  }
+  return value;
+}
+
+function controllerValueSummary(controller, value) {
+  return {
+    index: controller.index,
+    path: controller.path,
+    label: controller.label ?? controller.name ?? controller.path,
+    value,
+    ...(controller.unit ? { unit: controller.unit } : {}),
+    ...(controller.displayOffset !== undefined ? { displayValue: displayControllerValue(value, controller) } : {}),
+  };
+}
+
+function controllerSummary(module) {
+  const controllers = module?.controllers;
+  if (!controllers) {
+    return [];
+  }
+  if (Array.isArray(controllers)) {
+    return controllers
+      .map((value, index) => (value === undefined ? undefined : { index, path: String(index), label: `#${index}`, value }))
+      .filter(Boolean);
+  }
+
+  const rows = [];
+  for (const controller of expandedControllerDefinitions(module?.type)) {
+    const value = getPath(controllers, controller.path);
+    if (value !== undefined) {
+      rows.push(controllerValueSummary(controller, value));
+    }
+  }
+  return rows;
+}
+
+const DATA_CHUNK_LABELS = {
+  alg1: "Algorithm 1 data",
+  alg2: "Algorithm 2 data",
+  controllerLinks: "Controller links",
+  curve: "Curve",
+  customWaveform: "Custom waveform",
+  drawnWaveform: "Drawn waveform",
+  effectModule: "Effect module",
+  embeddedProject: "Embedded project",
+  envelope: "Envelope",
+  harmonicFrequencies: "Harmonic frequencies",
+  harmonicTypes: "Harmonic types",
+  harmonicVolumes: "Harmonic volumes",
+  harmonicWidths: "Harmonic widths",
+  instrument: "Instrument",
+  oggVorbisPayload: "Ogg Vorbis payload",
+  options: "Options",
+  outputSlots: "Output slots",
+  sample: "Sample",
+  sampleData: "Sample data",
+  userControllerName: "User controller name",
+};
+
+function dataChunkLabel(name) {
+  if (!name) {
+    return "Unknown data";
+  }
+  return DATA_CHUNK_LABELS[name] ?? name.replace(/([a-z0-9])([A-Z])/gu, "$1 $2").replace(/^./u, (letter) => letter.toUpperCase());
+}
+
+function dataChunkDetail(chunk) {
+  if (chunk.container) {
+    return chunk.container.project?.name || chunk.container.module?.name || chunk.container._sourceName;
+  }
+  if (Array.isArray(chunk.links)) {
+    return `${chunk.links.length} links`;
+  }
+  if (Array.isArray(chunk.slots)) {
+    return `${chunk.slots.length} slots`;
+  }
+  if (Array.isArray(chunk.values)) {
+    return `${chunk.values.length} values`;
+  }
+  if (chunk.sample?.name) {
+    return chunk.sample.name;
+  }
+  if (chunk.byteLength !== undefined) {
+    return `${chunk.byteLength} bytes`;
+  }
+  if (chunk.count !== undefined) {
+    return `${chunk.count} entries`;
+  }
+  return undefined;
+}
+
+function dataChunkSummary(module) {
+  const chunks = module?.dataChunks ?? [];
+  const byName = new Map();
+  for (const chunk of chunks) {
+    const name = chunk.name ?? "unknown";
+    const summary = byName.get(name) ?? {
+      name,
+      label: dataChunkLabel(name),
+      count: 0,
+      indexes: [],
+      details: [],
+    };
+    summary.count += 1;
+    if (chunk.index !== undefined) {
+      summary.indexes.push(chunk.index);
+    }
+    const detail = dataChunkDetail(chunk);
+    if (detail && !summary.details.includes(detail)) {
+      summary.details.push(detail);
+    }
+    byName.set(name, summary);
+  }
+  return [...byName.values()].map((summary) => ({
+    name: summary.name,
+    label: summary.label,
+    count: summary.count,
+    indexes: summary.indexes,
+    ...(summary.details.length ? { details: summary.details } : {}),
+  }));
+}
+
 function moduleSummary(module, index) {
   const dataChunks = module?.dataChunks ?? [];
+  const controllers = controllerSummary(module);
+  const dataChunkSummaries = dataChunkSummary(module);
   return {
     index,
     name: moduleName(module),
@@ -79,8 +241,10 @@ function moduleSummary(module, index) {
     inputs: compactModuleLinks(module, "inputs", "inputLinks", "inputLinkSlots"),
     outputs: compactModuleLinks(module, "outputs", "outputLinks", "outputLinkSlots"),
     controllerCount: countControllers(module?.controllers),
+    ...(controllers.length ? { controllers } : {}),
     userControllers: userControllerSummary(module),
     dataChunkCount: module?.dataChunkCount ?? dataChunks.length,
+    ...(dataChunkSummaries.length ? { dataChunks: dataChunkSummaries } : {}),
     embeddedCount: dataChunks.filter((chunk) => chunk.container).length,
   };
 }
@@ -215,6 +379,9 @@ function embeddedOutlines(module, moduleIndex, options, hostLabel) {
     .map((chunk) => ({
       hostModule: moduleIndex,
       hostName: moduleName(module, moduleKind(module)),
+      hostType: module?.type,
+      hostKind: moduleKind(module),
+      hostColor: module?.color,
       hostLabel,
       dataChunkIndex: chunk.index,
       dataChunkName: chunk.name,

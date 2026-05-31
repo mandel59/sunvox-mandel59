@@ -169,7 +169,10 @@ function moduleSummary(module) {
     inputCount: module.inputs.length,
     outputCount: module.outputs.length,
     controllerCount: module.controllerCount,
+    ...(module.controllers?.length ? { controllers: module.controllers } : {}),
+    ...(module.userControllers?.length ? { userControllers: module.userControllers } : {}),
     dataChunkCount: module.dataChunkCount,
+    ...(module.dataChunks?.length ? { dataChunks: module.dataChunks } : {}),
     embeddedCount: module.embeddedCount,
   };
 }
@@ -203,6 +206,9 @@ function embeddedSummary(embedded) {
   return {
     hostModule: embedded.hostModule,
     hostName: embedded.hostName,
+    hostType: embedded.hostType,
+    hostKind: embedded.hostKind,
+    ...(embedded.hostColor ? { hostColor: embedded.hostColor } : {}),
     dataChunkIndex: embedded.dataChunkIndex,
     ...(embedded.dataChunkName ? { dataChunkName: embedded.dataChunkName } : {}),
     document: documentSummary(embedded.document, embedded.document.sourceName),
