@@ -721,6 +721,31 @@ button:disabled:hover {
   padding: 1rem;
 }
 
+.license-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.license-block {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+}
+
+.license-block h3,
+.license-block p {
+  margin: 0;
+}
+
+.license-block h3 {
+  font-size: 0.95rem;
+}
+
+.license-notice {
+  color: var(--muted);
+}
+
 .licenses ul {
   display: flex;
   flex-wrap: wrap;
@@ -748,6 +773,10 @@ button:disabled:hover {
 @media (max-width: 860px) {
   .topbar,
   .details-header {
+    grid-template-columns: 1fr;
+  }
+
+  .license-groups {
     grid-template-columns: 1fr;
   }
 

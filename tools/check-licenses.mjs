@@ -17,7 +17,7 @@ const linkPrefix = optionValue(process.argv, "--link-prefix", licenseDirectory);
 const sunvoxLicensePath = join(licenseDirectory, "LICENSE.txt");
 
 function normalizeText(text) {
-  return text.replace(/\s+/gu, " ").trim();
+  return text.replace(/\s+/gu, " ").replace(/\s+([.,:;])/gu, "$1").trim();
 }
 
 function decodeBasicHtmlEntities(text) {
@@ -48,6 +48,13 @@ const page = readFileSync(pagePath, "utf8");
 const normalizedPage = normalizeText(decodeBasicHtmlEntities(page.replace(/<[^>]*>/gu, " ")));
 const sunvoxLicense = readFileSync(sunvoxLicensePath, "utf8");
 const noticeMatch = /REQUIREMENT 1:\s*([\s\S]*?)\s*REQUIREMENT 2:/u.exec(sunvoxLicense);
+const requiredPageTexts = [
+  "Application and runtime notices",
+  "Distributed project data",
+  "Files under music/ and instruments/ were created by Ryusei Yamaguchi (@mandel59).",
+  "music/ files are distributed under CC BY 4.0.",
+  "instruments/ files are distributed under CC0 1.0.",
+];
 
 if (!noticeMatch) {
   fail(`Could not find SunVox required notice in ${sunvoxLicensePath}`);
@@ -72,6 +79,12 @@ for (const licenseFile of licenseFiles) {
   const linkPath = `${linkPrefix}/${licenseFile}`;
   if (!page.includes(linkPath)) {
     fail(`${pagePath} does not link to ${linkPath}`);
+  }
+}
+
+for (const requiredText of requiredPageTexts) {
+  if (!normalizedPage.includes(normalizeText(requiredText))) {
+    fail(`${pagePath} does not include required data license text: ${requiredText}`);
   }
 }
 

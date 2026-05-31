@@ -20,23 +20,43 @@
 
     <section class="licenses" aria-labelledby="licenses">
         <h2 id="licenses">Licenses</h2>
-        <p>
-            Powered by SunVox (modular synth &amp; tracker)<br>
-            Copyright (c) 2008 - 2026, Alexander Zolotov
-            &lt;nightradio@gmail.com&gt;, WarmPlace.ru
-        </p>
-        <ul>
-            <li><a href="sunvox_lib/sunvox_lib/docs/license/LICENSE.txt">SunVox library license</a></li>
-            <li><a href="sunvox_lib/sunvox_lib/docs/license/sundog.txt">SunDog engine license</a></li>
-            <li><a href="sunvox_lib/sunvox_lib/docs/license/libflac.txt">libFLAC license</a></li>
-            <li><a href="sunvox_lib/sunvox_lib/docs/license/tremor.txt">Tremor license</a></li>
-        </ul>
-        <p>
-            Music is distributed under
-            <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
-            Instruments are distributed under
-            <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>.
-        </p>
+        <div class="license-groups">
+            <section class="license-block" aria-labelledby="app-runtime-licenses">
+                <h3 id="app-runtime-licenses">Application and runtime notices</h3>
+                <p>
+                    The web app uses the SunVox library and includes its required notice:
+                </p>
+                <p class="license-notice">
+                    Powered by SunVox (modular synth &amp; tracker)<br>
+                    Copyright (c) 2008 - 2026, Alexander Zolotov
+                    &lt;nightradio@gmail.com&gt;, WarmPlace.ru
+                </p>
+                <ul>
+                    <li><a href="sunvox_lib/sunvox_lib/docs/license/LICENSE.txt">SunVox library license</a></li>
+                    <li><a href="sunvox_lib/sunvox_lib/docs/license/sundog.txt">SunDog engine license</a></li>
+                    <li><a href="sunvox_lib/sunvox_lib/docs/license/libflac.txt">libFLAC license</a></li>
+                    <li><a href="sunvox_lib/sunvox_lib/docs/license/tremor.txt">Tremor license</a></li>
+                </ul>
+            </section>
+            <section class="license-block" aria-labelledby="distributed-data-licenses">
+                <h3 id="distributed-data-licenses">Distributed project data</h3>
+                <p>
+                    The SunVox project files distributed from this site are separate from the web app runtime.
+                    Files under <code>music/</code> and <code>instruments/</code> were created by
+                    Ryusei Yamaguchi (@mandel59).
+                </p>
+                <ul>
+                    <li>
+                        <code>music/</code> files are distributed under
+                        <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+                    </li>
+                    <li>
+                        <code>instruments/</code> files are distributed under
+                        <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>.
+                    </li>
+                </ul>
+            </section>
+        </div>
     </section>
 
     <script src="sunvox_lib/sunvox_lib/js/lib/sunvox.js"></script>
