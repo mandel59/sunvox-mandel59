@@ -27,7 +27,9 @@ The basic recipe shape is:
   }
 
 For generated parameter grids, use sweep({ params, name, fileName, build }).
-For scratch synths, omit template and set create: true on each variant.
+For scratch MetaModule synths, omit template and set create: true on each
+variant. To create a root module `.sunsynth`, use
+create: { moduleType: "FMX" }.
 Use var/synth-lab for temporary drafts and generated/instruments for generated
 instrument files that should be checked in.`);
 }
@@ -87,7 +89,7 @@ export function sweep(config) {
 }
 
 function createRecipeContext() {
-  return { create: SunSynthLab.create, sweep };
+  return { create: SunSynthLab.create, createModule: SunSynthLab.createModule, sweep };
 }
 
 async function loadRecipe(recipePath) {
@@ -135,6 +137,11 @@ function createScratchSynth(recipe, variant) {
       : typeof recipe.create === "string"
         ? recipe.create
         : variant?.name ?? recipe.name ?? "Scratch Synth";
+  const moduleType = createOptions.moduleType;
+  if (moduleType) {
+    const { moduleType: _moduleType, ...moduleOptions } = createOptions;
+    return SunSynthLab.createModule(moduleType, { ...moduleOptions, name });
+  }
   return SunSynthLab.create(name, createOptions);
 }
 

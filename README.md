@@ -136,6 +136,9 @@ compressor, and exposed user controllers.
 The
 [scratch-assorted-instruments recipe](generated/recipes/sunsynth/scratch-assorted-instruments.mjs)
 collects small scratch-built bass, bell, organ, and kick experiments.
+The [scratch-fmx recipe](generated/recipes/sunsynth/scratch-fmx.mjs) shows how
+to generate root-module `.sunsynth` files whose top-level module is FMX instead
+of a MetaModule wrapper.
 
 The repository uses these data locations:
 

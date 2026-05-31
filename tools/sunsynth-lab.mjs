@@ -4,7 +4,48 @@ import { readFile, writeFile } from "node:fs/promises";
 import { buildContainer, parseContainer, SUNVOX_DB, TEXT_FORMAT } from "./sunvox-codec.mjs";
 
 function cloneJson(value) {
+  if (value === undefined) {
+    return undefined;
+  }
   return JSON.parse(JSON.stringify(value));
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function indexedLength(value) {
+  if (Array.isArray(value)) {
+    return value.length;
+  }
+  if (!isPlainObject(value)) {
+    return 0;
+  }
+  const indexes = Object.keys(value)
+    .map((key) => Number(key))
+    .filter((key) => Number.isInteger(key) && key >= 0);
+  return indexes.length ? Math.max(...indexes) + 1 : 0;
+}
+
+function mergeJson(base, patch) {
+  if (Array.isArray(base) || Array.isArray(patch)) {
+    const length = Math.max(indexedLength(base), indexedLength(patch));
+    const merged = [];
+    for (let index = 0; index < length; index += 1) {
+      const baseValue = Array.isArray(base) || isPlainObject(base) ? base[index] : undefined;
+      const patchValue = Array.isArray(patch) || isPlainObject(patch) ? patch[index] : undefined;
+      merged[index] = patchValue === undefined ? cloneJson(baseValue) : mergeJson(baseValue, patchValue);
+    }
+    return merged;
+  }
+  if (isPlainObject(base) || isPlainObject(patch)) {
+    const merged = {};
+    for (const key of new Set([...Object.keys(base ?? {}), ...Object.keys(patch ?? {})])) {
+      merged[key] = patch?.[key] === undefined ? cloneJson(base?.[key]) : mergeJson(base?.[key], patch[key]);
+    }
+    return merged;
+  }
+  return cloneJson(patch);
 }
 
 function getPath(object, path) {
@@ -33,6 +74,55 @@ function controllerPath(controller) {
   return controller.path ?? controller.name;
 }
 
+function expandControllerTemplate(template, context) {
+  if (typeof template !== "string") {
+    return template;
+  }
+  return template
+    .replaceAll("{i}", String(context.index))
+    .replaceAll("{n}", String(context.number))
+    .replaceAll("{name}", context.name ?? "");
+}
+
+function repeatValue(value, index) {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+  return value[index] ?? value.at(-1);
+}
+
+function expandedControllerDefinitions(type) {
+  const controllers = moduleDefinition(type).controllers ?? [];
+  const expanded = [];
+  for (const controller of controllers) {
+    if (!controller.repeat) {
+      expanded.push(controller);
+      continue;
+    }
+
+    const repeat = controller.repeat;
+    let controllerIndex = repeat.startIndex ?? 0;
+    for (const item of repeat.items ?? []) {
+      const count = item.repeatCount ?? repeat.count ?? 0;
+      for (let repeatIndex = 0; repeatIndex < count; repeatIndex += 1) {
+        const context = { index: repeatIndex, number: repeatIndex + 1, name: item.name };
+        const definition = { ...item, index: controllerIndex };
+        delete definition.repeatCount;
+        definition.name = expandControllerTemplate(item.idTemplate ?? repeat.idTemplate, context) ?? item.name;
+        definition.path =
+          expandControllerTemplate(item.pathTemplate ?? repeat.pathTemplate, context) ??
+          definition.name;
+        for (const key of ["label", "min", "max", "default", "normal", "group"]) {
+          definition[key] = repeatValue(definition[key], repeatIndex);
+        }
+        expanded.push(definition);
+        controllerIndex += 1;
+      }
+    }
+  }
+  return expanded;
+}
+
 function enumName(enumName, value) {
   return SUNVOX_DB.enums[enumName]?.[String(value)] ?? value;
 }
@@ -47,7 +137,7 @@ function controllerDefaultValue(controller) {
 
 function defaultControllers(type) {
   const controllers = {};
-  for (const controller of moduleDefinition(type).controllers ?? []) {
+  for (const controller of expandedControllerDefinitions(type)) {
     const value = controllerDefaultValue(controller);
     if (value !== undefined) {
       setPath(controllers, controllerPath(controller), value);
@@ -188,8 +278,7 @@ function makeTypedModule(index, type, options = {}) {
       ...(options.flags ?? {}),
     },
     controllers: {
-      ...defaultControllers(type),
-      ...(options.controllers ?? {}),
+      ...mergeJson(defaultControllers(type), options.controllers ?? {}),
     },
     ...(options.dataChunks ? { dataChunks: cloneJson(options.dataChunks) } : {}),
   };
@@ -280,6 +369,19 @@ function makeScratchDocument(name, options = {}) {
         },
       ],
     },
+    trailingChunks: [],
+  };
+}
+
+function makeModuleDocument(type, options = {}) {
+  const name = options.name ?? type;
+  return {
+    format: TEXT_FORMAT,
+    magic: "SSYN",
+    headerTailHex: "00000000",
+    _comments: [],
+    preludeChunks: [],
+    module: makeTypedModule(0, type, { ...options, name }),
     trailingChunks: [],
   };
 }
@@ -375,6 +477,10 @@ export class SunSynthLab {
 
   static create(name = "Scratch Synth", options = {}) {
     return new SunSynthLab(makeScratchDocument(name, options));
+  }
+
+  static createModule(type, options = {}) {
+    return new SunSynthLab(makeModuleDocument(type, options));
   }
 
   clone() {

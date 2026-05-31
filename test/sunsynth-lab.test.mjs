@@ -101,6 +101,36 @@ test("creates a playable SunSynth from scratch", async () => {
   assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
 });
 
+test("creates a root module SunSynth from scratch", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-root-module-"));
+  const outputPath = join(tempDir, "root-fmx.sunsynth");
+
+  await SunSynthLab.createModule("FMX", {
+    name: "Root FMX",
+    controllers: {
+      volume: 12000,
+      sampleRate: "native",
+      channels: "stereo",
+      polyphony: 8,
+      operators: [
+        { volume: 32768, release: 420, outputMode: 0 },
+        { volume: 12000, decay: 1800, release: 220, freqMul: 2000, outputMode: 8 },
+      ],
+    },
+  }).writeSunsynth(outputPath);
+
+  const document = await parseFile(outputPath);
+
+  assert.equal(document.magic, "SSYN");
+  assert.equal(document.module.name, "Root FMX");
+  assert.equal(document.module.type, "FMX");
+  assert.equal(document.module.dataChunks?.find((chunk) => chunk.name === "embeddedProject"), undefined);
+  assert.equal(document.module.controllers.volume, 12000);
+  assert.equal(document.module.controllers.operators[0].release, 420);
+  assert.equal(document.module.controllers.operators[1].freqMul, 2000);
+  assert.equal(document.module.controllers.operators[4].waveform, "sin");
+});
+
 test("runs a JS synth recipe and writes synth plus JSON output", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-recipe-"));
   const recipePath = join(tempDir, "recipe.mjs");
@@ -130,6 +160,42 @@ test("runs a JS synth recipe and writes synth plus JSON output", async () => {
   assert.equal(document.module.controllers.user[0].value, 8000);
   assert.equal(document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container.modules[2].controllers.freq, 7000);
   assert.match(await readFile(`${outputPath}.json`, "utf8"), /"Recipe Pad"/u);
+});
+
+test("runs a root module scratch recipe without a template", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunsynth-root-recipe-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    `export default {
+      outDir: ${JSON.stringify(tempDir)},
+      variants: [{
+        name: "Root Recipe FMX",
+        fileName: "root-recipe-fmx.sunsynth",
+        create: {
+          moduleType: "FMX",
+          controllers: {
+            volume: 10000,
+            operators: [
+              { volume: 32768, release: 300, outputMode: 0 },
+              { volume: 9000, freqMul: 3000, outputMode: 8 }
+            ]
+          }
+        }
+      }]
+    };`,
+    "utf8",
+  );
+
+  const [outputPath] = await runRecipe(recipePath);
+  const document = await parseFile(outputPath);
+
+  assert.equal(outputPath, join(tempDir, "root-recipe-fmx.sunsynth"));
+  assert.equal(document.module.name, "Root Recipe FMX");
+  assert.equal(document.module.type, "FMX");
+  assert.equal(document.module.controllers.volume, 10000);
+  assert.equal(document.module.controllers.operators[1].freqMul, 3000);
+  assert.equal(document.module.dataChunks?.find((chunk) => chunk.name === "embeddedProject"), undefined);
 });
 
 test("runs a function recipe with sweep variants", async () => {
