@@ -85,15 +85,15 @@ export default {
             },
           })
           .addModule("Delay", {
-            name: "Tempo Delay",
+            name: "Short Echo",
             position: { x: 752, y: 512, z: 0 },
             controllers: {
               dry: 256,
-              wet: 118,
-              delayL: 96,
-              delayR: 144,
-              delayUnit: "line",
-              feedback: 7400,
+              wet: 64,
+              delayL: 180,
+              delayR: 260,
+              delayUnit: "ms",
+              feedback: 3600,
             },
           })
           .addModule("Compressor", {
@@ -115,14 +115,14 @@ export default {
           .connect("Saw R", "Pad Filter", { slot: 1 })
           .connect("Sine Body", "Pad Filter", { slot: 2 })
           .connect("Pad Filter", "Pad Width")
-          .connect("Pad Width", "Tempo Delay")
-          .connect("Tempo Delay", "Soft Glue")
+          .connect("Pad Width", "Short Echo")
+          .connect("Short Echo", "Soft Glue")
           .connect("Soft Glue", "Output")
           .exposeController("Filter freq", "Pad Filter", "freq")
           .exposeController("Filter Q", "Pad Filter", "q")
           .exposeController("Stereo width", "Pad Width", "stereoWidth")
-          .exposeController("Delay wet", "Tempo Delay", "wet")
-          .exposeController("Delay feedback", "Tempo Delay", "feedback")
+          .exposeController("Delay wet", "Short Echo", "wet")
+          .exposeController("Delay feedback", "Short Echo", "feedback")
           .exposeController("Output trim", "Soft Glue", "volume");
       },
     },
