@@ -55,6 +55,11 @@ export interface LinkOptions {
   peerSlot?: number;
 }
 
+export interface DisconnectOptions {
+  slot?: number;
+  peerSlot?: number;
+}
+
 export interface ControllerCollectionEditor {
   set(controllers: ControllerPatch): void;
   get(path: string): unknown;
@@ -78,6 +83,7 @@ export interface SunVoxProjectEditor {
   addModule(type: string, options?: ModuleSpec): ModuleEditor;
   findModule(selector: ModuleRefLike): ModuleEditor;
   connect(from: ModuleRefLike, to: ModuleRefLike, options?: LinkOptions): void;
+  disconnect(from: ModuleRefLike, to: ModuleRefLike, options?: DisconnectOptions): number;
 }
 
 export interface SunSynthEditor {

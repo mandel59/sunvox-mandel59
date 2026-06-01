@@ -138,3 +138,53 @@ test("checked-in SunVox Edit Recipe scratch example generates a SunSynth", async
   assert.equal(project.modules[2].controllers.waveform, "saw");
   assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
 });
+
+test("SunVox Edit Recipe disconnects module links", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-disconnect-"));
+  const outputPath = join(tempDir, "disconnect.sunsynth");
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    `// @ts-check
+
+/** @satisfies {import("${resolve("tools/sunvox-edit-recipe.d.ts").replaceAll("\\", "/")}").SunVoxEditRecipe} */
+const recipe = {
+  schemaVersion: 1,
+  outputs: {
+    disconnect: {
+      kind: "sunsynth",
+      file: ${JSON.stringify(outputPath)},
+      create: { kind: "metaModule", name: "Disconnect Probe" },
+      apply(synth) {
+        const project = synth.embeddedProject();
+        const noteInput = project.addModule("MultiSynth", { id: "noteInput", name: "Note Input" });
+        synth.setInputModule(noteInput);
+        const tone = project.addModule("Analog generator", { id: "tone", name: "Tone" });
+        const amp = project.addModule("Amplifier", { id: "amp", name: "Amp" });
+        project.connect(noteInput, tone);
+        project.connect(tone, project.output, { slot: 0 });
+        project.connect(tone, amp);
+        project.connect(amp, project.output, { slot: 1 });
+        const removed = project.disconnect(tone, project.output);
+        if (removed !== 1) {
+          throw new Error("Expected one removed link, got " + removed);
+        }
+      }
+    }
+  }
+};
+
+export default recipe;
+`,
+    "utf8",
+  );
+
+  assert.deepEqual(await runEditRecipe(recipePath), [outputPath]);
+
+  const document = await parseFile(outputPath);
+  const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
+
+  assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[1, 3]]);
+  assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
+  assert.deepEqual(project.modules[3].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
+});

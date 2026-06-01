@@ -161,6 +161,28 @@ class SunVoxProjectEditor {
   connect(from, to, options = {}) {
     this.lab.connect(this.findModule(from).index, this.findModule(to).index, options);
   }
+
+  disconnect(from, to, options = {}) {
+    const fromEditor = this.findModule(from);
+    const toEditor = this.findModule(to);
+    const fromModule = fromEditor.match().module;
+    const toModule = toEditor.match().module;
+    const matches = (link, moduleIndex) =>
+      link.module === moduleIndex &&
+      (options.slot === undefined || link.slot === options.slot) &&
+      (options.peerSlot === undefined || link.peerSlot === options.peerSlot);
+    const beforeInputs = toModule.inputs?.length ?? 0;
+    const beforeOutputs = fromModule.outputs?.length ?? 0;
+    toModule.inputs = (toModule.inputs ?? []).filter((link) => !matches(link, fromEditor.index));
+    fromModule.outputs = (fromModule.outputs ?? []).filter((link) => !matches(link, toEditor.index));
+    if (!toModule.inputs.length) {
+      delete toModule.inputs;
+    }
+    if (!fromModule.outputs.length) {
+      delete fromModule.outputs;
+    }
+    return beforeInputs - (toModule.inputs?.length ?? 0) + beforeOutputs - (fromModule.outputs?.length ?? 0);
+  }
 }
 
 class SunSynthEditor {
