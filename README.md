@@ -167,10 +167,13 @@ SunSynth lab implementation. Type inference comes from
 [scratch-analog Edit Recipe example](generated/recipes/sunvox-edit/scratch-analog.mjs)
 shows the migrated style: a MultiSynth module is created explicitly, then set as
 the MetaModule input with `synth.setInputModule(...)`. `sunvox:edit-recipe:migrate`
-can convert supported template-free `SunSynthRecipe` scratch recipes into the
-new Edit Recipe format as a reviewable starting point. Migrated layered-pad and
-assorted-instrument examples live under `generated/recipes/sunvox-edit/` and
-are exercised by the test suite.
+can convert supported `SunSynthRecipe` files into the new Edit Recipe format as
+a reviewable starting point. The migrator handles current scratch MetaModule
+recipes, root-module recipes such as FMX, and template-based sweep recipes that
+edit modules and user controllers. Migrated examples live under
+`generated/recipes/sunvox-edit/` and are exercised by the test suite, which
+compares their generated `.sunsynth` documents against the legacy recipe
+outputs.
 
 The repository uses these data locations:
 
