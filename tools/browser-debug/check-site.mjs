@@ -119,8 +119,6 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       initial.synthKeyboardRange !== 'C4-C6' ||
       !(initial.synthScrollLaneHeight >= 18) ||
       !initial.synthControlsBeforeKeyboard ||
-      !initial.synthPropertiesBesideInstrument ||
-      !initial.synthPropertiesControllersRight ||
       initial.synthControllerInputs < 1 ||
       !initial.synthControllerLabels.includes('Octave') ||
       !initial.synthControllerLabels.includes('Volume')
@@ -144,6 +142,62 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       !initial.propertyFlags.includes('generator')
     ) {
       throw new Error(`Expected synth properties summary, got ${JSON.stringify(initial)}`);
+    }
+
+    const synthResponsiveLayout = await page.evaluate(() => ({
+      middleBeside: (() => {
+        const instrument = document.querySelector('[aria-labelledby="instrument-heading"]')?.getBoundingClientRect();
+        const properties = document.querySelector('[aria-labelledby="properties-heading"]')?.getBoundingClientRect();
+        return instrument && properties
+          ? Math.abs(instrument.top - properties.top) < 8 && instrument.right <= properties.left
+          : false;
+      })(),
+      middleControllersRight: (() => {
+        const blocks = Array.from(document.querySelectorAll('[aria-labelledby="properties-heading"] .property-block'));
+        const controllers = blocks
+          .find((block) => block.querySelector('h4')?.textContent.trim() === 'Controllers')
+          ?.getBoundingClientRect();
+        const data = blocks
+          .find((block) => block.querySelector('h4')?.textContent.trim() === 'Data')
+          ?.getBoundingClientRect();
+        return controllers && data ? controllers.left > data.left : false;
+      })(),
+    }));
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.waitForTimeout(100);
+    const synthWideLayout = await page.evaluate(() => ({
+      beside: (() => {
+        const instrument = document.querySelector('[aria-labelledby="instrument-heading"]')?.getBoundingClientRect();
+        const properties = document.querySelector('[aria-labelledby="properties-heading"]')?.getBoundingClientRect();
+        return instrument && properties
+          ? Math.abs(instrument.top - properties.top) < 8 && instrument.right <= properties.left
+          : false;
+      })(),
+      controllersRight: (() => {
+        const blocks = Array.from(document.querySelectorAll('[aria-labelledby="properties-heading"] .property-block'));
+        const controllers = blocks
+          .find((block) => block.querySelector('h4')?.textContent.trim() === 'Controllers')
+          ?.getBoundingClientRect();
+        const data = blocks
+          .find((block) => block.querySelector('h4')?.textContent.trim() === 'Data')
+          ?.getBoundingClientRect();
+        return controllers && data ? controllers.left > data.left : false;
+      })(),
+    }));
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.waitForTimeout(100);
+    if (
+      synthResponsiveLayout.middleBeside ||
+      synthResponsiveLayout.middleControllersRight ||
+      !synthWideLayout.beside ||
+      !synthWideLayout.controllersRight
+    ) {
+      throw new Error(
+        `Expected synth properties to stack until the instrument has four controller columns, got ${JSON.stringify({
+          synthResponsiveLayout,
+          synthWideLayout,
+        })}`,
+      );
     }
 
     const synthOctaveUi = await page.evaluate(async () => {

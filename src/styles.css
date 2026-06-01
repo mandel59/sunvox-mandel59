@@ -209,6 +209,7 @@ button:disabled:hover {
 
 .details {
   min-width: 0;
+  container-type: inline-size;
   padding: 1rem;
 }
 
@@ -652,7 +653,7 @@ button:disabled:hover {
   white-space: nowrap;
 }
 
-@media (min-width: 72rem) {
+@container (min-width: 54rem) {
   .synth-detail-grid {
     grid-template-columns: minmax(0, 1fr) minmax(22rem, 24rem);
   }
