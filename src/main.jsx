@@ -30,6 +30,33 @@ const KNOB_SWEEP_ANGLE = 270;
 const KNOB_DRAG_PIXELS = 180;
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const BLACK_KEY_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
+const KEYBOARD_NOTE_OFFSETS = new Map([
+  ["KeyZ", 0],
+  ["KeyS", 1],
+  ["KeyX", 2],
+  ["KeyD", 3],
+  ["KeyC", 4],
+  ["KeyV", 5],
+  ["KeyG", 6],
+  ["KeyB", 7],
+  ["KeyH", 8],
+  ["KeyN", 9],
+  ["KeyJ", 10],
+  ["KeyM", 11],
+  ["KeyQ", 12],
+  ["Digit2", 13],
+  ["KeyW", 14],
+  ["Digit3", 15],
+  ["KeyE", 16],
+  ["KeyR", 17],
+  ["Digit5", 18],
+  ["KeyT", 19],
+  ["Digit6", 20],
+  ["KeyY", 21],
+  ["Digit7", 22],
+  ["KeyU", 23],
+  ["KeyI", 24],
+]);
 const FILE_HASH_PREFIX = "#file=";
 const LEGACY_SUNSYNTH_RECIPE_PREFIX = "generated/recipes/sunsynth/";
 const SUNVOX_EDIT_RECIPE_PREFIX = "generated/recipes/sunvox-edit/";
@@ -153,6 +180,17 @@ function noteName(note) {
   return `${NOTE_NAMES[note % 12]}${Math.floor(note / 12)}`;
 }
 
+function keyboardNoteLabel(notes) {
+  if (!notes.size) {
+    return "Ready";
+  }
+  const names = [...notes].sort((left, right) => left - right).map(noteName);
+  if (names.length <= 3) {
+    return names.join(" ");
+  }
+  return `${names.slice(0, 2).join(" ")} +${names.length - 2}`;
+}
+
 function keyboardNotes(startNote) {
   const notes = [];
   let whiteIndex = -1;
@@ -174,6 +212,29 @@ function keyboardNotes(startNote) {
 
 function clampKeyboardStartNote(note) {
   return Math.min(SYNTH_KEYBOARD_MAX_START_NOTE, Math.max(SYNTH_KEYBOARD_MIN_START_NOTE, note));
+}
+
+function mappedKeyboardNote(code, startNote) {
+  const offset = KEYBOARD_NOTE_OFFSETS.get(code);
+  return offset === undefined ? undefined : startNote + offset;
+}
+
+function shouldIgnoreKeyboardEvent(event) {
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return true;
+  }
+  const target = event.target;
+  return Boolean(
+    target?.closest?.("input, textarea, select, [contenteditable='true'], .instrument-knob"),
+  );
+}
+
+function pointerSourceId(pointerId) {
+  return `pointer:${pointerId}`;
+}
+
+function keySourceId(code) {
+  return `key:${code}`;
 }
 
 function numericControllerValue(value, fallback = 0) {
@@ -366,7 +427,9 @@ function SynthKeyboardSection({ project }) {
   const instrumentControls = useMemo(() => synthInstrumentControls(project), [project]);
   const [controllerValues, setControllerValues] = useState(() => synthControllerValueMap(instrumentControls));
   const keyboardRef = useRef(null);
-  const dragNoteRef = useRef(undefined);
+  const activeInputNotesRef = useRef(new Map());
+  const noteHoldCountsRef = useRef(new Map());
+  const activeNotesRef = useRef(new Set());
   const synthKeyboardNotes = useMemo(() => keyboardNotes(keyboardStartNote), [keyboardStartNote]);
   const synthKeyboardWhiteKeys = useMemo(
     () => synthKeyboardNotes.filter((keyboardNote) => !keyboardNote.black).length,
@@ -376,8 +439,7 @@ function SynthKeyboardSection({ project }) {
   const canShiftUp = keyboardStartNote < SYNTH_KEYBOARD_MAX_START_NOTE;
 
   useEffect(() => {
-    dragNoteRef.current = undefined;
-    setActiveNotes(new Set());
+    stopAllInputNotes();
     setKeyboardStatus("Ready");
     setKeyboardStartNote(SYNTH_KEYBOARD_BASE_START_NOTE);
     setControllerValues(synthControllerValueMap(instrumentControls));
@@ -388,12 +450,47 @@ function SynthKeyboardSection({ project }) {
       );
     }
     return () => {
-      dragNoteRef.current = undefined;
+      stopAllInputNotes();
       if (project.type === "synth") {
         window.stopInstrumentNotes?.();
       }
     };
   }, [instrumentControls, project.path]);
+
+  useEffect(() => {
+    if (project.type !== "synth") {
+      return undefined;
+    }
+
+    function handleKeyDown(event) {
+      const note = mappedKeyboardNote(event.code, keyboardStartNote);
+      if (note === undefined || event.repeat || shouldIgnoreKeyboardEvent(event)) {
+        return;
+      }
+      event.preventDefault();
+      startInputNote(keySourceId(event.code), note);
+    }
+
+    function handleKeyUp(event) {
+      const note = mappedKeyboardNote(event.code, keyboardStartNote);
+      if (note === undefined) {
+        return;
+      }
+      const sourceId = keySourceId(event.code);
+      if (!activeInputNotesRef.current.has(sourceId) && shouldIgnoreKeyboardEvent(event)) {
+        return;
+      }
+      event.preventDefault();
+      stopInputNote(sourceId);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [keyboardStartNote, project.path, project.type]);
 
   if (project.type !== "synth") {
     return null;
@@ -412,42 +509,96 @@ function SynthKeyboardSection({ project }) {
     return Number(key.dataset.note);
   }
 
-  async function startNote(note) {
-    if (dragNoteRef.current === note) {
+  function publishActiveNotes() {
+    const notes = new Set(activeNotesRef.current);
+    setActiveNotes(notes);
+    setKeyboardStatus(keyboardNoteLabel(notes));
+  }
+
+  function hasHeldNote(note) {
+    return [...activeInputNotesRef.current.values()].some((heldNote) => heldNote === note);
+  }
+
+  function removeHeldNote(note) {
+    for (const [sourceId, heldNote] of activeInputNotesRef.current) {
+      if (heldNote === note) {
+        activeInputNotesRef.current.delete(sourceId);
+      }
+    }
+    noteHoldCountsRef.current.delete(note);
+    activeNotesRef.current.delete(note);
+  }
+
+  async function startInputNote(sourceId, note) {
+    if (activeInputNotesRef.current.get(sourceId) === note) {
       return;
     }
-    if (dragNoteRef.current !== undefined) {
-      window.stopSynthNote?.(dragNoteRef.current);
+
+    stopInputNote(sourceId);
+    activeInputNotesRef.current.set(sourceId, note);
+
+    const holdCount = noteHoldCountsRef.current.get(note) ?? 0;
+    noteHoldCountsRef.current.set(note, holdCount + 1);
+    if (holdCount > 0) {
+      publishActiveNotes();
+      return;
     }
-    dragNoteRef.current = note;
-    setActiveNotes(new Set([note]));
+
+    activeNotesRef.current.add(note);
+    setActiveNotes(new Set(activeNotesRef.current));
     setKeyboardStatus("Loading");
+
     const played = await window.playSynthNote?.(project.path, note, SYNTH_KEYBOARD_VELOCITY);
 
-    if (dragNoteRef.current !== note) {
-      if (played) {
+    if (!hasHeldNote(note)) {
+      if (played !== false) {
         window.stopSynthNote?.(note);
       }
       return;
     }
 
-    setKeyboardStatus(played ? noteName(note) : "Unavailable");
-    if (!played) {
-      dragNoteRef.current = undefined;
-      setActiveNotes(new Set());
+    if (played === false) {
+      removeHeldNote(note);
+      setActiveNotes(new Set(activeNotesRef.current));
+      setKeyboardStatus("Unavailable");
+      return;
     }
+
+    publishActiveNotes();
   }
 
-  function stopCurrentNote() {
-    if (dragNoteRef.current !== undefined) {
-      window.stopSynthNote?.(dragNoteRef.current);
-      dragNoteRef.current = undefined;
+  function stopInputNote(sourceId) {
+    const note = activeInputNotesRef.current.get(sourceId);
+    if (note === undefined) {
+      return;
     }
+    activeInputNotesRef.current.delete(sourceId);
+    const holdCount = (noteHoldCountsRef.current.get(note) ?? 1) - 1;
+    if (holdCount > 0) {
+      noteHoldCountsRef.current.set(note, holdCount);
+      publishActiveNotes();
+      return;
+    }
+
+    noteHoldCountsRef.current.delete(note);
+    activeNotesRef.current.delete(note);
+    window.stopSynthNote?.(note);
+    publishActiveNotes();
+  }
+
+  function stopAllInputNotes() {
+    for (const note of activeNotesRef.current) {
+      window.stopSynthNote?.(note);
+    }
+    activeInputNotesRef.current.clear();
+    noteHoldCountsRef.current.clear();
+    activeNotesRef.current.clear();
     setActiveNotes(new Set());
+    setKeyboardStatus("Ready");
   }
 
   function shiftKeyboardOctave(direction) {
-    stopCurrentNote();
+    stopAllInputNotes();
     setKeyboardStatus("Ready");
     setKeyboardStartNote((note) => clampKeyboardStartNote(note + direction * SYNTH_KEYBOARD_OCTAVE_STEP));
   }
@@ -464,12 +615,13 @@ function SynthKeyboardSection({ project }) {
   }
 
   function handlePointerMove(event) {
-    if (event.buttons !== 1) {
+    const sourceId = pointerSourceId(event.pointerId);
+    if (!activeInputNotesRef.current.has(sourceId)) {
       return;
     }
     const note = noteAtPoint(event.clientX, event.clientY);
     if (note !== undefined) {
-      startNote(note);
+      startInputNote(sourceId, note);
     }
   }
 
@@ -538,16 +690,15 @@ function SynthKeyboardSection({ project }) {
                 } catch {
                   // Synthetic pointer events in tests do not always create a capturable pointer.
                 }
-                startNote(keyboardNote.note);
+                startInputNote(pointerSourceId(event.pointerId), keyboardNote.note);
               }}
               onPointerMove={handlePointerMove}
               onPointerUp={(event) => {
                 event.preventDefault();
-                stopCurrentNote();
+                stopInputNote(pointerSourceId(event.pointerId));
               }}
-              onPointerCancel={stopCurrentNote}
-              onLostPointerCapture={stopCurrentNote}
-              onBlur={stopCurrentNote}
+              onPointerCancel={(event) => stopInputNote(pointerSourceId(event.pointerId))}
+              onLostPointerCapture={(event) => stopInputNote(pointerSourceId(event.pointerId))}
             >
               <span>{keyboardNote.name}</span>
             </button>
