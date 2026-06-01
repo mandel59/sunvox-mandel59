@@ -196,14 +196,6 @@ function controllerKeyboardStep(control, multiplier = 1) {
   return coarseStep * multiplier;
 }
 
-function synthControllerTarget(controller) {
-  const link = controller.link;
-  if (!link) {
-    return undefined;
-  }
-  return [link._moduleName, link._controllerLabel].filter(Boolean).join(" · ");
-}
-
 function synthInstrumentControls(project) {
   if (project?.type !== "synth") {
     return [];
@@ -231,7 +223,6 @@ function synthInstrumentControls(project) {
       min: 0,
       max: SYNTH_USER_CONTROLLER_MAX,
       step: 1,
-      target: synthControllerTarget(controller),
     });
   }
   return controls;
@@ -340,10 +331,7 @@ function InstrumentKnobControl({ control, value, onChange }) {
 
   return (
     <div className="instrument-control" key={control.key}>
-      <span className="instrument-control-header">
-        <span className="instrument-control-label">{control.label}</span>
-        <output className="instrument-control-value">{value}</output>
-      </span>
+      <span className="instrument-control-label">{control.label}</span>
       <div className="instrument-knob-row">
         <div
           className="instrument-knob"
@@ -365,11 +353,7 @@ function InstrumentKnobControl({ control, value, onChange }) {
             <span className="instrument-knob-indicator" />
           </span>
         </div>
-        {control.target ? (
-          <span className="instrument-control-target" title={control.target}>
-            {control.target}
-          </span>
-        ) : null}
+        <output className="instrument-control-value">{value}</output>
       </div>
     </div>
   );
