@@ -481,12 +481,7 @@ function SynthKeyboardSection({ project }) {
       </div>
       <div className="instrument-controls" aria-label="Instrument controllers">
         <div className="instrument-control instrument-octave-control">
-          <span className="instrument-control-header">
-            <span className="instrument-control-label">Octave</span>
-            <output className="instrument-control-value octave-range" aria-label="Keyboard range">
-              {noteName(keyboardStartNote)}-{noteName(keyboardStartNote + SYNTH_KEYBOARD_NOTE_SPAN)}
-            </output>
-          </span>
+          <span className="instrument-control-label">Octave</span>
           <div className="octave-controls" aria-label="Keyboard octave">
             <button
               type="button"
@@ -507,6 +502,9 @@ function SynthKeyboardSection({ project }) {
               +
             </button>
           </div>
+          <output className="instrument-control-value octave-range" aria-label="Keyboard range">
+            {noteName(keyboardStartNote)}-{noteName(keyboardStartNote + SYNTH_KEYBOARD_NOTE_SPAN)}
+          </output>
         </div>
         {instrumentControls.map((control) => {
           const value = controllerValues[control.key] ?? control.value;

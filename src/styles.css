@@ -641,23 +641,23 @@ button:disabled:hover {
 }
 
 .octave-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  gap: 0.28rem;
 }
 
 .octave-button {
-  width: 100%;
-  min-height: 2rem;
-  padding: 0.2rem 0.55rem;
+  width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0;
   border-radius: 6px;
   font-size: 1rem;
   line-height: 1;
 }
 
 .octave-range {
-  min-width: 4.7rem;
+  min-width: 0;
 }
 
 .instrument-status {
@@ -687,19 +687,12 @@ button:disabled:hover {
 }
 
 .instrument-octave-control {
-  min-width: 10rem;
+  min-width: 0;
 }
 
-.instrument-control:not(.instrument-octave-control) {
+.instrument-control {
   justify-items: center;
   text-align: center;
-}
-
-.instrument-control-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.35rem;
-  align-items: baseline;
 }
 
 .instrument-control-label {
@@ -710,7 +703,7 @@ button:disabled:hover {
   overflow-wrap: anywhere;
 }
 
-.instrument-control:not(.instrument-octave-control) > .instrument-control-label {
+.instrument-control > .instrument-control-label {
   display: -webkit-box;
   min-height: 1.85em;
   line-height: 1.12;
