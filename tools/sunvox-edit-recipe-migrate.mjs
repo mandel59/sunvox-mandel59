@@ -4,12 +4,13 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { loadRecipe, variantFileName } from "./sunsynth-generate.mjs";
+import { SunSynthLab } from "./sunsynth-lab.mjs";
 
 function usage() {
   console.error(`Usage:
   node tools/sunvox-edit-recipe-migrate.mjs [--out <recipe.mjs>] <legacy-sunsynth-recipe.mjs>
 
-Migrates supported template-free SunSynthRecipe files to SunVox Edit Recipe.
+Migrates supported SunSynthRecipe files to SunVox Edit Recipe.
 Unsupported imperative calls fail fast so the generated recipe stays reviewable.`);
 }
 
@@ -56,8 +57,9 @@ class LegacyModuleRecorder {
     this.selector = selector;
   }
 
-  set() {
-    throw new Error("module(...).set(...) is not supported by the scratch recipe migrator yet");
+  set(controllers) {
+    this.parent.setModuleControllers(this.selector, controllers);
+    return this.parent;
   }
 
   get() {
@@ -69,8 +71,25 @@ class LegacyModuleRecorder {
   }
 }
 
+class LegacyUserControllerRecorder {
+  constructor(parent, selector) {
+    this.parent = parent;
+    this.selector = selector;
+  }
+
+  set(valueOrPatch) {
+    this.parent.setUserController(this.selector, valueOrPatch);
+    return this.parent;
+  }
+
+  get() {
+    throw new Error("userController(...).get(...) is not supported by the recipe migrator yet");
+  }
+}
+
 class LegacyRecipeRecorder {
-  constructor() {
+  constructor(templateLab) {
+    this.templateLab = templateLab;
     this.operations = [];
     this.moduleIdsByName = new Map([["Output", "output"]]);
     this.moduleOrdinal = 0;
@@ -121,24 +140,41 @@ class LegacyRecipeRecorder {
     return new LegacyModuleRecorder(this, selector);
   }
 
-  setRootController() {
-    throw new Error("setRootController(...) is not supported by the scratch recipe migrator yet");
+  setRootController(path, value) {
+    this.operations.push({ op: "setRootControllers", controllers: { [path]: value } });
+    return this;
   }
 
-  setRootControllers() {
-    throw new Error("setRootControllers(...) is not supported by the scratch recipe migrator yet");
+  setRootControllers(controllers) {
+    this.operations.push({ op: "setRootControllers", controllers });
+    return this;
   }
 
-  setModuleControllers() {
-    throw new Error("setModuleControllers(...) is not supported by the scratch recipe migrator yet");
+  setModuleControllers(selector, controllers) {
+    this.operations.push({ op: "setModuleControllers", selector: inspectSelector(selector), controllers });
+    return this;
   }
 
-  setModulesByType() {
-    throw new Error("setModulesByType(...) is not supported by the scratch recipe migrator yet");
+  setModulesByType(type, updater) {
+    if (!this.templateLab) {
+      throw new Error("setModulesByType(...) migration requires a template SunSynth");
+    }
+    for (const [ordinal, match] of this.templateLab.findModules({ type }).entries()) {
+      const result = updater(match.module, match.index, ordinal);
+      if (result && typeof result === "object") {
+        this.setModuleControllers({ index: match.index }, result);
+      }
+    }
+    return this;
   }
 
-  userController() {
-    throw new Error("userController(...) is not supported by the scratch recipe migrator yet");
+  userController(selector) {
+    return new LegacyUserControllerRecorder(this, selector);
+  }
+
+  setUserController(selector, valueOrPatch) {
+    this.operations.push({ op: "setUserController", selector, valueOrPatch });
+    return this;
   }
 }
 
@@ -161,11 +197,28 @@ function outputFile(recipe, variant) {
   return join(recipe.outDir ?? "var/synth-lab", variantFileName(variant)).replaceAll("\\", "/");
 }
 
-async function recordedOperations(variant) {
+function legacyTemplatePath(template, recipeDir) {
+  if (!template) {
+    return undefined;
+  }
+  return resolve(template.startsWith(".") ? resolve(recipeDir, template) : template);
+}
+
+async function loadTemplateLab(recipe, recipeDir) {
+  const templatePath = legacyTemplatePath(recipe.template, recipeDir);
+  return templatePath ? SunSynthLab.fromFile(templatePath) : undefined;
+}
+
+function relativeRecipePath(fromPath, toPath) {
+  const relativePath = relative(dirname(fromPath), toPath).replaceAll("\\", "/");
+  return relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
+}
+
+async function recordedOperations(variant, templateLab) {
   if (typeof variant.apply !== "function") {
     return [];
   }
-  const recorder = new LegacyRecipeRecorder();
+  const recorder = new LegacyRecipeRecorder(templateLab);
   await variant.apply(recorder, {});
   return recorder.operations;
 }
@@ -174,40 +227,67 @@ function js(value) {
   return JSON.stringify(value, null, 2).replace(/\n/gu, "\n        ");
 }
 
-function selectorExpression(selector) {
+function selectorExpression(selector, context = {}) {
   if (selector === "Output") {
     return "project.output";
   }
   if (typeof selector === "string") {
-    return JSON.stringify({ id: stableModuleId(selector, selector) });
+    return context.stringSelectorsAsIds ? JSON.stringify({ id: stableModuleId(selector, selector) }) : JSON.stringify(selector);
   }
   return js(selector);
 }
 
-function operationSource(operation) {
+function operationSource(operation, context = {}) {
+  if (operation.op === "renameRoot") {
+    return `synth.rootModule.rename(${JSON.stringify(operation.name)});`;
+  }
   if (operation.op === "setOutput") {
     return `project.setOutput(${js(operation.options)});`;
+  }
+  if (operation.op === "setRootControllers") {
+    return `synth.rootModule.controllers.set(${js(operation.controllers)});`;
   }
   if (operation.op === "addModule") {
     return `project.addModule(${JSON.stringify(operation.type)}, ${js(operation.options)});`;
   }
+  if (operation.op === "setModuleControllers") {
+    return `project.findModule(${selectorExpression(operation.selector, context)}).controllers.set(${js(operation.controllers)});`;
+  }
+  if (operation.op === "setUserController") {
+    return `synth.userController(${JSON.stringify(operation.selector)}).set(${js(operation.valueOrPatch)});`;
+  }
   if (operation.op === "setInputModule") {
-    return `synth.setInputModule(${selectorExpression(operation.selector)});`;
+    return `synth.setInputModule(${selectorExpression(operation.selector, context)});`;
   }
   if (operation.op === "connect") {
     const options = Object.keys(operation.options ?? {}).length ? `, ${js(operation.options)}` : "";
-    return `project.connect(${selectorExpression(operation.from)}, ${selectorExpression(operation.to)}${options});`;
+    return `project.connect(${selectorExpression(operation.from, context)}, ${selectorExpression(operation.to, context)}${options});`;
   }
   if (operation.op === "exposeController") {
     const options = Object.keys(operation.options ?? {}).length ? `, ${js(operation.options)}` : "";
-    return `synth.expose(${JSON.stringify(operation.label)}, ${selectorExpression(operation.module)}, ${JSON.stringify(operation.controller)}${options});`;
+    return `synth.expose(${JSON.stringify(operation.label)}, ${selectorExpression(operation.module, context)}, ${JSON.stringify(operation.controller)}${options});`;
   }
   throw new Error(`Unsupported recorded operation: ${operation.op}`);
 }
 
-async function outputSpecSource(recipe, variant, index) {
-  const operations = await recordedOperations(variant);
-  const lines = operations.map((operation) => `        ${operationSource(operation)}`);
+async function outputSpecSource(recipe, variant, index, context) {
+  const operations = [
+    ...(recipe.template && variant.name ? [{ op: "renameRoot", name: variant.name }] : []),
+    ...(variant.rootControllers ? [{ op: "setRootControllers", controllers: variant.rootControllers }] : []),
+    ...(variant.modules ?? []).map((edit) => ({
+      op: "setModuleControllers",
+      selector: inspectSelector(edit.selector),
+      controllers: edit.controllers ?? {},
+    })),
+    ...(variant.userControllers ?? []).map((edit) => ({
+      op: "setUserController",
+      selector: edit.index,
+      valueOrPatch: edit,
+    })),
+    ...await recordedOperations(variant, context.templateLab),
+  ];
+  const sourceContext = { stringSelectorsAsIds: !recipe.template };
+  const lines = operations.map((operation) => `        ${operationSource(operation, sourceContext)}`);
   const applySource = lines.length
     ? `,
       apply(synth) {
@@ -215,34 +295,43 @@ async function outputSpecSource(recipe, variant, index) {
 ${lines.join("\n")}
       }`
     : "";
+  const sourceSpec = recipe.template
+    ? `from: "template"`
+    : `create: ${js(recipeCreateSpec(recipe, variant))}`;
   return `    ${stableOutputId(recipe, variant, index)}: {
       kind: "sunsynth",
       file: ${JSON.stringify(outputFile(recipe, variant))},
-      create: ${js(recipeCreateSpec(recipe, variant))}${applySource}
+      ${sourceSpec}${applySource}
     }`;
 }
 
 export async function migrateSunSynthRecipe(inputPath, options = {}) {
   const absoluteInput = resolve(inputPath);
   const recipe = await loadRecipe(absoluteInput);
-  if (recipe.template) {
-    throw new Error("Template-based SunSynthRecipe migration is not supported yet");
-  }
+  const recipeDir = dirname(absoluteInput);
+  const templatePath = legacyTemplatePath(recipe.template, recipeDir);
+  const templateLab = await loadTemplateLab(recipe, recipeDir);
   const outputSpecs = [];
   for (const [index, variant] of recipe.variants.entries()) {
     if (typeof variant === "function") {
       throw new Error("Function variants are not supported by the scratch recipe migrator yet");
     }
-    outputSpecs.push(await outputSpecSource(recipe, variant, index));
+    outputSpecs.push(await outputSpecSource(recipe, variant, index, { templateLab }));
   }
   const outputPath = resolve(options.out ?? `${absoluteInput.replace(/\.mjs$/u, "")}.edit-recipe.mjs`);
   const typePath = relative(dirname(outputPath), resolve("tools/sunvox-edit-recipe.d.ts")).replaceAll("\\", "/");
+  const inputsSource = templatePath
+    ? `  inputs: {
+    template: { kind: "sunsynth", path: ${JSON.stringify(relativeRecipePath(outputPath, templatePath))} },
+  },
+`
+    : "";
   const source = `// @ts-check
 
 /** @satisfies {import("${typePath.startsWith(".") ? typePath : `./${typePath}`}").SunVoxEditRecipe} */
 const recipe = {
   schemaVersion: 1,
-  outputs: {
+${inputsSource}  outputs: {
 ${outputSpecs.join(",\n")}
   },
 };

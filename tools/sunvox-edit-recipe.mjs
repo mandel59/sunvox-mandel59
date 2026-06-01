@@ -83,6 +83,21 @@ class RootModuleEditor {
   }
 }
 
+class UserControllerEditor {
+  constructor(lab, selector) {
+    this.lab = lab;
+    this.selector = selector;
+  }
+
+  set(valueOrPatch) {
+    this.lab.setUserController(this.selector, valueOrPatch);
+  }
+
+  get(path = "value") {
+    return this.lab.userController(this.selector).get(path);
+  }
+}
+
 class ModuleEditor {
   constructor(project, selector, id) {
     this.project = project;
@@ -245,6 +260,10 @@ class SunSynthEditor {
   expose(label, module, controller, options = {}) {
     const project = this.embeddedProject();
     this.lab.exposeController(label, project.findModule(module).index, controller, options);
+  }
+
+  userController(selector) {
+    return new UserControllerEditor(this.lab, selector);
   }
 }
 

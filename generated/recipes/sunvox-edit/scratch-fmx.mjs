@@ -1,0 +1,222 @@
+// @ts-check
+
+/** @satisfies {import("../../../tools/sunvox-edit-recipe.d.ts").SunVoxEditRecipe} */
+const recipe = {
+  schemaVersion: 1,
+  outputs: {
+    scratchFMXTines: {
+      kind: "sunsynth",
+      file: "var/synth-lab/Scratch FMX Tines.sunsynth",
+      create: {
+          "kind": "rootModule",
+          "moduleType": "FMX",
+          "name": "Scratch FMX Tines",
+          "color": "#4aa8ff",
+          "controllers": {
+            "volume": 11200,
+            "panning": 128,
+            "sampleRate": "native",
+            "polyphony": 10,
+            "channels": "stereo",
+            "inputToOperator": 0,
+            "inputToCustomWave": "off",
+            "adsrSmoothTransitions": "restartVolumeChange",
+            "noiseFilter": 32768,
+            "envelopeGain": 1000,
+            "operators": [
+              {
+                "volume": 32768,
+                "attack": 1,
+                "decay": 1,
+                "sustainLevel": 0,
+                "release": 140,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "freqMul": 1000,
+                "volumeScaling": 128,
+                "velocitySensitivity": 192,
+                "outputMode": 0
+              },
+              {
+                "volume": 14200,
+                "attack": 1,
+                "decay": 2600,
+                "sustainLevel": 0,
+                "release": 120,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "freqMul": 12000,
+                "envScaling": 112,
+                "volumeScaling": 192,
+                "velocitySensitivity": 192,
+                "outputMode": 8
+              },
+              {
+                "volume": 15500,
+                "attack": 1,
+                "decay": 6400,
+                "sustainLevel": 0,
+                "release": 210,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "freqMul": 1000,
+                "volumeScaling": 128,
+                "velocitySensitivity": 192,
+                "outputMode": 1
+              },
+              {
+                "volume": 14000,
+                "attack": 1,
+                "decay": 5000,
+                "sustainLevel": 0,
+                "release": 190,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "noise": 80,
+                "freqMul": 995,
+                "selfMod": 700,
+                "volumeScaling": 128,
+                "velocitySensitivity": 192,
+                "outputMode": 1
+              },
+              {
+                "volume": 12000,
+                "attack": 1,
+                "decay": 4200,
+                "sustainLevel": 0,
+                "release": 180,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "noise": 180,
+                "freqMul": 1005,
+                "selfMod": 520,
+                "volumeScaling": 128,
+                "velocitySensitivity": 192
+              }
+            ]
+          }
+        }
+    },
+    scratchFMXPluck: {
+      kind: "sunsynth",
+      file: "var/synth-lab/Scratch FMX Pluck.sunsynth",
+      create: {
+          "kind": "rootModule",
+          "moduleType": "FMX",
+          "name": "Scratch FMX Pluck",
+          "color": "#8fdcff",
+          "controllers": {
+            "volume": 13200,
+            "panning": 128,
+            "sampleRate": "native",
+            "polyphony": 12,
+            "channels": "stereo",
+            "inputToOperator": 0,
+            "inputToCustomWave": "off",
+            "adsrSmoothTransitions": "restartSmootherVolumeChange",
+            "noiseFilter": 32768,
+            "envelopeGain": 1150,
+            "operators": [
+              {
+                "volume": 32768,
+                "attack": 1,
+                "decay": 16,
+                "sustainLevel": 0,
+                "release": 90,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "freqMul": 1000,
+                "volumeScaling": 128,
+                "velocitySensitivity": 192,
+                "outputMode": 0
+              },
+              {
+                "volume": 15000,
+                "attack": 1,
+                "decay": 700,
+                "sustainLevel": 0,
+                "release": 80,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "linear",
+                "sustain": "off",
+                "waveform": "sin",
+                "freqMul": 7000,
+                "envScaling": 112,
+                "volumeScaling": 190,
+                "velocitySensitivity": 220,
+                "outputMode": 8
+              },
+              {
+                "volume": 12000,
+                "attack": 1,
+                "decay": 1200,
+                "sustainLevel": 0,
+                "release": 120,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "freqMul": 1000,
+                "volumeScaling": 128,
+                "velocitySensitivity": 192,
+                "outputMode": 1
+              },
+              {
+                "volume": 9000,
+                "attack": 1,
+                "decay": 1400,
+                "sustainLevel": 0,
+                "release": 120,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "noise": 50,
+                "freqMul": 998,
+                "selfMod": 420,
+                "outputMode": 1
+              },
+              {
+                "volume": 7000,
+                "attack": 1,
+                "decay": 1100,
+                "sustainLevel": 0,
+                "release": 100,
+                "attackCurve": "negExp1",
+                "decayCurve": "exp2",
+                "releaseCurve": "exp1",
+                "sustain": "off",
+                "waveform": "sin",
+                "noise": 120,
+                "freqMul": 1002,
+                "selfMod": 320
+              }
+            ]
+          }
+        }
+    }
+  },
+};
+
+export default recipe;

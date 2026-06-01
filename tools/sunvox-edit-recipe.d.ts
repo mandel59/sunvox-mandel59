@@ -78,6 +78,11 @@ export interface ModuleEditor {
   rename(name: string): void;
 }
 
+export interface UserControllerEditor {
+  set(valueOrPatch: ControllerValue | UserControllerPatch): void;
+  get(path?: string): unknown;
+}
+
 export interface SunVoxProjectEditor {
   readonly inputs: Record<string, RecipeInputAsset>;
   readonly params: Record<string, JsonValue>;
@@ -99,11 +104,18 @@ export interface SunSynthEditor {
   embeddedProject(): SunVoxProjectEditor;
   setInputModule(module: ModuleRefLike): ModuleEditor;
   expose(label: string, module: ModuleRefLike, controller: ControllerSelector, options?: ControllerExposeOptions): void;
+  userController(selector: string | number): UserControllerEditor;
 }
 
 export interface ControllerExposeOptions {
   index?: number;
   value?: ControllerValue;
+  group?: number;
+}
+
+export interface UserControllerPatch {
+  value?: ControllerValue;
+  label?: string;
   group?: number;
 }
 

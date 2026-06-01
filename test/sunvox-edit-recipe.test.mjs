@@ -154,7 +154,9 @@ test("checked-in SunVox Edit Recipes generate SunSynth outputs", async () => {
     [
       "generated/recipes/sunvox-edit/scratch-analog.mjs",
       "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+      "generated/recipes/sunvox-edit/scratch-fmx.mjs",
       "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
+      "generated/recipes/sunvox-edit/supersaw-variants.mjs",
     ],
   );
 
@@ -166,13 +168,21 @@ test("checked-in SunVox Edit Recipes generate SunSynth outputs", async () => {
   assert.deepEqual(
     outputs.map((output) => output.replaceAll("\\", "/").replace(`${tempDir.replaceAll("\\", "/")}/`, "")).sort(),
     [
+      "var/synth-lab/mandel59 Lab Bright SuperSaw F6400 Q12288.sunsynth",
+      "var/synth-lab/mandel59 Lab Bright SuperSaw F7600 Q12288.sunsynth",
+      "var/synth-lab/mandel59 Lab Soft SuperSaw F3200 R2400.sunsynth",
+      "var/synth-lab/mandel59 Lab Soft SuperSaw F3200 R3600.sunsynth",
+      "var/synth-lab/mandel59 Lab Soft SuperSaw F4200 R2400.sunsynth",
+      "var/synth-lab/mandel59 Lab Soft SuperSaw F4200 R3600.sunsynth",
       "var/synth-lab/Scratch Acid Bass.sunsynth",
       "var/synth-lab/Scratch Analog Edit Recipe.sunsynth",
+      "var/synth-lab/Scratch FMX Pluck.sunsynth",
+      "var/synth-lab/Scratch FMX Tines.sunsynth",
       "var/synth-lab/Scratch Glass Bell.sunsynth",
       "var/synth-lab/Scratch Kick Snap.sunsynth",
       "var/synth-lab/Scratch Layered Pad.sunsynth",
       "var/synth-lab/Scratch PWM Organ.sunsynth",
-    ],
+    ].sort(),
   );
 
   const layeredPad = await parseFile(join(tempDir, "var/synth-lab/Scratch Layered Pad.sunsynth"));
@@ -314,28 +324,30 @@ test("migrates a scratch SunSynthRecipe to SunVox Edit Recipe", async () => {
 test("migrated checked-in Edit Recipes preserve legacy recipe output", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-equivalence-"));
   const pairs = [
-    ["scratch-layered-pad.mjs", ["Scratch Layered Pad.sunsynth"]],
-    [
-      "scratch-assorted-instruments.mjs",
-      [
-        "Scratch Acid Bass.sunsynth",
-        "Scratch Glass Bell.sunsynth",
-        "Scratch Kick Snap.sunsynth",
-        "Scratch PWM Organ.sunsynth",
-      ],
-    ],
+    "scratch-assorted-instruments.mjs",
+    "scratch-fmx.mjs",
+    "scratch-layered-pad.mjs",
+    "supersaw-variants.mjs",
   ];
 
-  for (const [fileName, expectedNames] of pairs) {
+  for (const fileName of pairs) {
     const legacyDir = join(tempDir, "legacy", fileName);
     const editDir = join(tempDir, "edit", fileName);
-    await runRecipe(join("generated/recipes/sunsynth", fileName), { outDir: legacyDir });
-    await runEditRecipe(join("generated/recipes/sunvox-edit", fileName), { outDir: editDir });
+    const legacyOutputs = await runRecipe(join("generated/recipes/sunsynth", fileName), { outDir: legacyDir });
+    const editOutputs = await runEditRecipe(join("generated/recipes/sunvox-edit", fileName), { outDir: editDir });
 
-    for (const outputName of expectedNames) {
+    assert.deepEqual(
+      editOutputs.map((filePath) => filePath.split(/[\\/]/u).at(-1)).sort(),
+      legacyOutputs.map((filePath) => filePath.split(/[\\/]/u).at(-1)).sort(),
+      fileName,
+    );
+
+    for (const legacyOutput of legacyOutputs) {
+      const outputName = legacyOutput.split(/[\\/]/u).at(-1);
+      const editOutput = editOutputs.find((filePath) => filePath.split(/[\\/]/u).at(-1) === outputName);
       assert.deepEqual(
-        await parseFile(join(editDir, "var/synth-lab", outputName)),
-        await parseFile(join(legacyDir, outputName)),
+        await parseFile(editOutput),
+        await parseFile(legacyOutput),
         outputName,
       );
     }
