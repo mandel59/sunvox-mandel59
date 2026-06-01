@@ -294,7 +294,9 @@ export default recipe;
 test("migrates a scratch SunSynthRecipe to SunVox Edit Recipe", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-migrate-"));
   const migratedRecipePath = join(tempDir, "scratch-analog.edit-recipe.mjs");
-  const outputPath = join(tempDir, "var/synth-lab/Scratch Analog.sunsynth");
+  const legacyDir = join(tempDir, "legacy");
+  const editDir = join(tempDir, "edit");
+  const outputPath = join(editDir, "var/synth-lab/Scratch Analog.sunsynth");
 
   assert.equal(
     await migrateSunSynthRecipe("generated/recipes/sunsynth/scratch-analog.mjs", { out: migratedRecipePath }),
@@ -305,7 +307,9 @@ test("migrates a scratch SunSynthRecipe to SunVox Edit Recipe", async () => {
   assert.match(migratedSource, /SunVoxEditRecipe/u);
   assert.match(migratedSource, /setInputModule/u);
 
-  assert.deepEqual(await runEditRecipe(migratedRecipePath, { outDir: tempDir }), [outputPath]);
+  const legacyOutputs = await runRecipe("generated/recipes/sunsynth/scratch-analog.mjs", { outDir: legacyDir });
+  assert.deepEqual(await runEditRecipe(migratedRecipePath, { outDir: editDir }), [outputPath]);
+  assert.deepEqual(await readFile(outputPath), await readFile(legacyOutputs[0]), "Scratch Analog.sunsynth binary");
 
   const document = await parseFile(outputPath);
   const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
