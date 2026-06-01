@@ -113,7 +113,8 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     if (
       initial.propertiesHeading !== 'Synth Properties' ||
       !initial.propertiesText.includes('Shepard tone') ||
-      initial.propertiesText.includes('Controllers') ||
+      !initial.propertiesText.includes('Controllers') ||
+      !initial.propertiesText.includes('Volume256') ||
       initial.propertiesText.includes('Data chunks') ||
       initial.propertiesText.includes('Embedded projects') ||
       !initial.propertiesText.includes('Embedded project') ||

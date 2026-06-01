@@ -507,6 +507,15 @@ button:disabled:hover {
   padding: 0.75rem;
 }
 
+.properties-panel.is-synth {
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  align-items: start;
+}
+
+.properties-panel.is-synth > .module-reference {
+  align-self: start;
+}
+
 .property-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));

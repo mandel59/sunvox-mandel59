@@ -1093,18 +1093,6 @@ function ControllerList({ controllers, userControllers }) {
   );
 }
 
-function SynthControllerDefaultsSection({ project }) {
-  if (project?.type !== "synth") {
-    return null;
-  }
-  return (
-    <section className="section-grid" aria-labelledby="synth-controllers-heading">
-      <h3 id="synth-controllers-heading">Controllers</h3>
-      <ControllerList controllers={project.synth?.controllers} userControllers={project.synth?.userControllers} />
-    </section>
-  );
-}
-
 function dataChunkMeta(chunk) {
   const parts = [];
   if (chunk.count > 1) {
@@ -1334,7 +1322,7 @@ function ProjectPropertiesSection({ project }) {
   return (
     <section className="section-grid" aria-labelledby="properties-heading">
       <h3 id="properties-heading">{project.type === "synth" ? "Synth Properties" : "Project Properties"}</h3>
-      <div className="properties-panel">
+      <div className={classNames("properties-panel", project.type === "synth" && "is-synth")}>
         {projectInfo ? (
           <>
             <dl className="property-grid">
@@ -1368,6 +1356,10 @@ function ProjectPropertiesSection({ project }) {
             <div className="property-block">
               <h4>Flags</h4>
               <FlagPills flags={synthInfo.flags} />
+            </div>
+            <div className="property-block">
+              <h4>Controllers</h4>
+              <ControllerList controllers={synthInfo.controllers} userControllers={synthInfo.userControllers} />
             </div>
           </>
         ) : null}
@@ -1619,10 +1611,10 @@ function ProjectDetails({ project, error }) {
       </div>
 
       <div className="section-grid">
-        <ProjectPropertiesSection project={project} />
+        {project.type === "synth" ? null : <ProjectPropertiesSection project={project} />}
         <ModuleGraphSection project={project} />
         <SynthKeyboardSection project={project} />
-        <SynthControllerDefaultsSection project={project} />
+        {project.type === "synth" ? <ProjectPropertiesSection project={project} /> : null}
         <TimelineSection project={project} />
         <PatternSection project={project} />
         <EmbeddedSection project={project} />
