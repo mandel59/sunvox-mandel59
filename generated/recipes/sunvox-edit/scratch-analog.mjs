@@ -6,10 +6,10 @@ const recipe = {
   outputs: {
     scratchAnalog: {
       kind: "sunsynth",
-      file: "var/synth-lab/Scratch Analog Edit Recipe.sunsynth",
+      file: "var/synth-lab/Scratch Analog.sunsynth",
       create: {
         module: "MetaModule",
-        name: "Scratch Analog Edit Recipe",
+        name: "Scratch Analog",
         color: "#ff9a4a",
       },
       apply(synth) {

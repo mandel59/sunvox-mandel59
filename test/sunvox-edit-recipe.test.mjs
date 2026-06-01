@@ -118,7 +118,7 @@ export default recipe;
 
 test("checked-in SunVox Edit Recipe scratch example generates a SunSynth", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-example-"));
-  const outputPath = join(tempDir, "var/synth-lab/Scratch Analog Edit Recipe.sunsynth");
+  const outputPath = join(tempDir, "var/synth-lab/Scratch Analog.sunsynth");
 
   assert.deepEqual(
     await runEditRecipe("generated/recipes/sunvox-edit/scratch-analog.mjs", { outDir: tempDir }),
@@ -128,7 +128,7 @@ test("checked-in SunVox Edit Recipe scratch example generates a SunSynth", async
   const document = await parseFile(outputPath);
   const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
 
-  assert.equal(document.module.name, "Scratch Analog Edit Recipe");
+  assert.equal(document.module.name, "Scratch Analog");
   assert.equal(document.module.color, "#ff9a4a");
   assert.equal(document.module.controllers.inputModule, 1);
   assert.equal(project.modules[0].name, "Output");
@@ -173,7 +173,7 @@ test("checked-in SunVox Edit Recipes generate SunSynth outputs", async () => {
       "var/synth-lab/mandel59 Lab Soft SuperSaw F4200 R2400.sunsynth",
       "var/synth-lab/mandel59 Lab Soft SuperSaw F4200 R3600.sunsynth",
       "var/synth-lab/Scratch Acid Bass.sunsynth",
-      "var/synth-lab/Scratch Analog Edit Recipe.sunsynth",
+      "var/synth-lab/Scratch Analog.sunsynth",
       "var/synth-lab/Scratch FMX Pluck.sunsynth",
       "var/synth-lab/Scratch FMX Tines.sunsynth",
       "var/synth-lab/Scratch Glass Bell.sunsynth",
@@ -326,6 +326,7 @@ test("migrates a scratch SunSynthRecipe to SunVox Edit Recipe", async () => {
 test("migrated checked-in Edit Recipes preserve legacy recipe output", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-equivalence-"));
   const pairs = [
+    "scratch-analog.mjs",
     "scratch-assorted-instruments.mjs",
     "scratch-fmx.mjs",
     "scratch-layered-pad.mjs",
