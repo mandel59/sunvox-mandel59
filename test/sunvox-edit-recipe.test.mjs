@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -138,6 +138,47 @@ test("checked-in SunVox Edit Recipe scratch example generates a SunSynth", async
   assert.equal(project.modules[2].name, "Tone");
   assert.equal(project.modules[2].controllers.waveform, "saw");
   assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
+});
+
+test("checked-in SunVox Edit Recipes generate SunSynth outputs", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-checked-in-"));
+  const recipeDir = "generated/recipes/sunvox-edit";
+  const recipeFiles = (await readdir(recipeDir))
+    .filter((file) => file.endsWith(".mjs"))
+    .sort()
+    .map((file) => join(recipeDir, file));
+
+  assert.deepEqual(
+    recipeFiles.map((file) => file.replaceAll("\\", "/")),
+    [
+      "generated/recipes/sunvox-edit/scratch-analog.mjs",
+      "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+      "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
+    ],
+  );
+
+  const outputs = [];
+  for (const recipeFile of recipeFiles) {
+    outputs.push(...await runEditRecipe(recipeFile, { outDir: tempDir }));
+  }
+
+  assert.deepEqual(
+    outputs.map((output) => output.replaceAll("\\", "/").replace(`${tempDir.replaceAll("\\", "/")}/`, "")).sort(),
+    [
+      "var/synth-lab/Scratch Acid Bass.sunsynth",
+      "var/synth-lab/Scratch Analog Edit Recipe.sunsynth",
+      "var/synth-lab/Scratch Glass Bell.sunsynth",
+      "var/synth-lab/Scratch Kick Snap.sunsynth",
+      "var/synth-lab/Scratch Layered Pad.sunsynth",
+      "var/synth-lab/Scratch PWM Organ.sunsynth",
+    ],
+  );
+
+  const layeredPad = await parseFile(join(tempDir, "var/synth-lab/Scratch Layered Pad.sunsynth"));
+  const layeredProject = layeredPad.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
+  assert.equal(layeredPad.module.name, "Scratch Layered Pad");
+  assert.equal(layeredProject.modules[1].name, "Note Input");
+  assert.equal(layeredProject.modules.at(-1).name, "Soft Glue");
 });
 
 test("SunVox Edit Recipe disconnects module links", async () => {
