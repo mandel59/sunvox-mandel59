@@ -1056,41 +1056,36 @@ function controllerDisplayValue(controller) {
   return `${value}${suffix}`;
 }
 
-function synthControllerDefaultRows(project) {
-  if (project?.type !== "synth") {
-    return [];
-  }
-  const rootControllers = (project.synth?.controllers ?? []).map((controller) => ({
+function controllerRows(controllers, userControllers) {
+  const rootRows = (controllers ?? []).map((controller) => ({
     key: `root-${controller.index}-${controller.path ?? ""}`,
-    location: `root ${controller.index}`,
     label: controller.label ?? controller.path ?? `Controller ${controller.index}`,
     path: controller.path,
     value: controllerDisplayValue(controller),
   }));
-  const userControllers = (project.synth?.userControllers ?? []).map((controller) => {
+  const userRows = (userControllers ?? []).map((controller) => {
     const index = Number.isInteger(controller.index) ? controller.index : 0;
     return {
       key: `user-${index}-${controller.label ?? ""}`,
-      location: `user ${index}`,
       label: controller.label ?? `User ${index + 1}`,
-      path: `controller ${METAMODULE_USER_CONTROLLER_BASE_INDEX + index}`,
       value: controllerDisplayValue(controller),
     };
   });
-  return [...rootControllers, ...userControllers];
+  return [...rootRows, ...userRows];
 }
 
-function ControllerList({ controllers }) {
-  if (!controllers?.length) {
+function ControllerList({ controllers, userControllers }) {
+  const rows = controllerRows(controllers, userControllers);
+  if (!rows.length) {
     return <span className="muted">none</span>;
   }
   return (
     <div className="controller-list">
-      {controllers.map((controller) => (
-        <div className="controller-row" key={`${controller.index}-${controller.path}`}>
-          <span className="controller-label">{controller.label}</span>
-          <span className="controller-value" title={controller.path}>
-            {controllerDisplayValue(controller)}
+      {rows.map((row) => (
+        <div className="controller-row" key={row.key}>
+          <span className="controller-label">{row.label}</span>
+          <span className="controller-value" title={row.path}>
+            {row.value}
           </span>
         </div>
       ))}
@@ -1099,36 +1094,13 @@ function ControllerList({ controllers }) {
 }
 
 function SynthControllerDefaultsSection({ project }) {
-  const rows = synthControllerDefaultRows(project);
-  if (!rows.length) {
+  if (project?.type !== "synth") {
     return null;
   }
   return (
     <section className="section-grid" aria-labelledby="synth-controllers-heading">
       <h3 id="synth-controllers-heading">Controllers</h3>
-      <div className="synth-controller-defaults">
-        <table className="synth-controller-table">
-          <thead>
-            <tr>
-              <th scope="col">Stored</th>
-              <th scope="col">Controller</th>
-              <th scope="col">Default</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.key}>
-                <td className="synth-controller-location">{row.location}</td>
-                <td>
-                  <span className="synth-controller-name">{row.label}</span>
-                  {row.path ? <span className="synth-controller-path">{row.path}</span> : null}
-                </td>
-                <td className="synth-controller-value">{row.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ControllerList controllers={project.synth?.controllers} userControllers={project.synth?.userControllers} />
     </section>
   );
 }
@@ -1203,6 +1175,7 @@ function ModuleGraphDetail({ graph, selectedModuleIndex }) {
     graph.nodes[0];
   const selected = module.index === selectedModuleIndex;
   const { inputs, outputs } = moduleLinks(graph, module.index);
+  const controllerCount = controllerRows(module.controllers, module.userControllers).length;
   return (
     <aside className="graph-detail" aria-label="Selected module details">
       <div className="graph-detail-heading">
@@ -1210,8 +1183,8 @@ function ModuleGraphDetail({ graph, selectedModuleIndex }) {
       </div>
       {!selected ? <p className="graph-detail-hint">Select a node to inspect links.</p> : null}
       <div className="graph-detail-section">
-        <h4>Controllers {module.controllerCount ? `(${module.controllerCount})` : ""}</h4>
-        <ControllerList controllers={module.controllers} />
+        <h4>Controllers {controllerCount ? `(${controllerCount})` : ""}</h4>
+        <ControllerList controllers={module.controllers} userControllers={module.userControllers} />
       </div>
       <div className="graph-detail-section">
         <h4>Data</h4>
