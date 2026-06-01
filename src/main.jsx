@@ -25,6 +25,9 @@ const SYNTH_KEYBOARD_VELOCITY = 128;
 const SYNTH_VOLUME_CONTROLLER_MAX = 1024;
 const SYNTH_USER_CONTROLLER_MAX = 32768;
 const METAMODULE_USER_CONTROLLER_BASE_INDEX = 5;
+const KNOB_START_ANGLE = -135;
+const KNOB_SWEEP_ANGLE = 270;
+const KNOB_DRAG_PIXELS = 180;
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const BLACK_KEY_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
 const FILE_HASH_PREFIX = "#file=";
@@ -177,6 +180,22 @@ function numericControllerValue(value, fallback = 0) {
   return Number.isFinite(value) ? Math.round(value) : fallback;
 }
 
+function clampControllerValue(control, value) {
+  return Math.max(control.min, Math.min(control.max, numericControllerValue(value, control.value)));
+}
+
+function controllerRatio(control, value) {
+  if (control.max <= control.min) {
+    return 0;
+  }
+  return (clampControllerValue(control, value) - control.min) / (control.max - control.min);
+}
+
+function controllerKeyboardStep(control, multiplier = 1) {
+  const coarseStep = Math.max(control.step, Math.round((control.max - control.min) / 128));
+  return coarseStep * multiplier;
+}
+
 function synthControllerTarget(controller) {
   const link = controller.link;
   if (!link) {
@@ -247,6 +266,111 @@ function TopbarControls({ project, volume, onVolumeChange }) {
         />
         <output>{volumePercent(volume)}%</output>
       </label>
+    </div>
+  );
+}
+
+function InstrumentKnobControl({ control, value, onChange }) {
+  const dragRef = useRef(undefined);
+  const ratio = controllerRatio(control, value);
+  const angle = KNOB_START_ANGLE + ratio * KNOB_SWEEP_ANGLE;
+
+  function changeBy(rawValue) {
+    onChange(control, rawValue);
+  }
+
+  function beginDrag(event) {
+    event.preventDefault();
+    dragRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      value,
+    };
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic pointer events in tests do not always create a capturable pointer.
+    }
+  }
+
+  function updateDrag(event) {
+    const drag = dragRef.current;
+    if (!drag) {
+      return;
+    }
+    event.preventDefault();
+    const delta = event.clientX - drag.x + drag.y - event.clientY;
+    const range = control.max - control.min;
+    changeBy(drag.value + (delta / KNOB_DRAG_PIXELS) * range);
+  }
+
+  function endDrag() {
+    dragRef.current = undefined;
+  }
+
+  function handleKeyDown(event) {
+    let nextValue;
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowUp":
+        nextValue = value + controllerKeyboardStep(control);
+        break;
+      case "ArrowLeft":
+      case "ArrowDown":
+        nextValue = value - controllerKeyboardStep(control);
+        break;
+      case "PageUp":
+        nextValue = value + controllerKeyboardStep(control, 8);
+        break;
+      case "PageDown":
+        nextValue = value - controllerKeyboardStep(control, 8);
+        break;
+      case "Home":
+        nextValue = control.min;
+        break;
+      case "End":
+        nextValue = control.max;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    changeBy(nextValue);
+  }
+
+  return (
+    <div className="instrument-control" key={control.key}>
+      <span className="instrument-control-header">
+        <span className="instrument-control-label">{control.label}</span>
+        <output className="instrument-control-value">{value}</output>
+      </span>
+      <div className="instrument-knob-row">
+        <div
+          className="instrument-knob"
+          role="slider"
+          tabIndex={0}
+          aria-label={`${control.label} controller`}
+          aria-valuemin={control.min}
+          aria-valuemax={control.max}
+          aria-valuenow={value}
+          style={{ "--knob-angle": `${angle}deg`, "--knob-fill": `${ratio * 75}%` }}
+          onPointerDown={beginDrag}
+          onPointerMove={updateDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onLostPointerCapture={endDrag}
+          onKeyDown={handleKeyDown}
+        >
+          <span className="instrument-knob-face" aria-hidden="true">
+            <span className="instrument-knob-indicator" />
+          </span>
+        </div>
+        {control.target ? (
+          <span className="instrument-control-target" title={control.target}>
+            {control.target}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -345,7 +469,7 @@ function SynthKeyboardSection({ project }) {
   }
 
   function changeController(control, rawValue) {
-    const value = Math.max(control.min, Math.min(control.max, numericControllerValue(rawValue, control.value)));
+    const value = clampControllerValue(control, rawValue);
     setControllerValues((current) => ({ ...current, [control.key]: value }));
     void (async () => {
       const changed = await window.setSynthController?.(project.path, control.controllerIndex, value);
@@ -403,22 +527,12 @@ function SynthKeyboardSection({ project }) {
         {instrumentControls.map((control) => {
           const value = controllerValues[control.key] ?? control.value;
           return (
-            <label className="instrument-control" key={control.key}>
-              <span className="instrument-control-header">
-                <span className="instrument-control-label">{control.label}</span>
-                <output className="instrument-control-value">{value}</output>
-              </span>
-              <input
-                type="range"
-                min={control.min}
-                max={control.max}
-                step={control.step}
-                value={value}
-                aria-label={`${control.label} controller`}
-                onChange={(event) => changeController(control, event.target.valueAsNumber)}
-              />
-              {control.target ? <span className="instrument-control-target">{control.target}</span> : null}
-            </label>
+            <InstrumentKnobControl
+              key={control.key}
+              control={control}
+              value={value}
+              onChange={changeController}
+            />
           );
         })}
       </div>
