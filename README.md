@@ -165,8 +165,11 @@ Recipes can still use `apply(editor)` for procedural edits; the MVP exposes
 SunSynth lab implementation. Type inference comes from
 `tools/sunvox-edit-recipe.d.ts`. The
 [scratch-analog Edit Recipe example](generated/recipes/sunvox-edit/scratch-analog.mjs)
-shows the migrated style: a MultiSynth module is created explicitly, then set as
-the MetaModule input with `synth.setInputModule(...)`. `sunvox:edit-recipe:migrate`
+shows the migrated style: `create.module` selects the SunSynth root module type,
+so `module: "MetaModule"` initializes an embedded project while `module: "FMX"`
+creates a direct FMX root module. A MultiSynth module is created explicitly,
+then set as the MetaModule input with `synth.setInputModule(...)`.
+`sunvox:edit-recipe:migrate`
 can convert supported `SunSynthRecipe` files into the new Edit Recipe format as
 a reviewable starting point. The migrator handles current scratch MetaModule
 recipes, root-module recipes such as FMX, and template-based sweep recipes that

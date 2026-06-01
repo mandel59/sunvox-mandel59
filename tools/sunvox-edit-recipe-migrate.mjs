@@ -36,7 +36,7 @@ function slugIdentifier(value, fallback = "output") {
   return identifier || fallback;
 }
 
-function stableModuleId(name, fallback) {
+function stableIdentifier(name, fallback) {
   return slugIdentifier(name, fallback);
 }
 
@@ -45,9 +45,6 @@ function stableOutputId(recipe, variant, index) {
 }
 
 function inspectSelector(selector) {
-  if (selector && typeof selector === "object" && "id" in selector) {
-    return selector.id;
-  }
   return selector;
 }
 
@@ -91,7 +88,6 @@ class LegacyRecipeRecorder {
   constructor(templateLab) {
     this.templateLab = templateLab;
     this.operations = [];
-    this.moduleIdsByName = new Map([["Output", "output"]]);
     this.moduleOrdinal = 0;
   }
 
@@ -110,13 +106,9 @@ class LegacyRecipeRecorder {
   }
 
   addModule(type, options = {}) {
-    const id = options.id ?? stableModuleId(options.name ?? type, `module${this.moduleOrdinal + 1}`);
+    const variable = stableIdentifier(options.name ?? type, `module${this.moduleOrdinal + 1}`);
     this.moduleOrdinal += 1;
-    const normalized = { ...options, id };
-    this.operations.push({ op: "addModule", type, options: normalized });
-    if (options.name) {
-      this.moduleIdsByName.set(options.name, id);
-    }
+    this.operations.push({ op: "addModule", type, variable, options: { ...options } });
     return this;
   }
 
@@ -182,15 +174,15 @@ function recipeCreateSpec(recipe, variant) {
   const create = variant.create ?? recipe.create ?? { name: variant.name ?? recipe.name };
   if (create && typeof create === "object" && create.moduleType) {
     const { moduleType, ...moduleOptions } = create;
-    return { kind: "rootModule", moduleType, name: variant.name ?? recipe.name, ...moduleOptions };
+    return { module: moduleType, name: variant.name ?? recipe.name, ...moduleOptions };
   }
   if (create === true) {
-    return { kind: "metaModule", name: variant.name ?? recipe.name };
+    return { module: "MetaModule", name: variant.name ?? recipe.name };
   }
   if (typeof create === "string") {
-    return { kind: "metaModule", name: create };
+    return { module: "MetaModule", name: create };
   }
-  return { kind: "metaModule", name: variant.name ?? recipe.name, ...(create ?? {}) };
+  return { module: "MetaModule", name: variant.name ?? recipe.name, ...(create ?? {}) };
 }
 
 function outputFile(recipe, variant) {
@@ -227,12 +219,38 @@ function js(value) {
   return JSON.stringify(value, null, 2).replace(/\n/gu, "\n        ");
 }
 
+function uniqueIdentifier(base, used) {
+  let candidate = base;
+  let suffix = 2;
+  while (used.has(candidate)) {
+    candidate = `${base}${suffix}`;
+    suffix += 1;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+function selectorVariables(operations) {
+  const used = new Set(["project", "synth"]);
+  const variables = new Map([["Output", "project.output"]]);
+  for (const operation of operations) {
+    if (operation.op !== "addModule") {
+      continue;
+    }
+    operation.variable = uniqueIdentifier(operation.variable, used);
+    if (operation.options.name) {
+      variables.set(operation.options.name, operation.variable);
+    }
+  }
+  return variables;
+}
+
 function selectorExpression(selector, context = {}) {
   if (selector === "Output") {
     return "project.output";
   }
   if (typeof selector === "string") {
-    return context.stringSelectorsAsIds ? JSON.stringify({ id: stableModuleId(selector, selector) }) : JSON.stringify(selector);
+    return context.selectorVariables?.get(selector) ?? JSON.stringify(selector);
   }
   return js(selector);
 }
@@ -248,7 +266,7 @@ function operationSource(operation, context = {}) {
     return `synth.rootModule.controllers.set(${js(operation.controllers)});`;
   }
   if (operation.op === "addModule") {
-    return `project.addModule(${JSON.stringify(operation.type)}, ${js(operation.options)});`;
+    return `const ${operation.variable} = project.addModule(${JSON.stringify(operation.type)}, ${js(operation.options)});`;
   }
   if (operation.op === "setModuleControllers") {
     return `project.findModule(${selectorExpression(operation.selector, context)}).controllers.set(${js(operation.controllers)});`;
@@ -286,7 +304,7 @@ async function outputSpecSource(recipe, variant, index, context) {
     })),
     ...await recordedOperations(variant, context.templateLab),
   ];
-  const sourceContext = { stringSelectorsAsIds: !recipe.template };
+  const sourceContext = recipe.template ? {} : { selectorVariables: selectorVariables(operations) };
   const lines = operations.map((operation) => `        ${operationSource(operation, sourceContext)}`);
   const applySource = lines.length
     ? `,

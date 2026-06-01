@@ -26,18 +26,16 @@ const recipe = {
     scratch: {
       kind: "sunsynth",
       file: ${JSON.stringify(outputPath)},
-      create: { kind: "metaModule", name: "Edit Recipe Scratch", color: "#ffaa44" },
+      create: { module: "MetaModule", name: "Edit Recipe Scratch", color: "#ffaa44" },
       apply(synth) {
         const project = synth.embeddedProject();
         project.setOutput({ position: { x: 640, y: 512, z: 0 } });
         const input = project.addModule("MultiSynth", {
-          id: "noteInput",
           name: "Note Input",
           position: { x: 0, y: 512, z: 0 }
         });
         synth.setInputModule(input);
         const tone = project.addModule("Analog generator", {
-          id: "tone",
           name: "Tone",
           controllers: { waveform: "saw", volume: 120, release: 24 }
         });
@@ -207,13 +205,13 @@ const recipe = {
     disconnect: {
       kind: "sunsynth",
       file: ${JSON.stringify(outputPath)},
-      create: { kind: "metaModule", name: "Disconnect Probe" },
+      create: { module: "MetaModule", name: "Disconnect Probe" },
       apply(synth) {
         const project = synth.embeddedProject();
-        const noteInput = project.addModule("MultiSynth", { id: "noteInput", name: "Note Input" });
+        const noteInput = project.addModule("MultiSynth", { name: "Note Input" });
         synth.setInputModule(noteInput);
-        const tone = project.addModule("Analog generator", { id: "tone", name: "Tone" });
-        const amp = project.addModule("Amplifier", { id: "amp", name: "Amp" });
+        const tone = project.addModule("Analog generator", { name: "Tone" });
+        const amp = project.addModule("Amplifier", { name: "Amp" });
         project.connect(noteInput, tone);
         project.connect(tone, project.output, { slot: 0 });
         project.connect(tone, amp);
@@ -257,13 +255,13 @@ const recipe = {
     removeModule: {
       kind: "sunsynth",
       file: ${JSON.stringify(outputPath)},
-      create: { kind: "metaModule", name: "Remove Module Probe" },
+      create: { module: "MetaModule", name: "Remove Module Probe" },
       apply(synth) {
         const project = synth.embeddedProject();
-        const noteInput = project.addModule("MultiSynth", { id: "noteInput", name: "Note Input" });
+        const noteInput = project.addModule("MultiSynth", { name: "Note Input" });
         synth.setInputModule(noteInput);
-        const tone = project.addModule("Analog generator", { id: "tone", name: "Tone" });
-        const amp = project.addModule("Amplifier", { id: "amp", name: "Amp" });
+        const tone = project.addModule("Analog generator", { name: "Tone" });
+        const amp = project.addModule("Amplifier", { name: "Amp" });
         project.connect(noteInput, tone);
         project.connect(tone, amp);
         project.connect(amp, project.output);

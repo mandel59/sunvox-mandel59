@@ -26,7 +26,6 @@ export interface ModuleFlags {
 }
 
 export interface ModuleSpec {
-  id?: string;
   name?: string;
   flags?: ModuleFlags;
   finetune?: number;
@@ -41,7 +40,6 @@ export interface ModuleSpec {
 
 export interface ModuleSelector {
   index?: number;
-  id?: string;
   name?: string;
   type?: string;
   nameOrType?: string;
@@ -70,7 +68,6 @@ export interface ControllerCollectionEditor {
 }
 
 export interface ModuleEditor {
-  readonly id?: string;
   readonly index: number;
   readonly name?: string;
   readonly type?: string;
@@ -124,25 +121,17 @@ export interface RecipeInputAsset {
   path: string;
 }
 
-export interface MetaModuleSunSynthCreateSpec {
-  kind?: "metaModule";
+export interface SunSynthCreateSpec extends ModuleSpec {
+  module?: string;
   name?: string;
   volume?: number;
   bpm?: number;
   tpl?: number;
-  color?: HexColor;
   output?: ModuleSpec;
   inputModule?: number;
   version?: number;
   baseVersion?: number;
 }
-
-export interface RootModuleSunSynthCreateSpec extends ModuleSpec {
-  kind: "rootModule";
-  moduleType: string;
-}
-
-export type SunSynthCreateSpec = true | string | MetaModuleSunSynthCreateSpec | RootModuleSunSynthCreateSpec;
 
 export interface SunSynthOutputSpec {
   kind: "sunsynth";

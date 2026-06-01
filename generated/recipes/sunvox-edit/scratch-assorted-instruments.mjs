@@ -8,7 +8,7 @@ const recipe = {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch Acid Bass.sunsynth",
       create: {
-          "kind": "metaModule",
+          "module": "MetaModule",
           "name": "Scratch Acid Bass",
           "volume": 256,
           "bpm": 124,
@@ -25,17 +25,16 @@ const recipe = {
             "z": 0
           }
         });
-        project.addModule("MultiSynth", {
+        const noteInput = project.addModule("MultiSynth", {
           "name": "Note Input",
           "position": {
             "x": 0,
             "y": 512,
             "z": 0
-          },
-          "id": "noteInput"
+          }
         });
-        synth.setInputModule({"id":"noteInput"});
-        project.addModule("Analog generator", {
+        synth.setInputModule(noteInput);
+        const bassOsc = project.addModule("Analog generator", {
           "name": "Bass Osc",
           "color": "#a5f03a",
           "position": {
@@ -54,10 +53,9 @@ const recipe = {
             "dutyCycle": 420,
             "polyphony": 4,
             "mode": "hqMono"
-          },
-          "id": "bassOsc"
+          }
         });
-        project.addModule("Filter Pro", {
+        const acidFilter = project.addModule("Filter Pro", {
           "name": "Acid Filter",
           "position": {
             "x": 400,
@@ -71,10 +69,9 @@ const recipe = {
             "rolloff": "db24",
             "mode": "monoSmoothing",
             "response": 96
-          },
-          "id": "acidFilter"
+          }
         });
-        project.addModule("Distortion", {
+        const softClip = project.addModule("Distortion", {
           "name": "Soft Clip",
           "position": {
             "x": 576,
@@ -87,10 +84,9 @@ const recipe = {
             "power": 38,
             "bitDepth": 16,
             "freq": 44100
-          },
-          "id": "softClip"
+          }
         });
-        project.addModule("Compressor", {
+        const bassGlue = project.addModule("Compressor", {
           "name": "Bass Glue",
           "position": {
             "x": 752,
@@ -104,27 +100,26 @@ const recipe = {
             "attack": 4,
             "release": 160,
             "mode": "peak"
-          },
-          "id": "bassGlue"
+          }
         });
-        project.connect({"id":"noteInput"}, {"id":"bassOsc"});
-        project.connect({"id":"bassOsc"}, {"id":"acidFilter"});
-        project.connect({"id":"acidFilter"}, {"id":"softClip"});
-        project.connect({"id":"softClip"}, {"id":"bassGlue"});
-        project.connect({"id":"bassGlue"}, project.output);
-        synth.expose("Osc volume", {"id":"bassOsc"}, "volume");
-        synth.expose("Pulse width", {"id":"bassOsc"}, "dutyCycle");
-        synth.expose("Filter freq", {"id":"acidFilter"}, "freq");
-        synth.expose("Filter Q", {"id":"acidFilter"}, "q");
-        synth.expose("Drive", {"id":"softClip"}, "power");
-        synth.expose("Output trim", {"id":"bassGlue"}, "volume");
+        project.connect(noteInput, bassOsc);
+        project.connect(bassOsc, acidFilter);
+        project.connect(acidFilter, softClip);
+        project.connect(softClip, bassGlue);
+        project.connect(bassGlue, project.output);
+        synth.expose("Osc volume", bassOsc, "volume");
+        synth.expose("Pulse width", bassOsc, "dutyCycle");
+        synth.expose("Filter freq", acidFilter, "freq");
+        synth.expose("Filter Q", acidFilter, "q");
+        synth.expose("Drive", softClip, "power");
+        synth.expose("Output trim", bassGlue, "volume");
       }
     },
     scratchGlassBell: {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch Glass Bell.sunsynth",
       create: {
-          "kind": "metaModule",
+          "module": "MetaModule",
           "name": "Scratch Glass Bell",
           "volume": 256,
           "bpm": 120,
@@ -141,17 +136,16 @@ const recipe = {
             "z": 0
           }
         });
-        project.addModule("MultiSynth", {
+        const noteInput = project.addModule("MultiSynth", {
           "name": "Note Input",
           "position": {
             "x": 0,
             "y": 512,
             "z": 0
-          },
-          "id": "noteInput"
+          }
         });
-        synth.setInputModule({"id":"noteInput"});
-        project.addModule("FM", {
+        synth.setInputModule(noteInput);
+        const glassStrike = project.addModule("FM", {
           "name": "Glass Strike",
           "color": "#86f5ff",
           "position": {
@@ -177,10 +171,9 @@ const recipe = {
             "mScalingPerKey": 2,
             "polyphony": 12,
             "mode": "hq"
-          },
-          "id": "glassStrike"
+          }
         });
-        project.addModule("FM", {
+        const crystalBody = project.addModule("FM", {
           "name": "Crystal Body",
           "color": "#5ee8ff",
           "position": {
@@ -206,10 +199,9 @@ const recipe = {
             "mScalingPerKey": 1,
             "polyphony": 12,
             "mode": "hq"
-          },
-          "id": "crystalBody"
+          }
         });
-        project.addModule("FM", {
+        const airRing = project.addModule("FM", {
           "name": "Air Ring",
           "color": "#c8fbff",
           "position": {
@@ -235,10 +227,9 @@ const recipe = {
             "mScalingPerKey": 3,
             "polyphony": 12,
             "mode": "hq"
-          },
-          "id": "airRing"
+          }
         });
-        project.addModule("Filter Pro", {
+        const glassPolish = project.addModule("Filter Pro", {
           "name": "Glass Polish",
           "color": "#b4f6ff",
           "position": {
@@ -253,10 +244,9 @@ const recipe = {
             "rolloff": "db12",
             "mode": "stereoSmoothing",
             "response": 110
-          },
-          "id": "glassPolish"
+          }
         });
-        project.addModule("Reverb", {
+        const crystalHall = project.addModule("Reverb", {
           "name": "Crystal Hall",
           "color": "#78cfff",
           "position": {
@@ -273,10 +263,9 @@ const recipe = {
             "mode": "hq",
             "allpassFilter": "improved",
             "roomSize": 46
-          },
-          "id": "crystalHall"
+          }
         });
-        project.addModule("Amplifier", {
+        const bellTrim = project.addModule("Amplifier", {
           "name": "Bell Trim",
           "color": "#a8f4ff",
           "position": {
@@ -288,37 +277,36 @@ const recipe = {
             "volume": 292,
             "stereoWidth": 190,
             "fineVolume": 32768
-          },
-          "id": "bellTrim"
+          }
         });
-        project.connect({"id":"noteInput"}, {"id":"glassStrike"});
-        project.connect({"id":"noteInput"}, {"id":"crystalBody"});
-        project.connect({"id":"noteInput"}, {"id":"airRing"});
-        project.connect({"id":"glassStrike"}, {"id":"glassPolish"}, {
+        project.connect(noteInput, glassStrike);
+        project.connect(noteInput, crystalBody);
+        project.connect(noteInput, airRing);
+        project.connect(glassStrike, glassPolish, {
           "slot": 0
         });
-        project.connect({"id":"crystalBody"}, {"id":"glassPolish"}, {
+        project.connect(crystalBody, glassPolish, {
           "slot": 1
         });
-        project.connect({"id":"airRing"}, {"id":"glassPolish"}, {
+        project.connect(airRing, glassPolish, {
           "slot": 2
         });
-        project.connect({"id":"glassPolish"}, {"id":"crystalHall"});
-        project.connect({"id":"crystalHall"}, {"id":"bellTrim"});
-        project.connect({"id":"bellTrim"}, project.output);
-        synth.expose("Strike", {"id":"glassStrike"}, "mVolume");
-        synth.expose("Body", {"id":"crystalBody"}, "cVolume");
-        synth.expose("Air", {"id":"airRing"}, "cVolume");
-        synth.expose("Brightness", {"id":"glassPolish"}, "freq");
-        synth.expose("Hall wet", {"id":"crystalHall"}, "wet");
-        synth.expose("Output trim", {"id":"bellTrim"}, "volume");
+        project.connect(glassPolish, crystalHall);
+        project.connect(crystalHall, bellTrim);
+        project.connect(bellTrim, project.output);
+        synth.expose("Strike", glassStrike, "mVolume");
+        synth.expose("Body", crystalBody, "cVolume");
+        synth.expose("Air", airRing, "cVolume");
+        synth.expose("Brightness", glassPolish, "freq");
+        synth.expose("Hall wet", crystalHall, "wet");
+        synth.expose("Output trim", bellTrim, "volume");
       }
     },
     scratchPWMOrgan: {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch PWM Organ.sunsynth",
       create: {
-          "kind": "metaModule",
+          "module": "MetaModule",
           "name": "Scratch PWM Organ",
           "volume": 256,
           "bpm": 120,
@@ -335,17 +323,16 @@ const recipe = {
             "z": 0
           }
         });
-        project.addModule("MultiSynth", {
+        const noteInput = project.addModule("MultiSynth", {
           "name": "Note Input",
           "position": {
             "x": 0,
             "y": 512,
             "z": 0
-          },
-          "id": "noteInput"
+          }
         });
-        synth.setInputModule({"id":"noteInput"});
-        project.addModule("Analog generator", {
+        synth.setInputModule(noteInput);
+        const pulseA = project.addModule("Analog generator", {
           "name": "Pulse A",
           "color": "#e4ff72",
           "position": {
@@ -362,10 +349,9 @@ const recipe = {
             "dutyCycle": 384,
             "polyphony": 10,
             "mode": "hq"
-          },
-          "id": "pulseA"
+          }
         });
-        project.addModule("Analog generator", {
+        const pulseB = project.addModule("Analog generator", {
           "name": "Pulse B",
           "color": "#e4ff72",
           "position": {
@@ -384,10 +370,9 @@ const recipe = {
             "dutyCycle": 640,
             "polyphony": 10,
             "mode": "hq"
-          },
-          "id": "pulseB"
+          }
         });
-        project.addModule("Filter Pro", {
+        const toneFilter = project.addModule("Filter Pro", {
           "name": "Tone Filter",
           "position": {
             "x": 464,
@@ -401,10 +386,9 @@ const recipe = {
             "rolloff": "db12",
             "mode": "stereoSmoothing",
             "response": 150
-          },
-          "id": "toneFilter"
+          }
         });
-        project.addModule("Amplifier", {
+        const organWidth = project.addModule("Amplifier", {
           "name": "Organ Width",
           "position": {
             "x": 656,
@@ -415,10 +399,9 @@ const recipe = {
             "volume": 232,
             "stereoWidth": 186,
             "fineVolume": 32768
-          },
-          "id": "organWidth"
+          }
         });
-        project.addModule("Reverb", {
+        const organRoom = project.addModule("Reverb", {
           "name": "Organ Room",
           "position": {
             "x": 848,
@@ -433,33 +416,32 @@ const recipe = {
             "stereoWidth": 184,
             "mode": "hq",
             "roomSize": 12
-          },
-          "id": "organRoom"
+          }
         });
-        project.connect({"id":"noteInput"}, {"id":"pulseA"});
-        project.connect({"id":"noteInput"}, {"id":"pulseB"});
-        project.connect({"id":"pulseA"}, {"id":"toneFilter"}, {
+        project.connect(noteInput, pulseA);
+        project.connect(noteInput, pulseB);
+        project.connect(pulseA, toneFilter, {
           "slot": 0
         });
-        project.connect({"id":"pulseB"}, {"id":"toneFilter"}, {
+        project.connect(pulseB, toneFilter, {
           "slot": 1
         });
-        project.connect({"id":"toneFilter"}, {"id":"organWidth"});
-        project.connect({"id":"organWidth"}, {"id":"organRoom"});
-        project.connect({"id":"organRoom"}, project.output);
-        synth.expose("Pulse A width", {"id":"pulseA"}, "dutyCycle");
-        synth.expose("Pulse B width", {"id":"pulseB"}, "dutyCycle");
-        synth.expose("Filter freq", {"id":"toneFilter"}, "freq");
-        synth.expose("Stereo width", {"id":"organWidth"}, "stereoWidth");
-        synth.expose("Room wet", {"id":"organRoom"}, "wet");
-        synth.expose("Output trim", {"id":"organWidth"}, "volume");
+        project.connect(toneFilter, organWidth);
+        project.connect(organWidth, organRoom);
+        project.connect(organRoom, project.output);
+        synth.expose("Pulse A width", pulseA, "dutyCycle");
+        synth.expose("Pulse B width", pulseB, "dutyCycle");
+        synth.expose("Filter freq", toneFilter, "freq");
+        synth.expose("Stereo width", organWidth, "stereoWidth");
+        synth.expose("Room wet", organRoom, "wet");
+        synth.expose("Output trim", organWidth, "volume");
       }
     },
     scratchKickSnap: {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch Kick Snap.sunsynth",
       create: {
-          "kind": "metaModule",
+          "module": "MetaModule",
           "name": "Scratch Kick Snap",
           "volume": 256,
           "bpm": 128,
@@ -476,17 +458,16 @@ const recipe = {
             "z": 0
           }
         });
-        project.addModule("MultiSynth", {
+        const noteInput = project.addModule("MultiSynth", {
           "name": "Note Input",
           "position": {
             "x": 0,
             "y": 512,
             "z": 0
-          },
-          "id": "noteInput"
+          }
         });
-        synth.setInputModule({"id":"noteInput"});
-        project.addModule("Kicker", {
+        synth.setInputModule(noteInput);
+        const kick = project.addModule("Kicker", {
           "name": "Kick",
           "color": "#58a2ff",
           "position": {
@@ -504,10 +485,9 @@ const recipe = {
             "acceleration": 330,
             "polyphony": 1,
             "noClick": "on"
-          },
-          "id": "kick"
+          }
         });
-        project.addModule("Distortion", {
+        const transientClip = project.addModule("Distortion", {
           "name": "Transient Clip",
           "position": {
             "x": 448,
@@ -520,10 +500,9 @@ const recipe = {
             "power": 22,
             "bitDepth": 16,
             "freq": 44100
-          },
-          "id": "transientClip"
+          }
         });
-        project.addModule("Compressor", {
+        const kickPunch = project.addModule("Compressor", {
           "name": "Kick Punch",
           "position": {
             "x": 656,
@@ -537,18 +516,17 @@ const recipe = {
             "attack": 1,
             "release": 120,
             "mode": "peak"
-          },
-          "id": "kickPunch"
+          }
         });
-        project.connect({"id":"noteInput"}, {"id":"kick"});
-        project.connect({"id":"kick"}, {"id":"transientClip"});
-        project.connect({"id":"transientClip"}, {"id":"kickPunch"});
-        project.connect({"id":"kickPunch"}, project.output);
-        synth.expose("Release", {"id":"kick"}, "release");
-        synth.expose("Boost", {"id":"kick"}, "boost");
-        synth.expose("Acceleration", {"id":"kick"}, "acceleration");
-        synth.expose("Clip power", {"id":"transientClip"}, "power");
-        synth.expose("Output trim", {"id":"kickPunch"}, "volume");
+        project.connect(noteInput, kick);
+        project.connect(kick, transientClip);
+        project.connect(transientClip, kickPunch);
+        project.connect(kickPunch, project.output);
+        synth.expose("Release", kick, "release");
+        synth.expose("Boost", kick, "boost");
+        synth.expose("Acceleration", kick, "acceleration");
+        synth.expose("Clip power", transientClip, "power");
+        synth.expose("Output trim", kickPunch, "volume");
       }
     }
   },

@@ -8,7 +8,7 @@ const recipe = {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch Layered Pad.sunsynth",
       create: {
-          "kind": "metaModule",
+          "module": "MetaModule",
           "name": "Scratch Layered Pad",
           "volume": 256,
           "bpm": 120,
@@ -25,17 +25,16 @@ const recipe = {
             "z": 0
           }
         });
-        project.addModule("MultiSynth", {
+        const noteInput = project.addModule("MultiSynth", {
           "name": "Note Input",
           "position": {
             "x": 0,
             "y": 512,
             "z": 0
-          },
-          "id": "noteInput"
+          }
         });
-        synth.setInputModule({"id":"noteInput"});
-        project.addModule("Analog generator", {
+        synth.setInputModule(noteInput);
+        const sawL = project.addModule("Analog generator", {
           "name": "Saw L",
           "color": "#9ad92d",
           "position": {
@@ -54,10 +53,9 @@ const recipe = {
             "polyphony": 12,
             "mode": "hq",
             "noise": 6
-          },
-          "id": "sawL"
+          }
         });
-        project.addModule("Analog generator", {
+        const sawR = project.addModule("Analog generator", {
           "name": "Saw R",
           "color": "#9ad92d",
           "position": {
@@ -76,10 +74,9 @@ const recipe = {
             "polyphony": 12,
             "mode": "hq",
             "noise": 6
-          },
-          "id": "sawR"
+          }
         });
-        project.addModule("Analog generator", {
+        const sineBody = project.addModule("Analog generator", {
           "name": "Sine Body",
           "color": "#c5ff6a",
           "position": {
@@ -95,10 +92,9 @@ const recipe = {
             "release": 160,
             "polyphony": 12,
             "mode": "hq"
-          },
-          "id": "sineBody"
+          }
         });
-        project.addModule("Filter Pro", {
+        const padFilter = project.addModule("Filter Pro", {
           "name": "Pad Filter",
           "position": {
             "x": 432,
@@ -112,10 +108,9 @@ const recipe = {
             "rolloff": "db24",
             "mode": "stereoSmoothing",
             "response": 180
-          },
-          "id": "padFilter"
+          }
         });
-        project.addModule("Amplifier", {
+        const padWidth = project.addModule("Amplifier", {
           "name": "Pad Width",
           "position": {
             "x": 592,
@@ -126,10 +121,9 @@ const recipe = {
             "volume": 230,
             "stereoWidth": 210,
             "fineVolume": 32768
-          },
-          "id": "padWidth"
+          }
         });
-        project.addModule("Delay", {
+        const shortEcho = project.addModule("Delay", {
           "name": "Short Echo",
           "position": {
             "x": 752,
@@ -143,10 +137,9 @@ const recipe = {
             "delayR": 260,
             "delayUnit": "ms",
             "feedback": 3600
-          },
-          "id": "shortEcho"
+          }
         });
-        project.addModule("Compressor", {
+        const softGlue = project.addModule("Compressor", {
           "name": "Soft Glue",
           "position": {
             "x": 912,
@@ -160,31 +153,30 @@ const recipe = {
             "attack": 8,
             "release": 420,
             "mode": "rms"
-          },
-          "id": "softGlue"
+          }
         });
-        project.connect({"id":"noteInput"}, {"id":"sawL"});
-        project.connect({"id":"noteInput"}, {"id":"sawR"});
-        project.connect({"id":"noteInput"}, {"id":"sineBody"});
-        project.connect({"id":"sawL"}, {"id":"padFilter"}, {
+        project.connect(noteInput, sawL);
+        project.connect(noteInput, sawR);
+        project.connect(noteInput, sineBody);
+        project.connect(sawL, padFilter, {
           "slot": 0
         });
-        project.connect({"id":"sawR"}, {"id":"padFilter"}, {
+        project.connect(sawR, padFilter, {
           "slot": 1
         });
-        project.connect({"id":"sineBody"}, {"id":"padFilter"}, {
+        project.connect(sineBody, padFilter, {
           "slot": 2
         });
-        project.connect({"id":"padFilter"}, {"id":"padWidth"});
-        project.connect({"id":"padWidth"}, {"id":"shortEcho"});
-        project.connect({"id":"shortEcho"}, {"id":"softGlue"});
-        project.connect({"id":"softGlue"}, project.output);
-        synth.expose("Filter freq", {"id":"padFilter"}, "freq");
-        synth.expose("Filter Q", {"id":"padFilter"}, "q");
-        synth.expose("Stereo width", {"id":"padWidth"}, "stereoWidth");
-        synth.expose("Delay wet", {"id":"shortEcho"}, "wet");
-        synth.expose("Delay feedback", {"id":"shortEcho"}, "feedback");
-        synth.expose("Output trim", {"id":"softGlue"}, "volume");
+        project.connect(padFilter, padWidth);
+        project.connect(padWidth, shortEcho);
+        project.connect(shortEcho, softGlue);
+        project.connect(softGlue, project.output);
+        synth.expose("Filter freq", padFilter, "freq");
+        synth.expose("Filter Q", padFilter, "q");
+        synth.expose("Stereo width", padWidth, "stereoWidth");
+        synth.expose("Delay wet", shortEcho, "wet");
+        synth.expose("Delay feedback", shortEcho, "feedback");
+        synth.expose("Output trim", softGlue, "volume");
       }
     }
   },

@@ -8,8 +8,7 @@ const recipe = {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch FMX Tines.sunsynth",
       create: {
-          "kind": "rootModule",
-          "moduleType": "FMX",
+          "module": "FMX",
           "name": "Scratch FMX Tines",
           "color": "#4aa8ff",
           "controllers": {
@@ -116,8 +115,7 @@ const recipe = {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch FMX Pluck.sunsynth",
       create: {
-          "kind": "rootModule",
-          "moduleType": "FMX",
+          "module": "FMX",
           "name": "Scratch FMX Pluck",
           "color": "#8fdcff",
           "controllers": {

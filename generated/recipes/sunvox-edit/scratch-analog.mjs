@@ -8,7 +8,7 @@ const recipe = {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch Analog Edit Recipe.sunsynth",
       create: {
-        kind: "metaModule",
+        module: "MetaModule",
         name: "Scratch Analog Edit Recipe",
         color: "#ff9a4a",
       },
@@ -16,13 +16,11 @@ const recipe = {
         const project = synth.embeddedProject();
         project.setOutput();
         const noteInput = project.addModule("MultiSynth", {
-          id: "noteInput",
           name: "Note Input",
           position: { x: 0, y: 512, z: 0 },
         });
         synth.setInputModule(noteInput);
         const tone = project.addModule("Analog generator", {
-          id: "tone",
           name: "Tone",
           controllers: {
             waveform: "saw",

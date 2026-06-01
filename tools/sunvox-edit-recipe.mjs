@@ -99,10 +99,9 @@ class UserControllerEditor {
 }
 
 class ModuleEditor {
-  constructor(project, selector, id) {
+  constructor(project, selector) {
     this.project = project;
     this.selector = selector;
-    this.id = id;
     this.controllers = new ControllerCollectionEditor(
       () => this.match().module.controllers ?? {},
       (controllers) => this.project.lab.setModuleControllers(this.index, controllers),
@@ -135,11 +134,10 @@ class SunVoxProjectEditor {
     this.lab = lab;
     this.inputs = inputs;
     this.params = params;
-    this.moduleIds = new Map();
   }
 
   get output() {
-    return new ModuleEditor(this, 0, "output");
+    return new ModuleEditor(this, 0);
   }
 
   setOutput(options = {}) {
@@ -150,25 +148,12 @@ class SunVoxProjectEditor {
   addModule(type, options = {}) {
     const index = this.lab.modules().length;
     this.lab.addModule(type, options);
-    const editor = new ModuleEditor(this, index, options.id);
-    if (options.id) {
-      this.moduleIds.set(options.id, index);
-    }
-    return editor;
+    return new ModuleEditor(this, index);
   }
 
   findModule(selector) {
     if (selector instanceof ModuleEditor) {
       return selector;
-    }
-    if (isPlainObject(selector) && selector.id) {
-      if (selector.id === "output") {
-        return this.output;
-      }
-      if (!this.moduleIds.has(selector.id)) {
-        throw new Error(`Unknown module id: ${JSON.stringify(selector.id)}`);
-      }
-      return new ModuleEditor(this, this.moduleIds.get(selector.id), selector.id);
     }
     return new ModuleEditor(this, selector);
   }
@@ -223,11 +208,6 @@ class SunVoxProjectEditor {
       }
     }
     this.lab.modules()[index] = {};
-    for (const [id, moduleIndex] of this.moduleIds) {
-      if (moduleIndex === index) {
-        this.moduleIds.delete(id);
-      }
-    }
     return index;
   }
 }
@@ -294,17 +274,19 @@ function createSunSynthLab(outputId, output, inputs) {
     return input.lab.clone();
   }
 
-  const create = output.create ?? { name: outputId };
-  if (create && typeof create === "object" && create.kind === "rootModule") {
-    const { kind: _kind, moduleType, ...moduleOptions } = create;
-    return SunSynthLab.createModule(moduleType, { ...moduleOptions, name: moduleOptions.name ?? outputId });
+  const create = output.create ?? { module: "MetaModule", name: outputId };
+  if (create === true || typeof create === "string") {
+    return SunSynthLab.create(typeof create === "string" ? create : outputId);
   }
 
-  const name = typeof create === "string" ? create : create?.name ?? outputId;
-  const options = create === true || typeof create === "string" ? {} : { ...create };
-  delete options.kind;
+  const options = { ...create };
+  const moduleType = options.module ?? "MetaModule";
+  const name = options.name ?? outputId;
+  delete options.module;
   delete options.name;
-  return SunSynthLab.create(name, options);
+  return moduleType === "MetaModule"
+    ? SunSynthLab.create(name, options)
+    : SunSynthLab.createModule(moduleType, { ...options, name });
 }
 
 async function runSunSynthOutput(outputId, output, inputs, options) {
