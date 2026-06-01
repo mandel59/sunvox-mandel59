@@ -343,9 +343,12 @@ test("migrated checked-in Edit Recipes preserve legacy recipe output", async () 
     for (const legacyOutput of legacyOutputs) {
       const outputName = legacyOutput.split(/[\\/]/u).at(-1);
       const editOutput = editOutputs.find((filePath) => filePath.split(/[\\/]/u).at(-1) === outputName);
+      const editBytes = await readFile(editOutput);
+      const legacyBytes = await readFile(legacyOutput);
+      assert.deepEqual(editBytes, legacyBytes, `${outputName} binary`);
       assert.deepEqual(
-        await parseFile(editOutput),
-        await parseFile(legacyOutput),
+        parseContainer(editBytes),
+        parseContainer(legacyBytes),
         outputName,
       );
     }
