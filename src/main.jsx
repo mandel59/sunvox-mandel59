@@ -1357,7 +1357,7 @@ function ProjectPropertiesSection({ project }) {
               <h4>Flags</h4>
               <FlagPills flags={synthInfo.flags} />
             </div>
-            <div className="property-block">
+            <div className="property-block is-controllers">
               <h4>Controllers</h4>
               <ControllerList controllers={synthInfo.controllers} userControllers={synthInfo.userControllers} />
             </div>
@@ -1613,8 +1613,12 @@ function ProjectDetails({ project, error }) {
       <div className="section-grid">
         {project.type === "synth" ? null : <ProjectPropertiesSection project={project} />}
         <ModuleGraphSection project={project} />
-        <SynthKeyboardSection project={project} />
-        {project.type === "synth" ? <ProjectPropertiesSection project={project} /> : null}
+        {project.type === "synth" ? (
+          <div className="synth-detail-grid">
+            <SynthKeyboardSection project={project} />
+            <ProjectPropertiesSection project={project} />
+          </div>
+        ) : null}
         <TimelineSection project={project} />
         <PatternSection project={project} />
         <EmbeddedSection project={project} />

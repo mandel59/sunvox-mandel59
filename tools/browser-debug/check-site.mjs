@@ -71,6 +71,23 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         const keyboard = document.querySelector('.virtual-keyboard-frame')?.getBoundingClientRect();
         return controls && keyboard ? controls.top < keyboard.top : false;
       })(),
+      synthPropertiesBesideInstrument: (() => {
+        const instrument = document.querySelector('[aria-labelledby="instrument-heading"]')?.getBoundingClientRect();
+        const properties = document.querySelector('[aria-labelledby="properties-heading"]')?.getBoundingClientRect();
+        return instrument && properties
+          ? Math.abs(instrument.top - properties.top) < 8 && instrument.right <= properties.left
+          : false;
+      })(),
+      synthPropertiesControllersRight: (() => {
+        const blocks = Array.from(document.querySelectorAll('[aria-labelledby="properties-heading"] .property-block'));
+        const controllers = blocks
+          .find((block) => block.querySelector('h4')?.textContent.trim() === 'Controllers')
+          ?.getBoundingClientRect();
+        const data = blocks
+          .find((block) => block.querySelector('h4')?.textContent.trim() === 'Data')
+          ?.getBoundingClientRect();
+        return controllers && data ? controllers.left > data.left : false;
+      })(),
       synthControllerInputs: document.querySelectorAll('.instrument-control input[type="range"]').length,
       synthControllerLabels: Array.from(document.querySelectorAll('.instrument-control-label')).map((element) =>
         element.textContent.trim(),
@@ -102,6 +119,8 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       initial.synthKeyboardRange !== 'C4-C6' ||
       !(initial.synthScrollLaneHeight >= 18) ||
       !initial.synthControlsBeforeKeyboard ||
+      !initial.synthPropertiesBesideInstrument ||
+      !initial.synthPropertiesControllersRight ||
       initial.synthControllerInputs < 1 ||
       !initial.synthControllerLabels.includes('Octave') ||
       !initial.synthControllerLabels.includes('Volume')

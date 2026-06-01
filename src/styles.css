@@ -258,6 +258,16 @@ button:disabled:hover {
   gap: 1rem;
 }
 
+.synth-detail-grid {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.synth-detail-grid > section {
+  min-width: 0;
+}
+
 .section-meta {
   margin: -0.65rem 0 0;
   color: var(--muted);
@@ -508,7 +518,7 @@ button:disabled:hover {
 }
 
 .properties-panel.is-synth {
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 
@@ -640,6 +650,25 @@ button:disabled:hover {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+@media (min-width: 72rem) {
+  .synth-detail-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 24rem);
+  }
+
+  .synth-detail-grid .properties-panel.is-synth {
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 1fr);
+  }
+
+  .synth-detail-grid .properties-panel.is-synth > :not(.is-controllers) {
+    grid-column: 1;
+  }
+
+  .synth-detail-grid .properties-panel.is-synth > .is-controllers {
+    grid-column: 2;
+    grid-row: 1 / span 5;
+  }
 }
 
 .instrument-header {
