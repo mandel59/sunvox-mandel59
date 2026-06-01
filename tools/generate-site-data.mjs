@@ -8,7 +8,7 @@ import { buildOutlineFromFile } from "./sunvox-outline.mjs";
 import { loadRecipe, variantFileName } from "./sunsynth-generate.mjs";
 
 const DEFAULT_ROOTS = ["music", "instruments", "generated/music", "generated/instruments"];
-const DEFAULT_RECIPE_ROOTS = ["generated/recipes"];
+const DEFAULT_RECIPE_ROOTS = ["generated/recipes/sunsynth"];
 const DEFAULT_OUTPUT = "site-data/sunvox-projects.json";
 const SUNVOX_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const RECIPE_EXTENSIONS = new Set([".mjs"]);

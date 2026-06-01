@@ -115,3 +115,26 @@ export default recipe;
   assert.equal(project.modules[2].controllers.freq, 6600);
   assert.equal(project.modules[2].controllers.q, 9000);
 });
+
+test("checked-in SunVox Edit Recipe scratch example generates a SunSynth", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-example-"));
+  const outputPath = join(tempDir, "var/synth-lab/Scratch Analog Edit Recipe.sunsynth");
+
+  assert.deepEqual(
+    await runEditRecipe("generated/recipes/sunvox-edit/scratch-analog.mjs", { outDir: tempDir }),
+    [outputPath],
+  );
+
+  const document = await parseFile(outputPath);
+  const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
+
+  assert.equal(document.module.name, "Scratch Analog Edit Recipe");
+  assert.equal(document.module.color, "#ff9a4a");
+  assert.equal(document.module.controllers.inputModule, 1);
+  assert.equal(project.modules[0].name, "Output");
+  assert.equal(project.modules[1].name, "Note Input");
+  assert.equal(project.modules[1].type, "MultiSynth");
+  assert.equal(project.modules[2].name, "Tone");
+  assert.equal(project.modules[2].controllers.waveform, "saw");
+  assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
+});
