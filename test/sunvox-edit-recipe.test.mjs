@@ -6,6 +6,7 @@ import test from "node:test";
 
 import { runEditRecipe } from "../tools/sunvox-edit-recipe.mjs";
 import { migrateSunSynthRecipe } from "../tools/sunvox-edit-recipe-migrate.mjs";
+import { runRecipe } from "../tools/sunsynth-generate.mjs";
 import { parseContainer } from "../tools/sunvox-codec.mjs";
 
 async function parseFile(filePath) {
@@ -308,4 +309,35 @@ test("migrates a scratch SunSynthRecipe to SunVox Edit Recipe", async () => {
   assert.equal(project.modules[2].name, "Tone");
   assert.equal(project.modules[2].controllers.volume, 128);
   assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
+});
+
+test("migrated checked-in Edit Recipes preserve legacy recipe output", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-equivalence-"));
+  const pairs = [
+    ["scratch-layered-pad.mjs", ["Scratch Layered Pad.sunsynth"]],
+    [
+      "scratch-assorted-instruments.mjs",
+      [
+        "Scratch Acid Bass.sunsynth",
+        "Scratch Glass Bell.sunsynth",
+        "Scratch Kick Snap.sunsynth",
+        "Scratch PWM Organ.sunsynth",
+      ],
+    ],
+  ];
+
+  for (const [fileName, expectedNames] of pairs) {
+    const legacyDir = join(tempDir, "legacy", fileName);
+    const editDir = join(tempDir, "edit", fileName);
+    await runRecipe(join("generated/recipes/sunsynth", fileName), { outDir: legacyDir });
+    await runEditRecipe(join("generated/recipes/sunvox-edit", fileName), { outDir: editDir });
+
+    for (const outputName of expectedNames) {
+      assert.deepEqual(
+        await parseFile(join(editDir, "var/synth-lab", outputName)),
+        await parseFile(join(legacyDir, outputName)),
+        outputName,
+      );
+    }
+  }
 });
