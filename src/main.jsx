@@ -1056,6 +1056,30 @@ function controllerDisplayValue(controller) {
   return `${value}${suffix}`;
 }
 
+function synthControllerDefaultRows(project) {
+  if (project?.type !== "synth") {
+    return [];
+  }
+  const rootControllers = (project.synth?.controllers ?? []).map((controller) => ({
+    key: `root-${controller.index}-${controller.path ?? ""}`,
+    location: `root ${controller.index}`,
+    label: controller.label ?? controller.path ?? `Controller ${controller.index}`,
+    path: controller.path,
+    value: controllerDisplayValue(controller),
+  }));
+  const userControllers = (project.synth?.userControllers ?? []).map((controller) => {
+    const index = Number.isInteger(controller.index) ? controller.index : 0;
+    return {
+      key: `user-${index}-${controller.label ?? ""}`,
+      location: `user ${index}`,
+      label: controller.label ?? `User ${index + 1}`,
+      path: `controller ${METAMODULE_USER_CONTROLLER_BASE_INDEX + index}`,
+      value: controllerDisplayValue(controller),
+    };
+  });
+  return [...rootControllers, ...userControllers];
+}
+
 function ControllerList({ controllers }) {
   if (!controllers?.length) {
     return <span className="muted">none</span>;
@@ -1071,6 +1095,41 @@ function ControllerList({ controllers }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function SynthControllerDefaultsSection({ project }) {
+  const rows = synthControllerDefaultRows(project);
+  if (!rows.length) {
+    return null;
+  }
+  return (
+    <section className="section-grid" aria-labelledby="synth-controllers-heading">
+      <h3 id="synth-controllers-heading">Controllers</h3>
+      <div className="synth-controller-defaults">
+        <table className="synth-controller-table">
+          <thead>
+            <tr>
+              <th scope="col">Stored</th>
+              <th scope="col">Controller</th>
+              <th scope="col">Default</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key}>
+                <td className="synth-controller-location">{row.location}</td>
+                <td>
+                  <span className="synth-controller-name">{row.label}</span>
+                  {row.path ? <span className="synth-controller-path">{row.path}</span> : null}
+                </td>
+                <td className="synth-controller-value">{row.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -1590,6 +1649,7 @@ function ProjectDetails({ project, error }) {
         <ProjectPropertiesSection project={project} />
         <ModuleGraphSection project={project} />
         <SynthKeyboardSection project={project} />
+        <SynthControllerDefaultsSection project={project} />
         <TimelineSection project={project} />
         <PatternSection project={project} />
         <EmbeddedSection project={project} />
