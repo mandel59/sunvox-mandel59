@@ -28,6 +28,8 @@ const METAMODULE_USER_CONTROLLER_BASE_INDEX = 5;
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const BLACK_KEY_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
 const FILE_HASH_PREFIX = "#file=";
+const LEGACY_SUNSYNTH_RECIPE_PREFIX = "generated/recipes/sunsynth/";
+const SUNVOX_EDIT_RECIPE_PREFIX = "generated/recipes/sunvox-edit/";
 
 function projectPermalinkHash(path) {
   return `${FILE_HASH_PREFIX}${encodeURIComponent(path)}`;
@@ -81,6 +83,16 @@ function selectedPathFromLocation() {
 
 function compact(value) {
   return value === undefined || value === null || value === "" ? "-" : value;
+}
+
+function sourceRecipeLink(sourceRecipe) {
+  if (!sourceRecipe) {
+    return undefined;
+  }
+  const path = sourceRecipe.path?.startsWith(LEGACY_SUNSYNTH_RECIPE_PREFIX)
+    ? sourceRecipe.path.replace(LEGACY_SUNSYNTH_RECIPE_PREFIX, SUNVOX_EDIT_RECIPE_PREFIX)
+    : sourceRecipe.path;
+  return { ...sourceRecipe, path };
 }
 
 function typeLabel(project) {
@@ -1035,6 +1047,7 @@ function ProjectPropertiesSection({ project }) {
   const projectInfo = project.project;
   const synthInfo = project.synth;
   const timeline = projectInfo?.timeline;
+  const sourceRecipe = sourceRecipeLink(project.sourceRecipe);
   if (!projectInfo && !synthInfo) {
     return null;
   }
@@ -1063,10 +1076,10 @@ function ProjectPropertiesSection({ project }) {
         {synthInfo ? (
           <>
             <ModuleReferencePill module={synthInfo} className="graph-detail-module-pill" />
-            {project.sourceRecipe ? (
+            {sourceRecipe ? (
               <div className="property-block">
                 <h4>Source</h4>
-                <a href={project.sourceRecipe.path}>{project.sourceRecipe.name}</a>
+                <a href={sourceRecipe.path}>{sourceRecipe.name}</a>
               </div>
             ) : null}
             <div className="property-block">
