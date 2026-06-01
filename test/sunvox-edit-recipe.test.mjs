@@ -188,3 +188,54 @@ export default recipe;
   assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
   assert.deepEqual(project.modules[3].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
 });
+
+test("SunVox Edit Recipe removes a module without compacting slots", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-remove-module-"));
+  const outputPath = join(tempDir, "remove-module.sunsynth");
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    `// @ts-check
+
+/** @satisfies {import("${resolve("tools/sunvox-edit-recipe.d.ts").replaceAll("\\", "/")}").SunVoxEditRecipe} */
+const recipe = {
+  schemaVersion: 1,
+  outputs: {
+    removeModule: {
+      kind: "sunsynth",
+      file: ${JSON.stringify(outputPath)},
+      create: { kind: "metaModule", name: "Remove Module Probe" },
+      apply(synth) {
+        const project = synth.embeddedProject();
+        const noteInput = project.addModule("MultiSynth", { id: "noteInput", name: "Note Input" });
+        synth.setInputModule(noteInput);
+        const tone = project.addModule("Analog generator", { id: "tone", name: "Tone" });
+        const amp = project.addModule("Amplifier", { id: "amp", name: "Amp" });
+        project.connect(noteInput, tone);
+        project.connect(tone, amp);
+        project.connect(amp, project.output);
+        const removed = project.removeModule(amp);
+        if (removed !== 3) {
+          throw new Error("Expected slot 3 to be removed, got " + removed);
+        }
+      }
+    }
+  }
+};
+
+export default recipe;
+`,
+    "utf8",
+  );
+
+  assert.deepEqual(await runEditRecipe(recipePath), [outputPath]);
+
+  const document = await parseFile(outputPath);
+  const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
+
+  assert.equal(project.modules.length, 4);
+  assert.equal(project.modules[3].name, undefined);
+  assert.equal(project.modules[3].type, undefined);
+  assert.equal(project.modules[0].inputs, undefined);
+  assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
+});

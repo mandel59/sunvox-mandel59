@@ -60,6 +60,10 @@ export interface DisconnectOptions {
   peerSlot?: number;
 }
 
+export interface RemoveModuleOptions {
+  mode?: "leaveHole";
+}
+
 export interface ControllerCollectionEditor {
   set(controllers: ControllerPatch): void;
   get(path: string): unknown;
@@ -84,6 +88,7 @@ export interface SunVoxProjectEditor {
   findModule(selector: ModuleRefLike): ModuleEditor;
   connect(from: ModuleRefLike, to: ModuleRefLike, options?: LinkOptions): void;
   disconnect(from: ModuleRefLike, to: ModuleRefLike, options?: DisconnectOptions): number;
+  removeModule(selector: ModuleRefLike, options?: RemoveModuleOptions): number;
 }
 
 export interface SunSynthEditor {

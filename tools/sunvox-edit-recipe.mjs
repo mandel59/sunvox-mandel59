@@ -183,6 +183,38 @@ class SunVoxProjectEditor {
     }
     return beforeInputs - (toModule.inputs?.length ?? 0) + beforeOutputs - (fromModule.outputs?.length ?? 0);
   }
+
+  removeModule(selector, options = {}) {
+    const mode = options.mode ?? "leaveHole";
+    if (mode !== "leaveHole") {
+      throw new Error(`Unsupported removeModule mode: ${JSON.stringify(mode)}`);
+    }
+    const editor = this.findModule(selector);
+    const index = editor.index;
+    if (index === 0) {
+      throw new Error("Cannot remove the default Output module");
+    }
+    for (const module of this.lab.modules()) {
+      if (!module) {
+        continue;
+      }
+      module.inputs = (module.inputs ?? []).filter((link) => link.module !== index);
+      module.outputs = (module.outputs ?? []).filter((link) => link.module !== index);
+      if (!module.inputs.length) {
+        delete module.inputs;
+      }
+      if (!module.outputs.length) {
+        delete module.outputs;
+      }
+    }
+    this.lab.modules()[index] = {};
+    for (const [id, moduleIndex] of this.moduleIds) {
+      if (moduleIndex === index) {
+        this.moduleIds.delete(id);
+      }
+    }
+    return index;
+  }
 }
 
 class SunSynthEditor {
