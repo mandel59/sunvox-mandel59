@@ -561,9 +561,12 @@ export function analyzeRenderedAudio(rendered) {
   const loudestWindow = dominantWindow(windows, noteOnFrame, activeEndFrame);
   const spectrumCenterFrame = loudestWindow?.centerFrame ?? noteOnFrame + (noteOffFrame - noteOnFrame) * 0.5;
   const spectrumStart = Math.round(spectrumCenterFrame - SPECTRUM_SIZE / 2);
+  const transientSpectrumStart = Math.round(noteOnFrame + sampleRate * 0.04 - SPECTRUM_SIZE / 2);
+  const tailSpectrumStart = Math.round(noteOffFrame + sampleRate * 0.16 - SPECTRUM_SIZE / 2);
   const transientRms = frameRms(samples, channels, noteOnFrame, noteOnFrame + Math.round(sampleRate * 0.12));
   const sustainRms = frameRms(samples, channels, Math.max(noteOnFrame, noteOffFrame - sampleRate), noteOffFrame);
   const tailRms = frameRms(samples, channels, noteOffFrame, frameCount);
+  const fundamentalHz = noteFrequency(note ?? DEFAULT_NOTE);
   const features = {
     peak,
     rms: samples.length ? Math.sqrt(sumSquares / samples.length) : 0,
@@ -574,7 +577,9 @@ export function analyzeRenderedAudio(rendered) {
     tailToSustainRatio: sustainRms ? tailRms / sustainRms : 0,
     attackMs: attackMs(windows, noteOnFrame, noteOffFrame, sampleRate),
     releaseMs: releaseMs(windows, noteOffFrame, sampleRate),
-    spectrum: spectrum(samples, channels, sampleRate, spectrumStart, SPECTRUM_SIZE, noteFrequency(note ?? DEFAULT_NOTE)),
+    spectrum: spectrum(samples, channels, sampleRate, spectrumStart, SPECTRUM_SIZE, fundamentalHz),
+    transientSpectrum: spectrum(samples, channels, sampleRate, transientSpectrumStart, SPECTRUM_SIZE, fundamentalHz),
+    tailSpectrum: spectrum(samples, channels, sampleRate, tailSpectrumStart, SPECTRUM_SIZE, fundamentalHz),
     zeroCrossingRate: zeroCrossingRate(samples, channels, spectrumStart, SPECTRUM_SIZE),
     stereo: stereoFeatures(samples, channels),
   };
@@ -670,6 +675,10 @@ function formatPeak(peak) {
   return `${rounded(peak.frequency)}Hz ${fixed(peak.relativeDb, 1)}dB${harmonic}`;
 }
 
+function formatSpectrum(label, spectrumFeatures) {
+  return `${label}: centroid=${rounded(spectrumFeatures.centroidHz)}Hz rolloff85=${rounded(spectrumFeatures.rolloff85Hz)}Hz high=${rounded(spectrumFeatures.highRatio * 100)}% inharmonicity=${rounded(spectrumFeatures.inharmonicityCents)}c measuredAt=${fixed(spectrumFeatures.startSeconds, 2)}s`;
+}
+
 function formatDetails(results) {
   return results
     .map((result) => {
@@ -678,7 +687,9 @@ function formatDetails(results) {
       return [
         `${basename(result.file)} ${result.probe}`,
         `  level: peak=${fixed(features.peak)} rms=${fixed(features.rms)} crest=${fixed(features.crestFactor, 2)} transient=${fixed(features.transientRms)} sustain=${fixed(features.sustainRms)} tail=${fixed(features.tailRms)} tail/sustain=${fixed(features.tailToSustainRatio, 2)}`,
-        `  spectrum: centroid=${rounded(features.spectrum.centroidHz)}Hz rolloff85=${rounded(features.spectrum.rolloff85Hz)}Hz high=${rounded(features.spectrum.highRatio * 100)}% inharmonicity=${rounded(features.spectrum.inharmonicityCents)}c measuredAt=${fixed(features.spectrum.startSeconds, 2)}s`,
+        `  ${formatSpectrum("transient spectrum", features.transientSpectrum)}`,
+        `  ${formatSpectrum("body spectrum", features.spectrum)}`,
+        `  ${formatSpectrum("tail spectrum", features.tailSpectrum)}`,
         `  peaks: ${features.spectrum.dominantPeaks.map(formatPeak).join("; ") || "-"}`,
         `  diagnosis: ${diagnosis.join("; ")}`,
       ].join("\n");

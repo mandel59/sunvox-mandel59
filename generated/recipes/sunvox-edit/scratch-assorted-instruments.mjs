@@ -154,21 +154,21 @@ const recipe = {
             "z": 0
           },
           "controllers": {
-            "cVolume": 92,
-            "mVolume": 236,
+            "cVolume": 72,
+            "mVolume": 142,
             "panning": 128,
             "cFreqRatio": 2,
-            "mFreqRatio": 11,
-            "mSelfModulation": 62,
+            "mFreqRatio": 6,
+            "mSelfModulation": 34,
             "cAttack": 0,
-            "cDecay": 26,
+            "cDecay": 20,
             "cSustain": 0,
-            "cRelease": 130,
+            "cRelease": 64,
             "mAttack": 0,
-            "mDecay": 18,
+            "mDecay": 12,
             "mSustain": 0,
-            "mRelease": 70,
-            "mScalingPerKey": 2,
+            "mRelease": 32,
+            "mScalingPerKey": 1,
             "polyphony": 12,
             "mode": "hq"
           }
@@ -182,20 +182,20 @@ const recipe = {
             "z": 0
           },
           "controllers": {
-            "cVolume": 126,
-            "mVolume": 116,
+            "cVolume": 154,
+            "mVolume": 92,
             "panning": 108,
             "cFreqRatio": 1,
-            "mFreqRatio": 5,
-            "mSelfModulation": 24,
+            "mFreqRatio": 3,
+            "mSelfModulation": 18,
             "cAttack": 0,
-            "cDecay": 190,
+            "cDecay": 210,
             "cSustain": 0,
-            "cRelease": 380,
+            "cRelease": 210,
             "mAttack": 0,
             "mDecay": 72,
             "mSustain": 0,
-            "mRelease": 180,
+            "mRelease": 86,
             "mScalingPerKey": 1,
             "polyphony": 12,
             "mode": "hq"
@@ -210,21 +210,21 @@ const recipe = {
             "z": 0
           },
           "controllers": {
-            "cVolume": 46,
-            "mVolume": 184,
+            "cVolume": 30,
+            "mVolume": 112,
             "panning": 156,
             "cFreqRatio": 3,
-            "mFreqRatio": 13,
-            "mSelfModulation": 86,
+            "mFreqRatio": 9,
+            "mSelfModulation": 42,
             "cAttack": 0,
-            "cDecay": 122,
+            "cDecay": 82,
             "cSustain": 0,
-            "cRelease": 440,
+            "cRelease": 160,
             "mAttack": 0,
-            "mDecay": 46,
+            "mDecay": 28,
             "mSustain": 0,
-            "mRelease": 160,
-            "mScalingPerKey": 3,
+            "mRelease": 58,
+            "mScalingPerKey": 2,
             "polyphony": 12,
             "mode": "hq"
           }
@@ -238,12 +238,12 @@ const recipe = {
             "z": 0
           },
           "controllers": {
-            "type": "hp6db",
-            "freq": 540,
-            "q": 16384,
+            "type": "lp",
+            "freq": 12000,
+            "q": 10000,
             "rolloff": "db12",
             "mode": "stereoSmoothing",
-            "response": 110
+            "response": 120
           }
         });
         const crystalHall = project.addModule("Reverb", {
@@ -256,13 +256,13 @@ const recipe = {
           },
           "controllers": {
             "dry": 256,
-            "wet": 86,
-            "feedback": 226,
-            "damp": 78,
-            "stereoWidth": 256,
+            "wet": 34,
+            "feedback": 118,
+            "damp": 188,
+            "stereoWidth": 190,
             "mode": "hq",
             "allpassFilter": "improved",
-            "roomSize": 46
+            "roomSize": 14
           }
         });
         const bellTrim = project.addModule("Amplifier", {
@@ -274,8 +274,8 @@ const recipe = {
             "z": 0
           },
           "controllers": {
-            "volume": 292,
-            "stereoWidth": 190,
+            "volume": 228,
+            "stereoWidth": 174,
             "fineVolume": 32768
           }
         });
