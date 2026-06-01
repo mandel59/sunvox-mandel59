@@ -670,15 +670,18 @@ button:disabled:hover {
 }
 
 .instrument-controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.3rem), 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 0.4rem;
 }
 
 .instrument-control {
   display: grid;
+  flex: 0 0 7.3rem;
   gap: 0.12rem;
   align-content: start;
+  max-width: 100%;
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 6px;
