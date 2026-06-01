@@ -200,19 +200,30 @@ function isVisiblePattern(pattern) {
   return pattern.eventCount > 0 || Boolean(pattern.name?.trim()) || isClonePattern(pattern);
 }
 
-function moduleSummary(module) {
+function siteControllerSummary(controller, { includeRanges = false } = {}) {
+  if (includeRanges && typeof controller.value === "number") {
+    return controller;
+  }
+  const { min, max, ...summary } = controller;
+  return summary;
+}
+
+function moduleSummary(module, options = {}) {
   return {
     index: module.index,
     name: module.name,
     kind: module.kind,
     ...(module.type ? { type: module.type } : {}),
     ...(module.position ? { position: module.position } : {}),
+    ...(module.scale !== undefined ? { scale: module.scale } : {}),
     ...(module.color ? { color: module.color } : {}),
     flags: module.flags,
     inputCount: module.inputs.length,
     outputCount: module.outputs.length,
     controllerCount: module.controllerCount,
-    ...(module.controllers?.length ? { controllers: module.controllers } : {}),
+    ...(module.controllers?.length
+      ? { controllers: module.controllers.map((controller) => siteControllerSummary(controller, options)) }
+      : {}),
     ...(module.userControllers?.length ? { userControllers: module.userControllers } : {}),
     dataChunkCount: module.dataChunkCount,
     ...(module.dataChunks?.length ? { dataChunks: module.dataChunks } : {}),
@@ -269,7 +280,7 @@ function documentSummary(outline, path, metadata = {}) {
     type: outline.magic === "SSYN" ? "synth" : "project",
     ...(metadata.sourceRecipe ? { sourceRecipe: metadata.sourceRecipe } : {}),
     ...(outline.project ? { project: outline.project } : {}),
-    ...(outline.synth ? { synth: moduleSummary(outline.synth) } : {}),
+    ...(outline.synth ? { synth: moduleSummary(outline.synth, { includeRanges: true }) } : {}),
     stats: outlineStats(outline),
     modules: modules.filter((module) => module.kind !== "empty").map(moduleSummary),
     links: (outline.links ?? []).map(linkSummary),

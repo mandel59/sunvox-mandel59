@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { buildGraphLayout, shortLabel } from "../src/project-graph.js";
+import { buildGraphLayout, graphNodeSize, shortLabel } from "../src/project-graph.js";
 
 const siteData = JSON.parse(readFileSync("site-data/sunvox-projects.json", "utf8"));
 
@@ -22,6 +22,21 @@ test("skips graph layout when a document has no positioned links", () => {
   const synth = siteData.projects.find((candidate) => candidate.path === "instruments/mandel59 shepard.sunsynth");
 
   assert.equal(buildGraphLayout(synth), undefined);
+});
+
+test("preserves module scale for graph node sizing", () => {
+  const graph = buildGraphLayout({
+    modules: [
+      { index: 0, name: "Output", kind: "output", position: { x: 0, y: 0 }, scale: 512 },
+      { index: 1, name: "Generator", kind: "module", position: { x: 100, y: 0 }, scale: 128 },
+    ],
+    links: [{ from: 1, to: 0, fromName: "Generator", toName: "Output" }],
+    project: { view: { moduleScale: 512 } },
+  });
+
+  assert.ok(graph);
+  assert.equal(graph.moduleScale, 512);
+  assert.deepEqual(graph.nodes.map((module) => graphNodeSize(module, graph.moduleScale).halfWidth), [156, 39]);
 });
 
 test("shortens long graph labels to a fixed display budget", () => {

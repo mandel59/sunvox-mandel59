@@ -2,12 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 
-import { buildGraphLayout } from "./project-graph.js";
+import { buildGraphLayout, graphNodeSize } from "./project-graph.js";
 import "./styles.css";
 
 const PROJECT_INDEX_PATH = "site-data/sunvox-projects.json";
-const GRAPH_NODE_HALF_WIDTH = 39;
-const GRAPH_NODE_HALF_HEIGHT = 21;
 const GRAPH_LABEL_INSET = 2;
 const TIMELINE_LANE_HEIGHT = 32;
 const TIMELINE_PATTERN_HEIGHT = 28;
@@ -22,7 +20,7 @@ const SYNTH_KEYBOARD_OCTAVE_STEP = 12;
 const SYNTH_KEYBOARD_MIN_START_NOTE = 0;
 const SYNTH_KEYBOARD_MAX_START_NOTE = 96;
 const SYNTH_KEYBOARD_VELOCITY = 128;
-const SYNTH_VOLUME_CONTROLLER_MAX = 1024;
+const DEFAULT_SYNTH_VOLUME_CONTROLLER_MAX = 1024;
 const SYNTH_USER_CONTROLLER_MAX = 32768;
 const METAMODULE_USER_CONTROLLER_BASE_INDEX = 5;
 const KNOB_START_ANGLE = -135;
@@ -60,6 +58,8 @@ const KEYBOARD_NOTE_OFFSETS = new Map([
 const FILE_HASH_PREFIX = "#file=";
 const LEGACY_SUNSYNTH_RECIPE_PREFIX = "generated/recipes/sunsynth/";
 const SUNVOX_EDIT_RECIPE_PREFIX = "generated/recipes/sunvox-edit/";
+const MAIN_MODULE_GRAPH_ID = "main-module-graph";
+const PROJECT_PROPERTIES_SECTION_ID = "project-properties-section";
 
 function projectPermalinkHash(path) {
   return `${FILE_HASH_PREFIX}${encodeURIComponent(path)}`;
@@ -131,6 +131,26 @@ function typeLabel(project) {
 
 function moduleHexId(value) {
   return value.toString(16).toUpperCase().padStart(2, "0");
+}
+
+function embeddedGraphId(embedded, parentGraphId = MAIN_MODULE_GRAPH_ID) {
+  const prefix = parentGraphId === MAIN_MODULE_GRAPH_ID ? "embedded" : `${parentGraphId}-embedded`;
+  return svgId(`${prefix}-${embedded.hostModule}-${embedded.dataChunkIndex}-${embedded.hostName}`);
+}
+
+function embeddedTitle(embedded) {
+  return embedded.document?.project?.name || embedded.document?.title || embedded.document?.path || "(unnamed)";
+}
+
+function embeddedTargetsForModule(embedded, hostModule, parentGraphId = MAIN_MODULE_GRAPH_ID) {
+  return (embedded ?? [])
+    .filter((entry) => entry.hostModule === hostModule)
+    .map((entry) => ({
+      dataChunkIndex: entry.dataChunkIndex,
+      title: embeddedTitle(entry),
+      _sectionId: embeddedGraphId(entry, parentGraphId),
+      _graphId: embeddedGraphId(entry, parentGraphId),
+    }));
 }
 
 function svgId(value) {
@@ -241,6 +261,15 @@ function numericControllerValue(value, fallback = 0) {
   return Number.isFinite(value) ? Math.round(value) : fallback;
 }
 
+function controllerRange(controller, fallbackMin, fallbackMax) {
+  const min = numericControllerValue(controller?.min, fallbackMin);
+  const max = numericControllerValue(controller?.max, fallbackMax);
+  if (max <= min) {
+    return { min: fallbackMin, max: fallbackMax };
+  }
+  return { min, max };
+}
+
 function clampControllerValue(control, value) {
   return Math.max(control.min, Math.min(control.max, numericControllerValue(value, control.value)));
 }
@@ -264,13 +293,14 @@ function synthInstrumentControls(project) {
   const controls = [];
   const volume = project.synth?.controllers?.find((controller) => controller.index === 0 || controller.path === "volume");
   if (Number.isFinite(volume?.value)) {
+    const range = controllerRange(volume, 0, DEFAULT_SYNTH_VOLUME_CONTROLLER_MAX);
     controls.push({
       key: "controller-volume",
       label: volume.label ?? "Volume",
       controllerIndex: 0,
       value: numericControllerValue(volume.value, 256),
-      min: 0,
-      max: SYNTH_VOLUME_CONTROLLER_MAX,
+      min: range.min,
+      max: range.max,
       step: 1,
     });
   }
@@ -804,32 +834,48 @@ function percent(value) {
   return `${value.toFixed(3)}%`;
 }
 
-function rectEdgePoint(from, to) {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
+function rectEdgePoint(from, to, moduleScale) {
+  const dx = to.position.x - from.position.x;
+  const dy = to.position.y - from.position.y;
   if (dx === 0 && dy === 0) {
-    return from;
+    return from.position;
   }
-  const tx = dx === 0 ? Number.POSITIVE_INFINITY : GRAPH_NODE_HALF_WIDTH / Math.abs(dx);
-  const ty = dy === 0 ? Number.POSITIVE_INFINITY : GRAPH_NODE_HALF_HEIGHT / Math.abs(dy);
+  const { halfWidth, halfHeight } = graphNodeSize(from, moduleScale);
+  const tx = dx === 0 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx);
+  const ty = dy === 0 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy);
   const ratio = Math.min(tx, ty);
   return {
-    x: from.x + dx * ratio,
-    y: from.y + dy * ratio,
+    x: from.position.x + dx * ratio,
+    y: from.position.y + dy * ratio,
   };
 }
 
-function graphEdgePoints(from, to) {
-  const start = rectEdgePoint(from, to);
-  const end = rectEdgePoint(to, from);
+function graphEdgePoints(from, to, moduleScale) {
+  const start = rectEdgePoint(from, to, moduleScale);
+  const end = rectEdgePoint(to, from, moduleScale);
   return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
 }
 
-function ProjectList({ projects, selectedPath, onSelect }) {
+function ProjectList({ projects, selectedPath, onSelect, open, onToggle }) {
+  const selectedProject = projects.find((project) => project.path === selectedPath);
   return (
-    <aside className="sidebar" aria-labelledby="project-list-heading">
+    <aside className={classNames("sidebar", "files-menu", open && "is-open")} aria-labelledby="project-list-heading">
       <section aria-labelledby="project-list-heading">
-        <h2 id="project-list-heading">Files</h2>
+        <div className="files-menu-header">
+          <div>
+            <h2 id="project-list-heading">Files</h2>
+            {selectedProject ? <div className="files-menu-current">{selectedProject.path}</div> : null}
+          </div>
+          <button
+            type="button"
+            className="files-menu-toggle"
+            aria-controls="project-list"
+            aria-expanded={open ? "true" : "false"}
+            onClick={onToggle}
+          >
+            {open ? "Hide" : "Show"}
+          </button>
+        </div>
         <div id="project-list" className="project-list" aria-live="polite">
           {projects.map((project) => (
             <button
@@ -910,7 +956,7 @@ function ModuleGraphSvg({ graph, graphId, label = "Module graph", selectedModule
         {graph.edges.map((link, index) => {
           const from = graph.nodes.find((module) => module.index === link.from);
           const to = graph.nodes.find((module) => module.index === link.to);
-          const edge = graphEdgePoints(from.position, to.position);
+          const edge = graphEdgePoints(from, to, graph.moduleScale);
           const selected = hasSelection && isGraphEdgeConnected(link, selectedModuleIndex);
           return (
             <line
@@ -936,6 +982,9 @@ function ModuleGraphSvg({ graph, graphId, label = "Module graph", selectedModule
       <g className="graph-nodes">
         {graph.nodes.map((module) => {
           const clipId = `${graphId}-node-clip-${module.index}`;
+          const { halfWidth, halfHeight } = graphNodeSize(module, graph.moduleScale);
+          const nodeWidth = halfWidth * 2;
+          const nodeHeight = halfHeight * 2;
           const selected = module.index === selectedModuleIndex;
           const connected = hasSelection && isGraphNodeConnected(graph, module.index, selectedModuleIndex);
           return (
@@ -954,46 +1003,46 @@ function ModuleGraphSvg({ graph, graphId, label = "Module graph", selectedModule
               <clipPath id={clipId}>
                 <rect
                   className="graph-node-clip"
-                  x={-GRAPH_NODE_HALF_WIDTH}
-                  y={-GRAPH_NODE_HALF_HEIGHT}
-                  width={GRAPH_NODE_HALF_WIDTH * 2}
-                  height={GRAPH_NODE_HALF_HEIGHT * 2}
+                  x={-halfWidth}
+                  y={-halfHeight}
+                  width={nodeWidth}
+                  height={nodeHeight}
                 />
               </clipPath>
               <rect
                 className="graph-node-focus-ring"
-                x={-GRAPH_NODE_HALF_WIDTH - 3}
-                y={-GRAPH_NODE_HALF_HEIGHT - 3}
-                width={GRAPH_NODE_HALF_WIDTH * 2 + 6}
-                height={GRAPH_NODE_HALF_HEIGHT * 2 + 6}
+                x={-halfWidth - 3}
+                y={-halfHeight - 3}
+                width={nodeWidth + 6}
+                height={nodeHeight + 6}
               />
               <rect
                 className="graph-node-box"
-                x={-GRAPH_NODE_HALF_WIDTH}
-                y={-GRAPH_NODE_HALF_HEIGHT}
-                width={GRAPH_NODE_HALF_WIDTH * 2}
-                height={GRAPH_NODE_HALF_HEIGHT * 2}
+                x={-halfWidth}
+                y={-halfHeight}
+                width={nodeWidth}
+                height={nodeHeight}
               />
               <text
                 className="graph-node-id"
-                x={-GRAPH_NODE_HALF_WIDTH + GRAPH_LABEL_INSET}
-                y={-GRAPH_NODE_HALF_HEIGHT - 7}
+                x={-halfWidth + GRAPH_LABEL_INSET}
+                y={-halfHeight - 7}
               >
                 {moduleHexId(module.index)}
               </text>
               <text
                 className="graph-node-name"
                 clipPath={`url(#${clipId})`}
-                x={-GRAPH_NODE_HALF_WIDTH + GRAPH_LABEL_INSET}
-                y={-GRAPH_NODE_HALF_HEIGHT + 7}
+                x={-halfWidth + GRAPH_LABEL_INSET}
+                y={-halfHeight + 7}
               >
                 {module.name}
               </text>
               <text
                 className="graph-node-type"
                 clipPath={`url(#${clipId})`}
-                x={-GRAPH_NODE_HALF_WIDTH + GRAPH_LABEL_INSET}
-                y={GRAPH_NODE_HALF_HEIGHT - 6}
+                x={-halfWidth + GRAPH_LABEL_INSET}
+                y={halfHeight - 6}
               >
                 {module.type || module.kind}
               </text>
@@ -1002,10 +1051,10 @@ function ModuleGraphSvg({ graph, graphId, label = "Module graph", selectedModule
               </title>
               <foreignObject
                 className="graph-node-hit-area"
-                x={-GRAPH_NODE_HALF_WIDTH - 3}
-                y={-GRAPH_NODE_HALF_HEIGHT - 3}
-                width={GRAPH_NODE_HALF_WIDTH * 2 + 6}
-                height={GRAPH_NODE_HALF_HEIGHT * 2 + 6}
+                x={-halfWidth - 3}
+                y={-halfHeight - 3}
+                width={nodeWidth + 6}
+                height={nodeHeight + 6}
               >
                 <button
                   type="button"
@@ -1023,15 +1072,30 @@ function ModuleGraphSvg({ graph, graphId, label = "Module graph", selectedModule
   );
 }
 
-function ModuleReferencePill({ module, count, suffix, className }) {
+function ModuleReferencePill({ module, count, suffix, className, onSelect }) {
   const type = moduleReferenceType(module);
+  const pillClassName = classNames("module-reference-pill", onSelect && "is-clickable", className);
+  const pillContent = (
+    <>
+      <span className="module-reference-id">{moduleHexId(module.index)}</span>
+      <span className="module-reference-name">{module.name}</span>
+      {type ? <span className="module-reference-type">{type}</span> : null}
+    </>
+  );
   return (
     <span className="module-reference" style={{ "--module-color": module.color }}>
-      <span className={classNames("module-reference-pill", className)}>
-        <span className="module-reference-id">{moduleHexId(module.index)}</span>
-        <span className="module-reference-name">{module.name}</span>
-        {type ? <span className="module-reference-type">{type}</span> : null}
-      </span>
+      {onSelect ? (
+        <button
+          type="button"
+          className={pillClassName}
+          aria-label={`Show module ${moduleHexId(module.index)} ${module.name} details`}
+          onClick={() => onSelect(module)}
+        >
+          {pillContent}
+        </button>
+      ) : (
+        <span className={pillClassName}>{pillContent}</span>
+      )}
       {count !== undefined ? <span className="module-reference-meta module-reference-count">{count}</span> : null}
       {suffix ? <span className="module-reference-meta">{suffix}</span> : null}
     </span>
@@ -1056,7 +1120,27 @@ function controllerDisplayValue(controller) {
   return `${value}${suffix}`;
 }
 
-function controllerRows(controllers, userControllers) {
+function userControllerTarget(controller, targetModules = []) {
+  const link = controller.link;
+  if (!link || !Number.isInteger(link.module)) {
+    return undefined;
+  }
+  const targetModule = targetModules.find((module) => module.index === link.module);
+  const selectable = Boolean(targetModule);
+  const module = {
+    index: link.module,
+    name: targetModule?.name ?? link._moduleName ?? `Module ${link.module}`,
+    ...(targetModule?.type ?? link._moduleType ? { type: targetModule?.type ?? link._moduleType } : {}),
+    ...(targetModule?.kind ? { kind: targetModule.kind } : {}),
+    ...(targetModule?.color ? { color: targetModule.color } : {}),
+    ...(targetModule?._graphId ? { _graphId: targetModule._graphId } : {}),
+  };
+  const controllerName =
+    link._controllerLabel ?? link._controllerName ?? (Number.isInteger(link.controller) ? `Controller ${link.controller}` : undefined);
+  return { module, suffix: controllerName, selectable };
+}
+
+function controllerRows(controllers, userControllers, targetModules = []) {
   const rootRows = (controllers ?? []).map((controller) => ({
     key: `root-${controller.index}-${controller.path ?? ""}`,
     label: controller.label ?? controller.path ?? `Controller ${controller.index}`,
@@ -1069,13 +1153,14 @@ function controllerRows(controllers, userControllers) {
       key: `user-${index}-${controller.label ?? ""}`,
       label: controller.label ?? `User ${index + 1}`,
       value: controllerDisplayValue(controller),
+      target: userControllerTarget(controller, targetModules),
     };
   });
   return [...rootRows, ...userRows];
 }
 
-function ControllerList({ controllers, userControllers }) {
-  const rows = controllerRows(controllers, userControllers);
+function ControllerList({ controllers, userControllers, targetModules, onSelectModule }) {
+  const rows = controllerRows(controllers, userControllers, targetModules);
   if (!rows.length) {
     return <span className="muted">none</span>;
   }
@@ -1087,6 +1172,15 @@ function ControllerList({ controllers, userControllers }) {
           <span className="controller-value" title={row.path}>
             {row.value}
           </span>
+          {row.target ? (
+            <span className="controller-target">
+              <ModuleReferencePill
+                module={row.target.module}
+                suffix={row.target.suffix}
+                onSelect={row.target.selectable ? onSelectModule : undefined}
+              />
+            </span>
+          ) : null}
         </div>
       ))}
     </div>
@@ -1104,31 +1198,54 @@ function dataChunkMeta(chunk) {
   return parts.join(" · ");
 }
 
-function DataChunkList({ chunks, total }) {
-  const knownCount = chunks?.reduce((sum, chunk) => sum + (chunk.count ?? 1), 0) ?? 0;
-  const remaining = Math.max(0, (total ?? knownCount) - knownCount);
-  if (!chunks?.length && !remaining) {
+function DataChunkPill({ chunk, meta, onSelect }) {
+  const className = classNames("data-chunk-pill", onSelect && "is-clickable");
+  const content = (
+    <>
+      <span className="data-chunk-label">{chunk.label}</span>
+      {meta ? <span className="data-chunk-meta">{meta}</span> : null}
+    </>
+  );
+  if (onSelect) {
+    return (
+      <button type="button" className={className} onClick={onSelect}>
+        {content}
+      </button>
+    );
+  }
+  return <span className={className}>{content}</span>;
+}
+
+function DataChunkList({ chunks, embeddedTargets = [], onSelectEmbeddedTarget }) {
+  if (!chunks?.length) {
     return <span className="muted">none</span>;
   }
   return (
     <div className="data-chunk-list">
-      {(chunks ?? []).map((chunk) => (
-        <span className="data-chunk-pill" key={`${chunk.name}-${chunk.indexes?.join("-") ?? ""}`}>
-          <span className="data-chunk-label">{chunk.label}</span>
-          {dataChunkMeta(chunk) ? <span className="data-chunk-meta">{dataChunkMeta(chunk)}</span> : null}
-        </span>
-      ))}
-      {remaining ? (
-        <span className="data-chunk-pill is-muted">
-          <span className="data-chunk-label">Other data</span>
-          <span className="data-chunk-meta">x{remaining}</span>
-        </span>
-      ) : null}
+      {(chunks ?? []).flatMap((chunk) => {
+        const key = `${chunk.name}-${chunk.indexes?.join("-") ?? ""}`;
+        if (!embeddedTargets.length || !onSelectEmbeddedTarget) {
+          return <DataChunkPill key={key} chunk={chunk} meta={dataChunkMeta(chunk)} />;
+        }
+        const indexes = new Set(chunk.indexes ?? []);
+        const targets = embeddedTargets.filter((target) => !indexes.size || indexes.has(target.dataChunkIndex));
+        if (!targets.length) {
+          return <DataChunkPill key={key} chunk={chunk} meta={dataChunkMeta(chunk)} />;
+        }
+        return targets.map((target) => (
+          <DataChunkPill
+            key={`${key}-${target.dataChunkIndex}`}
+            chunk={chunk}
+            meta={target.title}
+            onSelect={() => onSelectEmbeddedTarget(target)}
+          />
+        ));
+      })}
     </div>
   );
 }
 
-function GraphLinkList({ graph, links, direction }) {
+function GraphLinkList({ graph, links, direction, onSelectModule }) {
   if (!links.length) {
     return <span className="muted">none</span>;
   }
@@ -1149,6 +1266,7 @@ function GraphLinkList({ graph, links, direction }) {
             key={`${direction}-${moduleIndex}-${slot ?? index}`}
             module={module}
             suffix={slot !== undefined ? `slot ${slot}` : undefined}
+            onSelect={onSelectModule}
           />
         );
       })}
@@ -1156,14 +1274,22 @@ function GraphLinkList({ graph, links, direction }) {
   );
 }
 
-function ModuleGraphDetail({ graph, selectedModuleIndex }) {
+function ModuleGraphDetail({
+  graph,
+  selectedModuleIndex,
+  onSelectModule,
+  controllerTargetModules,
+  dataChunkTargets,
+}) {
   const module =
     graph.nodes.find((candidate) => candidate.index === selectedModuleIndex) ??
     graph.nodes.find((candidate) => candidate.flags?.includes("selected")) ??
     graph.nodes[0];
   const selected = module.index === selectedModuleIndex;
   const { inputs, outputs } = moduleLinks(graph, module.index);
-  const controllerCount = controllerRows(module.controllers, module.userControllers).length;
+  const targetModules = controllerTargetModules?.(module) ?? graph.nodes;
+  const embeddedTargets = dataChunkTargets?.(module) ?? [];
+  const controllerCount = controllerRows(module.controllers, module.userControllers, targetModules).length;
   return (
     <aside className="graph-detail" aria-label="Selected module details">
       <div className="graph-detail-heading">
@@ -1172,19 +1298,28 @@ function ModuleGraphDetail({ graph, selectedModuleIndex }) {
       {!selected ? <p className="graph-detail-hint">Select a node to inspect links.</p> : null}
       <div className="graph-detail-section">
         <h4>Controllers {controllerCount ? `(${controllerCount})` : ""}</h4>
-        <ControllerList controllers={module.controllers} userControllers={module.userControllers} />
+        <ControllerList
+          controllers={module.controllers}
+          userControllers={module.userControllers}
+          targetModules={targetModules}
+          onSelectModule={onSelectModule}
+        />
       </div>
       <div className="graph-detail-section">
         <h4>Data</h4>
-        <DataChunkList chunks={module.dataChunks} total={module.dataChunkCount} />
+        <DataChunkList
+          chunks={module.dataChunks}
+          embeddedTargets={embeddedTargets}
+          onSelectEmbeddedTarget={onSelectModule}
+        />
       </div>
       <div className="graph-detail-section">
         <h4>Inputs</h4>
-        <GraphLinkList graph={graph} links={inputs} direction="input" />
+        <GraphLinkList graph={graph} links={inputs} direction="input" onSelectModule={onSelectModule} />
       </div>
       <div className="graph-detail-section">
         <h4>Outputs</h4>
-        <GraphLinkList graph={graph} links={outputs} direction="output" />
+        <GraphLinkList graph={graph} links={outputs} direction="output" onSelectModule={onSelectModule} />
       </div>
     </aside>
   );
@@ -1194,15 +1329,48 @@ function defaultSelectedGraphModule(graph) {
   return graph.nodes.find((module) => module.flags?.includes("selected"))?.index ?? graph.nodes[0]?.index;
 }
 
-function ModuleGraphPanel({ graph, graphId, label = "Module graph" }) {
+function ModuleGraphPanel({
+  graph,
+  graphId,
+  label = "Module graph",
+  focusRequest,
+  controllerTargetModules,
+  dataChunkTargets,
+  onSelectModuleTarget,
+}) {
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(() => defaultSelectedGraphModule(graph));
+  const graphRef = useRef(null);
 
   useEffect(() => {
     setSelectedModuleIndex(defaultSelectedGraphModule(graph));
   }, [graph]);
 
+  useEffect(() => {
+    if (focusRequest?.graphId !== graphId || !Number.isInteger(focusRequest.moduleIndex)) {
+      return;
+    }
+    if (!graph.nodes.some((module) => module.index === focusRequest.moduleIndex)) {
+      return;
+    }
+    setSelectedModuleIndex(focusRequest.moduleIndex);
+    window.requestAnimationFrame(() => {
+      graphRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }, [focusRequest, graph, graphId]);
+
+  function selectModule(module) {
+    if ((module._sectionId || module._graphId) && module._graphId !== graphId && onSelectModuleTarget) {
+      onSelectModuleTarget(module);
+      return;
+    }
+    if (!Number.isInteger(module.index)) {
+      return;
+    }
+    setSelectedModuleIndex(module.index);
+  }
+
   return (
-    <div className="graph-workspace">
+    <div className="graph-workspace" ref={graphRef} data-graph-id={graphId}>
       <div className="graph-panel">
         <ModuleGraphSvg
           graph={graph}
@@ -1212,22 +1380,50 @@ function ModuleGraphPanel({ graph, graphId, label = "Module graph" }) {
           onSelectModule={setSelectedModuleIndex}
         />
       </div>
-      <ModuleGraphDetail graph={graph} selectedModuleIndex={selectedModuleIndex} />
+      <ModuleGraphDetail
+        graph={graph}
+        selectedModuleIndex={selectedModuleIndex}
+        onSelectModule={selectModule}
+        controllerTargetModules={controllerTargetModules}
+        dataChunkTargets={dataChunkTargets}
+      />
     </div>
   );
 }
 
-function ModuleGraphSection({ project }) {
+function ModuleGraphSection({ project, focusRequest, onSelectModuleTarget }) {
   const graph = useMemo(() => buildGraphLayout(project), [project]);
   const storedModules = project.project?.moduleCount;
   if (!graph) {
     return null;
   }
+  function controllerTargetModules(module) {
+    const embeddedTargets = embeddedTargetsForModule(project.embedded, module.index);
+    const embeddedModules = (project.embedded ?? [])
+      .filter((embedded) => embeddedTargets.some((target) => target.dataChunkIndex === embedded.dataChunkIndex))
+      .flatMap((embedded) =>
+        (embedded.document?.modules ?? []).map((target) => ({ ...target, _graphId: embeddedGraphId(embedded) })),
+      );
+    return [
+      ...embeddedModules,
+      ...graph.nodes.map((target) => ({ ...target, _graphId: MAIN_MODULE_GRAPH_ID })),
+    ];
+  }
+  function dataChunkTargets(module) {
+    return embeddedTargetsForModule(project.embedded, module.index);
+  }
   return (
     <section className="section-grid" aria-labelledby="graph-heading">
       <h3 id="graph-heading">Module Graph</h3>
       {storedModules !== undefined ? <p className="section-meta">Stored modules {compact(storedModules)}</p> : null}
-      <ModuleGraphPanel graph={graph} graphId="main-module-graph" />
+      <ModuleGraphPanel
+        graph={graph}
+        graphId={MAIN_MODULE_GRAPH_ID}
+        focusRequest={focusRequest}
+        controllerTargetModules={controllerTargetModules}
+        dataChunkTargets={dataChunkTargets}
+        onSelectModuleTarget={onSelectModuleTarget}
+      />
     </section>
   );
 }
@@ -1310,17 +1506,30 @@ function FlagPills({ flags }) {
   );
 }
 
-function ProjectPropertiesSection({ project }) {
+function synthControllerTargetModules(project) {
+  const embeddedModules = (project.embedded ?? []).flatMap((embedded) =>
+    (embedded.document?.modules ?? []).map((module) => ({ ...module, _graphId: embeddedGraphId(embedded) })),
+  );
+  return embeddedModules.length
+    ? embeddedModules
+    : (project.modules ?? []).map((module) => ({ ...module, _graphId: MAIN_MODULE_GRAPH_ID }));
+}
+
+function ProjectPropertiesSection({ project, onSelectModuleTarget }) {
   const projectInfo = project.project;
   const synthInfo = project.synth;
   const timeline = projectInfo?.timeline;
   const sourceRecipe = sourceRecipeLink(project.sourceRecipe);
+  const targetModules = synthInfo ? synthControllerTargetModules(project) : project.modules;
+  const synthEmbeddedTargets = synthInfo
+    ? embeddedTargetsForModule(project.embedded, synthInfo.index ?? 0)
+    : [];
   if (!projectInfo && !synthInfo) {
     return null;
   }
 
   return (
-    <section className="section-grid" aria-labelledby="properties-heading">
+    <section id={PROJECT_PROPERTIES_SECTION_ID} className="section-grid" aria-labelledby="properties-heading">
       <h3 id="properties-heading">{project.type === "synth" ? "Synth Properties" : "Project Properties"}</h3>
       <div className={classNames("properties-panel", project.type === "synth" && "is-synth")}>
         {projectInfo ? (
@@ -1351,7 +1560,11 @@ function ProjectPropertiesSection({ project }) {
             ) : null}
             <div className="property-block">
               <h4>Data</h4>
-              <DataChunkList chunks={synthInfo.dataChunks} total={synthInfo.dataChunkCount} />
+              <DataChunkList
+                chunks={synthInfo.dataChunks}
+                embeddedTargets={synthEmbeddedTargets}
+                onSelectEmbeddedTarget={onSelectModuleTarget}
+              />
             </div>
             <div className="property-block">
               <h4>Flags</h4>
@@ -1359,7 +1572,12 @@ function ProjectPropertiesSection({ project }) {
             </div>
             <div className="property-block is-controllers">
               <h4>Controllers</h4>
-              <ControllerList controllers={synthInfo.controllers} userControllers={synthInfo.userControllers} />
+              <ControllerList
+                controllers={synthInfo.controllers}
+                userControllers={synthInfo.userControllers}
+                targetModules={targetModules}
+                onSelectModule={onSelectModuleTarget}
+              />
             </div>
           </>
         ) : null}
@@ -1470,7 +1688,7 @@ function TimelineSection({ project }) {
   );
 }
 
-function PatternList({ patterns }) {
+function PatternList({ patterns, graphId, onSelectModuleTarget }) {
   return (
     <div className="pattern-grid">
       {patterns.map((pattern) => {
@@ -1497,9 +1715,17 @@ function PatternList({ patterns }) {
             </div>
             {moduleReferences.length ? (
               <div className="module-reference-list" aria-label={`Modules used by pattern ${pattern.index}`}>
-                {moduleReferences.map((module) => (
-                  <ModuleReferencePill key={module.index} module={module} count={module.eventCount} />
-                ))}
+                {moduleReferences.map((module) => {
+                  const targetModule = graphId ? { ...module, _graphId: graphId } : module;
+                  return (
+                    <ModuleReferencePill
+                      key={module.index}
+                      module={targetModule}
+                      count={module.eventCount}
+                      onSelect={onSelectModuleTarget}
+                    />
+                  );
+                })}
               </div>
             ) : null}
           </div>
@@ -1509,7 +1735,7 @@ function PatternList({ patterns }) {
   );
 }
 
-function PatternSection({ project }) {
+function PatternSection({ project, onSelectModuleTarget }) {
   const patterns = listedPatterns(project);
   const storedPatterns = project.project?.patternCount;
   if (!patterns.length && storedPatterns === undefined) {
@@ -1519,12 +1745,20 @@ function PatternSection({ project }) {
     <section className="section-grid" aria-labelledby="patterns-heading">
       <h3 id="patterns-heading">Patterns</h3>
       {storedPatterns !== undefined ? <p className="section-meta">Stored patterns {compact(storedPatterns)}</p> : null}
-      {patterns.length ? <PatternList patterns={patterns} /> : <p className="muted">No listed source patterns.</p>}
+      {patterns.length ? (
+        <PatternList
+          patterns={patterns}
+          graphId={MAIN_MODULE_GRAPH_ID}
+          onSelectModuleTarget={onSelectModuleTarget}
+        />
+      ) : (
+        <p className="muted">No listed source patterns.</p>
+      )}
     </section>
   );
 }
 
-function EmbeddedSection({ project }) {
+function EmbeddedSection({ project, focusRequest, onSelectModuleTarget }) {
   const embeddedCount = embeddedProjectCount(project);
   if (!project.embedded.length && embeddedCount === undefined) {
     return null;
@@ -1536,7 +1770,17 @@ function EmbeddedSection({ project }) {
       {project.embedded.length ? (
         <div className="embedded-grid">
           {project.embedded.map((embedded) => (
-            <EmbeddedProject key={`${embedded.hostModule}-${embedded.dataChunkIndex}`} embedded={embedded} />
+            <EmbeddedProject
+              key={`${embedded.hostModule}-${embedded.dataChunkIndex}`}
+              embedded={embedded}
+              hostTarget={
+                project.type === "synth"
+                  ? { _sectionId: PROJECT_PROPERTIES_SECTION_ID }
+                  : { _graphId: MAIN_MODULE_GRAPH_ID }
+              }
+              focusRequest={focusRequest}
+              onSelectModuleTarget={onSelectModuleTarget}
+            />
           ))}
         </div>
       ) : (
@@ -1546,10 +1790,11 @@ function EmbeddedSection({ project }) {
   );
 }
 
-function EmbeddedProject({ embedded }) {
+function EmbeddedProject({ embedded, parentGraphId = MAIN_MODULE_GRAPH_ID, hostTarget, focusRequest, onSelectModuleTarget }) {
   const graph = useMemo(() => buildGraphLayout(embedded.document), [embedded.document]);
   const patterns = listedPatterns(embedded.document);
-  const graphId = svgId(`embedded-${embedded.hostModule}-${embedded.dataChunkIndex}-${embedded.hostName}`);
+  const childEmbedded = embedded.document.embedded ?? [];
+  const graphId = embeddedGraphId(embedded, parentGraphId);
   const title = embedded.document.project?.name || embedded.document.title || embedded.document.path || "(unnamed)";
   const hostModule = {
     index: embedded.hostModule,
@@ -1557,14 +1802,30 @@ function EmbeddedProject({ embedded }) {
     kind: embedded.hostKind,
     type: embedded.hostType,
     color: embedded.hostColor,
+    ...hostTarget,
   };
+  function controllerTargetModules(module) {
+    const childTargets = embeddedTargetsForModule(childEmbedded, module.index, graphId);
+    const embeddedModules = childEmbedded
+      .filter((child) => childTargets.some((target) => target.dataChunkIndex === child.dataChunkIndex))
+      .flatMap((child) =>
+        (child.document?.modules ?? []).map((target) => ({ ...target, _graphId: embeddedGraphId(child, graphId) })),
+      );
+    return [
+      ...embeddedModules,
+      ...(graph?.nodes ?? []).map((target) => ({ ...target, _graphId: graphId })),
+    ];
+  }
+  function dataChunkTargets(module) {
+    return embeddedTargetsForModule(childEmbedded, module.index, graphId);
+  }
   return (
-    <article className="embedded-row">
+    <article id={graphId} className="embedded-row">
       <div className="embedded-header">
         <div>
           <span className="embedded-title">{title}</span>
           <div className="embedded-host">
-            <ModuleReferencePill module={hostModule} />
+            <ModuleReferencePill module={hostModule} onSelect={onSelectModuleTarget} />
           </div>
         </div>
         <div className="module-meta">
@@ -1573,12 +1834,37 @@ function EmbeddedProject({ embedded }) {
         </div>
       </div>
       {graph ? (
-        <ModuleGraphPanel graph={graph} graphId={graphId} label={`Embedded module graph for ${title}`} />
+        <ModuleGraphPanel
+          graph={graph}
+          graphId={graphId}
+          label={`Embedded module graph for ${title}`}
+          focusRequest={focusRequest}
+          controllerTargetModules={controllerTargetModules}
+          dataChunkTargets={dataChunkTargets}
+          onSelectModuleTarget={onSelectModuleTarget}
+        />
       ) : null}
       {patterns.length ? (
         <section className="embedded-patterns" aria-label={`${title} patterns`}>
           <h4>Patterns</h4>
-          <PatternList patterns={patterns} />
+          <PatternList patterns={patterns} graphId={graphId} onSelectModuleTarget={onSelectModuleTarget} />
+        </section>
+      ) : null}
+      {childEmbedded.length ? (
+        <section className="embedded-nested" aria-label={`${title} embedded projects`}>
+          <h4>Embedded</h4>
+          <div className="embedded-grid">
+            {childEmbedded.map((child) => (
+              <EmbeddedProject
+                key={`${graphId}-${child.hostModule}-${child.dataChunkIndex}`}
+                embedded={child}
+                parentGraphId={graphId}
+                hostTarget={{ _graphId: graphId }}
+                focusRequest={focusRequest}
+                onSelectModuleTarget={onSelectModuleTarget}
+              />
+            ))}
+          </div>
         </section>
       ) : null}
     </article>
@@ -1586,6 +1872,27 @@ function EmbeddedProject({ embedded }) {
 }
 
 function ProjectDetails({ project, error }) {
+  const [graphFocusRequest, setGraphFocusRequest] = useState(undefined);
+
+  useEffect(() => {
+    setGraphFocusRequest(undefined);
+  }, [project?.path]);
+
+  function selectModuleTarget(module) {
+    if (module?._sectionId) {
+      document.getElementById(module._sectionId)?.scrollIntoView({ block: "start", behavior: "smooth" });
+      return;
+    }
+    if (!Number.isInteger(module?.index)) {
+      return;
+    }
+    setGraphFocusRequest({
+      graphId: module._graphId ?? MAIN_MODULE_GRAPH_ID,
+      moduleIndex: module.index,
+      token: window.performance.now(),
+    });
+  }
+
   if (error) {
     return (
       <section id="project-details" className="details" aria-live="polite">
@@ -1612,16 +1919,24 @@ function ProjectDetails({ project, error }) {
 
       <div className="section-grid">
         {project.type === "synth" ? null : <ProjectPropertiesSection project={project} />}
-        <ModuleGraphSection project={project} />
+        <ModuleGraphSection
+          project={project}
+          focusRequest={graphFocusRequest}
+          onSelectModuleTarget={selectModuleTarget}
+        />
         {project.type === "synth" ? (
           <div className="synth-detail-grid">
             <SynthKeyboardSection project={project} />
-            <ProjectPropertiesSection project={project} />
+            <ProjectPropertiesSection project={project} onSelectModuleTarget={selectModuleTarget} />
           </div>
         ) : null}
         <TimelineSection project={project} />
-        <PatternSection project={project} />
-        <EmbeddedSection project={project} />
+        <PatternSection project={project} onSelectModuleTarget={selectModuleTarget} />
+        <EmbeddedSection
+          project={project}
+          focusRequest={graphFocusRequest}
+          onSelectModuleTarget={selectModuleTarget}
+        />
       </div>
     </section>
   );
@@ -1632,6 +1947,7 @@ function App() {
   const [selectedPath, setSelectedPath] = useState("");
   const [error, setError] = useState("");
   const [masterVolume, setMasterVolume] = useState(DEFAULT_MASTER_VOLUME);
+  const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const topbarControlsRoot = useMemo(() => document.getElementById("topbar-controls"), []);
 
   useEffect(() => {
@@ -1685,6 +2001,7 @@ function App() {
 
   function selectProjectPath(path) {
     setSelectedPath(path);
+    setFileMenuOpen(false);
     const nextHash = projectPermalinkHash(path);
     if (window.location.hash !== nextHash) {
       window.history.pushState(null, "", nextHash);
@@ -1711,7 +2028,13 @@ function App() {
           )
         : null}
       <main className="app-shell">
-        <ProjectList projects={projects} selectedPath={selectedPath} onSelect={selectProjectPath} />
+        <ProjectList
+          projects={projects}
+          selectedPath={selectedPath}
+          onSelect={selectProjectPath}
+          open={fileMenuOpen}
+          onToggle={() => setFileMenuOpen((current) => !current)}
+        />
         <ProjectDetails project={selectedProject} error={error} />
       </main>
     </>

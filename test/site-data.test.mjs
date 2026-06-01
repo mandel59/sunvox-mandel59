@@ -45,6 +45,9 @@ test("site data summarizes project structure without embedding full event grids"
   const generatedRootFmx = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch FMX Tines.sunsynth",
   );
+  const generatedRootFmxPluck = data.projects.find(
+    (candidate) => candidate.path === "generated/instruments/Scratch FMX Pluck.sunsynth",
+  );
   const generatedMetaModule = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch Layered Pad.sunsynth",
   );
@@ -102,6 +105,11 @@ test("site data summarizes project structure without embedding full event grids"
     name: "scratch-fmx.mjs",
   });
   assert.equal(generatedRootFmx.embedded.length, 0);
+  assert.ok(generatedRootFmxPluck);
+  assert.deepEqual(
+    generatedRootFmxPluck.synth.controllers.find((controller) => controller.path === "volume"),
+    { index: 0, path: "volume", label: "Volume", value: 13200, min: 0, max: 32768 },
+  );
   assert.ok(generatedMetaModule);
   assert.equal(generatedMetaModule.type, "synth");
   assert.equal(generatedMetaModule.synth.type, "MetaModule");

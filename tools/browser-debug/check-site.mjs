@@ -88,7 +88,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
           ?.getBoundingClientRect();
         return controllers && data ? controllers.left > data.left : false;
       })(),
-      synthControllerInputs: document.querySelectorAll('.instrument-control input[type="range"]').length,
+      synthControllerKnobs: document.querySelectorAll('.instrument-knob[role="slider"]').length,
       synthControllerLabels: Array.from(document.querySelectorAll('.instrument-control-label')).map((element) =>
         element.textContent.trim(),
       ),
@@ -119,7 +119,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       initial.synthKeyboardRange !== 'C4-C6' ||
       !(initial.synthScrollLaneHeight >= 18) ||
       !initial.synthControlsBeforeKeyboard ||
-      initial.synthControllerInputs < 1 ||
+      initial.synthControllerKnobs < 1 ||
       !initial.synthControllerLabels.includes('Octave') ||
       !initial.synthControllerLabels.includes('Volume')
     ) {
@@ -129,7 +129,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     }
     if (
       initial.propertiesHeading !== 'Synth Properties' ||
-      !initial.propertiesText.includes('Shepard tone') ||
+      !initial.propertiesText.includes(initial.selected) ||
       !initial.propertiesText.includes('Controllers') ||
       !initial.propertiesText.includes('Volume256') ||
       initial.propertiesText.includes('Data chunks') ||
@@ -137,7 +137,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       !initial.propertiesText.includes('Embedded project') ||
       !initial.propertiesText.includes('Controller links') ||
       !initial.propertiesText.includes('Options') ||
-      !initial.propertiesText.includes('Other data') ||
+      initial.propertiesText.includes('Other data') ||
       initial.embeddedMeta !== 'Embedded projects 1' ||
       !initial.propertyFlags.includes('generator')
     ) {
@@ -163,7 +163,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         return controllers && data ? controllers.left > data.left : false;
       })(),
     }));
-    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 900 });
     await page.waitForTimeout(100);
     const synthWideLayout = await page.evaluate(() => ({
       beside: (() => {
@@ -349,15 +349,12 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         return true;
       };
       try {
-        const input = document.querySelector('.instrument-control input[aria-label="Volume controller"]');
-        const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-        valueSetter.call(input, '128');
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+        const knob = document.querySelector('.instrument-knob[aria-label="Volume controller"]');
+        knob.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
         await new Promise((resolve) => setTimeout(resolve, 0));
         return {
-          value: input.value,
-          output: input.closest('.instrument-control')?.querySelector('.instrument-control-value')?.textContent ?? null,
+          value: knob.getAttribute('aria-valuenow'),
+          output: knob.closest('.instrument-control')?.querySelector('.instrument-control-value')?.textContent ?? null,
           calls,
         };
       } finally {
@@ -366,11 +363,11 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     });
     const synthControllerUiCall = synthControllerUi.calls.at(-1);
     if (
-      synthControllerUi.value !== '128' ||
-      synthControllerUi.output !== '128' ||
-      synthControllerUiCall?.url !== 'instruments/mandel59 shepard.sunsynth' ||
+      synthControllerUi.value !== '0' ||
+      synthControllerUi.output !== '0' ||
+      typeof synthControllerUiCall?.url !== 'string' ||
       synthControllerUiCall?.controllerIndex !== 0 ||
-      synthControllerUiCall?.value !== 128
+      synthControllerUiCall?.value !== 0
     ) {
       throw new Error(`Expected synth controller UI to call the player API, got ${JSON.stringify(synthControllerUi)}`);
     }
@@ -449,6 +446,9 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       targets: Array.from(document.querySelectorAll('.instrument-control-target')).map((element) =>
         element.textContent.trim(),
       ),
+      propertyTargets: Array.from(
+        document.querySelectorAll('[aria-labelledby="properties-heading"] .controller-target'),
+      ).map((element) => element.textContent.trim()),
       values: Array.from(document.querySelectorAll('.instrument-control-value')).map((element) =>
         element.textContent.trim(),
       ),
@@ -458,7 +458,8 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       !superSawControllers.labels.includes('Octave') ||
       !superSawControllers.labels.includes('Detune 1') ||
       !superSawControllers.labels.includes('Filter freq') ||
-      !superSawControllers.targets.includes('Filter Pro · Frequency') ||
+      superSawControllers.targets.length !== 0 ||
+      !superSawControllers.propertyTargets.some((target) => target.includes('Filter ProFrequency')) ||
       !superSawControllers.values.includes('13680')
     ) {
       throw new Error(`Expected SuperSaw user controllers under Instrument, got ${JSON.stringify(superSawControllers)}`);
@@ -501,7 +502,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       }
       const loaded = modules.find((module) => module.type === 'MetaModule' || module.name === 'SuperSaw');
       return {
-        uiValue: document.querySelector('.instrument-control input[aria-label="Volume controller"]')?.value ?? null,
+        uiValue: document.querySelector('.instrument-knob[aria-label="Volume controller"]')?.getAttribute('aria-valuenow') ?? null,
         loaded,
       };
     });
@@ -648,7 +649,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       graphSelection.detailText.includes('Color') ||
       graphSelection.detailText.includes('Data chunks') ||
       !graphSelection.detailText.includes('Options') ||
-      !graphSelection.detailText.includes('Other data') ||
+      graphSelection.detailText.includes('Other data') ||
       graphSelection.sectionHeadings.join(',') !== 'Controllers,Data,Inputs,Outputs' ||
       graphSelection.controllerRows.length !== 9 ||
       !graphSelection.controllerRows.some((row) => row.includes('Modehq')) ||

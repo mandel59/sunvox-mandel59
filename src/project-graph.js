@@ -8,6 +8,27 @@ export function shortLabel(value, maxLength = 13) {
   return `${value.slice(0, maxLength - 3)}...`;
 }
 
+const DEFAULT_MODULE_SCALE = 256;
+export const GRAPH_NODE_BASE_HALF_WIDTH = 39;
+export const GRAPH_NODE_BASE_HALF_HEIGHT = 21;
+
+function scaleFactor(value) {
+  const scale = Number(value);
+  return Number.isFinite(scale) && scale > 0 ? scale / DEFAULT_MODULE_SCALE : 1;
+}
+
+export function graphNodeScale(module, projectModuleScale = DEFAULT_MODULE_SCALE) {
+  return scaleFactor(projectModuleScale) * scaleFactor(module?.scale);
+}
+
+export function graphNodeSize(module, projectModuleScale = DEFAULT_MODULE_SCALE) {
+  const scale = graphNodeScale(module, projectModuleScale);
+  return {
+    halfWidth: GRAPH_NODE_BASE_HALF_WIDTH * scale,
+    halfHeight: GRAPH_NODE_BASE_HALF_HEIGHT * scale,
+  };
+}
+
 function formatGraphNumber(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(3).replace(/\.?0+$/, "");
 }
@@ -72,17 +93,28 @@ export function buildGraphLayout(project) {
     return undefined;
   }
   const aspectRatio = 16 / 9;
+  const projectModuleScale = project.project?.view?.moduleScale ?? DEFAULT_MODULE_SCALE;
   const displayModules = scalePositionsToAspect(positionedModules, aspectRatio);
-  const xs = displayModules.map((module) => module.position.x);
-  const ys = displayModules.map((module) => module.position.y);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
+  const nodeTopLabelHeight = 18;
+  const minX = Math.min(
+    ...displayModules.map((module) => module.position.x - graphNodeSize(module, projectModuleScale).halfWidth),
+  );
+  const maxX = Math.max(
+    ...displayModules.map((module) => module.position.x + graphNodeSize(module, projectModuleScale).halfWidth),
+  );
+  const minY = Math.min(
+    ...displayModules.map(
+      (module) => module.position.y - graphNodeSize(module, projectModuleScale).halfHeight - nodeTopLabelHeight,
+    ),
+  );
+  const maxY = Math.max(
+    ...displayModules.map((module) => module.position.y + graphNodeSize(module, projectModuleScale).halfHeight),
+  );
   const padding = 96;
   return {
     nodes: displayModules,
     edges,
     viewBox: buildAspectViewBox({ minX, maxX, minY, maxY, padding, aspectRatio }),
+    moduleScale: projectModuleScale,
   };
 }

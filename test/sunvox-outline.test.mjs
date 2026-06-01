@@ -44,6 +44,61 @@ test("builds a readable outline for SunSynth modules and embedded containers", a
   assert.match(text, /Embedded Containers/u);
 });
 
+test("treats Sampler effect modules as nested embedded containers", () => {
+  const outline = buildOutline(
+    {
+      magic: "SVOX",
+      project: { name: "Sampler host" },
+      modules: [
+        { name: "Output", flags: { exists: true, output: true } },
+        {
+          name: "Sampler",
+          type: "Sampler",
+          flags: { exists: true, generator: true },
+          dataChunks: [
+            {
+              index: 266,
+              name: "effectModule",
+              container: {
+                magic: "SSYN",
+                module: {
+                  name: "Sampler Effect",
+                  type: "MetaModule",
+                  flags: { exists: true, generator: true },
+                  dataChunks: [
+                    {
+                      index: 0,
+                      name: "embeddedProject",
+                      container: {
+                        magic: "SVOX",
+                        project: { name: "Nested Effect Project" },
+                        modules: [],
+                        patterns: [],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+      patterns: [],
+    },
+    { sourceName: "sampler-effect.sunvox" },
+  );
+  const text = formatOutline(outline);
+
+  assert.equal(outline.embedded.length, 1);
+  assert.equal(outline.embedded[0].dataChunkName, "effectModule");
+  assert.equal(outline.embedded[0].document.magic, "SSYN");
+  assert.equal(outline.embedded[0].document.embedded.length, 1);
+  assert.equal(outline.embedded[0].document.embedded[0].dataChunkName, "embeddedProject");
+  assert.equal(outline.embedded[0].document.embedded[0].document.project.name, "Nested Effect Project");
+  assert.match(text, /#1 Sampler: dataChunk#266 effectModule/u);
+  assert.match(text, /#0 root: dataChunk#0 embeddedProject/u);
+});
+
 test("summarizes MetaModule user controllers in outlines", async () => {
   const outline = await buildOutlineFromFile("instruments/mandel59 SuperSaw.sunsynth", {
     embedded: false,
