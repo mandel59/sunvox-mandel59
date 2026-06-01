@@ -506,7 +506,7 @@ button:disabled:hover {
 }
 
 .graph-detail-links .module-reference-pill {
-  border-radius: 999px;
+  border-radius: 6px;
 }
 
 .properties-panel {
@@ -591,7 +591,7 @@ button:disabled:hover {
   min-width: 0;
   gap: 0.3rem;
   border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
-  border-radius: 999px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--accent) 7%, #fff);
   color: var(--ink);
   padding: 0.1rem 0.45rem;
@@ -1182,7 +1182,7 @@ button:disabled:hover {
   border: 1px solid color-mix(in srgb, var(--module-color, #9aa3aa) 55%, #d5d9df);
   background: color-mix(in srgb, var(--module-color, #9aa3aa) 14%, #ffffff);
   color: #25323a;
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 0.1rem 0.45rem;
   font-size: 0.8rem;
   line-height: 1.25;
