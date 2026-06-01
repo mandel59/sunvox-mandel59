@@ -13,7 +13,7 @@
       "magic": "SSYN",
       "type": "synth",
       "sourceRecipe": {
-        "path": "generated/recipes/sunsynth/scratch-assorted-instruments.mjs",
+        "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
         "name": "scratch-assorted-instruments.mjs"
       },
       "synth": {
@@ -1003,7 +1003,7 @@
       "magic": "SSYN",
       "type": "synth",
       "sourceRecipe": {
-        "path": "generated/recipes/sunsynth/scratch-analog.mjs",
+        "path": "generated/recipes/sunvox-edit/scratch-analog.mjs",
         "name": "scratch-analog.mjs"
       },
       "synth": {
@@ -1557,7 +1557,7 @@
       "magic": "SSYN",
       "type": "synth",
       "sourceRecipe": {
-        "path": "generated/recipes/sunsynth/scratch-fmx.mjs",
+        "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
         "name": "scratch-fmx.mjs"
       },
       "synth": {
@@ -3152,7 +3152,7 @@
       "magic": "SSYN",
       "type": "synth",
       "sourceRecipe": {
-        "path": "generated/recipes/sunsynth/scratch-fmx.mjs",
+        "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
         "name": "scratch-fmx.mjs"
       },
       "synth": {
@@ -4747,7 +4747,7 @@
       "magic": "SSYN",
       "type": "synth",
       "sourceRecipe": {
-        "path": "generated/recipes/sunsynth/scratch-assorted-instruments.mjs",
+        "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
         "name": "scratch-assorted-instruments.mjs"
       },
       "synth": {
@@ -6024,7 +6024,7 @@
       "magic": "SSYN",
       "type": "synth",
       "sourceRecipe": {
-        "path": "generated/recipes/sunsynth/scratch-assorted-instruments.mjs",
+        "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
         "name": "scratch-assorted-instruments.mjs"
       },
       "synth": {
@@ -6766,7 +6766,7 @@
       "magic": "SSYN",
       "type": "synth",
       "sourceRecipe": {
-        "path": "generated/recipes/sunsynth/scratch-layered-pad.mjs",
+        "path": "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
         "name": "scratch-layered-pad.mjs"
       },
       "synth": {
@@ -8240,7 +8240,7 @@
       "magic": "SSYN",
       "type": "synth",
       "sourceRecipe": {
-        "path": "generated/recipes/sunsynth/scratch-assorted-instruments.mjs",
+        "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
         "name": "scratch-assorted-instruments.mjs"
       },
       "synth": {

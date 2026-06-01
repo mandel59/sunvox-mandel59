@@ -16,7 +16,7 @@ const recipe = {
         const project = synth.embeddedProject();
         project.setOutput();
         const noteInput = project.addModule("MultiSynth", {
-          name: "Note Input",
+          name: "Input",
           position: { x: 0, y: 512, z: 0 },
         });
         synth.setInputModule(noteInput);

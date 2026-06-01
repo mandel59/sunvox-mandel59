@@ -5,8 +5,6 @@ import { join, resolve } from "node:path";
 import test from "node:test";
 
 import { runEditRecipe } from "../tools/sunvox-edit-recipe.mjs";
-import { migrateSunSynthRecipe } from "../tools/sunvox-edit-recipe-migrate.mjs";
-import { runRecipe } from "../tools/sunsynth-generate.mjs";
 import { parseContainer } from "../tools/sunvox-codec.mjs";
 
 async function parseFile(filePath) {
@@ -132,7 +130,7 @@ test("checked-in SunVox Edit Recipe scratch example generates a SunSynth", async
   assert.equal(document.module.color, "#ff9a4a");
   assert.equal(document.module.controllers.inputModule, 1);
   assert.equal(project.modules[0].name, "Output");
-  assert.equal(project.modules[1].name, "Note Input");
+  assert.equal(project.modules[1].name, "Input");
   assert.equal(project.modules[1].type, "MultiSynth");
   assert.equal(project.modules[2].name, "Tone");
   assert.equal(project.modules[2].controllers.waveform, "saw");
@@ -186,7 +184,7 @@ test("checked-in SunVox Edit Recipes generate SunSynth outputs", async () => {
   const layeredPad = await parseFile(join(tempDir, "var/synth-lab/Scratch Layered Pad.sunsynth"));
   const layeredProject = layeredPad.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
   assert.equal(layeredPad.module.name, "Scratch Layered Pad");
-  assert.equal(layeredProject.modules[1].name, "Note Input");
+  assert.equal(layeredProject.modules[1].name, "Input");
   assert.equal(layeredProject.modules.at(-1).name, "Soft Glue");
 });
 
@@ -291,71 +289,40 @@ export default recipe;
   assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
 });
 
-test("migrates a scratch SunSynthRecipe to SunVox Edit Recipe", async () => {
-  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-migrate-"));
-  const migratedRecipePath = join(tempDir, "scratch-analog.edit-recipe.mjs");
-  const legacyDir = join(tempDir, "legacy");
-  const editDir = join(tempDir, "edit");
-  const outputPath = join(editDir, "var/synth-lab/Scratch Analog.sunsynth");
+test("checked-in Edit Recipes reproduce generated instruments byte-for-byte", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-generated-"));
+  const recipeDir = "generated/recipes/sunvox-edit";
+  const recipeFiles = (await readdir(recipeDir))
+    .filter((file) => file.endsWith(".mjs"))
+    .sort()
+    .map((file) => join(recipeDir, file));
+  const generatedNames = new Set([
+    "Scratch Acid Bass.sunsynth",
+    "Scratch Analog.sunsynth",
+    "Scratch FMX Pluck.sunsynth",
+    "Scratch FMX Tines.sunsynth",
+    "Scratch Glass Bell.sunsynth",
+    "Scratch Kick Snap.sunsynth",
+    "Scratch Layered Pad.sunsynth",
+    "Scratch PWM Organ.sunsynth",
+  ]);
+  const outputs = [];
+  for (const recipeFile of recipeFiles) {
+    outputs.push(...await runEditRecipe(recipeFile, { outDir: tempDir }));
+  }
 
-  assert.equal(
-    await migrateSunSynthRecipe("generated/recipes/sunsynth/scratch-analog.mjs", { out: migratedRecipePath }),
-    migratedRecipePath,
+  const generatedOutputs = outputs.filter((output) => generatedNames.has(output.split(/[\\/]/u).at(-1)));
+  assert.deepEqual(
+    generatedOutputs.map((output) => output.split(/[\\/]/u).at(-1)).sort(),
+    [...generatedNames].sort(),
   );
-  const migratedSource = await readFile(migratedRecipePath, "utf8");
-  assert.doesNotMatch(migratedSource, /^import\s/u);
-  assert.match(migratedSource, /SunVoxEditRecipe/u);
-  assert.match(migratedSource, /setInputModule/u);
 
-  const legacyOutputs = await runRecipe("generated/recipes/sunsynth/scratch-analog.mjs", { outDir: legacyDir });
-  assert.deepEqual(await runEditRecipe(migratedRecipePath, { outDir: editDir }), [outputPath]);
-  assert.deepEqual(await readFile(outputPath), await readFile(legacyOutputs[0]), "Scratch Analog.sunsynth binary");
-
-  const document = await parseFile(outputPath);
-  const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
-
-  assert.equal(document.module.name, "Scratch Analog");
-  assert.equal(document.module.color, "#ff9a4a");
-  assert.equal(document.module.controllers.inputModule, 1);
-  assert.equal(project.modules[1].name, "Note Input");
-  assert.equal(project.modules[2].name, "Tone");
-  assert.equal(project.modules[2].controllers.volume, 128);
-  assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
-});
-
-test("migrated checked-in Edit Recipes preserve legacy recipe output", async () => {
-  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-equivalence-"));
-  const pairs = [
-    "scratch-analog.mjs",
-    "scratch-assorted-instruments.mjs",
-    "scratch-fmx.mjs",
-    "scratch-layered-pad.mjs",
-    "supersaw-variants.mjs",
-  ];
-
-  for (const fileName of pairs) {
-    const legacyDir = join(tempDir, "legacy", fileName);
-    const editDir = join(tempDir, "edit", fileName);
-    const legacyOutputs = await runRecipe(join("generated/recipes/sunsynth", fileName), { outDir: legacyDir });
-    const editOutputs = await runEditRecipe(join("generated/recipes/sunvox-edit", fileName), { outDir: editDir });
-
-    assert.deepEqual(
-      editOutputs.map((filePath) => filePath.split(/[\\/]/u).at(-1)).sort(),
-      legacyOutputs.map((filePath) => filePath.split(/[\\/]/u).at(-1)).sort(),
-      fileName,
-    );
-
-    for (const legacyOutput of legacyOutputs) {
-      const outputName = legacyOutput.split(/[\\/]/u).at(-1);
-      const editOutput = editOutputs.find((filePath) => filePath.split(/[\\/]/u).at(-1) === outputName);
-      const editBytes = await readFile(editOutput);
-      const legacyBytes = await readFile(legacyOutput);
-      assert.deepEqual(editBytes, legacyBytes, `${outputName} binary`);
-      assert.deepEqual(
-        parseContainer(editBytes),
-        parseContainer(legacyBytes),
-        outputName,
-      );
-    }
+  for (const output of generatedOutputs) {
+    const outputName = output.split(/[\\/]/u).at(-1);
+    const expectedPath = join("generated/instruments", outputName);
+    const editBytes = await readFile(output);
+    const expectedBytes = await readFile(expectedPath);
+    assert.deepEqual(editBytes, expectedBytes, `${outputName} binary`);
+    assert.deepEqual(parseContainer(editBytes), parseContainer(expectedBytes), outputName);
   }
 });

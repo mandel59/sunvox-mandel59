@@ -5,10 +5,10 @@ import { pathToFileURL } from "node:url";
 import { deflateSync } from "node:zlib";
 
 import { buildOutlineFromFile } from "./sunvox-outline.mjs";
-import { loadRecipe, variantFileName } from "./sunsynth-generate.mjs";
+import { loadEditRecipe } from "./sunvox-edit-recipe.mjs";
 
 const DEFAULT_ROOTS = ["music", "instruments", "generated/music", "generated/instruments"];
-const DEFAULT_RECIPE_ROOTS = ["generated/recipes/sunsynth"];
+const DEFAULT_RECIPE_ROOTS = ["generated/recipes/sunvox-edit"];
 const DEFAULT_OUTPUT = "site-data/sunvox-projects.json";
 const SUNVOX_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const RECIPE_EXTENSIONS = new Set([".mjs"]);
@@ -58,14 +58,13 @@ async function collectGeneratedSourceRecipes(paths = DEFAULT_RECIPE_ROOTS) {
   const recipeFiles = await findRecipeFiles(paths);
   const sources = new Map();
   for (const recipeFile of recipeFiles) {
-    const recipe = await loadRecipe(recipeFile);
+    const recipe = await loadEditRecipe(recipeFile);
     const recipePath = relative(process.cwd(), recipeFile).replaceAll("\\", "/");
-    for (const variant of recipe.variants) {
-      const fileName = variantFileName(variant);
-      if (extname(fileName).toLowerCase() !== ".sunsynth") {
+    for (const output of Object.values(recipe.outputs)) {
+      if (output.kind !== "sunsynth" || extname(output.file).toLowerCase() !== ".sunsynth") {
         continue;
       }
-      const generatedPath = `generated/instruments/${basename(fileName)}`;
+      const generatedPath = `generated/instruments/${basename(output.file)}`;
       sources.set(generatedPath, {
         path: recipePath,
         name: basename(recipePath),

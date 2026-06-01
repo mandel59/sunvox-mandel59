@@ -45,7 +45,7 @@ npm run sunvox:verify -- music/2022-04-17.sunvox
 npm run sunvox:outline -- music/2022-04-17.sunvox
 npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunsynth:characterize -- instruments/mandel59\ SuperSaw.sunsynth
-npm run sunsynth:generate -- --json generated/recipes/sunsynth/supersaw-variants.mjs
+npm run sunvox:edit-recipe -- --out var/synth-lab generated/recipes/sunvox-edit/scratch-analog.mjs
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 npm run sunvox:enums
@@ -123,60 +123,27 @@ or probe playback. Probe rendering is pattern-based, so offline analysis follows
 the same sequencer path as project playback instead of relying on realtime
 `sv_send_event` timestamps.
 
-`sunsynth:generate` applies JavaScript recipes to `.sunsynth` templates and
-writes generated variants. Recipes can use object shorthand for simple edits,
-or use the lab API directly for more expressive experiments:
-`synth.module("Filter Pro").set(...)`,
-`synth.userController("Release").set(...)`, and `sweep(...)` for parameter
-grids. This keeps synth experiments scriptable while still writing ordinary
-`.sunsynth` files that can be opened by SunVox. Generated drafts and throwaway
-experiments should normally go under `var/synth-lab/`. Generated files that are
-reviewed and intentionally committed should go under `generated/instruments/`
-or `generated/music/`, so they stay separate from human-authored distribution
+`sunvox:edit-recipe` applies SunVox Edit Recipe files to create or edit
+`.sunsynth` outputs. Recipe files describe `.sunvox` / `.sunsynth` creation and
+editing as one workflow, with plain JavaScript recipe files that need no
+runtime imports. Recipes can still use `apply(editor)` for procedural edits;
+the MVP exposes `SunSynthEditor` and `SunVoxProjectEditor` facades backed by
+the existing SunSynth lab implementation. Type inference comes from
+`tools/sunvox-edit-recipe.d.ts`. Generated drafts and throwaway experiments
+should normally go under `var/synth-lab/`. Generated files that are reviewed
+and intentionally committed should go under `generated/instruments/` or
+`generated/music/`, so they stay separate from human-authored distribution
 assets under `instruments/` and `music/`. Human-authored recipes live under
 `recipes/`; machine-generated recipes live under `generated/recipes/`. The
-bundled
-[supersaw-variants recipe](generated/recipes/sunsynth/supersaw-variants.mjs)
-shows the function recipe and sweep style.
-The [scratch-analog recipe](generated/recipes/sunsynth/scratch-analog.mjs)
-shows how to create a small `.sunsynth` from a MetaModule project that starts
-with SunVox's default `#0 Output` module. Scratch recipes configure that module
-with `setOutput(...)`, then add input and generator modules that route into it.
-The [scratch-layered-pad recipe](generated/recipes/sunsynth/scratch-layered-pad.mjs)
-shows a larger scratch-built patch with multiple generators, filter, delay,
-compressor, and exposed user controllers.
-The
-[scratch-assorted-instruments recipe](generated/recipes/sunsynth/scratch-assorted-instruments.mjs)
-collects small scratch-built bass, bell, organ, and kick experiments.
-The [scratch-fmx recipe](generated/recipes/sunsynth/scratch-fmx.mjs) shows how
-to generate root-module `.sunsynth` files whose top-level module is FMX instead
-of a MetaModule wrapper.
-Recipe files can opt into editor type inference without changing runtime
-format by adding `// @ts-check` and annotating the exported value with
-`@satisfies {import("../../../tools/sunsynth-recipe.d.ts").SunSynthRecipe}`.
-Function-style recipes can use `SunSynthRecipeFactory` instead, which also
-infers `sweep(...)` parameter names and value types inside `build(...)`.
-
-`sunvox:edit-recipe` is the prototype for the next recipe model. SunVox Edit
-Recipe files describe `.sunvox` / `.sunsynth` creation and editing as one
-workflow, with plain JavaScript recipe files that need no runtime imports.
-Recipes can still use `apply(editor)` for procedural edits; the MVP exposes
-`SunSynthEditor` and `SunVoxProjectEditor` facades backed by the existing
-SunSynth lab implementation. Type inference comes from
-`tools/sunvox-edit-recipe.d.ts`. The
 [scratch-analog Edit Recipe example](generated/recipes/sunvox-edit/scratch-analog.mjs)
 shows the migrated style: `create.module` selects the SunSynth root module type,
 so `module: "MetaModule"` initializes an embedded project while `module: "FMX"`
 creates a direct FMX root module. A MultiSynth module is created explicitly,
 then set as the MetaModule input with `synth.setInputModule(...)`.
-`sunvox:edit-recipe:migrate`
-can convert supported `SunSynthRecipe` files into the new Edit Recipe format as
-a reviewable starting point. The migrator handles current scratch MetaModule
-recipes, root-module recipes such as FMX, and template-based sweep recipes that
-edit modules and user controllers. Migrated examples live under
-`generated/recipes/sunvox-edit/` and are exercised by the test suite, which
-compares their generated `.sunsynth` documents against the legacy recipe
-outputs.
+[scratch-layered-pad](generated/recipes/sunvox-edit/scratch-layered-pad.mjs),
+[scratch-assorted-instruments](generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs),
+and [scratch-fmx](generated/recipes/sunvox-edit/scratch-fmx.mjs) cover larger
+MetaModule patches and root-module FMX `.sunsynth` files.
 
 The repository uses these data locations:
 

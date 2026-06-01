@@ -275,8 +275,8 @@ function createSunSynthLab(outputId, output, inputs) {
   }
 
   const create = output.create ?? { module: "MetaModule", name: outputId };
-  if (create === true || typeof create === "string") {
-    return SunSynthLab.create(typeof create === "string" ? create : outputId);
+  if (!isPlainObject(create)) {
+    throw new Error(`Output ${outputId} create must be an object`);
   }
 
   const options = { ...create };

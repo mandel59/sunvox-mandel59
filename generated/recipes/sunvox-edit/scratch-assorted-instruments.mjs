@@ -26,7 +26,7 @@ const recipe = {
           }
         });
         const noteInput = project.addModule("MultiSynth", {
-          "name": "Note Input",
+          "name": "Input",
           "position": {
             "x": 0,
             "y": 512,
@@ -137,7 +137,7 @@ const recipe = {
           }
         });
         const noteInput = project.addModule("MultiSynth", {
-          "name": "Note Input",
+          "name": "Input",
           "position": {
             "x": 0,
             "y": 512,
@@ -324,7 +324,7 @@ const recipe = {
           }
         });
         const noteInput = project.addModule("MultiSynth", {
-          "name": "Note Input",
+          "name": "Input",
           "position": {
             "x": 0,
             "y": 512,
@@ -459,7 +459,7 @@ const recipe = {
           }
         });
         const noteInput = project.addModule("MultiSynth", {
-          "name": "Note Input",
+          "name": "Input",
           "position": {
             "x": 0,
             "y": 512,
