@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import test from "node:test";
 
 import { runEditRecipe } from "../tools/sunvox-edit-recipe.mjs";
+import { migrateSunSynthRecipe } from "../tools/sunvox-edit-recipe-migrate.mjs";
 import { parseContainer } from "../tools/sunvox-codec.mjs";
 
 async function parseFile(filePath) {
@@ -238,4 +239,32 @@ export default recipe;
   assert.equal(project.modules[3].type, undefined);
   assert.equal(project.modules[0].inputs, undefined);
   assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
+});
+
+test("migrates a scratch SunSynthRecipe to SunVox Edit Recipe", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-migrate-"));
+  const migratedRecipePath = join(tempDir, "scratch-analog.edit-recipe.mjs");
+  const outputPath = join(tempDir, "var/synth-lab/Scratch Analog.sunsynth");
+
+  assert.equal(
+    await migrateSunSynthRecipe("generated/recipes/sunsynth/scratch-analog.mjs", { out: migratedRecipePath }),
+    migratedRecipePath,
+  );
+  const migratedSource = await readFile(migratedRecipePath, "utf8");
+  assert.doesNotMatch(migratedSource, /^import\s/u);
+  assert.match(migratedSource, /SunVoxEditRecipe/u);
+  assert.match(migratedSource, /setInputModule/u);
+
+  assert.deepEqual(await runEditRecipe(migratedRecipePath, { outDir: tempDir }), [outputPath]);
+
+  const document = await parseFile(outputPath);
+  const project = document.module.dataChunks.find((chunk) => chunk.name === "embeddedProject").container;
+
+  assert.equal(document.module.name, "Scratch Analog");
+  assert.equal(document.module.color, "#ff9a4a");
+  assert.equal(document.module.controllers.inputModule, 1);
+  assert.equal(project.modules[1].name, "Note Input");
+  assert.equal(project.modules[2].name, "Tone");
+  assert.equal(project.modules[2].controllers.volume, 128);
+  assert.deepEqual(project.modules[0].inputs.map((link) => [link.slot, link.module]), [[0, 2]]);
 });
