@@ -145,92 +145,73 @@ const recipe = {
           }
         });
         synth.setInputModule(noteInput);
-        const glassStrike = project.addModule("FM", {
-          "name": "Glass Strike",
-          "color": "#86f5ff",
+        const iceString = project.addModule("Analog generator", {
+          "name": "Ice String",
+          "color": "#8df6ff",
           "position": {
             "x": 224,
-            "y": 352,
+            "y": 448,
             "z": 0
           },
           "controllers": {
-            "cVolume": 72,
-            "mVolume": 142,
-            "panning": 128,
-            "cFreqRatio": 2,
-            "mFreqRatio": 6,
-            "mSelfModulation": 34,
-            "cAttack": 0,
-            "cDecay": 20,
-            "cSustain": 0,
-            "cRelease": 64,
-            "mAttack": 0,
-            "mDecay": 12,
-            "mSustain": 0,
-            "mRelease": 32,
-            "mScalingPerKey": 1,
+            "waveform": "square",
+            "volume": 104,
+            "panning": 112,
+            "attack": 0,
+            "release": 190,
+            "sustain": "off",
+            "expEnvelope": "on",
+            "dutyCycle": 384,
+            "osc2Pitch": 1000,
+            "osc2Volume": 4800,
+            "osc2Mode": "add",
+            "filter": "lp24db",
+            "filterFreq": 12600,
+            "filterResonance": 260,
+            "filterExpFreq": "on",
+            "filterAttack": 0,
+            "filterRelease": 160,
+            "filterEnvelope": "sustainOff",
             "polyphony": 12,
-            "mode": "hq"
+            "mode": "hq",
+            "noise": 2
           }
         });
-        const crystalBody = project.addModule("FM", {
-          "name": "Crystal Body",
-          "color": "#5ee8ff",
+        const crystalShimmer = project.addModule("Analog generator", {
+          "name": "Crystal Shimmer",
+          "color": "#d4fbff",
+          "relativeNote": 12,
           "position": {
             "x": 224,
-            "y": 512,
+            "y": 608,
             "z": 0
           },
           "controllers": {
-            "cVolume": 154,
-            "mVolume": 92,
-            "panning": 108,
-            "cFreqRatio": 1,
-            "mFreqRatio": 3,
-            "mSelfModulation": 18,
-            "cAttack": 0,
-            "cDecay": 210,
-            "cSustain": 0,
-            "cRelease": 210,
-            "mAttack": 0,
-            "mDecay": 72,
-            "mSustain": 0,
-            "mRelease": 86,
-            "mScalingPerKey": 1,
+            "waveform": "square",
+            "volume": 58,
+            "panning": 164,
+            "attack": 0,
+            "release": 240,
+            "sustain": "off",
+            "expEnvelope": "on",
+            "dutyCycle": 260,
+            "osc2Pitch": 1002,
+            "osc2Volume": 3000,
+            "osc2Mode": "add",
+            "filter": "bp12db",
+            "filterFreq": 8400,
+            "filterResonance": 900,
+            "filterExpFreq": "on",
+            "filterAttack": 0,
+            "filterRelease": 210,
+            "filterEnvelope": "sustainOff",
             "polyphony": 12,
-            "mode": "hq"
-          }
-        });
-        const airRing = project.addModule("FM", {
-          "name": "Air Ring",
-          "color": "#c8fbff",
-          "position": {
-            "x": 224,
-            "y": 672,
-            "z": 0
-          },
-          "controllers": {
-            "cVolume": 30,
-            "mVolume": 112,
-            "panning": 156,
-            "cFreqRatio": 3,
-            "mFreqRatio": 9,
-            "mSelfModulation": 42,
-            "cAttack": 0,
-            "cDecay": 82,
-            "cSustain": 0,
-            "cRelease": 160,
-            "mAttack": 0,
-            "mDecay": 28,
-            "mSustain": 0,
-            "mRelease": 58,
-            "mScalingPerKey": 2,
-            "polyphony": 12,
-            "mode": "hq"
+            "mode": "hq",
+            "noise": 4
           }
         });
         const glassPolish = project.addModule("Filter Pro", {
-          "name": "Glass Polish",
+          "name": "Ice Polish",
           "color": "#b4f6ff",
           "position": {
             "x": 472,
@@ -238,12 +219,14 @@ const recipe = {
             "z": 0
           },
           "controllers": {
-            "type": "lp",
-            "freq": 12000,
-            "q": 10000,
+            "type": "peaking",
+            "freq": 6800,
+            "q": 5600,
+            "gain": 17000,
             "rolloff": "db12",
+            "response": 150,
             "mode": "stereoSmoothing",
-            "response": 120
+            "mix": 24576
           }
         });
         const crystalHall = project.addModule("Reverb", {
@@ -256,13 +239,13 @@ const recipe = {
           },
           "controllers": {
             "dry": 256,
-            "wet": 34,
-            "feedback": 118,
-            "damp": 188,
-            "stereoWidth": 190,
+            "wet": 118,
+            "feedback": 196,
+            "damp": 84,
+            "stereoWidth": 250,
             "mode": "hq",
             "allpassFilter": "improved",
-            "roomSize": 14
+            "roomSize": 46
           }
         });
         const bellTrim = project.addModule("Amplifier", {
@@ -274,29 +257,24 @@ const recipe = {
             "z": 0
           },
           "controllers": {
-            "volume": 228,
-            "stereoWidth": 174,
+            "volume": 232,
+            "stereoWidth": 224,
             "fineVolume": 32768
           }
         });
-        project.connect(noteInput, glassStrike);
-        project.connect(noteInput, crystalBody);
-        project.connect(noteInput, airRing);
-        project.connect(glassStrike, glassPolish, {
+        project.connect(noteInput, iceString);
+        project.connect(noteInput, crystalShimmer);
+        project.connect(iceString, glassPolish, {
           "slot": 0
         });
-        project.connect(crystalBody, glassPolish, {
+        project.connect(crystalShimmer, glassPolish, {
           "slot": 1
-        });
-        project.connect(airRing, glassPolish, {
-          "slot": 2
         });
         project.connect(glassPolish, crystalHall);
         project.connect(crystalHall, bellTrim);
         project.connect(bellTrim, project.output);
-        synth.expose("Strike", glassStrike, "mVolume");
-        synth.expose("Body", crystalBody, "cVolume");
-        synth.expose("Air", airRing, "cVolume");
+        synth.expose("Pluck", iceString, "volume");
+        synth.expose("Shimmer", crystalShimmer, "volume");
         synth.expose("Brightness", glassPolish, "freq");
         synth.expose("Hall wet", crystalHall, "wet");
         synth.expose("Output trim", bellTrim, "volume");
