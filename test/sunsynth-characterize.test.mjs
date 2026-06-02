@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { mkdtemp } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { analyzeRenderedAudio, parseNote, parseProbe } from "../tools/sunsynth-characterize.mjs";
+import { SunSynthLab } from "../tools/sunsynth-lab.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -94,4 +97,44 @@ test("reports probe pattern metadata in JSON output", () => {
   assert.ok(result.probePattern.noteOffLine >= 1);
   assert.ok(result.probePattern.lineFrames > 0);
   assert.ok(result.probePattern.noteOffFrame > result.probePattern.noteOnFrame);
+});
+
+test("characterizes a source-known Generator sine as a stable harmonic peak", async () => {
+  const tempDir = await mkdtemp(resolve(tmpdir(), "sunsynth-characterize-"));
+  const synthPath = resolve(tempDir, "known-generator-sine.sunsynth");
+
+  await SunSynthLab.create("Known Generator Sine")
+    .addModule("MultiSynth", { name: "Input", position: { x: 0, y: 512, z: 0 } })
+    .setInputModule("Input")
+    .addModule("Generator", {
+      name: "Sine",
+      controllers: {
+        volume: 128,
+        waveform: "sin",
+        panning: 128,
+        attack: 0,
+        release: 0,
+        polyphony: 1,
+        mode: "mono",
+        sustain: "on",
+        freqModulationByInput: 0,
+        dutyCycle: 511,
+      },
+    })
+    .connect("Input", "Sine")
+    .connect("Sine", "Output")
+    .writeSunsynth(synthPath);
+
+  const output = execFileSync(
+    process.execPath,
+    ["tools/sunsynth-characterize.mjs", "--json", "--probe", "C4:96:0.5", synthPath],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
+  const [result] = JSON.parse(output);
+  const strongestPeak = result.features.spectrum.dominantPeaks[0];
+
+  assert.ok(Math.abs(strongestPeak.frequency - 527.56) < 20);
+  assert.equal(strongestPeak.harmonic, 2);
+  assert.ok(result.features.spectrum.inharmonicityCents < 80);
+  assert.ok(result.features.tags.includes("dark") || result.features.tags.includes("warm"));
 });
