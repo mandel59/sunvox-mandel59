@@ -7,6 +7,7 @@ let masterVolume = DEFAULT_MASTER_VOLUME;
 let playerReady = false;
 let loadedResourceUrl = "";
 let loadedSynthModule = -1;
+let fileSize = 0;
 const synthControllerPresets = new Map();
 
 svlib.then(async function (Module) {

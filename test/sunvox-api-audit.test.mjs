@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { collectApiAudit } from "../tools/sunvox-api-audit.mjs";
@@ -63,4 +64,23 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   assert.equal(loadModule.wrapperParameterCount, 5);
   assert.ok(loadModule.calls.some((call) => call.binding === "js-wrapper" && call.argumentCount === 5));
   assert.ok(loadModule.calls.some((call) => call.binding === "wasm-export" && call.argumentCount === 6));
+});
+
+test("declares browser SunVox wrapper calls used by the player", async () => {
+  const [audit, declarationsText] = await Promise.all([
+    collectApiAudit({ scanRoots: ["js"] }),
+    readFile("js/@types/global.d.ts", "utf8"),
+  ]);
+  const declaredApis = new Set(
+    [...declarationsText.matchAll(/declare function\s+(sv_[A-Za-z0-9_]+)\s*\(/gu)].map((match) => match[1]),
+  );
+  const playerApis = new Set(
+    audit.apis.flatMap((item) =>
+      item.calls
+        .filter((call) => call.binding === "js-wrapper" && call.file === "js\\player.js")
+        .map((call) => call.api),
+    ),
+  );
+  const missing = [...playerApis].filter((api) => !declaredApis.has(api));
+  assert.deepEqual(missing, []);
 });
