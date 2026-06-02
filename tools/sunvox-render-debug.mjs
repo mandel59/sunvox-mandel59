@@ -263,9 +263,11 @@ function renderSynthEventPass(module, { slot, moduleIndex, sampleRate, channels,
   const noteValue = sunVoxNoteValue(note);
   const track = 0;
   const gateFrames = Math.round(gateSeconds * sampleRate);
+  const gateTicks = Math.floor(gateSeconds * module._sv_get_ticks_per_second());
   const releaseSeconds = Math.max(0, durationSeconds - gateSeconds);
   const baseTicks = module._sv_get_ticks();
   assertSunVoxOk(module._sv_play(slot), "sv_play");
+  assertSunVoxOk(module._sv_set_event_t(slot, 1, baseTicks), "sv_set_event_t note on");
   assertSunVoxOk(module._sv_send_event(slot, track, noteValue, velocity, moduleIndex + 1, 0, 0), "sv_send_event note on");
   const gate = renderSlotAudioAtFrame(module, {
     slot,
@@ -275,6 +277,7 @@ function renderSynthEventPass(module, { slot, moduleIndex, sampleRate, channels,
     startFrame: 0,
     baseTicks,
   });
+  assertSunVoxOk(module._sv_set_event_t(slot, 1, baseTicks + gateTicks), "sv_set_event_t note off");
   assertSunVoxOk(
     module._sv_send_event(slot, track, SunVoxNoteCommands.noteOff, 0, moduleIndex + 1, 0, 0),
     "sv_send_event note off",
@@ -287,6 +290,7 @@ function renderSynthEventPass(module, { slot, moduleIndex, sampleRate, channels,
     startFrame: gateFrames,
     baseTicks,
   });
+  assertSunVoxOk(module._sv_set_event_t(slot, 0, 0), "sv_set_event_t reset");
   assertSunVoxOk(module._sv_send_event(slot, 0, SunVoxNoteCommands.allNotesOff, 0, 0, 0, 0), "sv_send_event all notes off");
   assertSunVoxOk(module._sv_stop(slot), "sv_stop");
   const rendered = concatRenderedAudio([gate, release], channels, sampleRate);

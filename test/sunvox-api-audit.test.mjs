@@ -9,6 +9,7 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   assert.equal(audit.missingHeader.length, 0);
   assert.equal(audit.missingImplementation.length, 0);
   assert.ok(audit.apis.some((item) => item.api === "sv_send_event" && item.review?.priority === "high"));
+  assert.ok(audit.apis.some((item) => item.api === "sv_set_event_t" && item.review?.priority === "high"));
   assert.ok(audit.apis.some((item) => item.api === "sv_new_pattern" && item.review?.priority === "high"));
   assert.ok(audit.apis.some((item) => item.api === "sv_audio_callback" && item.review?.priority === "high"));
   const sendEvent = audit.apis.find((item) => item.api === "sv_send_event");
