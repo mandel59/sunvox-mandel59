@@ -439,10 +439,13 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       !(acidBassModule > 0) ||
       synthPlayback.calls.connectModule[0]?.destination !== 0 ||
       noteOnEvent?.module !== loadedSynthModule + 1 ||
+      noteOnEvent?.track !== 28 ||
       noteOnEvent?.velocity !== 128 ||
       controllerEvent?.moduleIndex !== loadedSynthModule ||
       controllerEvent?.scaled !== 0 ||
       noteOffEvent?.module !== loadedSynthModule + 1 ||
+      noteOffEvent?.track !== 28 ||
+      acidBassNoteOnEvent?.track !== 28 ||
       acidBassNoteOnEvent?.velocity !== 128
     ) {
       throw new Error(
