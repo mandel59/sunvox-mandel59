@@ -153,14 +153,14 @@ test("matches event and pattern probes for a polyphonic root FMX synth", async (
   assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.05);
 });
 
-test("renders MetaModule synth direct events with public velocity values", () => {
+test("compares event and pattern probes for generated synth regression fixtures", () => {
   const output = execFileSync(
     process.execPath,
     [
       "tools/sunvox-render-debug.mjs",
       "--json",
       "--mode",
-      "event",
+      "both",
       "--note",
       "C4",
       "--velocity",
@@ -168,13 +168,22 @@ test("renders MetaModule synth direct events with public velocity values", () =>
       "--passes",
       "1",
       "generated/instruments/Scratch Acid Bass.sunsynth",
+      "generated/instruments/Scratch FMX Tines.sunsynth",
     ],
     { cwd: repoRoot, encoding: "utf8" },
   );
-  const [result] = JSON.parse(output);
-  const [pass] = result.passes;
+  const results = JSON.parse(output);
 
-  assert.equal(result.probe.eventVelocity, 128);
-  assert.ok(pass.stats.nonZeroFrames > 0);
-  assert.ok(pass.stats.peak > 0);
+  for (const result of results) {
+    const eventPass = result.passes.find((pass) => pass.mode === "synth-event-probe");
+    const patternPass = result.passes.find((pass) => pass.mode === "synth-pattern-probe");
+    assert.equal(result.probe.eventVelocity, 128);
+    assert.ok(eventPass.stats.nonZeroFrames > 0, `${result.file} event probe should not be silent`);
+    assert.ok(patternPass.stats.nonZeroFrames > 0, `${result.file} pattern probe should not be silent`);
+    assert.ok(eventPass.stats.peak > 0, `${result.file} event probe should have non-zero peak`);
+    assert.ok(patternPass.stats.peak > 0, `${result.file} pattern probe should have non-zero peak`);
+    assertRelativeClose(eventPass.stats.peak, patternPass.stats.peak, 0.05);
+    assertRelativeClose(eventPass.stats.rms, patternPass.stats.rms, 0.05);
+    assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.08);
+  }
 });
