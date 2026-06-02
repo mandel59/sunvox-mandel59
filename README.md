@@ -136,7 +136,9 @@ includes an `eventTimeline` for direct event passes with the actual note-on and
 note-off `sv_send_event()` arguments, event ticks, gate ticks, and frame
 positions. Pattern passes expose the generated `probePattern.events`, so
 event/pattern comparisons can be traced back to concrete playback conditions on
-both paths.
+both paths. When both paths are rendered, `comparisons` pairs event and pattern
+passes by pass number and reports metric deltas, ratios, and relative
+differences for peak, RMS, activity counts, and leading silence.
 
 SunVox Lib integration code shared by Node tools lives in
 [tools/sunvox-node.mjs](tools/sunvox-node.mjs). It wraps the JS/WASM runtime

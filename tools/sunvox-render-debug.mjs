@@ -208,6 +208,49 @@ export function summarizeAudio(samples, channels, epsilon = SILENCE_EPSILON) {
   };
 }
 
+function relativeDifference(left, right) {
+  const scale = Math.max(Math.abs(left), Math.abs(right), Number.EPSILON);
+  return Math.abs(left - right) / scale;
+}
+
+function compareMetric(eventValue, patternValue) {
+  return {
+    event: eventValue,
+    pattern: patternValue,
+    delta: eventValue - patternValue,
+    ratio: patternValue === 0 ? (eventValue === 0 ? 1 : null) : eventValue / patternValue,
+    relativeDifference: relativeDifference(eventValue, patternValue),
+  };
+}
+
+function compareEventPatternPasses(passes) {
+  const eventByPass = new Map(
+    passes.filter((pass) => pass.mode === "synth-event-probe").map((pass) => [pass.pass, pass]),
+  );
+  const patternByPass = new Map(
+    passes.filter((pass) => pass.mode === "synth-pattern-probe").map((pass) => [pass.pass, pass]),
+  );
+
+  return Array.from(eventByPass.entries())
+    .filter(([pass]) => patternByPass.has(pass))
+    .map(([pass, eventPass]) => {
+      const patternPass = patternByPass.get(pass);
+      return {
+        pass,
+        metrics: {
+          peak: compareMetric(eventPass.stats.peak, patternPass.stats.peak),
+          rms: compareMetric(eventPass.stats.rms, patternPass.stats.rms),
+          nonZeroSamples: compareMetric(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples),
+          nonZeroFrames: compareMetric(eventPass.stats.nonZeroFrames, patternPass.stats.nonZeroFrames),
+          leadingSilenceFrames: compareMetric(
+            eventPass.stats.leadingSilenceFrames,
+            patternPass.stats.leadingSilenceFrames,
+          ),
+        },
+      };
+    });
+}
+
 function renderProject(module, { slot, sampleRate, channels, durationSeconds }) {
   assertSunVoxOk(module._sv_volume(slot, 256), "sv_volume");
   assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
@@ -433,6 +476,7 @@ async function debugFile(file, options) {
           }
         }
       }
+      const comparisons = magic === "SSYN" ? compareEventPatternPasses(passes) : [];
       return {
         file: relative(process.cwd(), filePath),
         magic,
@@ -444,6 +488,7 @@ async function debugFile(file, options) {
         probe,
         ...(probePattern ? { probePattern } : {}),
         passes,
+        ...(comparisons.length ? { comparisons } : {}),
       };
     },
   );

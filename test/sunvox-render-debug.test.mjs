@@ -19,6 +19,20 @@ function assertRelativeClose(actual, expected, tolerance = 0.02) {
   );
 }
 
+function assertComparisonMatchesStats(result, eventPass, patternPass, tolerance = 0.02) {
+  assert.equal(result.comparisons.length, 1);
+  const [comparison] = result.comparisons;
+  assert.equal(comparison.pass, eventPass.pass);
+  assert.equal(comparison.metrics.peak.event, eventPass.stats.peak);
+  assert.equal(comparison.metrics.peak.pattern, patternPass.stats.peak);
+  assert.equal(comparison.metrics.rms.event, eventPass.stats.rms);
+  assert.equal(comparison.metrics.rms.pattern, patternPass.stats.rms);
+  assert.equal(comparison.metrics.nonZeroSamples.event, eventPass.stats.nonZeroSamples);
+  assert.equal(comparison.metrics.nonZeroSamples.pattern, patternPass.stats.nonZeroSamples);
+  assert.ok(comparison.metrics.peak.relativeDifference <= tolerance);
+  assert.ok(comparison.metrics.rms.relativeDifference <= tolerance);
+}
+
 test("normalizes direct event velocity", () => {
   assert.equal(normalizeEventVelocity(1), 1);
   assert.equal(normalizeEventVelocity(65), 65);
@@ -143,6 +157,7 @@ test("matches event and pattern probes for a simple line-aligned Generator synth
   assertRelativeClose(eventPass.stats.peak, patternPass.stats.peak);
   assertRelativeClose(eventPass.stats.rms, patternPass.stats.rms);
   assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.05);
+  assertComparisonMatchesStats(result, eventPass, patternPass);
 });
 
 test("matches event and pattern probes for a polyphonic root FMX synth", async () => {
@@ -185,6 +200,7 @@ test("matches event and pattern probes for a polyphonic root FMX synth", async (
   assertRelativeClose(eventPass.stats.peak, patternPass.stats.peak);
   assertRelativeClose(eventPass.stats.rms, patternPass.stats.rms);
   assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.05);
+  assertComparisonMatchesStats(result, eventPass, patternPass);
 });
 
 test("compares event and pattern probes for generated synth regression fixtures", () => {
@@ -226,5 +242,6 @@ test("compares event and pattern probes for generated synth regression fixtures"
     assertRelativeClose(eventPass.stats.peak, patternPass.stats.peak, 0.05);
     assertRelativeClose(eventPass.stats.rms, patternPass.stats.rms, 0.05);
     assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.08);
+    assertComparisonMatchesStats(result, eventPass, patternPass, 0.05);
   }
 });
