@@ -9,6 +9,7 @@ const CHECKS = [
   ["Regenerate SunVox fixtures", npmCommand, ["run", "sunvox:fixtures:generate"]],
   ["Regenerate site data", npmCommand, ["run", "site:data:generate"]],
   ["SunVox lib compatibility", npmCommand, ["run", "sunvox:lib:check"]],
+  ["SunVox API audit", npmCommand, ["run", "sunvox:api-audit", "--", "--check"]],
   ["Node tests", npmCommand, ["test"]],
   ["SunVox metrics", npmCommand, ["run", "sunvox:metrics"]],
   ["Code metrics", npmCommand, ["run", "code:metrics"]],
