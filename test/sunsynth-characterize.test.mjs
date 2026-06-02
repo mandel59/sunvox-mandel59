@@ -36,7 +36,7 @@ test("parses note names and numeric note values", () => {
 
 test("parses multi-probe specifications", () => {
   assert.deepEqual(parseProbe("C2:72:2.0"), {
-    id: "C2:72:2.0s",
+    id: "C2:72:2s",
     note: 36,
     velocity: 72,
     gateSeconds: 2,
@@ -89,7 +89,7 @@ test("reports probe pattern metadata in JSON output", () => {
   );
   const [result] = JSON.parse(output);
 
-  assert.equal(result.probe, "C4:96:0.3s");
+  assert.equal(result.probe, "C4:96:0.25s");
   assert.equal(result.probePattern.patternIndex, 1);
   assert.ok(result.probePattern.noteOffLine >= 1);
   assert.ok(result.probePattern.lineFrames > 0);

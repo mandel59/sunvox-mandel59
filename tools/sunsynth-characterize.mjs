@@ -91,6 +91,10 @@ function noteFrequency(note) {
   return 440 * 2 ** ((note - 69) / 12);
 }
 
+function formatSeconds(value) {
+  return Number(value).toFixed(6).replace(/\.?0+$/u, "");
+}
+
 function normalizeProbe(probe, label = "probe") {
   const note = Number(probe.note);
   const velocity = Number(probe.velocity);
@@ -111,7 +115,7 @@ function normalizeProbe(probe, label = "probe") {
   };
   return {
     ...normalized,
-    id: `${noteLabel(normalized.note)}:${normalized.velocity}:${normalized.gateSeconds.toFixed(1)}s`,
+    id: `${noteLabel(normalized.note)}:${normalized.velocity}:${formatSeconds(normalized.gateSeconds)}s`,
     noteOffSeconds: DEFAULT_NOTE_SECONDS + normalized.gateSeconds,
     durationSeconds: DEFAULT_NOTE_SECONDS + normalized.gateSeconds + 2,
   };
@@ -646,7 +650,7 @@ function formatTable(results) {
       result.probe,
       noteLabel(result.note),
       String(result.velocity),
-      `${fixed(result.gateSeconds, 1)}s`,
+      `${formatSeconds(result.gateSeconds)}s`,
       fixed(features.peak),
       fixed(features.rms),
       fixed(features.crestFactor, 2),
