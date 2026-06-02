@@ -147,10 +147,14 @@ current `_sv_*` / `sv_*` calls and compare them with
 `var/sunvox_lib/sunvox_lib/headers/sunvox.h` and
 `var/sunvox_lib/sunvox_lib/main/sunvox_lib.cpp`. Run
 `npm run sunvox:api-audit -- --check` to fail when a referenced API is missing
-from either source file. High-priority APIs also print the matching header and
-implementation lines so argument reviews can cite the source directly.
-Important API boundary rules: `sv_new_pattern()` uses `clone < 0` for a fresh
-pattern, `sv_audio_callback()` expects `out_time` in SunVox system ticks, and
+from either source file or when a WASM export call such as `module._sv_*` uses
+the wrong argument count. The report prints each call's binding style and
+`args=actual/expected`; browser-side `sv_*` wrapper calls are reported but are
+not failed solely for JS wrapper arity differences such as TypedArray load
+helpers. High-priority APIs also print the matching header and implementation
+lines so argument reviews can cite the source directly. Important API boundary
+rules: `sv_new_pattern()` uses `clone < 0` for a fresh pattern,
+`sv_audio_callback()` expects `out_time` in SunVox system ticks, and
 `sv_send_event()` takes public velocity values `1..129` with `0` meaning
 default.
 
