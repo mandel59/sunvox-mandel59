@@ -4,6 +4,16 @@ import test from "node:test";
 
 import { collectApiAudit } from "../tools/sunvox-api-audit.mjs";
 
+function parseDeclaredFunctionParameterCounts(text) {
+  const declarations = new Map();
+  const declarationPattern = /declare function\s+(sv_[A-Za-z0-9_]+)\s*\(([\s\S]*?)\)\s*:/gu;
+  for (const match of text.matchAll(declarationPattern)) {
+    const parameters = match[2].trim();
+    declarations.set(match[1], parameters ? parameters.split(",").filter((parameter) => parameter.trim()).length : 0);
+  }
+  return declarations;
+}
+
 test("audits checked-in SunVox Lib API calls against the source fixture", async () => {
   const audit = await collectApiAudit();
 
@@ -71,9 +81,7 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
     collectApiAudit({ scanRoots: ["js"] }),
     readFile("js/@types/global.d.ts", "utf8"),
   ]);
-  const declaredApis = new Set(
-    [...declarationsText.matchAll(/declare function\s+(sv_[A-Za-z0-9_]+)\s*\(/gu)].map((match) => match[1]),
-  );
+  const declaredParameterCounts = parseDeclaredFunctionParameterCounts(declarationsText);
   const playerApis = new Set(
     audit.apis.flatMap((item) =>
       item.calls
@@ -81,6 +89,15 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
         .map((call) => call.api),
     ),
   );
-  const missing = [...playerApis].filter((api) => !declaredApis.has(api));
+  const missing = [...playerApis].filter((api) => !declaredParameterCounts.has(api));
   assert.deepEqual(missing, []);
+  const arityMismatches = audit.apis
+    .filter((item) => playerApis.has(item.api))
+    .filter((item) => declaredParameterCounts.get(item.api) !== item.wrapperParameterCount)
+    .map((item) => ({
+      api: item.api,
+      declared: declaredParameterCounts.get(item.api),
+      wrapper: item.wrapperParameterCount,
+    }));
+  assert.deepEqual(arityMismatches, []);
 });
