@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { dirname, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { analyzeRenderedAudio, parseNote, parseProbe } from "../tools/sunsynth-characterize.mjs";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function stereoSine({ frequency, sampleRate = 44100, seconds = 1, leftGain = 1, rightGain = 1 }) {
   const frameCount = Math.round(sampleRate * seconds);
@@ -68,4 +73,25 @@ test("reports side energy for anti-phase stereo material", () => {
   assert.ok(features.stereo.correlation < -0.99);
   assert.ok(features.stereo.sideToMidRatio > 1000);
   assert.ok(features.tags.includes("wide"));
+});
+
+test("reports probe pattern metadata in JSON output", () => {
+  const output = execFileSync(
+    process.execPath,
+    [
+      "tools/sunsynth-characterize.mjs",
+      "--json",
+      "--probe",
+      "C4:96:0.25",
+      "generated/instruments/Scratch FMX Tines.sunsynth",
+    ],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
+  const [result] = JSON.parse(output);
+
+  assert.equal(result.probe, "C4:96:0.3s");
+  assert.equal(result.probePattern.patternIndex, 1);
+  assert.ok(result.probePattern.noteOffLine >= 1);
+  assert.ok(result.probePattern.lineFrames > 0);
+  assert.ok(result.probePattern.noteOffFrame > result.probePattern.noteOnFrame);
 });

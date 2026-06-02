@@ -241,6 +241,7 @@ async function renderSynth(filePath, probe) {
         note: probe.note,
         noteOnFrame: pattern.noteOnFrame,
         noteOffFrame: pattern.noteOffFrame,
+        probePattern: pattern,
       };
     },
   );
@@ -604,6 +605,7 @@ async function analyzeFile(file, probe) {
     durationSeconds: probe.durationSeconds,
     noteOffSeconds: probe.noteOffSeconds,
     gateSeconds: probe.gateSeconds,
+    probePattern: rendered.probePattern,
     features: analyzeRenderedAudio(rendered),
   };
 }
@@ -686,6 +688,7 @@ function formatDetails(results) {
       const diagnosis = features.diagnosis.length ? features.diagnosis : ["no obvious spectral issue detected"];
       return [
         `${basename(result.file)} ${result.probe}`,
+        `  probe pattern: index=${result.probePattern.patternIndex} noteOffLine=${result.probePattern.noteOffLine} lineFrames=${result.probePattern.lineFrames} noteOnFrame=${result.probePattern.noteOnFrame} noteOffFrame=${result.probePattern.noteOffFrame}`,
         `  level: peak=${fixed(features.peak)} rms=${fixed(features.rms)} crest=${fixed(features.crestFactor, 2)} transient=${fixed(features.transientRms)} sustain=${fixed(features.sustainRms)} tail=${fixed(features.tailRms)} tail/sustain=${fixed(features.tailToSustainRatio, 2)}`,
         `  ${formatSpectrum("transient spectrum", features.transientSpectrum)}`,
         `  ${formatSpectrum("body spectrum", features.spectrum)}`,
