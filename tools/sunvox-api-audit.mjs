@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_HEADER_PATH = "var/sunvox_lib/sunvox_lib/headers/sunvox.h";
 const DEFAULT_IMPLEMENTATION_PATH = "var/sunvox_lib/sunvox_lib/main/sunvox_lib.cpp";
+const DEFAULT_WRAPPER_PATH = "sunvox_lib/sunvox_lib/js/lib/sunvox_lib_loader.js";
 const DEFAULT_SCAN_ROOTS = ["js", "tools", "test"];
 const SOURCE_EXTENSIONS = new Set([".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"]);
 const SKIP_DIRECTORIES = new Set([".git", ".jj", "node_modules", "dist", "var", "sunvox_lib"]);
@@ -210,6 +211,7 @@ function formatAudit(audit) {
   rows.push("");
   rows.push(`Header: ${audit.headerPath}`);
   rows.push(`Implementation: ${audit.implementationPath}`);
+  rows.push(`JS wrapper: ${audit.wrapperPath}`);
   rows.push(`Scanned files: ${audit.scannedFileCount}`);
   rows.push("");
   rows.push("Referenced APIs:");
@@ -221,7 +223,9 @@ function formatAudit(audit) {
       }${note}`,
     );
     for (const call of item.calls.slice(0, 5)) {
-      const arity = Number.isInteger(call.argumentCount) ? ` args=${call.argumentCount}/${item.parameterCount}` : "";
+      const arity = Number.isInteger(call.argumentCount)
+        ? ` args=${call.argumentCount}/${call.expectedArgumentCount}`
+        : "";
       rows.push(`  - ${call.file}:${call.line}:${call.column} (${call.rawName}, ${call.binding}${arity})`);
       if (item.review) {
         rows.push(`    source: ${call.text}`);
@@ -236,6 +240,16 @@ function formatAudit(audit) {
     if (item.header?.parameters?.length) {
       rows.push(`  - parameters: ${item.header.parameters.map((parameter) => parameter.name ?? parameter.text).join(", ")}`);
     }
+    if (item.wrapper) {
+      rows.push(`  - wrapper: ${item.wrapper.line}: ${item.wrapper.text}`);
+      if (item.wrapper.parameters.length) {
+        rows.push(
+          `  - wrapper parameters: ${item.wrapper.parameters
+            .map((parameter) => parameter.name ?? parameter.text)
+            .join(", ")}`,
+        );
+      }
+    }
     if (item.review && item.implementation) {
       rows.push(`  - implementation: ${item.implementation.line}: ${item.implementation.text}`);
     }
@@ -244,7 +258,7 @@ function formatAudit(audit) {
     }
     for (const mismatch of item.strictArityMismatches) {
       rows.push(
-        `  - arity mismatch: ${mismatch.file}:${mismatch.line}:${mismatch.column} expected ${item.parameterCount}, got ${mismatch.argumentCount}`,
+        `  - arity mismatch: ${mismatch.file}:${mismatch.line}:${mismatch.column} expected ${mismatch.expectedArgumentCount}, got ${mismatch.argumentCount}`,
       );
     }
   }
@@ -279,12 +293,15 @@ export async function collectApiAudit({
   scanRoots = DEFAULT_SCAN_ROOTS,
   headerPath = DEFAULT_HEADER_PATH,
   implementationPath = DEFAULT_IMPLEMENTATION_PATH,
+  wrapperPath = DEFAULT_WRAPPER_PATH,
 } = {}) {
   const absoluteHeaderPath = resolve(cwd, headerPath);
   const absoluteImplementationPath = resolve(cwd, implementationPath);
-  const [headerText, implementationText] = await Promise.all([
+  const absoluteWrapperPath = resolve(cwd, wrapperPath);
+  const [headerText, implementationText, wrapperText] = await Promise.all([
     readFile(absoluteHeaderPath, "utf8"),
     readFile(absoluteImplementationPath, "utf8"),
+    readFile(absoluteWrapperPath, "utf8"),
   ]);
 
   const headerSymbols = collectSymbolsFromText(
@@ -295,6 +312,7 @@ export async function collectApiAudit({
     implementationText,
     /SUNVOX_EXPORT(?:\s+[A-Za-z_][A-Za-z0-9_]*)*\s+[A-Za-z_][A-Za-z0-9_*\s]*\b(sv_[A-Za-z0-9_]+)\s*\(/,
   );
+  const wrapperSymbols = collectSymbolsFromText(wrapperText, /^\s*function\s+(sv_[A-Za-z0-9_]+)\s*\([^)]*\)/);
 
   const files = (await Promise.all(scanRoots.map((root) => walkFiles(resolve(cwd, root))))).flat();
   const calls = [];
@@ -317,21 +335,35 @@ export async function collectApiAudit({
       const header = headerSymbols.get(api);
       const parameters = header ? parseParameterList(header.text) : [];
       const parameterCount = parameters.length;
-      const strictArityMismatches = apiCalls
+      const wrapper = wrapperSymbols.get(api);
+      const wrapperParameters = wrapper ? parseParameterList(wrapper.text) : [];
+      const wrapperParameterCount = wrapperParameters.length;
+      const callsWithExpectedArity = apiCalls.map((call) => {
+        const expectedArgumentCount =
+          call.binding === "js-wrapper" && wrapper ? wrapperParameterCount : header ? parameterCount : undefined;
+        const expectedArgumentSource = call.binding === "js-wrapper" && wrapper ? "wrapper" : header ? "header" : undefined;
+        return {
+          ...call,
+          expectedArgumentCount,
+          expectedArgumentSource,
+        };
+      });
+      const strictArityMismatches = callsWithExpectedArity
         .filter(
           (call) =>
-            call.binding === "wasm-export" &&
             Number.isInteger(call.argumentCount) &&
-            Number.isInteger(parameterCount) &&
-            call.argumentCount !== parameterCount,
+            Number.isInteger(call.expectedArgumentCount) &&
+            call.argumentCount !== call.expectedArgumentCount,
         )
-        .map((call) => ({ ...call, expectedArgumentCount: parameterCount }));
+        .map((call) => ({ ...call }));
       return {
         api,
-        calls: apiCalls,
+        calls: callsWithExpectedArity,
         header: header ? { ...header, parameters } : undefined,
         implementation: implementationSymbols.get(api),
+        wrapper: wrapper ? { ...wrapper, parameters: wrapperParameters } : undefined,
         parameterCount,
+        wrapperParameterCount: wrapper ? wrapperParameterCount : undefined,
         strictArityMismatches,
         review: REVIEW_NOTES[api],
       };
@@ -346,6 +378,7 @@ export async function collectApiAudit({
   return {
     headerPath,
     implementationPath,
+    wrapperPath,
     scannedFileCount: files.length,
     apis,
     missingHeader: apis.filter((item) => !item.header).map((item) => item.api),

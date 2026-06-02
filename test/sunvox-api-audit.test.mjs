@@ -29,13 +29,38 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
     sendEvent.calls.every((call) => call.argumentCount === sendEvent.parameterCount),
     "sv_send_event calls should use the public seven-argument API",
   );
+  assert.equal(sendEvent.wrapperParameterCount, 7);
+  assert.deepEqual(
+    sendEvent.wrapper.parameters.map((parameter) => parameter.name),
+    ["slot", "track", "note", "vel", "module", "ctl", "ctl_val"],
+  );
   assert.ok(setController.calls.some((call) => /sv_set_module_ctl_value\(0, moduleIndex, controllerNumber, controllerValue, 0\)/u.test(call.text)));
   assert.match(audioCallback.header.text, /int sv_audio_callback/u);
   assert.match(audioCallback.implementation.text, /SUNVOX_EXPORT int sv_audio_callback/u);
   assert.equal(audioCallback.parameterCount, 4);
   assert.ok(audioCallback.calls.every((call) => call.argumentCount === audioCallback.parameterCount));
-  assert.ok(loadProject.calls.some((call) => call.binding === "js-wrapper" && call.argumentCount === 2));
-  assert.ok(loadProject.calls.some((call) => call.binding === "wasm-export" && call.argumentCount === 3));
+  assert.equal(loadProject.parameterCount, 3);
+  assert.equal(loadProject.wrapperParameterCount, 2);
+  assert.ok(
+    loadProject.calls.some(
+      (call) =>
+        call.binding === "js-wrapper" &&
+        call.argumentCount === 2 &&
+        call.expectedArgumentCount === 2 &&
+        call.expectedArgumentSource === "wrapper",
+    ),
+  );
+  assert.ok(
+    loadProject.calls.some(
+      (call) =>
+        call.binding === "wasm-export" &&
+        call.argumentCount === 3 &&
+        call.expectedArgumentCount === 3 &&
+        call.expectedArgumentSource === "header",
+    ),
+  );
+  assert.equal(loadModule.parameterCount, 6);
+  assert.equal(loadModule.wrapperParameterCount, 5);
   assert.ok(loadModule.calls.some((call) => call.binding === "js-wrapper" && call.argumentCount === 5));
   assert.ok(loadModule.calls.some((call) => call.binding === "wasm-export" && call.argumentCount === 6));
 });
