@@ -426,7 +426,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       !(loadedSynthModule > 0) ||
       synthPlayback.calls.connectModule[0]?.destination !== 0 ||
       noteOnEvent?.module !== loadedSynthModule + 1 ||
-      noteOnEvent?.velocity !== 128 ||
+      noteOnEvent?.velocity !== 254 ||
       controllerEvent?.moduleIndex !== loadedSynthModule ||
       controllerEvent?.scaled !== 0 ||
       noteOffEvent?.module !== loadedSynthModule + 1

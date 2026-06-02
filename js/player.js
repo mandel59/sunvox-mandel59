@@ -200,6 +200,11 @@ function noteTrack(/** @type {number} */ note) {
     return Math.max(0, Math.min(31, note % 32));
 }
 
+function noteVelocityToEventVelocity(/** @type {number} */ velocity) {
+    const patternVelocity = Math.max(1, Math.min(129, Math.round(velocity)));
+    return Math.min(255, (patternVelocity - 1) * 2);
+}
+
 async function playSynthNote(/** @type {string} */ url, /** @type {number} */ note, /** @type {number} */ velocity = DEFAULT_NOTE_VELOCITY) {
     resumeAudioContext();
     const moduleIndex = await loadSynthForKeyboard(url);
@@ -207,7 +212,7 @@ async function playSynthNote(/** @type {string} */ url, /** @type {number} */ no
         return false;
     }
     const noteValue = Math.max(1, Math.min(127, Math.round(note) + 1));
-    const noteVelocity = Math.max(1, Math.min(129, Math.round(velocity)));
+    const noteVelocity = noteVelocityToEventVelocity(velocity);
     sv_send_event(0, noteTrack(note), noteValue, noteVelocity, moduleIndex + 1, 0, 0);
     return true;
 }

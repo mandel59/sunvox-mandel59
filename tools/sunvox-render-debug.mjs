@@ -34,7 +34,7 @@ const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 
 function usage() {
   console.error(`Usage:
-  node tools/sunvox-render-debug.mjs [--json] [--mode event|pattern|both] [--note <note|midi>] [--velocity <1..129>] [--gate <seconds>] [--duration <seconds>] [--passes <count>] <file.sunvox|file.sunsynth> [...]
+  node tools/sunvox-render-debug.mjs [--json] [--mode event|pattern|both] [--note <note|midi>] [--velocity <1..129>] [--event-velocity <0..255>] [--gate <seconds>] [--duration <seconds>] [--passes <count>] <file.sunvox|file.sunsynth> [...]
 
 Examples:
   node tools/sunvox-render-debug.mjs music/2022-04-16.sunvox
@@ -53,6 +53,14 @@ function parsePositiveInteger(value, label) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
     throw new Error(`${label} must be a positive integer`);
+  }
+  return parsed;
+}
+
+function parseIntegerRange(value, label, min, max) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+    throw new Error(`${label} must be an integer from ${min} to ${max}`);
   }
   return parsed;
 }
@@ -93,6 +101,12 @@ function parseArgs(argv) {
         throw new Error("--velocity requires a value");
       }
       options.velocity = Math.max(1, Math.min(129, Math.round(parsePositiveNumber(argv[index], "--velocity"))));
+    } else if (arg === "--event-velocity") {
+      index += 1;
+      if (!argv[index]) {
+        throw new Error("--event-velocity requires a value");
+      }
+      options.eventVelocity = parseIntegerRange(argv[index], "--event-velocity", 0, 255);
     } else if (arg === "--gate") {
       index += 1;
       if (!argv[index]) {
@@ -138,6 +152,11 @@ function fixed(value, digits = 4) {
 
 function noteTrack(note) {
   return Math.max(0, Math.min(31, Math.round(note) % 32));
+}
+
+export function patternVelocityToEventVelocity(velocity) {
+  const patternVelocity = Math.max(1, Math.min(129, Math.round(Number(velocity))));
+  return Math.min(255, (patternVelocity - 1) * 2);
 }
 
 function inspectLoadedModules(module, slot = SLOT) {
@@ -290,13 +309,14 @@ async function debugFile(file, options) {
   }
   const bytes = await readFile(filePath);
   const magic = readMagic(bytes);
-  const probe = {
-    note: options.note,
-    noteLabel: noteLabel(options.note),
-    velocity: options.velocity,
-    gateSeconds: options.gateSeconds,
-    durationSeconds: options.durationSeconds,
-  };
+      const probe = {
+        note: options.note,
+        noteLabel: noteLabel(options.note),
+        velocity: options.velocity,
+        eventVelocity: options.eventVelocity ?? patternVelocityToEventVelocity(options.velocity),
+        gateSeconds: options.gateSeconds,
+        durationSeconds: options.durationSeconds,
+      };
 
   return withSunVoxSlot(
     {
@@ -337,7 +357,7 @@ async function debugFile(file, options) {
                   sampleRate,
                   channels,
                   note: probe.note,
-                  velocity: probe.velocity,
+                  velocity: probe.eventVelocity,
                   gateSeconds: probe.gateSeconds,
                   durationSeconds: options.durationSeconds,
                   pass: index + 1,
@@ -387,8 +407,12 @@ async function debugFile(file, options) {
 function formatResultRows(results) {
   const rows = [["File", "Mode", "Pass", "Probe", "Load", "Modules", "Peak", "RMS", "NonZero", "LeadSilent"]];
   for (const result of results) {
-    const probe = result.magic === "SSYN" ? `${result.probe.noteLabel}:${result.probe.velocity}` : "-";
     for (const pass of result.passes) {
+      const eventSuffix =
+        pass.mode === "synth-event-probe" && result.probe.eventVelocity !== result.probe.velocity
+          ? `/e${result.probe.eventVelocity}`
+          : "";
+      const probe = result.magic === "SSYN" ? `${result.probe.noteLabel}:${result.probe.velocity}${eventSuffix}` : "-";
       rows.push([
         basename(result.file),
         pass.mode,

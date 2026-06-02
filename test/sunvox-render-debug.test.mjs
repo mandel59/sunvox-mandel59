@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { summarizeAudio } from "../tools/sunvox-render-debug.mjs";
+import { patternVelocityToEventVelocity, summarizeAudio } from "../tools/sunvox-render-debug.mjs";
+
+test("converts pattern velocity to direct event velocity", () => {
+  assert.equal(patternVelocityToEventVelocity(1), 0);
+  assert.equal(patternVelocityToEventVelocity(65), 128);
+  assert.equal(patternVelocityToEventVelocity(112), 222);
+  assert.equal(patternVelocityToEventVelocity(128), 254);
+  assert.equal(patternVelocityToEventVelocity(129), 255);
+});
 
 test("summarizes rendered audio level and leading silence", () => {
   const samples = new Float32Array([0, 0, 0, 0, 0.25, -0.25, 0.5, -0.5, 0, 0]);
