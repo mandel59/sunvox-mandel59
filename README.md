@@ -114,9 +114,9 @@ stereo side-to-mid ratio, attack and release timing, plus coarse tags such as
 `--note <note|midi>` to change the probe pitch, and `--velocity <1..129>` to
 change the trigger velocity. Pass `--probe <note>:<velocity>:<gateSeconds>`
 multiple times to compare several input conditions in one run. `--json` and
-`--detail` include the generated probe pattern metadata, including note-off
-line and frame positions, so timbre measurements can be traced back to the
-actual sequencer playback condition.
+`--detail` include the probe note frequency and generated probe pattern
+metadata, including note-off line and frame positions, so timbre measurements
+can be traced back to the actual sequencer playback condition.
 
 `sunvox:render-debug` is a lower-level SunVox Lib probe for checking whether a
 `.sunsynth` renders consistently through direct events and through sequencer
