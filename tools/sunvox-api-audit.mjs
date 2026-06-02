@@ -17,54 +17,154 @@ const REVIEW_NOTES = {
   sv_audio_callback: {
     priority: "high",
     notes: ["out_time is SunVox system ticks, not seconds."],
+    argumentSemantics: {
+      buf: {
+        meaning: "destination audio buffer",
+        notes: ["Element type follows SV_INIT_FLAG_AUDIO_INT16 or SV_INIT_FLAG_AUDIO_FLOAT32."],
+      },
+      frames: { meaning: "number of output frames", unit: "frames" },
+      latency: { meaning: "audio output latency", unit: "frames" },
+      out_time: { meaning: "buffer output time", unit: "SunVox system ticks" },
+    },
   },
   sv_audio_callback2: {
     priority: "medium",
     notes: ["out_time uses the same system tick space as sv_audio_callback()."],
+    argumentSemantics: {
+      out_time: { meaning: "buffer output time", unit: "SunVox system ticks" },
+      in_type: { meaning: "input buffer sample type", values: { 0: "int16", 1: "float32" } },
+      in_channels: { meaning: "number of input channels" },
+      in_buf: { meaning: "interleaved input audio buffer" },
+    },
   },
   sv_new_pattern: {
     priority: "high",
     notes: ["clone < 0 creates a fresh pattern; clone >= 0 creates a clone."],
+    argumentSemantics: {
+      clone: {
+        meaning: "source pattern index for clone creation",
+        specialValues: { "<0": "create a fresh pattern", ">=0": "clone the specified pattern" },
+      },
+      x: { meaning: "timeline X position" },
+      y: { meaning: "timeline Y position" },
+      tracks: { meaning: "number of pattern tracks" },
+      lines: { meaning: "number of pattern lines" },
+      icon_seed: { meaning: "pattern icon seed" },
+      name: { meaning: "pattern name" },
+    },
   },
   sv_send_event: {
     priority: "high",
     notes: ["vel is the public API velocity: 1..129, 0 means default."],
+    argumentSemantics: {
+      track_num: { meaning: "track number within the pattern" },
+      note: {
+        meaning: "note or note command",
+        range: "0..255",
+        specialValues: { 0: "empty", "1..127": "note number", 128: "note off", "129+": "NOTECMD_*" },
+      },
+      vel: { meaning: "velocity", range: "1..129", specialValues: { 0: "default" } },
+      module: { meaning: "target module", specialValues: { 0: "empty", "1..65535": "module number + 1" } },
+      ctl: { meaning: "packed controller/effect selector", format: "0xCCEE" },
+      ctl_val: { meaning: "controller or effect value" },
+    },
   },
   sv_set_event_t: {
     priority: "high",
     notes: ["timestamp is SunVox system ticks."],
+    argumentSemantics: {
+      set: { meaning: "manual event timestamp mode", values: { 0: "reset to automatic time", 1: "set manual time" } },
+      t: { meaning: "event timestamp", unit: "SunVox system ticks" },
+    },
   },
   sv_set_module_ctl_value: {
     priority: "high",
     notes: ["scaled controls whether val is a scaled controller value."],
+    argumentSemantics: {
+      mod_num: { meaning: "module index" },
+      ctl_num: { meaning: "zero-based controller index" },
+      val: { meaning: "controller value" },
+      scaled: { meaning: "value scale mode", values: { 0: "raw controller value", 1: "scaled/display value" } },
+    },
   },
   sv_get_module_ctl_value: {
     priority: "medium",
     notes: ["scaled controls whether the returned value is scaled."],
+    argumentSemantics: {
+      mod_num: { meaning: "module index" },
+      ctl_num: { meaning: "zero-based controller index" },
+      scaled: { meaning: "value scale mode", values: { 0: "raw controller value", 1: "scaled/display value" } },
+    },
   },
   sv_set_pattern_event: {
     priority: "high",
     notes: ["Pattern event fields should not be inferred from sv_send_event() alone."],
+    argumentSemantics: {
+      pat_num: { meaning: "pattern index" },
+      track: { meaning: "pattern track index" },
+      line: { meaning: "pattern line index" },
+      nn: { meaning: "pattern note field" },
+      vv: { meaning: "pattern velocity field" },
+      mm: { meaning: "pattern module field" },
+      ccee: { meaning: "pattern controller/effect field" },
+      xxyy: { meaning: "pattern controller/effect value field" },
+    },
   },
   sv_get_pattern_event: {
     priority: "medium",
     notes: ["Pattern event fields should be audited against pattern storage semantics."],
+    argumentSemantics: {
+      pat_num: { meaning: "pattern index" },
+      track: { meaning: "pattern track index" },
+      line: { meaning: "pattern line index" },
+      column: { meaning: "event column selector" },
+    },
   },
   sv_get_time_map: {
     priority: "high",
     notes: ["The destination type depends on the requested time-map mode."],
+    argumentSemantics: {
+      start_line: { meaning: "first line to read" },
+      len: { meaning: "number of lines to read", unit: "lines" },
+      dest: { meaning: "uint32_t destination buffer", size: "len * sizeof(uint32_t)" },
+      flags: {
+        meaning: "time-map mode",
+        values: {
+          SV_TIME_MAP_SPEED: "BPM | (TPL << 16) at the beginning of each line",
+          SV_TIME_MAP_FRAMECNT: "frame counter at the beginning of each line",
+        },
+      },
+    },
   },
   sv_load_module_from_memory: {
     priority: "high",
     notes: ["Return value is the loaded module index."],
+    argumentSemantics: {
+      data: { meaning: "module or sample data block" },
+      data_size: { meaning: "data block size", unit: "bytes" },
+      x: { meaning: "new module X position" },
+      y: { meaning: "new module Y position" },
+      z: { meaning: "new module Z position" },
+    },
   },
   sv_metamodule_load_from_memory: {
     priority: "medium",
     notes: ["Loads data into an existing MetaModule slot."],
+    argumentSemantics: {
+      mod_num: { meaning: "existing MetaModule index" },
+      data: { meaning: "project data block" },
+      data_size: { meaning: "data block size", unit: "bytes" },
+    },
   },
   sv_sampler_load_from_memory: {
     priority: "medium",
     notes: ["Loads sample data into an existing Sampler module."],
+    argumentSemantics: {
+      mod_num: { meaning: "existing Sampler index" },
+      data: { meaning: "sample data block" },
+      data_size: { meaning: "data block size", unit: "bytes" },
+      sample_slot: { meaning: "target sample slot", specialValues: { "-1": "replace whole sampler" } },
+    },
   },
 };
 
@@ -239,6 +339,46 @@ function formatAudit(audit) {
     }
     if (item.header?.parameters?.length) {
       rows.push(`  - parameters: ${item.header.parameters.map((parameter) => parameter.name ?? parameter.text).join(", ")}`);
+    }
+    if (item.review?.argumentSemantics) {
+      for (const parameter of item.header?.parameters ?? []) {
+        const name = parameter.name;
+        const semantics = name ? item.review.argumentSemantics[name] : undefined;
+        if (!semantics) {
+          continue;
+        }
+        const parts = [semantics.meaning];
+        if (semantics.unit) {
+          parts.push(`unit=${semantics.unit}`);
+        }
+        if (semantics.range) {
+          parts.push(`range=${semantics.range}`);
+        }
+        if (semantics.format) {
+          parts.push(`format=${semantics.format}`);
+        }
+        if (semantics.size) {
+          parts.push(`size=${semantics.size}`);
+        }
+        if (semantics.values) {
+          parts.push(
+            `values=${Object.entries(semantics.values)
+              .map(([value, meaning]) => `${value}: ${meaning}`)
+              .join("; ")}`,
+          );
+        }
+        if (semantics.specialValues) {
+          parts.push(
+            `special=${Object.entries(semantics.specialValues)
+              .map(([value, meaning]) => `${value}: ${meaning}`)
+              .join("; ")}`,
+          );
+        }
+        for (const note of semantics.notes ?? []) {
+          parts.push(note);
+        }
+        rows.push(`  - argument ${name}: ${parts.filter(Boolean).join("; ")}`);
+      }
     }
     if (item.wrapper) {
       rows.push(`  - wrapper: ${item.wrapper.line}: ${item.wrapper.text}`);

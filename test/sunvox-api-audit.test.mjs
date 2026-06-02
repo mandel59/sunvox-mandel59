@@ -32,6 +32,10 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   assert.match(sendEvent.header.text, /int sv_send_event/u);
   assert.match(sendEvent.implementation.text, /SUNVOX_EXPORT int sv_send_event/u);
   assert.equal(sendEvent.parameterCount, 7);
+  assert.equal(sendEvent.review.argumentSemantics.vel.range, "1..129");
+  assert.equal(sendEvent.review.argumentSemantics.vel.specialValues[0], "default");
+  assert.equal(sendEvent.review.argumentSemantics.module.specialValues[0], "empty");
+  assert.equal(sendEvent.review.argumentSemantics.module.specialValues["1..65535"], "module number + 1");
   assert.deepEqual(
     sendEvent.header.parameters.map((parameter) => parameter.name),
     ["slot", "track_num", "note", "vel", "module", "ctl", "ctl_val"],
@@ -49,6 +53,9 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   assert.match(audioCallback.header.text, /int sv_audio_callback/u);
   assert.match(audioCallback.implementation.text, /SUNVOX_EXPORT int sv_audio_callback/u);
   assert.equal(audioCallback.parameterCount, 4);
+  assert.equal(audioCallback.review.argumentSemantics.frames.unit, "frames");
+  assert.equal(audioCallback.review.argumentSemantics.latency.unit, "frames");
+  assert.equal(audioCallback.review.argumentSemantics.out_time.unit, "SunVox system ticks");
   assert.ok(audioCallback.calls.every((call) => call.argumentCount === audioCallback.parameterCount));
   assert.equal(loadProject.parameterCount, 3);
   assert.equal(loadProject.wrapperParameterCount, 2);
@@ -72,8 +79,16 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   );
   assert.equal(loadModule.parameterCount, 6);
   assert.equal(loadModule.wrapperParameterCount, 5);
+  assert.equal(loadModule.review.argumentSemantics.data_size.unit, "bytes");
   assert.ok(loadModule.calls.some((call) => call.binding === "js-wrapper" && call.argumentCount === 5));
   assert.ok(loadModule.calls.some((call) => call.binding === "wasm-export" && call.argumentCount === 6));
+  const newPattern = audit.apis.find((item) => item.api === "sv_new_pattern");
+  const setPatternEvent = audit.apis.find((item) => item.api === "sv_set_pattern_event");
+  const timeMap = audit.apis.find((item) => item.api === "sv_get_time_map");
+  assert.equal(newPattern.review.argumentSemantics.clone.specialValues["<0"], "create a fresh pattern");
+  assert.equal(newPattern.review.argumentSemantics.clone.specialValues[">=0"], "clone the specified pattern");
+  assert.equal(setPatternEvent.review.argumentSemantics.ccee.meaning, "pattern controller/effect field");
+  assert.equal(timeMap.review.argumentSemantics.dest.size, "len * sizeof(uint32_t)");
 });
 
 test("declares browser SunVox wrapper calls used by the player", async () => {
