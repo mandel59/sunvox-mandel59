@@ -111,10 +111,12 @@ function normalizeApiName(rawName) {
 function collectCallsFromText(text, file) {
   const calls = [];
   const pattern = /\b(?:module\.|window\.)?(_?sv_[A-Za-z0-9_]+)\b/g;
+  const stringLiteralPattern = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g;
   const lines = text.split(/\r?\n/);
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex];
-    for (const match of line.matchAll(pattern)) {
+    const codeOnlyLine = line.replace(stringLiteralPattern, (match) => " ".repeat(match.length));
+    for (const match of codeOnlyLine.matchAll(pattern)) {
       const rawName = match[1];
       calls.push({
         api: normalizeApiName(rawName),
