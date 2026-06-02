@@ -309,14 +309,14 @@ async function debugFile(file, options) {
   }
   const bytes = await readFile(filePath);
   const magic = readMagic(bytes);
-      const probe = {
-        note: options.note,
-        noteLabel: noteLabel(options.note),
-        velocity: options.velocity,
-        eventVelocity: options.eventVelocity ?? patternVelocityToEventVelocity(options.velocity),
-        gateSeconds: options.gateSeconds,
-        durationSeconds: options.durationSeconds,
-      };
+  const probe = {
+    note: options.note,
+    noteLabel: noteLabel(options.note),
+    velocity: options.velocity,
+    eventVelocity: options.eventVelocity ?? patternVelocityToEventVelocity(options.velocity),
+    gateSeconds: options.gateSeconds,
+    durationSeconds: options.durationSeconds,
+  };
 
   return withSunVoxSlot(
     {
