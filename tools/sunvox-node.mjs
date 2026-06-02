@@ -202,7 +202,7 @@ export function createPattern(
   module,
   {
     slot = DEFAULT_SLOT,
-    clone = 0,
+    clone = -1,
     x = 0,
     y = 0,
     tracks = 1,
@@ -318,7 +318,7 @@ export function renderSlotAudio(
     channels = DEFAULT_CHANNELS,
     durationSeconds,
     blockFrames = DEFAULT_BLOCK_FRAMES,
-    outTime = (frame) => frame / sampleRate,
+    outTime,
   },
 ) {
   const totalFrames = Math.round(durationSeconds * sampleRate);
@@ -328,10 +328,13 @@ export function renderSlotAudio(
   }
   const samples = new Float32Array(totalFrames * channels);
   let writeFrame = 0;
+  const baseTicks = module._sv_get_ticks();
+  const ticksPerSecond = module._sv_get_ticks_per_second();
+  const frameToTicks = outTime ?? ((frame) => baseTicks + Math.floor((frame * ticksPerSecond) / sampleRate));
   try {
     while (writeFrame < totalFrames) {
       const frames = Math.min(blockFrames, totalFrames - writeFrame);
-      assertSunVoxOk(module._sv_audio_callback(outputPointer, frames, 0, outTime(writeFrame)), "sv_audio_callback");
+      assertSunVoxOk(module._sv_audio_callback(outputPointer, frames, 0, frameToTicks(writeFrame)), "sv_audio_callback");
       samples.set(
         module.HEAPF32.subarray(outputPointer >> 2, (outputPointer >> 2) + frames * channels),
         writeFrame * channels,

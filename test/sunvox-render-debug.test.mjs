@@ -1,14 +1,31 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtemp } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
-import { patternVelocityToEventVelocity, summarizeAudio } from "../tools/sunvox-render-debug.mjs";
+import { normalizeEventVelocity, summarizeAudio } from "../tools/sunvox-render-debug.mjs";
+import { SunSynthLab } from "../tools/sunsynth-lab.mjs";
 
-test("converts pattern velocity to direct event velocity", () => {
-  assert.equal(patternVelocityToEventVelocity(1), 0);
-  assert.equal(patternVelocityToEventVelocity(65), 128);
-  assert.equal(patternVelocityToEventVelocity(112), 222);
-  assert.equal(patternVelocityToEventVelocity(128), 254);
-  assert.equal(patternVelocityToEventVelocity(129), 255);
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+function assertRelativeClose(actual, expected, tolerance = 0.02) {
+  const scale = Math.max(Math.abs(actual), Math.abs(expected), Number.EPSILON);
+  assert.ok(
+    Math.abs(actual - expected) / scale <= tolerance,
+    `Expected ${actual} to be within ${tolerance * 100}% of ${expected}`,
+  );
+}
+
+test("normalizes direct event velocity", () => {
+  assert.equal(normalizeEventVelocity(1), 1);
+  assert.equal(normalizeEventVelocity(65), 65);
+  assert.equal(normalizeEventVelocity(112), 112);
+  assert.equal(normalizeEventVelocity(128), 128);
+  assert.equal(normalizeEventVelocity(129), 129);
+  assert.equal(normalizeEventVelocity(130), 129);
 });
 
 test("summarizes rendered audio level and leading silence", () => {
@@ -34,4 +51,130 @@ test("summarizes silent rendered audio", () => {
   assert.equal(stats.firstNonZeroFrame, undefined);
   assert.equal(stats.lastNonZeroFrame, undefined);
   assert.equal(stats.leadingSilenceFrames, 4);
+});
+
+test("matches event and pattern probes for a simple line-aligned Generator synth", async () => {
+  const tempDir = await mkdtemp(resolve(tmpdir(), "sunvox-render-probe-"));
+  const synthPath = resolve(tempDir, "probe-generator-sine.sunsynth");
+
+  await SunSynthLab.create("Probe Generator Sine", { color: "#05ff00" })
+    .addModule("MultiSynth", { name: "Input", position: { x: 0, y: 512, z: 0 } })
+    .setInputModule("Input")
+    .addModule("Generator", {
+      name: "Sine",
+      controllers: {
+        volume: 128,
+        waveform: "sin",
+        panning: 128,
+        attack: 0,
+        release: 0,
+        polyphony: 1,
+        mode: "mono",
+        sustain: "on",
+        freqModulationByInput: 0,
+        dutyCycle: 511,
+      },
+    })
+    .connect("Input", "Sine")
+    .connect("Sine", "Output")
+    .writeSunsynth(synthPath);
+
+  const output = execFileSync(
+    process.execPath,
+    [
+      "tools/sunvox-render-debug.mjs",
+      "--json",
+      "--mode",
+      "both",
+      "--note",
+      "C4",
+      "--velocity",
+      "112",
+      "--gate",
+      "0.24",
+      "--duration",
+      "1",
+      "--passes",
+      "1",
+      synthPath,
+    ],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
+  const [result] = JSON.parse(output);
+  const eventPass = result.passes.find((pass) => pass.mode === "synth-event-probe");
+  const patternPass = result.passes.find((pass) => pass.mode === "synth-pattern-probe");
+
+  assert.equal(result.probe.velocity, 112);
+  assert.equal(result.probe.eventVelocity, 112);
+  assertRelativeClose(eventPass.stats.peak, patternPass.stats.peak);
+  assertRelativeClose(eventPass.stats.rms, patternPass.stats.rms);
+  assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.05);
+});
+
+test("matches event and pattern probes for a polyphonic root FMX synth", async () => {
+  const tempDir = await mkdtemp(resolve(tmpdir(), "sunvox-render-probe-"));
+  const synthPath = resolve(tempDir, "probe-root-fmx.sunsynth");
+
+  await SunSynthLab.createModule("FMX", {
+    name: "Probe Root FMX",
+    controllers: {
+      volume: 128,
+      panning: 128,
+    },
+  }).writeSunsynth(synthPath);
+
+  const output = execFileSync(
+    process.execPath,
+    [
+      "tools/sunvox-render-debug.mjs",
+      "--json",
+      "--mode",
+      "both",
+      "--note",
+      "C4",
+      "--velocity",
+      "112",
+      "--gate",
+      "0.24",
+      "--duration",
+      "1",
+      "--passes",
+      "1",
+      synthPath,
+    ],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
+  const [result] = JSON.parse(output);
+  const eventPass = result.passes.find((pass) => pass.mode === "synth-event-probe");
+  const patternPass = result.passes.find((pass) => pass.mode === "synth-pattern-probe");
+
+  assertRelativeClose(eventPass.stats.peak, patternPass.stats.peak);
+  assertRelativeClose(eventPass.stats.rms, patternPass.stats.rms);
+  assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.05);
+});
+
+test("renders MetaModule synth direct events with public velocity values", () => {
+  const output = execFileSync(
+    process.execPath,
+    [
+      "tools/sunvox-render-debug.mjs",
+      "--json",
+      "--mode",
+      "event",
+      "--note",
+      "C4",
+      "--velocity",
+      "128",
+      "--passes",
+      "1",
+      "generated/instruments/Scratch Acid Bass.sunsynth",
+    ],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
+  const [result] = JSON.parse(output);
+  const [pass] = result.passes;
+
+  assert.equal(result.probe.eventVelocity, 128);
+  assert.ok(pass.stats.nonZeroFrames > 0);
+  assert.ok(pass.stats.peak > 0);
 });

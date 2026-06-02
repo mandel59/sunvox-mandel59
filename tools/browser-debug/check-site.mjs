@@ -404,8 +404,10 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         const noteOn = await window.playSynthNote('instruments/mandel59 shepard.sunsynth', 60, 128);
         const controller = await window.setSynthController('instruments/mandel59 shepard.sunsynth', 0, 144);
         const noteOff = window.stopSynthNote(60);
+        const acidBassNoteOn = await window.playSynthNote('generated/instruments/Scratch Acid Bass.sunsynth', 60, 128);
+        const acidBassNoteOff = window.stopSynthNote(60);
         window.stopInstrumentNotes?.();
-        return { noteOn, controller, noteOff, calls };
+        return { noteOn, controller, noteOff, acidBassNoteOn, acidBassNoteOff, calls };
       } finally {
         window.sv_load_module_from_memory = originalLoadModule;
         window.sv_connect_module = originalConnectModule;
@@ -419,17 +421,25 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       (event) => event.controllerIndex === 0 && event.value === 144,
     );
     const noteOffEvent = synthPlayback.calls.sendEvent.find((event) => event.note === 128);
+    const acidBassModule = synthPlayback.calls.loadModule.at(-1)?.moduleIndex;
+    const acidBassNoteOnEvent = synthPlayback.calls.sendEvent
+      .filter((event) => event.note === 61)
+      .find((event) => event.module === acidBassModule + 1);
     if (
       !synthPlayback.noteOn ||
       !synthPlayback.controller ||
       !synthPlayback.noteOff ||
+      !synthPlayback.acidBassNoteOn ||
+      !synthPlayback.acidBassNoteOff ||
       !(loadedSynthModule > 0) ||
+      !(acidBassModule > 0) ||
       synthPlayback.calls.connectModule[0]?.destination !== 0 ||
       noteOnEvent?.module !== loadedSynthModule + 1 ||
-      noteOnEvent?.velocity !== 254 ||
+      noteOnEvent?.velocity !== 128 ||
       controllerEvent?.moduleIndex !== loadedSynthModule ||
       controllerEvent?.scaled !== 0 ||
-      noteOffEvent?.module !== loadedSynthModule + 1
+      noteOffEvent?.module !== loadedSynthModule + 1 ||
+      acidBassNoteOnEvent?.velocity !== 128
     ) {
       throw new Error(
         `Expected synth keyboard to load/connect/send note and controller events, got ${JSON.stringify(synthPlayback)}`,

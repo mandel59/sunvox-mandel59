@@ -10,6 +10,7 @@ import {
   DEFAULT_SLOT,
   DEFAULT_SUNVOX_JS_PATH,
   assertSunVoxOk,
+  createPattern,
   createNoteProbePattern,
   lineFramesFromTimeMap,
   loadSynthModuleFromBuffer,
@@ -29,6 +30,31 @@ test("derives line duration from a time map", () => {
   assert.equal(lineFramesFromTimeMap([0, 512, 1024]), 512);
   assert.equal(lineFramesFromTimeMap([100, 100, 100], 2048), 2048);
 });
+
+test(
+  "creates a fresh SunVox pattern by default instead of cloning pattern zero",
+  { skip: existsSync(DEFAULT_SUNVOX_JS_PATH) ? false : "SunVox Lib runtime is not installed" },
+  async () => {
+    await withSunVoxSlot(
+      {
+        sampleRate: DEFAULT_SAMPLE_RATE,
+        channels: DEFAULT_CHANNELS,
+        flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
+        slot: DEFAULT_SLOT,
+      },
+      async ({ module, slot }) => {
+        const first = createPattern(module, { slot, tracks: 4, lines: 32, name: "base" });
+        const second = createPattern(module, { slot, tracks: 1, lines: 256, name: "probe" });
+
+        assert.equal(second, first + 1);
+        assert.equal(module._sv_get_pattern_tracks(slot, first), 4);
+        assert.equal(module._sv_get_pattern_lines(slot, first), 32);
+        assert.equal(module._sv_get_pattern_tracks(slot, second), 1);
+        assert.equal(module._sv_get_pattern_lines(slot, second), 256);
+      },
+    );
+  },
+);
 
 test(
   "renders a synth probe through a SunVox pattern",

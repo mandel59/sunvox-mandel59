@@ -34,7 +34,7 @@ const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 
 function usage() {
   console.error(`Usage:
-  node tools/sunvox-render-debug.mjs [--json] [--mode event|pattern|both] [--note <note|midi>] [--velocity <1..129>] [--event-velocity <0..255>] [--gate <seconds>] [--duration <seconds>] [--passes <count>] <file.sunvox|file.sunsynth> [...]
+  node tools/sunvox-render-debug.mjs [--json] [--mode event|pattern|both] [--note <note|midi>] [--velocity <1..129>] [--event-velocity <1..129>] [--gate <seconds>] [--duration <seconds>] [--passes <count>] <file.sunvox|file.sunsynth> [...]
 
 Examples:
   node tools/sunvox-render-debug.mjs music/2022-04-16.sunvox
@@ -106,7 +106,7 @@ function parseArgs(argv) {
       if (!argv[index]) {
         throw new Error("--event-velocity requires a value");
       }
-      options.eventVelocity = parseIntegerRange(argv[index], "--event-velocity", 0, 255);
+      options.eventVelocity = parseIntegerRange(argv[index], "--event-velocity", 1, 129);
     } else if (arg === "--gate") {
       index += 1;
       if (!argv[index]) {
@@ -150,13 +150,8 @@ function fixed(value, digits = 4) {
   return Number.isFinite(value) ? value.toFixed(digits) : "-";
 }
 
-function noteTrack(note) {
-  return Math.max(0, Math.min(31, Math.round(note) % 32));
-}
-
-export function patternVelocityToEventVelocity(velocity) {
-  const patternVelocity = Math.max(1, Math.min(129, Math.round(Number(velocity))));
-  return Math.min(255, (patternVelocity - 1) * 2);
+export function normalizeEventVelocity(velocity) {
+  return Math.max(1, Math.min(129, Math.round(Number(velocity))));
 }
 
 function inspectLoadedModules(module, slot = SLOT) {
@@ -241,14 +236,15 @@ function renderSynthPatternPass(module, { slot, sampleRate, channels, durationSe
   };
 }
 
-function renderSlotAudioAtFrame(module, { slot, sampleRate, channels, durationSeconds, startFrame }) {
+function renderSlotAudioAtFrame(module, { slot, sampleRate, channels, durationSeconds, startFrame, baseTicks }) {
+  const ticksPerSecond = module._sv_get_ticks_per_second();
   return renderSlotAudio(module, {
     slot,
     sampleRate,
     channels,
     durationSeconds,
     blockFrames: DEFAULT_BLOCK_FRAMES,
-    outTime: (frame) => (startFrame + frame) / sampleRate,
+    outTime: (frame) => baseTicks + Math.floor(((startFrame + frame) * ticksPerSecond) / sampleRate),
   });
 }
 
@@ -265,9 +261,10 @@ function concatRenderedAudio(segments, channels, sampleRate) {
 
 function renderSynthEventPass(module, { slot, moduleIndex, sampleRate, channels, note, velocity, gateSeconds, durationSeconds, pass }) {
   const noteValue = sunVoxNoteValue(note);
-  const track = noteTrack(note);
+  const track = 0;
   const gateFrames = Math.round(gateSeconds * sampleRate);
   const releaseSeconds = Math.max(0, durationSeconds - gateSeconds);
+  const baseTicks = module._sv_get_ticks();
   assertSunVoxOk(module._sv_play(slot), "sv_play");
   assertSunVoxOk(module._sv_send_event(slot, track, noteValue, velocity, moduleIndex + 1, 0, 0), "sv_send_event note on");
   const gate = renderSlotAudioAtFrame(module, {
@@ -276,6 +273,7 @@ function renderSynthEventPass(module, { slot, moduleIndex, sampleRate, channels,
     channels,
     durationSeconds: gateSeconds,
     startFrame: 0,
+    baseTicks,
   });
   assertSunVoxOk(
     module._sv_send_event(slot, track, SunVoxNoteCommands.noteOff, 0, moduleIndex + 1, 0, 0),
@@ -287,6 +285,7 @@ function renderSynthEventPass(module, { slot, moduleIndex, sampleRate, channels,
     channels,
     durationSeconds: releaseSeconds,
     startFrame: gateFrames,
+    baseTicks,
   });
   assertSunVoxOk(module._sv_send_event(slot, 0, SunVoxNoteCommands.allNotesOff, 0, 0, 0, 0), "sv_send_event all notes off");
   assertSunVoxOk(module._sv_stop(slot), "sv_stop");
@@ -313,7 +312,7 @@ async function debugFile(file, options) {
     note: options.note,
     noteLabel: noteLabel(options.note),
     velocity: options.velocity,
-    eventVelocity: options.eventVelocity ?? patternVelocityToEventVelocity(options.velocity),
+    eventVelocity: options.eventVelocity ?? normalizeEventVelocity(options.velocity),
     gateSeconds: options.gateSeconds,
     durationSeconds: options.durationSeconds,
   };
