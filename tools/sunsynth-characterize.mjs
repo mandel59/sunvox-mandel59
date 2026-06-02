@@ -605,6 +605,7 @@ async function analyzeFile(file, probe) {
     file: relative(process.cwd(), filePath),
     probe: probe.id,
     note: probe.note,
+    noteHz: noteFrequency(probe.note),
     velocity: probe.velocity,
     durationSeconds: probe.durationSeconds,
     noteOffSeconds: probe.noteOffSeconds,
@@ -628,6 +629,7 @@ function formatTable(results) {
       "File",
       "Probe",
       "Note",
+      "NoteHz",
       "Vel",
       "Gate",
       "Peak",
@@ -649,6 +651,7 @@ function formatTable(results) {
       basename(result.file),
       result.probe,
       noteLabel(result.note),
+      `${fixed(result.noteHz, 2)}Hz`,
       String(result.velocity),
       `${formatSeconds(result.gateSeconds)}s`,
       fixed(features.peak),
@@ -692,6 +695,7 @@ function formatDetails(results) {
       const diagnosis = features.diagnosis.length ? features.diagnosis : ["no obvious spectral issue detected"];
       return [
         `${basename(result.file)} ${result.probe}`,
+        `  probe: note=${noteLabel(result.note)} noteHz=${fixed(result.noteHz, 2)} velocity=${result.velocity} gate=${formatSeconds(result.gateSeconds)}s noteOff=${formatSeconds(result.noteOffSeconds)}s duration=${formatSeconds(result.durationSeconds)}s`,
         `  probe pattern: index=${result.probePattern.patternIndex} noteOffLine=${result.probePattern.noteOffLine} lineFrames=${result.probePattern.lineFrames} noteOnFrame=${result.probePattern.noteOnFrame} noteOffFrame=${result.probePattern.noteOffFrame}`,
         `  level: peak=${fixed(features.peak)} rms=${fixed(features.rms)} crest=${fixed(features.crestFactor, 2)} transient=${fixed(features.transientRms)} sustain=${fixed(features.sustainRms)} tail=${fixed(features.tailRms)} tail/sustain=${fixed(features.tailToSustainRatio, 2)}`,
         `  ${formatSpectrum("transient spectrum", features.transientSpectrum)}`,

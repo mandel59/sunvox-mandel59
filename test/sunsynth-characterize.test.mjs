@@ -93,6 +93,7 @@ test("reports probe pattern metadata in JSON output", () => {
   const [result] = JSON.parse(output);
 
   assert.equal(result.probe, "C4:96:0.25s");
+  assert.ok(Math.abs(result.noteHz - 261.63) < 0.1);
   assert.equal(result.probePattern.patternIndex, 1);
   assert.ok(result.probePattern.noteOffLine >= 1);
   assert.ok(result.probePattern.lineFrames > 0);
@@ -133,7 +134,7 @@ test("characterizes a source-known Generator sine as a stable harmonic peak", as
   const [result] = JSON.parse(output);
   const strongestPeak = result.features.spectrum.dominantPeaks[0];
 
-  assert.ok(Math.abs(strongestPeak.frequency - 527.56) < 20);
+  assert.ok(Math.abs(strongestPeak.frequency - result.noteHz * 2) < 20);
   assert.equal(strongestPeak.harmonic, 2);
   assert.ok(result.features.spectrum.inharmonicityCents < 80);
   assert.ok(result.features.tags.includes("dark") || result.features.tags.includes("warm"));
