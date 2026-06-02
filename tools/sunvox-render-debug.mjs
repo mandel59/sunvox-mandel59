@@ -10,6 +10,7 @@ import {
   DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
   DEFAULT_SAMPLE_RATE,
   DEFAULT_SLOT as SLOT,
+  SunVoxNoteCommands,
   assertSunVoxOk,
   createNoteProbePattern,
   loadProjectFromBuffer,
@@ -17,6 +18,7 @@ import {
   readCString,
   readMagic,
   renderSlotAudio,
+  sunVoxNoteValue,
   withSunVoxSlot,
 } from "./sunvox-node.mjs";
 
@@ -27,15 +29,16 @@ const DEFAULT_VELOCITY = 112;
 const DEFAULT_PASSES = 2;
 const SILENCE_EPSILON = 1e-7;
 const SUPPORTED_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
+const SYNTH_RENDER_MODES = new Set(["event", "pattern", "both"]);
 const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 function usage() {
   console.error(`Usage:
-  node tools/sunvox-render-debug.mjs [--json] [--note <note|midi>] [--velocity <1..129>] [--gate <seconds>] [--duration <seconds>] [--passes <count>] <file.sunvox|file.sunsynth> [...]
+  node tools/sunvox-render-debug.mjs [--json] [--mode event|pattern|both] [--note <note|midi>] [--velocity <1..129>] [--gate <seconds>] [--duration <seconds>] [--passes <count>] <file.sunvox|file.sunsynth> [...]
 
 Examples:
   node tools/sunvox-render-debug.mjs music/2022-04-16.sunvox
-  node tools/sunvox-render-debug.mjs --note C4 --velocity 112 --passes 3 generated/instruments/Scratch\\ FMX\\ Tines.sunsynth`);
+  node tools/sunvox-render-debug.mjs --mode both --note C4 --velocity 112 --passes 3 generated/instruments/Scratch\\ FMX\\ Tines.sunsynth`);
 }
 
 function parsePositiveNumber(value, label) {
@@ -62,12 +65,22 @@ function parseArgs(argv) {
     gateSeconds: DEFAULT_GATE_SECONDS,
     durationSeconds: DEFAULT_DURATION_SECONDS,
     passes: DEFAULT_PASSES,
+    mode: "both",
     files: [],
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--json") {
       options.json = true;
+    } else if (arg === "--mode") {
+      index += 1;
+      if (!argv[index]) {
+        throw new Error("--mode requires a value");
+      }
+      if (!SYNTH_RENDER_MODES.has(argv[index])) {
+        throw new Error(`--mode must be one of ${Array.from(SYNTH_RENDER_MODES).join(", ")}`);
+      }
+      options.mode = argv[index];
     } else if (arg === "--note") {
       index += 1;
       if (!argv[index]) {
@@ -121,6 +134,10 @@ function noteLabel(note) {
 
 function fixed(value, digits = 4) {
   return Number.isFinite(value) ? value.toFixed(digits) : "-";
+}
+
+function noteTrack(note) {
+  return Math.max(0, Math.min(31, Math.round(note) % 32));
 }
 
 function inspectLoadedModules(module, slot = SLOT) {
@@ -187,7 +204,7 @@ function renderProject(module, { slot, sampleRate, channels, durationSeconds }) 
   };
 }
 
-function renderSynthPass(module, { slot, sampleRate, channels, durationSeconds, pass }) {
+function renderSynthPatternPass(module, { slot, sampleRate, channels, durationSeconds, pass }) {
   assertSunVoxOk(module._sv_rewind(slot, 0), "sv_rewind");
   assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
   const rendered = renderSlotAudio(module, {
@@ -203,6 +220,67 @@ function renderSynthPass(module, { slot, sampleRate, channels, durationSeconds, 
     pass,
     stats: summarizeAudio(rendered.samples, channels),
   };
+}
+
+function renderSlotAudioAtFrame(module, { slot, sampleRate, channels, durationSeconds, startFrame }) {
+  return renderSlotAudio(module, {
+    slot,
+    sampleRate,
+    channels,
+    durationSeconds,
+    blockFrames: DEFAULT_BLOCK_FRAMES,
+    outTime: (frame) => (startFrame + frame) / sampleRate,
+  });
+}
+
+function concatRenderedAudio(segments, channels, sampleRate) {
+  const totalLength = segments.reduce((sum, segment) => sum + segment.samples.length, 0);
+  const samples = new Float32Array(totalLength);
+  let offset = 0;
+  for (const segment of segments) {
+    samples.set(segment.samples, offset);
+    offset += segment.samples.length;
+  }
+  return { samples, channels, sampleRate };
+}
+
+function renderSynthEventPass(module, { slot, moduleIndex, sampleRate, channels, note, velocity, gateSeconds, durationSeconds, pass }) {
+  const noteValue = sunVoxNoteValue(note);
+  const track = noteTrack(note);
+  const gateFrames = Math.round(gateSeconds * sampleRate);
+  const releaseSeconds = Math.max(0, durationSeconds - gateSeconds);
+  assertSunVoxOk(module._sv_play(slot), "sv_play");
+  assertSunVoxOk(module._sv_send_event(slot, track, noteValue, velocity, moduleIndex + 1, 0, 0), "sv_send_event note on");
+  const gate = renderSlotAudioAtFrame(module, {
+    slot,
+    sampleRate,
+    channels,
+    durationSeconds: gateSeconds,
+    startFrame: 0,
+  });
+  assertSunVoxOk(
+    module._sv_send_event(slot, track, SunVoxNoteCommands.noteOff, 0, moduleIndex + 1, 0, 0),
+    "sv_send_event note off",
+  );
+  const release = renderSlotAudioAtFrame(module, {
+    slot,
+    sampleRate,
+    channels,
+    durationSeconds: releaseSeconds,
+    startFrame: gateFrames,
+  });
+  assertSunVoxOk(module._sv_send_event(slot, 0, SunVoxNoteCommands.allNotesOff, 0, 0, 0, 0), "sv_send_event all notes off");
+  assertSunVoxOk(module._sv_stop(slot), "sv_stop");
+  const rendered = concatRenderedAudio([gate, release], channels, sampleRate);
+  return {
+    mode: "synth-event-probe",
+    pass,
+    stats: summarizeAudio(rendered.samples, channels),
+  };
+}
+
+function synthRenderModes(mode) {
+  return mode === "both" ? ["event", "pattern"] : [mode];
 }
 
 async function debugFile(file, options) {
@@ -232,6 +310,7 @@ async function debugFile(file, options) {
       let loadResult;
       let moduleIndex;
       let probePattern;
+      let passes;
       if (magic === "SVOX") {
         loadApi = "sv_load_from_memory";
         loadResult = loadProjectFromBuffer(module, bytes, { slot });
@@ -240,31 +319,55 @@ async function debugFile(file, options) {
         moduleIndex = loadSynthModuleFromBuffer(module, bytes, { slot });
         loadResult = moduleIndex;
         assertSunVoxOk(module._sv_volume(slot, 256), "sv_volume");
-        probePattern = createNoteProbePattern(module, {
-          slot,
-          moduleIndex,
-          note: probe.note,
-          velocity: probe.velocity,
-          gateSeconds: probe.gateSeconds,
-          sampleRate,
-          name: "sunvox-render-debug",
-        });
       } else {
         throw new Error(`Unsupported SunVox container magic: ${magic || "<empty>"}`);
       }
       const modules = inspectLoadedModules(module, slot);
-      const passes =
-        magic === "SVOX"
-          ? [renderProject(module, { slot, sampleRate, channels, durationSeconds: options.durationSeconds })]
-          : Array.from({ length: options.passes }, (_, index) =>
-              renderSynthPass(module, {
-                slot,
-                sampleRate,
-                channels,
-                durationSeconds: options.durationSeconds,
-                pass: index + 1,
-              }),
+      if (magic === "SVOX") {
+        passes = [renderProject(module, { slot, sampleRate, channels, durationSeconds: options.durationSeconds })];
+      } else {
+        passes = [];
+        for (const mode of synthRenderModes(options.mode)) {
+          if (mode === "event") {
+            passes.push(
+              ...Array.from({ length: options.passes }, (_, index) =>
+                renderSynthEventPass(module, {
+                  slot,
+                  moduleIndex,
+                  sampleRate,
+                  channels,
+                  note: probe.note,
+                  velocity: probe.velocity,
+                  gateSeconds: probe.gateSeconds,
+                  durationSeconds: options.durationSeconds,
+                  pass: index + 1,
+                }),
+              ),
             );
+          } else {
+            probePattern = createNoteProbePattern(module, {
+              slot,
+              moduleIndex,
+              note: probe.note,
+              velocity: probe.velocity,
+              gateSeconds: probe.gateSeconds,
+              sampleRate,
+              name: "sunvox-render-debug",
+            });
+            passes.push(
+              ...Array.from({ length: options.passes }, (_, index) =>
+                renderSynthPatternPass(module, {
+                  slot,
+                  sampleRate,
+                  channels,
+                  durationSeconds: options.durationSeconds,
+                  pass: index + 1,
+                }),
+              ),
+            );
+          }
+        }
+      }
       return {
         file: relative(process.cwd(), filePath),
         magic,
