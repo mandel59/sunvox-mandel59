@@ -22,6 +22,7 @@
     "sunvox:lib:check": "node tools/check-sunvox-lib-compat.mjs",
     "sunvox:diff": "node tools/sunvox-diff.mjs",
     "sunvox:outline": "node tools/sunvox-outline.mjs",
+    "sunvox:render-debug": "node tools/sunvox-render-debug.mjs",
     "sunvox:validate": "node tools/sunvox-codec.mjs validate",
     "sunvox:validate:all": "node tools/sunvox-validate-all.mjs",
     "sunvox:verify": "node tools/sunvox-codec.mjs verify",
