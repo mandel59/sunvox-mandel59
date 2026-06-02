@@ -110,7 +110,7 @@ function normalizeApiName(rawName) {
 
 function collectCallsFromText(text, file) {
   const calls = [];
-  const pattern = /\b(?:module\.|window\.)?(_?sv_[A-Za-z0-9_]+)\b/g;
+  const pattern = /\b(?:module\.|window\.)?(_?sv_[A-Za-z0-9_]+)(?:\?\.)?\s*\(/g;
   const stringLiteralPattern = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/g;
   const lines = text.split(/\r?\n/);
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
@@ -124,6 +124,7 @@ function collectCallsFromText(text, file) {
         file,
         line: lineIndex + 1,
         column: match.index + 1,
+        text: line.trim(),
       });
     }
   }
@@ -161,6 +162,9 @@ function formatAudit(audit) {
     );
     for (const call of item.calls.slice(0, 5)) {
       rows.push(`  - ${call.file}:${call.line}:${call.column} (${call.rawName})`);
+      if (item.review) {
+        rows.push(`    source: ${call.text}`);
+      }
     }
     if (item.calls.length > 5) {
       rows.push(`  - ... ${item.calls.length - 5} more`);
