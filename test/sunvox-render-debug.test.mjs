@@ -117,6 +117,29 @@ test("matches event and pattern probes for a simple line-aligned Generator synth
   assert.ok(eventPass.eventTimeline.noteOff.ticks >= 0);
   assert.equal(eventPass.eventTimeline.noteOff.ticks, eventPass.eventTimeline.noteOn.ticks + eventPass.eventTimeline.gateTicks);
   assert.equal(eventPass.eventTimeline.noteOff.frame, eventPass.eventTimeline.gateFrames);
+  assert.deepEqual(
+    result.probePattern.events.map((event) => ({
+      line: event.line,
+      track: event.track,
+      note: event.note,
+      velocity: event.velocity,
+      module: event.module,
+      controller: event.controller,
+      value: event.value,
+    })),
+    [
+      { line: 0, track: 0, note: 61, velocity: 112, module: result.moduleIndex + 1, controller: 0, value: 0 },
+      {
+        line: result.probePattern.noteOffLine,
+        track: 0,
+        note: 128,
+        velocity: 0,
+        module: result.moduleIndex + 1,
+        controller: 0,
+        value: 0,
+      },
+    ],
+  );
   assertRelativeClose(eventPass.stats.peak, patternPass.stats.peak);
   assertRelativeClose(eventPass.stats.rms, patternPass.stats.rms);
   assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.05);

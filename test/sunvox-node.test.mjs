@@ -80,6 +80,28 @@ test(
           sampleRate,
         });
         assert.ok(pattern.noteOffFrame > pattern.noteOnFrame);
+        assert.deepEqual(pattern.events, [
+          {
+            line: 0,
+            track: 0,
+            note: 61,
+            velocity: 112,
+            module: moduleIndex + 1,
+            controller: 0,
+            value: 0,
+            frame: pattern.noteOnFrame,
+          },
+          {
+            line: pattern.noteOffLine,
+            track: 0,
+            note: 128,
+            velocity: 0,
+            module: moduleIndex + 1,
+            controller: 0,
+            value: 0,
+            frame: pattern.noteOffFrame,
+          },
+        ]);
         assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
         return renderSlotAudio(module, {
           slot,

@@ -116,7 +116,9 @@ change the trigger velocity. Pass `--probe <note>:<velocity>:<gateSeconds>`
 multiple times to compare several input conditions in one run. `--json` and
 `--detail` include the probe note frequency and generated probe pattern
 metadata, including note-off line and frame positions, so timbre measurements
-can be traced back to the actual sequencer playback condition.
+can be traced back to the actual sequencer playback condition. The
+`probePattern.events` list records the note-on and note-off pattern events that
+were written for the probe.
 
 `sunvox:render-debug` is a lower-level SunVox Lib probe for checking whether a
 `.sunsynth` renders consistently through direct events and through sequencer
@@ -132,8 +134,9 @@ the nearest line from the slot time map. Use `--mode both` with simple
 source-known synths first when investigating render discrepancies. `--json`
 includes an `eventTimeline` for direct event passes with the actual note-on and
 note-off `sv_send_event()` arguments, event ticks, gate ticks, and frame
-positions, so event/pattern comparisons can be traced back to concrete playback
-conditions.
+positions. Pattern passes expose the generated `probePattern.events`, so
+event/pattern comparisons can be traced back to concrete playback conditions on
+both paths.
 
 SunVox Lib integration code shared by Node tools lives in
 [tools/sunvox-node.mjs](tools/sunvox-node.mjs). It wraps the JS/WASM runtime

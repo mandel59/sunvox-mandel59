@@ -286,25 +286,54 @@ export function createNoteProbePattern(
   const frameMap = readTimeMapFrames(module, { slot, startLine: 0, lineCount });
   const lineFrames = lineFramesFromTimeMap(frameMap, Math.round(sampleRate * 0.12));
   const noteOffLine = Math.max(1, Math.min(lineCount - 1, Math.round((gateSeconds * sampleRate) / lineFrames)));
+  const moduleNumber = moduleIndex + 1;
+  const noteOnEvent = {
+    line: 0,
+    track: 0,
+    note: sunVoxNoteValue(note),
+    velocity,
+    module: moduleNumber,
+    controller: 0,
+    value: 0,
+    frame: frameMap[0] ?? 0,
+  };
+  const noteOffEvent = {
+    line: noteOffLine,
+    track: 0,
+    note: SunVoxNoteCommands.noteOff,
+    velocity: 0,
+    module: moduleNumber,
+    controller: 0,
+    value: 0,
+    frame: frameMap[noteOffLine] ?? noteOffLine * lineFrames,
+  };
   setPatternEvent(module, {
     slot,
     patternIndex,
-    line: 0,
-    note: sunVoxNoteValue(note),
-    velocity,
-    moduleNumber: moduleIndex + 1,
+    line: noteOnEvent.line,
+    track: noteOnEvent.track,
+    note: noteOnEvent.note,
+    velocity: noteOnEvent.velocity,
+    moduleNumber: noteOnEvent.module,
+    controller: noteOnEvent.controller,
+    value: noteOnEvent.value,
   });
   setPatternEvent(module, {
     slot,
     patternIndex,
-    line: noteOffLine,
-    note: SunVoxNoteCommands.noteOff,
-    moduleNumber: moduleIndex + 1,
+    line: noteOffEvent.line,
+    track: noteOffEvent.track,
+    note: noteOffEvent.note,
+    velocity: noteOffEvent.velocity,
+    moduleNumber: noteOffEvent.module,
+    controller: noteOffEvent.controller,
+    value: noteOffEvent.value,
   });
   return {
     patternIndex,
-    noteOnFrame: frameMap[0] ?? 0,
-    noteOffFrame: frameMap[noteOffLine] ?? noteOffLine * lineFrames,
+    events: [noteOnEvent, noteOffEvent],
+    noteOnFrame: noteOnEvent.frame,
+    noteOffFrame: noteOffEvent.frame,
     noteOffLine,
     lineFrames,
   };

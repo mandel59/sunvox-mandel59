@@ -95,6 +95,31 @@ test("reports probe pattern metadata in JSON output", () => {
   assert.equal(result.probe, "C4:96:0.25s");
   assert.ok(Math.abs(result.noteHz - 261.63) < 0.1);
   assert.equal(result.probePattern.patternIndex, 1);
+  const [noteOnEvent, noteOffEvent] = result.probePattern.events;
+  assert.deepEqual(
+    result.probePattern.events.map((event) => ({
+      line: event.line,
+      track: event.track,
+      note: event.note,
+      velocity: event.velocity,
+      module: event.module,
+      controller: event.controller,
+      value: event.value,
+    })),
+    [
+      { line: 0, track: 0, note: 61, velocity: 96, module: noteOnEvent.module, controller: 0, value: 0 },
+      {
+        line: result.probePattern.noteOffLine,
+        track: 0,
+        note: 128,
+        velocity: 0,
+        module: noteOnEvent.module,
+        controller: 0,
+        value: 0,
+      },
+    ],
+  );
+  assert.equal(noteOffEvent.module, noteOnEvent.module);
   assert.ok(result.probePattern.noteOffLine >= 1);
   assert.ok(result.probePattern.lineFrames > 0);
   assert.ok(result.probePattern.noteOffFrame > result.probePattern.noteOnFrame);
