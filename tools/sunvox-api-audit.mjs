@@ -108,6 +108,62 @@ function normalizeApiName(rawName) {
   return rawName.startsWith("_sv_") ? rawName.slice(1) : rawName;
 }
 
+function parseParameterList(signatureText) {
+  const openIndex = signatureText.indexOf("(");
+  const closeIndex = signatureText.indexOf(")", openIndex + 1);
+  if (openIndex < 0 || closeIndex < 0) {
+    return [];
+  }
+  const body = signatureText.slice(openIndex + 1, closeIndex).trim();
+  if (!body || body === "void") {
+    return [];
+  }
+  return body.split(",").map((part) => {
+    const text = part.trim();
+    const nameMatch = text.match(/([A-Za-z_][A-Za-z0-9_]*)\s*(?:\[[^\]]*\])?$/u);
+    return {
+      name: nameMatch ? nameMatch[1] : undefined,
+      text,
+    };
+  });
+}
+
+function countCallArguments(argumentText) {
+  const trimmed = argumentText.trim();
+  if (!trimmed) {
+    return 0;
+  }
+  let count = 1;
+  let depth = 0;
+  for (let index = 0; index < argumentText.length; index += 1) {
+    const char = argumentText[index];
+    if (char === "(" || char === "[" || char === "{") {
+      depth += 1;
+    } else if (char === ")" || char === "]" || char === "}") {
+      depth = Math.max(0, depth - 1);
+    } else if (char === "," && depth === 0) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function readCallArgumentsFromLine(line, openParenIndex) {
+  let depth = 0;
+  for (let index = openParenIndex; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === "(") {
+      depth += 1;
+    } else if (char === ")") {
+      depth -= 1;
+      if (depth === 0) {
+        return line.slice(openParenIndex + 1, index);
+      }
+    }
+  }
+  return undefined;
+}
+
 function collectCallsFromText(text, file) {
   const calls = [];
   const pattern = /\b(?:module\.|window\.)?(_?sv_[A-Za-z0-9_]+)(?:\?\.)?\s*\(/g;
@@ -118,9 +174,13 @@ function collectCallsFromText(text, file) {
     const codeOnlyLine = line.replace(stringLiteralPattern, (match) => " ".repeat(match.length));
     for (const match of codeOnlyLine.matchAll(pattern)) {
       const rawName = match[1];
+      const openParenIndex = match.index + match[0].length - 1;
+      const argumentText = readCallArgumentsFromLine(codeOnlyLine, openParenIndex);
       calls.push({
         api: normalizeApiName(rawName),
         rawName,
+        binding: rawName.startsWith("_sv_") ? "wasm-export" : "js-wrapper",
+        argumentCount: argumentText === undefined ? undefined : countCallArguments(argumentText),
         file,
         line: lineIndex + 1,
         column: match.index + 1,
@@ -161,7 +221,8 @@ function formatAudit(audit) {
       }${note}`,
     );
     for (const call of item.calls.slice(0, 5)) {
-      rows.push(`  - ${call.file}:${call.line}:${call.column} (${call.rawName})`);
+      const arity = Number.isInteger(call.argumentCount) ? ` args=${call.argumentCount}/${item.parameterCount}` : "";
+      rows.push(`  - ${call.file}:${call.line}:${call.column} (${call.rawName}, ${call.binding}${arity})`);
       if (item.review) {
         rows.push(`    source: ${call.text}`);
       }
@@ -172,11 +233,19 @@ function formatAudit(audit) {
     if (item.review && item.header) {
       rows.push(`  - header: ${item.header.line}: ${item.header.text}`);
     }
+    if (item.header?.parameters?.length) {
+      rows.push(`  - parameters: ${item.header.parameters.map((parameter) => parameter.name ?? parameter.text).join(", ")}`);
+    }
     if (item.review && item.implementation) {
       rows.push(`  - implementation: ${item.implementation.line}: ${item.implementation.text}`);
     }
     for (const line of item.review?.notes ?? []) {
       rows.push(`  - note: ${line}`);
+    }
+    for (const mismatch of item.strictArityMismatches) {
+      rows.push(
+        `  - arity mismatch: ${mismatch.file}:${mismatch.line}:${mismatch.column} expected ${item.parameterCount}, got ${mismatch.argumentCount}`,
+      );
     }
   }
   if (audit.missingHeader.length) {
@@ -191,6 +260,15 @@ function formatAudit(audit) {
     rows.push("Missing from implementation:");
     for (const api of audit.missingImplementation) {
       rows.push(`- ${api}`);
+    }
+  }
+  if (audit.strictArityMismatches.length) {
+    rows.push("");
+    rows.push("WASM export arity mismatches:");
+    for (const mismatch of audit.strictArityMismatches) {
+      rows.push(
+        `- ${mismatch.api}: ${mismatch.file}:${mismatch.line}:${mismatch.column} expected ${mismatch.expectedArgumentCount}, got ${mismatch.argumentCount}`,
+      );
     }
   }
   return `${rows.join("\n")}\n`;
@@ -235,13 +313,35 @@ export async function collectApiAudit({
 
   const apis = [...byApi.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([api, apiCalls]) => ({
-      api,
-      calls: apiCalls,
-      header: headerSymbols.get(api),
-      implementation: implementationSymbols.get(api),
-      review: REVIEW_NOTES[api],
-    }));
+    .map(([api, apiCalls]) => {
+      const header = headerSymbols.get(api);
+      const parameters = header ? parseParameterList(header.text) : [];
+      const parameterCount = parameters.length;
+      const strictArityMismatches = apiCalls
+        .filter(
+          (call) =>
+            call.binding === "wasm-export" &&
+            Number.isInteger(call.argumentCount) &&
+            Number.isInteger(parameterCount) &&
+            call.argumentCount !== parameterCount,
+        )
+        .map((call) => ({ ...call, expectedArgumentCount: parameterCount }));
+      return {
+        api,
+        calls: apiCalls,
+        header: header ? { ...header, parameters } : undefined,
+        implementation: implementationSymbols.get(api),
+        parameterCount,
+        strictArityMismatches,
+        review: REVIEW_NOTES[api],
+      };
+    });
+  const strictArityMismatches = apis.flatMap((item) =>
+    item.strictArityMismatches.map((call) => ({
+      ...call,
+      api: item.api,
+    })),
+  );
 
   return {
     headerPath,
@@ -250,6 +350,7 @@ export async function collectApiAudit({
     apis,
     missingHeader: apis.filter((item) => !item.header).map((item) => item.api),
     missingImplementation: apis.filter((item) => !item.implementation).map((item) => item.api),
+    strictArityMismatches,
   };
 }
 
@@ -274,7 +375,10 @@ async function main(argv) {
   } else {
     process.stdout.write(formatAudit(audit));
   }
-  if (options.check && (audit.missingHeader.length || audit.missingImplementation.length)) {
+  if (
+    options.check &&
+    (audit.missingHeader.length || audit.missingImplementation.length || audit.strictArityMismatches.length)
+  ) {
     process.exitCode = 1;
   }
 }
