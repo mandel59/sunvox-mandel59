@@ -165,6 +165,8 @@ test("compares event and pattern probes for generated synth regression fixtures"
       "C4",
       "--velocity",
       "128",
+      "--event-track",
+      "28",
       "--passes",
       "1",
       "generated/instruments/Scratch Acid Bass.sunsynth",
@@ -178,6 +180,7 @@ test("compares event and pattern probes for generated synth regression fixtures"
     const eventPass = result.passes.find((pass) => pass.mode === "synth-event-probe");
     const patternPass = result.passes.find((pass) => pass.mode === "synth-pattern-probe");
     assert.equal(result.probe.eventVelocity, 128);
+    assert.equal(result.probe.eventTrack, 28);
     assert.ok(eventPass.stats.nonZeroFrames > 0, `${result.file} event probe should not be silent`);
     assert.ok(patternPass.stats.nonZeroFrames > 0, `${result.file} pattern probe should not be silent`);
     assert.ok(eventPass.stats.peak > 0, `${result.file} event probe should have non-zero peak`);

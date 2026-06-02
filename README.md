@@ -118,13 +118,15 @@ multiple times to compare several input conditions in one run.
 `sunvox:render-debug` is a lower-level SunVox Lib probe for checking whether a
 `.sunsynth` renders consistently through direct events and through sequencer
 patterns. In `--mode event`, it loads the synth with
-`sv_load_module_from_memory`, connects it to module `0` Output, plays track `0`,
-sends `sv_send_event()` with SunVox public velocity `1..129`, and schedules
+`sv_load_module_from_memory`, connects it to module `0` Output, sends
+`sv_send_event()` with SunVox public velocity `1..129`, and schedules
 note-on/note-off timestamps explicitly with `_sv_set_event_t()` in SunVox system
-ticks before offline `sv_audio_callback()` rendering. In `--mode pattern`, it
-creates a one-track probe pattern with the same note/module/velocity values and
-places note-off on the nearest line from the slot time map. Use `--mode both`
-with simple source-known synths first when investigating render discrepancies.
+ticks before offline `sv_audio_callback()` rendering. Event probes use track `0`
+by default; pass `--event-track <0..31>` to reproduce browser keyboard playback
+conditions such as C4 on track `28`. In `--mode pattern`, it creates a one-track
+probe pattern with the same note/module/velocity values and places note-off on
+the nearest line from the slot time map. Use `--mode both` with simple
+source-known synths first when investigating render discrepancies.
 
 SunVox Lib integration code shared by Node tools lives in
 [tools/sunvox-node.mjs](tools/sunvox-node.mjs). It wraps the JS/WASM runtime

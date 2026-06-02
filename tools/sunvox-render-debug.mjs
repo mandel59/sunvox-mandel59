@@ -26,6 +26,7 @@ const DEFAULT_DURATION_SECONDS = 2;
 const DEFAULT_GATE_SECONDS = 0.25;
 const DEFAULT_NOTE = 60;
 const DEFAULT_VELOCITY = 112;
+const DEFAULT_EVENT_TRACK = 0;
 const DEFAULT_PASSES = 2;
 const SILENCE_EPSILON = 1e-7;
 const SUPPORTED_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
@@ -34,7 +35,7 @@ const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 
 function usage() {
   console.error(`Usage:
-  node tools/sunvox-render-debug.mjs [--json] [--mode event|pattern|both] [--note <note|midi>] [--velocity <1..129>] [--event-velocity <1..129>] [--gate <seconds>] [--duration <seconds>] [--passes <count>] <file.sunvox|file.sunsynth> [...]
+  node tools/sunvox-render-debug.mjs [--json] [--mode event|pattern|both] [--note <note|midi>] [--velocity <1..129>] [--event-velocity <1..129>] [--event-track <0..31>] [--gate <seconds>] [--duration <seconds>] [--passes <count>] <file.sunvox|file.sunsynth> [...]
 
 Examples:
   node tools/sunvox-render-debug.mjs music/2022-04-16.sunvox
@@ -74,6 +75,7 @@ function parseArgs(argv) {
     durationSeconds: DEFAULT_DURATION_SECONDS,
     passes: DEFAULT_PASSES,
     mode: "both",
+    eventTrack: DEFAULT_EVENT_TRACK,
     files: [],
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -107,6 +109,12 @@ function parseArgs(argv) {
         throw new Error("--event-velocity requires a value");
       }
       options.eventVelocity = parseIntegerRange(argv[index], "--event-velocity", 1, 129);
+    } else if (arg === "--event-track") {
+      index += 1;
+      if (!argv[index]) {
+        throw new Error("--event-track requires a value");
+      }
+      options.eventTrack = parseIntegerRange(argv[index], "--event-track", 0, 31);
     } else if (arg === "--gate") {
       index += 1;
       if (!argv[index]) {
@@ -259,9 +267,11 @@ function concatRenderedAudio(segments, channels, sampleRate) {
   return { samples, channels, sampleRate };
 }
 
-function renderSynthEventPass(module, { slot, moduleIndex, sampleRate, channels, note, velocity, gateSeconds, durationSeconds, pass }) {
+function renderSynthEventPass(
+  module,
+  { slot, moduleIndex, sampleRate, channels, note, velocity, track, gateSeconds, durationSeconds, pass },
+) {
   const noteValue = sunVoxNoteValue(note);
-  const track = 0;
   const gateFrames = Math.round(gateSeconds * sampleRate);
   const gateTicks = Math.floor(gateSeconds * module._sv_get_ticks_per_second());
   const releaseSeconds = Math.max(0, durationSeconds - gateSeconds);
@@ -317,6 +327,7 @@ async function debugFile(file, options) {
     noteLabel: noteLabel(options.note),
     velocity: options.velocity,
     eventVelocity: options.eventVelocity ?? normalizeEventVelocity(options.velocity),
+    eventTrack: options.eventTrack,
     gateSeconds: options.gateSeconds,
     durationSeconds: options.durationSeconds,
   };
@@ -361,6 +372,7 @@ async function debugFile(file, options) {
                   channels,
                   note: probe.note,
                   velocity: probe.eventVelocity,
+                  track: probe.eventTrack,
                   gateSeconds: probe.gateSeconds,
                   durationSeconds: options.durationSeconds,
                   pass: index + 1,
@@ -415,7 +427,12 @@ function formatResultRows(results) {
         pass.mode === "synth-event-probe" && result.probe.eventVelocity !== result.probe.velocity
           ? `/e${result.probe.eventVelocity}`
           : "";
-      const probe = result.magic === "SSYN" ? `${result.probe.noteLabel}:${result.probe.velocity}${eventSuffix}` : "-";
+      const trackSuffix =
+        pass.mode === "synth-event-probe" && result.probe.eventTrack !== DEFAULT_EVENT_TRACK
+          ? `/t${result.probe.eventTrack}`
+          : "";
+      const probe =
+        result.magic === "SSYN" ? `${result.probe.noteLabel}:${result.probe.velocity}${eventSuffix}${trackSuffix}` : "-";
       rows.push([
         basename(result.file),
         pass.mode,
