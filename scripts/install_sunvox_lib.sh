@@ -18,6 +18,8 @@ unzip -o var/"$archive_name" \
   'sunvox_lib/sunvox_lib/docs/license/*'
 
 unzip -o var/"$archive_name" -d var \
+  'sunvox_lib/sunvox_lib/headers/sunvox.h' \
+  'sunvox_lib/sunvox_lib/main/sunvox_lib.cpp' \
   'sunvox_lib/lib_sunvox/sunvox_engine.cpp' \
   'sunvox_lib/lib_sunvox/sunvox_engine_audio_callback.cpp' \
   'sunvox_lib/lib_sunvox/psynth/*'

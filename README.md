@@ -46,6 +46,7 @@ npm run sunvox:outline -- music/2022-04-17.sunvox
 npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunsynth:characterize -- instruments/mandel59\ SuperSaw.sunsynth
 npm run sunvox:edit-recipe -- --out var/synth-lab generated/recipes/sunvox-edit/scratch-analog.mjs
+npm run sunvox:api-audit
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
 npm run sunvox:enums
@@ -123,6 +124,15 @@ or probe playback. Probe rendering is pattern-based, so offline analysis follows
 the same sequencer path as project playback instead of relying on realtime
 `sv_send_event` timestamps.
 
+SunVox Lib API arguments must be checked against the pinned source fixture
+rather than inferred from observed audio. Use `npm run sunvox:api-audit` to list
+current `_sv_*` / `sv_*` calls and compare them with
+`var/sunvox_lib/sunvox_lib/headers/sunvox.h` and
+`var/sunvox_lib/sunvox_lib/main/sunvox_lib.cpp`. Important API boundary rules:
+`sv_new_pattern()` uses `clone < 0` for a fresh pattern, `sv_audio_callback()`
+expects `out_time` in SunVox system ticks, and `sv_send_event()` takes public
+velocity values `1..129` with `0` meaning default.
+
 `sunvox:edit-recipe` applies SunVox Edit Recipe files to create or edit
 `.sunsynth` outputs. Recipe files describe `.sunvox` / `.sunsynth` creation and
 editing as one workflow, with plain JavaScript recipe files that need no
@@ -196,6 +206,8 @@ sh scripts/install_sunvox_lib.sh
 The script downloads `sunvox_lib-2.1.4d.zip` into `var/`, verifies its SHA-256,
 extracts runtime JS and license files under `sunvox_lib/`, and extracts the
 source files used by DB inspection under `var/sunvox_lib/`.
+It also extracts the public API header and implementation used by
+`sunvox:api-audit` under `var/sunvox_lib/sunvox_lib/`.
 
 CI follows the same path. GitHub Actions caches only the pinned zip archive by
 version and SHA-256, then reruns the install script so extracted source files are
