@@ -42,6 +42,10 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
 
     await page.goto(url, { waitUntil: 'networkidle' });
 
+    const synthFixtureButton = page.locator('.project-button', { hasText: 'instruments/mandel59 shepard.sunsynth' });
+    await synthFixtureButton.click();
+    await page.waitForTimeout(100);
+
     const initial = await page.evaluate(() => ({
       title: document.title,
       h1: document.querySelector('h1')?.textContent ?? null,
@@ -131,7 +135,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       initial.propertiesHeading !== 'Synth Properties' ||
       !initial.propertiesText.includes(initial.selected) ||
       !initial.propertiesText.includes('Controllers') ||
-      !initial.propertiesText.includes('Volume256') ||
+      !initial.propertiesText.includes('Volume160') ||
       initial.propertiesText.includes('Data chunks') ||
       initial.propertiesText.includes('Embedded projects') ||
       !initial.propertiesText.includes('Embedded project') ||
