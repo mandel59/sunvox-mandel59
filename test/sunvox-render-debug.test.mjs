@@ -106,6 +106,17 @@ test("matches event and pattern probes for a simple line-aligned Generator synth
 
   assert.equal(result.probe.velocity, 112);
   assert.equal(result.probe.eventVelocity, 112);
+  assert.equal(eventPass.eventTimeline.noteOn.track, 0);
+  assert.equal(eventPass.eventTimeline.noteOn.note, 61);
+  assert.equal(eventPass.eventTimeline.noteOn.velocity, 112);
+  assert.equal(eventPass.eventTimeline.noteOn.module, result.moduleIndex + 1);
+  assert.equal(eventPass.eventTimeline.noteOff.track, 0);
+  assert.equal(eventPass.eventTimeline.noteOff.note, 128);
+  assert.equal(eventPass.eventTimeline.noteOff.module, result.moduleIndex + 1);
+  assert.ok(eventPass.eventTimeline.noteOn.ticks >= 0);
+  assert.ok(eventPass.eventTimeline.noteOff.ticks >= 0);
+  assert.equal(eventPass.eventTimeline.noteOff.ticks, eventPass.eventTimeline.noteOn.ticks + eventPass.eventTimeline.gateTicks);
+  assert.equal(eventPass.eventTimeline.noteOff.frame, eventPass.eventTimeline.gateFrames);
   assertRelativeClose(eventPass.stats.peak, patternPass.stats.peak);
   assertRelativeClose(eventPass.stats.rms, patternPass.stats.rms);
   assertRelativeClose(eventPass.stats.nonZeroSamples, patternPass.stats.nonZeroSamples, 0.05);
@@ -181,6 +192,10 @@ test("compares event and pattern probes for generated synth regression fixtures"
     const patternPass = result.passes.find((pass) => pass.mode === "synth-pattern-probe");
     assert.equal(result.probe.eventVelocity, 128);
     assert.equal(result.probe.eventTrack, 28);
+    assert.equal(eventPass.eventTimeline.noteOn.track, 28);
+    assert.equal(eventPass.eventTimeline.noteOn.velocity, 128);
+    assert.equal(eventPass.eventTimeline.noteOn.module, result.moduleIndex + 1);
+    assert.equal(eventPass.eventTimeline.noteOff.track, 28);
     assert.ok(eventPass.stats.nonZeroFrames > 0, `${result.file} event probe should not be silent`);
     assert.ok(patternPass.stats.nonZeroFrames > 0, `${result.file} pattern probe should not be silent`);
     assert.ok(eventPass.stats.peak > 0, `${result.file} event probe should have non-zero peak`);

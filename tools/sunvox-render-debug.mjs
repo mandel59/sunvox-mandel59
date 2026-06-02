@@ -272,13 +272,17 @@ function renderSynthEventPass(
   { slot, moduleIndex, sampleRate, channels, note, velocity, track, gateSeconds, durationSeconds, pass },
 ) {
   const noteValue = sunVoxNoteValue(note);
+  const moduleNumber = moduleIndex + 1;
   const gateFrames = Math.round(gateSeconds * sampleRate);
-  const gateTicks = Math.floor(gateSeconds * module._sv_get_ticks_per_second());
+  const ticksPerSecond = module._sv_get_ticks_per_second();
+  const gateTicks = Math.floor(gateSeconds * ticksPerSecond);
   const releaseSeconds = Math.max(0, durationSeconds - gateSeconds);
   const baseTicks = module._sv_get_ticks();
+  const noteOnTicks = baseTicks >>> 0;
+  const noteOffTicks = (baseTicks + gateTicks) >>> 0;
   assertSunVoxOk(module._sv_play(slot), "sv_play");
   assertSunVoxOk(module._sv_set_event_t(slot, 1, baseTicks), "sv_set_event_t note on");
-  assertSunVoxOk(module._sv_send_event(slot, track, noteValue, velocity, moduleIndex + 1, 0, 0), "sv_send_event note on");
+  assertSunVoxOk(module._sv_send_event(slot, track, noteValue, velocity, moduleNumber, 0, 0), "sv_send_event note on");
   const gate = renderSlotAudioAtFrame(module, {
     slot,
     sampleRate,
@@ -289,7 +293,7 @@ function renderSynthEventPass(
   });
   assertSunVoxOk(module._sv_set_event_t(slot, 1, baseTicks + gateTicks), "sv_set_event_t note off");
   assertSunVoxOk(
-    module._sv_send_event(slot, track, SunVoxNoteCommands.noteOff, 0, moduleIndex + 1, 0, 0),
+    module._sv_send_event(slot, track, SunVoxNoteCommands.noteOff, 0, moduleNumber, 0, 0),
     "sv_send_event note off",
   );
   const release = renderSlotAudioAtFrame(module, {
@@ -307,6 +311,32 @@ function renderSynthEventPass(
   return {
     mode: "synth-event-probe",
     pass,
+    eventTimeline: {
+      noteOn: {
+        ticks: noteOnTicks,
+        frame: 0,
+        track,
+        note: noteValue,
+        velocity,
+        module: moduleNumber,
+        controller: 0,
+        value: 0,
+      },
+      noteOff: {
+        ticks: noteOffTicks,
+        frame: gateFrames,
+        track,
+        note: SunVoxNoteCommands.noteOff,
+        velocity: 0,
+        module: moduleNumber,
+        controller: 0,
+        value: 0,
+      },
+      ticksPerSecond,
+      gateTicks,
+      gateFrames,
+      releaseSeconds,
+    },
     stats: summarizeAudio(rendered.samples, channels),
   };
 }

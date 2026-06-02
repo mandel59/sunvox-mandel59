@@ -129,7 +129,11 @@ by default; pass `--event-track <0..31>` to reproduce browser keyboard playback
 conditions such as C4 on track `28`. In `--mode pattern`, it creates a one-track
 probe pattern with the same note/module/velocity values and places note-off on
 the nearest line from the slot time map. Use `--mode both` with simple
-source-known synths first when investigating render discrepancies.
+source-known synths first when investigating render discrepancies. `--json`
+includes an `eventTimeline` for direct event passes with the actual note-on and
+note-off `sv_send_event()` arguments, event ticks, gate ticks, and frame
+positions, so event/pattern comparisons can be traced back to concrete playback
+conditions.
 
 SunVox Lib integration code shared by Node tools lives in
 [tools/sunvox-node.mjs](tools/sunvox-node.mjs). It wraps the JS/WASM runtime
