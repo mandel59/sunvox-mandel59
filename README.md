@@ -45,6 +45,7 @@ npm run sunvox:verify -- music/2022-04-17.sunvox
 npm run sunvox:outline -- music/2022-04-17.sunvox
 npm run sunvox:diff -- before.sunvox after.sunvox
 npm run sunsynth:characterize -- instruments/mandel59\ SuperSaw.sunsynth
+npm run sunvox:render-debug -- --mode both generated/instruments/Scratch\ FMX\ Tines.sunsynth
 npm run sunvox:edit-recipe -- --out var/synth-lab generated/recipes/sunvox-edit/scratch-analog.mjs
 npm run sunvox:api-audit
 npm run sunvox:fixtures:generate
@@ -113,6 +114,17 @@ stereo side-to-mid ratio, attack and release timing, plus coarse tags such as
 `--note <note|midi>` to change the probe pitch, and `--velocity <1..129>` to
 change the trigger velocity. Pass `--probe <note>:<velocity>:<gateSeconds>`
 multiple times to compare several input conditions in one run.
+
+`sunvox:render-debug` is a lower-level SunVox Lib probe for checking whether a
+`.sunsynth` renders consistently through direct events and through sequencer
+patterns. In `--mode event`, it loads the synth with
+`sv_load_module_from_memory`, connects it to module `0` Output, plays track `0`,
+sends `sv_send_event()` with SunVox public velocity `1..129`, and schedules
+note-on/note-off timestamps explicitly with `_sv_set_event_t()` in SunVox system
+ticks before offline `sv_audio_callback()` rendering. In `--mode pattern`, it
+creates a one-track probe pattern with the same note/module/velocity values and
+places note-off on the nearest line from the slot time map. Use `--mode both`
+with simple source-known synths first when investigating render discrepancies.
 
 SunVox Lib integration code shared by Node tools lives in
 [tools/sunvox-node.mjs](tools/sunvox-node.mjs). It wraps the JS/WASM runtime
