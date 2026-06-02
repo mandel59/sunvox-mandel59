@@ -165,6 +165,12 @@ function formatAudit(audit) {
     if (item.calls.length > 5) {
       rows.push(`  - ... ${item.calls.length - 5} more`);
     }
+    if (item.review && item.header) {
+      rows.push(`  - header: ${item.header.line}: ${item.header.text}`);
+    }
+    if (item.review && item.implementation) {
+      rows.push(`  - implementation: ${item.implementation.line}: ${item.implementation.text}`);
+    }
     for (const line of item.review?.notes ?? []) {
       rows.push(`  - note: ${line}`);
     }
@@ -173,6 +179,13 @@ function formatAudit(audit) {
     rows.push("");
     rows.push("Missing from header:");
     for (const api of audit.missingHeader) {
+      rows.push(`- ${api}`);
+    }
+  }
+  if (audit.missingImplementation.length) {
+    rows.push("");
+    rows.push("Missing from implementation:");
+    for (const api of audit.missingImplementation) {
       rows.push(`- ${api}`);
     }
   }
@@ -192,7 +205,10 @@ export async function collectApiAudit({
     readFile(absoluteImplementationPath, "utf8"),
   ]);
 
-  const headerSymbols = collectSymbolsFromText(headerText, /\b(sv_[A-Za-z0-9_]+)\s*\(/);
+  const headerSymbols = collectSymbolsFromText(
+    headerText,
+    /^\s*[A-Za-z_][A-Za-z0-9_*\s]*\b(sv_[A-Za-z0-9_]+)\s*\([^;]*\)\s*SUNVOX_FN_ATTR\b/,
+  );
   const implementationSymbols = collectSymbolsFromText(
     implementationText,
     /SUNVOX_EXPORT(?:\s+[A-Za-z_][A-Za-z0-9_]*)*\s+[A-Za-z_][A-Za-z0-9_*\s]*\b(sv_[A-Za-z0-9_]+)\s*\(/,
@@ -229,6 +245,7 @@ export async function collectApiAudit({
     scannedFileCount: files.length,
     apis,
     missingHeader: apis.filter((item) => !item.header).map((item) => item.api),
+    missingImplementation: apis.filter((item) => !item.implementation).map((item) => item.api),
   };
 }
 
@@ -253,7 +270,7 @@ async function main(argv) {
   } else {
     process.stdout.write(formatAudit(audit));
   }
-  if (options.check && audit.missingHeader.length) {
+  if (options.check && (audit.missingHeader.length || audit.missingImplementation.length)) {
     process.exitCode = 1;
   }
 }

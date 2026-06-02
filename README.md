@@ -128,10 +128,14 @@ SunVox Lib API arguments must be checked against the pinned source fixture
 rather than inferred from observed audio. Use `npm run sunvox:api-audit` to list
 current `_sv_*` / `sv_*` calls and compare them with
 `var/sunvox_lib/sunvox_lib/headers/sunvox.h` and
-`var/sunvox_lib/sunvox_lib/main/sunvox_lib.cpp`. Important API boundary rules:
-`sv_new_pattern()` uses `clone < 0` for a fresh pattern, `sv_audio_callback()`
-expects `out_time` in SunVox system ticks, and `sv_send_event()` takes public
-velocity values `1..129` with `0` meaning default.
+`var/sunvox_lib/sunvox_lib/main/sunvox_lib.cpp`. Run
+`npm run sunvox:api-audit -- --check` to fail when a referenced API is missing
+from either source file. High-priority APIs also print the matching header and
+implementation lines so argument reviews can cite the source directly.
+Important API boundary rules: `sv_new_pattern()` uses `clone < 0` for a fresh
+pattern, `sv_audio_callback()` expects `out_time` in SunVox system ticks, and
+`sv_send_event()` takes public velocity values `1..129` with `0` meaning
+default.
 
 `sunvox:edit-recipe` applies SunVox Edit Recipe files to create or edit
 `.sunsynth` outputs. Recipe files describe `.sunvox` / `.sunsynth` creation and
