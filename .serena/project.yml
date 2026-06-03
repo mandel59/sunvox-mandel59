@@ -33,6 +33,7 @@ project_name: "sunvox-mandel59"
 # Note that when using the JetBrains backend, language servers are not used and this list is correspondingly ignored.
 languages:
 - typescript
+- cpp
 
 # the encoding used by text files in the project
 # For a list of possible encodings, see https://docs.python.org/3.11/library/codecs.html#standard-encodings
@@ -51,7 +52,7 @@ line_ending:
 language_backend:
 
 # whether to use project's .gitignore files to ignore files
-ignore_all_files_in_gitignore: true
+ignore_all_files_in_gitignore: false
 
 # advanced configuration option allowing to configure language server-specific options.
 # Maps the language key to the options.
@@ -73,7 +74,23 @@ additional_workspace_folders: []
 # list of additional paths to ignore in this project.
 # Same syntax as gitignore, so you can use * and **.
 # Note: global ignored_paths from serena_config.yml are also applied additively.
-ignored_paths: []
+ignored_paths:
+- node_modules/
+- dist/
+- .git/
+- .jj/
+- .serena/cache/
+- var/browser-debug/
+- var/synth-lab/
+- var/*.zip
+- var/*.json
+- var/*.sunvox
+- var/*.sunsynth
+- var/*.wav
+- var/*.log
+- var/*.err
+- var/*.out
+- /sunvox_lib/
 
 # whether the project is in read-only mode
 # If set to true, all editing tools will be disabled and attempts to use them will result in an error
