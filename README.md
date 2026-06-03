@@ -123,10 +123,12 @@ input conditions in one run. JSON reports include a `measurement` object with
 the source file, render method, sample rate, channel count, master volume,
 track, requested note/velocity/gate, actual note-on/off frame positions, and
 actual gate duration. Treat this `measurement` object as the source of truth for
-the measurement condition. `--json` and `--detail` also include the generated
-probe pattern metadata, and `probePattern.events` records the note-on and
-note-off pattern events that were written for the probe.
-Use `--note-sweep C2,C3,C4` and `--velocity-sweep 64,96,129` to generate a
+the measurement condition. `--json` reports are shaped as `{ sweep, results }`,
+where `sweep` records the note, velocity, and gate values that produced the
+result set. `--json` and `--detail` also include the generated probe pattern
+metadata, and `probePattern.events` records the note-on and note-off pattern
+events that were written for the probe. Use `--note-sweep C2,C3,C4`,
+`--velocity-sweep 64,96,129`, and `--gate-sweep 0.25,2` to generate a
 cross-product of input conditions without writing each `--probe` manually.
 
 `sunvox:render-debug` is a lower-level SunVox Lib probe for checking whether a

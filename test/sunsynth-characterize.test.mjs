@@ -120,8 +120,17 @@ test("reports probe pattern metadata in JSON output", () => {
     ],
     { cwd: repoRoot, encoding: "utf8" },
   );
-  const [result] = JSON.parse(output);
+  const report = JSON.parse(output);
+  const [result] = report.results;
 
+  assert.deepEqual(report.sweep, {
+    mode: "explicit-probes",
+    notes: [60],
+    noteLabels: ["C4"],
+    velocities: [96],
+    gateSeconds: [0.25],
+    probeCount: 1,
+  });
   assert.equal(result.measurement.input.id, "C4:96:0.25s");
   assert.ok(Math.abs(result.measurement.input.noteHz - 261.63) < 0.1);
   assert.deepEqual(result.measurement.input, {
@@ -179,7 +188,7 @@ test("reports probe pattern metadata in JSON output", () => {
   }
 });
 
-test("runs note and velocity sweeps from CLI options", () => {
+test("runs note, velocity, and gate sweeps from CLI options", () => {
   const output = execFileSync(
     process.execPath,
     [
@@ -189,19 +198,37 @@ test("runs note and velocity sweeps from CLI options", () => {
       "C3,C4",
       "--velocity-sweep",
       "64,96",
+      "--gate-sweep",
+      "0.25,0.5",
       "generated/instruments/Scratch FMX Tines.sunsynth",
     ],
     { cwd: repoRoot, encoding: "utf8" },
   );
-  const results = JSON.parse(output);
+  const report = JSON.parse(output);
 
+  assert.deepEqual(report.sweep, {
+    mode: "cross-product",
+    notes: [48, 60],
+    noteLabels: ["C3", "C4"],
+    velocities: [64, 96],
+    gateSeconds: [0.25, 0.5],
+    probeCount: 8,
+  });
   assert.deepEqual(
-    results.map((result) => [result.measurement.input.noteLabel, result.measurement.input.velocity]),
+    report.results.map((result) => [
+      result.measurement.input.noteLabel,
+      result.measurement.input.velocity,
+      result.measurement.input.requestedGateSeconds,
+    ]),
     [
-      ["C3", 64],
-      ["C3", 96],
-      ["C4", 64],
-      ["C4", 96],
+      ["C3", 64, 0.25],
+      ["C3", 64, 0.5],
+      ["C3", 96, 0.25],
+      ["C3", 96, 0.5],
+      ["C4", 64, 0.25],
+      ["C4", 64, 0.5],
+      ["C4", 96, 0.25],
+      ["C4", 96, 0.5],
     ],
   );
 });
@@ -237,7 +264,8 @@ test("characterizes a source-known Generator sine as a stable harmonic peak", as
     ["tools/sunsynth-characterize.mjs", "--json", "--probe", "C4:96:0.5", synthPath],
     { cwd: repoRoot, encoding: "utf8" },
   );
-  const [result] = JSON.parse(output);
+  const report = JSON.parse(output);
+  const [result] = report.results;
   const strongestPeak = result.features.spectrum.body.dominantPeaks[0];
 
   assert.ok(Math.abs(strongestPeak.frequency - result.measurement.input.noteHz * 2) < 20);

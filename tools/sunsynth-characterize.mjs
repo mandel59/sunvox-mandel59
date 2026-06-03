@@ -50,12 +50,12 @@ const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 
 function usage() {
   console.error(`Usage:
-  node tools/sunsynth-characterize.mjs [--json] [--detail] [--note <note|midi>] [--velocity <1..129>] [--note-sweep <notes>] [--velocity-sweep <values>] <input.sunsynth> [...]
+  node tools/sunsynth-characterize.mjs [--json] [--detail] [--note <note|midi>] [--velocity <1..129>] [--note-sweep <notes>] [--velocity-sweep <values>] [--gate-sweep <seconds>] <input.sunsynth> [...]
 
 Examples:
   node tools/sunsynth-characterize.mjs instruments/*.sunsynth
   node tools/sunsynth-characterize.mjs --json --note C3 var/glass-chord-pad.sunsynth
-  node tools/sunsynth-characterize.mjs --note-sweep C2,C3,C4 --velocity-sweep 64,96 generated/instruments/Scratch\\ FMX\\ Tines.sunsynth
+  node tools/sunsynth-characterize.mjs --note-sweep C2,C3,C4 --velocity-sweep 64,96 --gate-sweep 0.25,2 generated/instruments/Scratch\\ FMX\\ Tines.sunsynth
   node tools/sunsynth-characterize.mjs --probe C2:72:2.0 --probe C4:112:1.5 var/glass-chord-pad.sunsynth`);
 }
 
@@ -159,8 +159,11 @@ function parseArgs(argv) {
     velocity: DEFAULT_VELOCITY,
     durationSeconds: DEFAULT_DURATION_SECONDS,
     noteOffSeconds: DEFAULT_NOTE_OFF_SECONDS,
+    noteOffExplicit: false,
     noteSweep: undefined,
     velocitySweep: undefined,
+    gateSweep: undefined,
+    explicitProbes: false,
     probes: [],
     files: [],
   };
@@ -198,6 +201,16 @@ function parseArgs(argv) {
         (value) => Math.max(1, Math.min(129, Math.round(parsePositiveNumber(value, "--velocity-sweep")))),
         "--velocity-sweep",
       );
+    } else if (arg === "--gate-sweep") {
+      index += 1;
+      if (!argv[index]) {
+        throw new Error("--gate-sweep requires a value");
+      }
+      options.gateSweep = parseCommaSeparated(
+        argv[index],
+        (value) => parsePositiveNumber(value, "--gate-sweep"),
+        "--gate-sweep",
+      );
     } else if (arg === "--duration") {
       index += 1;
       if (!argv[index]) {
@@ -210,12 +223,14 @@ function parseArgs(argv) {
         throw new Error("--note-off requires a value");
       }
       options.noteOffSeconds = parsePositiveNumber(argv[index], "--note-off");
+      options.noteOffExplicit = true;
     } else if (arg === "--probe") {
       index += 1;
       if (!argv[index]) {
         throw new Error("--probe requires a value");
       }
       options.probes.push(parseProbe(argv[index]));
+      options.explicitProbes = true;
     } else if (arg === "--help" || arg === "-h") {
       return { help: true };
     } else if (arg.startsWith("-")) {
@@ -227,26 +242,53 @@ function parseArgs(argv) {
   if (options.noteOffSeconds >= options.durationSeconds) {
     throw new Error("--note-off must be earlier than --duration");
   }
+  if (options.gateSweep && options.noteOffExplicit) {
+    throw new Error("--gate-sweep cannot be combined with --note-off");
+  }
   if (!options.probes.length) {
     const notes = options.noteSweep ?? [options.note];
     const velocities = options.velocitySweep ?? [options.velocity];
+    const gates = options.gateSweep ?? [options.noteOffSeconds - DEFAULT_NOTE_SECONDS];
     for (const note of notes) {
       for (const velocity of velocities) {
-        const probe = normalizeProbe(
-          {
-            note,
-            velocity,
-            gateSeconds: options.noteOffSeconds - DEFAULT_NOTE_SECONDS,
-          },
-          "default probe",
-        );
-        probe.noteOffSeconds = options.noteOffSeconds;
-        probe.durationSeconds = options.durationSeconds;
-        options.probes.push(probe);
+        for (const gateSeconds of gates) {
+          if (DEFAULT_NOTE_SECONDS + gateSeconds >= options.durationSeconds) {
+            throw new Error(`gate ${formatSeconds(gateSeconds)}s must fit before --duration`);
+          }
+          const probe = normalizeProbe(
+            {
+              note,
+              velocity,
+              gateSeconds,
+            },
+            "default probe",
+          );
+          probe.noteOffSeconds = DEFAULT_NOTE_SECONDS + gateSeconds;
+          probe.durationSeconds = options.durationSeconds;
+          options.probes.push(probe);
+        }
       }
     }
   }
   return options;
+}
+
+function uniqueNumbers(values) {
+  return [...new Set(values)].sort((a, b) => a - b);
+}
+
+function buildSweepMetadata(options) {
+  const notes = uniqueNumbers(options.probes.map((probe) => probe.note));
+  const velocities = uniqueNumbers(options.probes.map((probe) => probe.velocity));
+  const gateSeconds = uniqueNumbers(options.probes.map((probe) => probe.gateSeconds));
+  return {
+    mode: options.explicitProbes ? "explicit-probes" : "cross-product",
+    notes,
+    noteLabels: notes.map(noteLabel),
+    velocities,
+    gateSeconds,
+    probeCount: options.probes.length,
+  };
 }
 
 async function renderSynth(filePath, probe) {
@@ -910,7 +952,7 @@ async function main(argv) {
   }
 
   if (options.json) {
-    console.log(JSON.stringify(results, null, 2));
+    console.log(JSON.stringify({ sweep: buildSweepMetadata(options), results }, null, 2));
   } else if (results.length) {
     console.log(formatTable(results));
     if (options.detail) {
