@@ -7,7 +7,7 @@
     "build": "node tools/build.mjs",
     "preview": "vite preview --config tools/vite.config.mjs",
     "licenses:check": "node tools/check-licenses.mjs",
-    "licenses:check:dist": "node tools/check-licenses.mjs --page dist/index.html --license-directory dist/sunvox_lib/sunvox_lib/docs/license --link-prefix sunvox_lib/sunvox_lib/docs/license",
+    "licenses:check:dist": "node tools/check-licenses.mjs --page dist/index.html --license-directory dist/sunvox_lib/sunvox_lib/docs/license --link-prefix sunvox_lib/sunvox_lib/docs/license --data-license-path \"dist/sunvox/docs/license/ACheney modules.txt\"",
     "code:metrics": "node tools/code-metrics.mjs",
     "quality": "node tools/quality-check.mjs",
     "test": "node --test",

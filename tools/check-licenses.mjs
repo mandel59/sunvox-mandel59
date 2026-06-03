@@ -14,6 +14,12 @@ const licenseDirectory = optionValue(
   "sunvox_lib/sunvox_lib/docs/license",
 );
 const linkPrefix = optionValue(process.argv, "--link-prefix", licenseDirectory);
+const dataLicensePath = optionValue(process.argv, "--data-license-path", "sunvox/docs/license/ACheney modules.txt");
+const dataLicenseLink = optionValue(
+  process.argv,
+  "--data-license-link",
+  "sunvox/docs/license/ACheney%20modules.txt",
+);
 const sunvoxLicensePath = join(licenseDirectory, "LICENSE.txt");
 
 function normalizeText(text) {
@@ -34,7 +40,7 @@ function fail(message) {
   process.exitCode = 1;
 }
 
-for (const requiredPath of [pagePath, sunvoxLicensePath]) {
+for (const requiredPath of [pagePath, sunvoxLicensePath, dataLicensePath]) {
   if (!existsSync(requiredPath)) {
     fail(`Missing required license check input: ${requiredPath}`);
   }
@@ -54,6 +60,7 @@ const requiredPageTexts = [
   "Files under music/ and instruments/ were created by Ryusei Yamaguchi (@mandel59).",
   "Files under generated/instruments/ are generated SunSynth assets: Codex produced the recipes under generated/recipes/, and project tooling builds the distributed .sunsynth files from those recipes.",
   "music/ files are distributed under CC BY 4.0.",
+  "Some music/ project files use modules by Aden Cheney (ACheney). Those modules are distributed under the ACheney modules MIT License.",
   "instruments/ and generated/instruments/ files are distributed under CC0 1.0.",
 ];
 
@@ -81,6 +88,10 @@ for (const licenseFile of licenseFiles) {
   if (!page.includes(linkPath)) {
     fail(`${pagePath} does not link to ${linkPath}`);
   }
+}
+
+if (!page.includes(dataLicenseLink)) {
+  fail(`${pagePath} does not link to ${dataLicenseLink}`);
 }
 
 for (const requiredText of requiredPageTexts) {

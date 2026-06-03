@@ -285,6 +285,9 @@ view instead of maintaining a hand-written list in the license notice.
 Music by Ryusei Yamaguchi (@mandel59).
 
 Distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Some music project files use modules by Aden Cheney (ACheney). Those modules
+are distributed under the
+[ACheney modules MIT License](sunvox/docs/license/ACheney%20modules.txt).
 
 ### The SunVox Library
 
@@ -302,6 +305,7 @@ third-party license text files from the deployed page.
 
 Run `npm run licenses:check` to verify that the source frontend includes the
 required SunVox notice and links every TXT file under
-`sunvox_lib/sunvox_lib/docs/license/`. After `npm run build`, run
-`npm run licenses:check:dist` to verify that the GitHub Pages output keeps the
-same notice and copied license files.
+`sunvox_lib/sunvox_lib/docs/license/`, plus the project data module license
+under `sunvox/docs/license/`. After `npm run build`, run `npm run
+licenses:check:dist` to verify that the GitHub Pages output keeps the same
+notice and copied license files.
