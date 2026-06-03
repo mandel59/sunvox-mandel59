@@ -44,6 +44,11 @@ const REVIEW_NOTES = {
       },
     },
   },
+  sv_deinit: {
+    priority: "high",
+    notes: ["Deinitializes the global sound system; returns negative if SunVox was not initialized."],
+    argumentSemantics: {},
+  },
   sv_open_slot: {
     priority: "high",
     notes: ["Opens a SunVox engine slot; invalid slot numbers return negative."],
@@ -170,6 +175,58 @@ const REVIEW_NOTES = {
       name: { meaning: "pattern name" },
     },
   },
+  sv_get_number_of_patterns: {
+    priority: "high",
+    notes: ["Returns the number of pattern slots, not the number of non-empty patterns."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      returnValue: {
+        meaning: "pattern slot count",
+        specialValues: { 0: "invalid slot or no pattern slots" },
+        notes: ["A pattern slot is non-empty when sv_get_pattern_lines(slot, index) > 0."],
+      },
+    },
+  },
+  sv_get_pattern_tracks: {
+    priority: "medium",
+    notes: ["Returns 0 for invalid slots, out-of-range pattern slots, and empty pattern slots."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      pat_num: { meaning: "pattern slot index" },
+      returnValue: { meaning: "pattern track count" },
+    },
+  },
+  sv_get_pattern_lines: {
+    priority: "medium",
+    notes: ["Returns 0 for invalid slots, out-of-range pattern slots, and empty pattern slots."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      pat_num: { meaning: "pattern slot index" },
+      returnValue: { meaning: "pattern line count", unit: "lines" },
+    },
+  },
+  sv_get_pattern_name: {
+    priority: "medium",
+    notes: ["Returns NULL for invalid slots, out-of-range pattern slots, and empty pattern slots."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      pat_num: { meaning: "pattern slot index" },
+      returnValue: { meaning: "pattern name C string", specialValues: { NULL: "invalid slot or empty pattern slot" } },
+    },
+  },
+  sv_get_pattern_data: {
+    priority: "high",
+    notes: ["Returns the raw sunvox_note buffer for reading and writing pattern events."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      pat_num: { meaning: "pattern slot index" },
+      returnValue: {
+        meaning: "sunvox_note buffer pointer",
+        format: "line-major: data[line * tracks + track]",
+        specialValues: { NULL: "invalid slot or empty pattern slot" },
+      },
+    },
+  },
   sv_send_event: {
     priority: "high",
     notes: ["vel is the public API velocity: 1..129, 0 means default."],
@@ -210,7 +267,115 @@ const REVIEW_NOTES = {
     argumentSemantics: {
       mod_num: { meaning: "module index" },
       ctl_num: { meaning: "zero-based controller index" },
-      scaled: { meaning: "value scale mode", values: { 0: "raw controller value", 1: "scaled/display value" } },
+      scaled: {
+        meaning: "value scale mode",
+        values: { 0: "raw controller value", 1: "scaled pattern value", 2: "final displayed value" },
+      },
+    },
+  },
+  sv_connect_module: {
+    priority: "high",
+    notes: ["Requires sv_lock_slot()/sv_unlock_slot(); returns negative if the slot is invalid or not locked."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      source: { meaning: "source module index" },
+      destination: { meaning: "destination module index" },
+    },
+  },
+  sv_get_number_of_modules: {
+    priority: "medium",
+    notes: ["Returns the number of module slots, not the number of existing modules."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      returnValue: { meaning: "module slot count", specialValues: { 0: "invalid slot or no module slots" } },
+    },
+  },
+  sv_get_module_flags: {
+    priority: "high",
+    notes: [
+      "Return value is an SV_MODULE_FLAG_* bitmask and also packs input/output link slot counts.",
+      "Use SV_MODULE_FLAG_EXISTS to distinguish an occupied module slot from an empty slot.",
+    ],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      mod_num: { meaning: "module index" },
+      returnValue: {
+        meaning: "module flags bitmask",
+        specialValues: { 0: "invalid slot or missing module" },
+        values: {
+          SV_MODULE_FLAG_EXISTS: "module slot is occupied",
+          SV_MODULE_FLAG_GENERATOR: "note input and sound output module",
+          SV_MODULE_FLAG_EFFECT: "sound input and sound output module",
+          SV_MODULE_FLAG_MUTE: "module is muted",
+          SV_MODULE_FLAG_SOLO: "module is soloed",
+          SV_MODULE_FLAG_BYPASS: "module is bypassed",
+          SV_MODULE_INPUTS_MASK: "packed input link slot count",
+          SV_MODULE_OUTPUTS_MASK: "packed output link slot count",
+        },
+      },
+    },
+  },
+  sv_get_module_inputs: {
+    priority: "high",
+    notes: ["Returns a pointer to an int array of input link slots; empty link slots contain -1."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      mod_num: { meaning: "module index" },
+      returnValue: {
+        meaning: "input link array pointer",
+        size: "(sv_get_module_flags() & SV_MODULE_INPUTS_MASK) >> SV_MODULE_INPUTS_OFF",
+        specialValues: { NULL: "invalid slot or missing module", "-1": "empty link slot" },
+      },
+    },
+  },
+  sv_get_module_outputs: {
+    priority: "high",
+    notes: ["Returns a pointer to an int array of output link slots; empty link slots contain -1."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      mod_num: { meaning: "module index" },
+      returnValue: {
+        meaning: "output link array pointer",
+        size: "(sv_get_module_flags() & SV_MODULE_OUTPUTS_MASK) >> SV_MODULE_OUTPUTS_OFF",
+        specialValues: { NULL: "invalid slot or missing module", "-1": "empty link slot" },
+      },
+    },
+  },
+  sv_get_module_type: {
+    priority: "medium",
+    notes: ["Returns the module type name; module 0 is reported as Output."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      mod_num: { meaning: "module index" },
+      returnValue: { meaning: "module type C string", specialValues: { NULL: "invalid slot", "\"\"": "missing module" } },
+    },
+  },
+  sv_get_module_name: {
+    priority: "medium",
+    notes: ["Returns the module display name stored in the module slot."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      mod_num: { meaning: "module index" },
+      returnValue: { meaning: "module name C string", specialValues: { NULL: "invalid slot", "\"\"": "missing module" } },
+    },
+  },
+  sv_get_number_of_module_ctls: {
+    priority: "medium",
+    notes: ["Returns the number of controller slots exposed by the module."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      mod_num: { meaning: "module index" },
+      returnValue: { meaning: "module controller count", specialValues: { 0: "invalid slot or module without controllers" } },
+    },
+  },
+  sv_get_module_ctl_name: {
+    priority: "medium",
+    notes: ["Controller numbers are zero-based."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      mod_num: { meaning: "module index" },
+      ctl_num: { meaning: "zero-based controller index" },
+      returnValue: { meaning: "controller name C string", specialValues: { NULL: "invalid slot or missing controller" } },
     },
   },
   sv_set_pattern_event: {
@@ -251,6 +416,44 @@ const REVIEW_NOTES = {
           SV_TIME_MAP_FRAMECNT: "frame counter at the beginning of each line",
         },
       },
+    },
+  },
+  sv_get_song_name: {
+    priority: "medium",
+    notes: ["Returns the current project name stored in the slot."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      returnValue: { meaning: "project name C string", specialValues: { NULL: "invalid slot" } },
+    },
+  },
+  sv_get_song_bpm: {
+    priority: "medium",
+    notes: ["Returns the project BPM value."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      returnValue: { meaning: "project beats per minute", specialValues: { 0: "invalid slot" } },
+    },
+  },
+  sv_get_song_tpl: {
+    priority: "medium",
+    notes: ["Returns the project speed value: ticks per line."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      returnValue: { meaning: "project ticks per line", unit: "ticks per line", specialValues: { 0: "invalid slot" } },
+    },
+  },
+  sv_get_ticks: {
+    priority: "medium",
+    notes: ["Returns the current SunVox system tick counter; this is not the project tick timeline."],
+    argumentSemantics: {
+      returnValue: { meaning: "current system tick counter", range: "0..0xFFFFFFFF", unit: "SunVox system ticks" },
+    },
+  },
+  sv_get_ticks_per_second: {
+    priority: "medium",
+    notes: ["Returns the number of SunVox system ticks per second."],
+    argumentSemantics: {
+      returnValue: { meaning: "system tick rate", unit: "ticks per second" },
     },
   },
   sv_load_module_from_memory: {

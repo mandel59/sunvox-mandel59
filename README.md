@@ -170,10 +170,11 @@ argument reviews can cite the source directly. Important API boundary rules:
 SunVox system ticks, and `sv_send_event()` takes public velocity values
 `1..129` with `0` meaning default. The reviewed set also covers the playback
 lifecycle used by the browser and Node render tools: initialization, slot
-locking, project load/save, playback control, rewind, and volume. The report
-also summarizes reviewed and unreviewed referenced APIs, plus reviewed APIs
-that are not currently called, so future audit work can focus on the remaining
-API boundary surface.
+locking, project load/save, playback control, rewind, and volume. It also
+covers the module, pattern, song, and system tick getters currently referenced
+by local tools. The report summarizes reviewed and unreviewed referenced APIs,
+plus reviewed APIs that are not currently called, so future audit work can
+focus on any newly introduced API boundary surface.
 
 `sunvox:edit-recipe` applies SunVox Edit Recipe files to create or edit
 `.sunsynth` outputs. Recipe files describe `.sunvox` / `.sunsynth` creation and
