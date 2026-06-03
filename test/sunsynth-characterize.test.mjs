@@ -63,7 +63,9 @@ test("extracts spectral and stereo features from rendered audio", () => {
   assert.ok(features.peak > 0.99);
   assert.ok(features.rms > 0.69 && features.rms < 0.72);
   assert.ok(features.spectrum.centroidHz > 430 && features.spectrum.centroidHz < 450);
+  assert.ok(features.spectrum.bandwidthHz > 0);
   assert.ok(features.spectrum.rolloff85Hz > 430 && features.spectrum.rolloff85Hz < 460);
+  assert.ok(features.spectrum.flatness < 0.01);
   assert.ok(features.stereo.correlation > 0.99);
   assert.ok(features.stereo.sideToMidRatio < 0.001);
   assert.ok(features.tags.includes("loud"));
@@ -94,6 +96,19 @@ test("reports probe pattern metadata in JSON output", () => {
 
   assert.equal(result.probe, "C4:96:0.25s");
   assert.ok(Math.abs(result.noteHz - 261.63) < 0.1);
+  assert.deepEqual(result.measurement.input, {
+    note: 60,
+    noteLabel: "C4",
+    noteHz: result.noteHz,
+    velocity: 96,
+    requestedGateSeconds: 0.25,
+    requestedDurationSeconds: 2.45,
+  });
+  assert.equal(result.measurement.renderMethod, "pattern-playback");
+  assert.equal(result.measurement.playback.sampleRate, 44100);
+  assert.equal(result.measurement.playback.channels, 2);
+  assert.equal(result.measurement.playback.masterVolume, 256);
+  assert.equal(result.measurement.playback.track, 0);
   assert.equal(result.probePattern.patternIndex, 1);
   const [noteOnEvent, noteOffEvent] = result.probePattern.events;
   assert.deepEqual(
@@ -123,6 +138,10 @@ test("reports probe pattern metadata in JSON output", () => {
   assert.ok(result.probePattern.noteOffLine >= 1);
   assert.ok(result.probePattern.lineFrames > 0);
   assert.ok(result.probePattern.noteOffFrame > result.probePattern.noteOnFrame);
+  assert.equal(result.measurement.playback.noteOn.frame, result.probePattern.noteOnFrame);
+  assert.equal(result.measurement.playback.noteOff.frame, result.probePattern.noteOffFrame);
+  assert.equal(result.measurement.playback.noteOff.line, result.probePattern.noteOffLine);
+  assert.ok(result.measurement.playback.actualGateSeconds > 0);
 });
 
 test("characterizes a source-known Generator sine as a stable harmonic peak", async () => {

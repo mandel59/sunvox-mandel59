@@ -21,6 +21,9 @@ const DEFAULT_NOTE_OFF_SECONDS = 3.2;
 const DEFAULT_NOTE_SECONDS = 0.2;
 const DEFAULT_NOTE = 48;
 const DEFAULT_VELOCITY = 96;
+const DEFAULT_MASTER_VOLUME = 256;
+const PROBE_TRACK = 0;
+const PROBE_RENDER_METHOD = "pattern-playback";
 const SPECTRUM_SIZE = 4096;
 const PATTERN_LINE_COUNT = 256;
 const SAMPLE_EXTENSIONS = new Set([".sunsynth"]);
@@ -221,7 +224,7 @@ async function renderSynth(filePath, probe) {
     async ({ module, slot, sampleRate, channels }) => {
       const bytes = await readFile(filePath);
       const moduleIndex = loadSynthModuleFromBuffer(module, bytes, { slot });
-      assertSunVoxOk(module._sv_volume(slot, 256), "sv_volume");
+      assertSunVoxOk(module._sv_volume(slot, DEFAULT_MASTER_VOLUME), "sv_volume");
       const pattern = createNoteProbePattern(module, {
         slot,
         moduleIndex,
@@ -249,6 +252,49 @@ async function renderSynth(filePath, probe) {
       };
     },
   );
+}
+
+function buildMeasurement(filePath, probe, rendered) {
+  const { sampleRate, channels, samples, probePattern } = rendered;
+  const renderedFrameCount = Math.floor(samples.length / channels);
+  const noteOnFrame = probePattern.noteOnFrame;
+  const noteOffFrame = probePattern.noteOffFrame;
+  const actualGateSeconds = Math.max(0, (noteOffFrame - noteOnFrame) / sampleRate);
+  const noteOnEvent = probePattern.events[0];
+  const noteOffEvent = probePattern.events[1];
+  return {
+    sourceFile: relative(process.cwd(), filePath),
+    renderMethod: PROBE_RENDER_METHOD,
+    input: {
+      note: probe.note,
+      noteLabel: noteLabel(probe.note),
+      noteHz: noteFrequency(probe.note),
+      velocity: probe.velocity,
+      requestedGateSeconds: probe.gateSeconds,
+      requestedDurationSeconds: probe.durationSeconds,
+    },
+    playback: {
+      sampleRate,
+      channels,
+      masterVolume: DEFAULT_MASTER_VOLUME,
+      track: PROBE_TRACK,
+      moduleNumber: noteOnEvent?.module,
+      durationSeconds: renderedFrameCount / sampleRate,
+      lineFrames: probePattern.lineFrames,
+      timingSource: "sv_get_time_map frames rendered through sv_audio_callback system ticks",
+      noteOn: {
+        line: noteOnEvent?.line ?? 0,
+        frame: noteOnFrame,
+        seconds: noteOnFrame / sampleRate,
+      },
+      noteOff: {
+        line: noteOffEvent?.line ?? probePattern.noteOffLine,
+        frame: noteOffFrame,
+        seconds: noteOffFrame / sampleRate,
+      },
+      actualGateSeconds,
+    },
+  };
 }
 
 function frameRms(samples, channels, startFrame, endFrame) {
@@ -371,6 +417,9 @@ function spectrum(samples, channels, sampleRate, startFrame, size = SPECTRUM_SIZ
   const bins = [];
   let totalPower = 0;
   let weightedPower = 0;
+  let weightedVariance = 0;
+  let logPowerSum = 0;
+  let flatnessBins = 0;
   let lowPower = 0;
   let midPower = 0;
   let highPower = 0;
@@ -380,6 +429,10 @@ function spectrum(samples, channels, sampleRate, startFrame, size = SPECTRUM_SIZ
     bins.push({ frequency, power });
     totalPower += power;
     weightedPower += frequency * power;
+    if (power > 0) {
+      logPowerSum += Math.log(power);
+      flatnessBins += 1;
+    }
     if (frequency < 250) {
       lowPower += power;
     } else if (frequency < 2000) {
@@ -388,6 +441,13 @@ function spectrum(samples, channels, sampleRate, startFrame, size = SPECTRUM_SIZ
       highPower += power;
     }
   }
+
+  const centroidHz = totalPower ? weightedPower / totalPower : 0;
+  for (const bin of bins) {
+    weightedVariance += (bin.frequency - centroidHz) ** 2 * bin.power;
+  }
+  const arithmeticMeanPower = flatnessBins ? totalPower / flatnessBins : 0;
+  const geometricMeanPower = flatnessBins ? Math.exp(logPowerSum / flatnessBins) : 0;
 
   let cumulative = 0;
   let rolloff85 = 0;
@@ -429,8 +489,10 @@ function spectrum(samples, channels, sampleRate, startFrame, size = SPECTRUM_SIZ
   return {
     startSeconds: clampedStart / sampleRate,
     totalPower,
-    centroidHz: totalPower ? weightedPower / totalPower : 0,
+    centroidHz,
+    bandwidthHz: totalPower ? Math.sqrt(weightedVariance / totalPower) : 0,
     rolloff85Hz: rolloff85,
+    flatness: arithmeticMeanPower ? geometricMeanPower / arithmeticMeanPower : 0,
     lowRatio: totalPower ? lowPower / totalPower : 0,
     midRatio: totalPower ? midPower / totalPower : 0,
     highRatio: totalPower ? highPower / totalPower : 0,
@@ -604,6 +666,7 @@ async function analyzeFile(file, probe) {
   return {
     file: relative(process.cwd(), filePath),
     probe: probe.id,
+    measurement: buildMeasurement(filePath, probe, rendered),
     note: probe.note,
     noteHz: noteFrequency(probe.note),
     velocity: probe.velocity,
@@ -636,7 +699,9 @@ function formatTable(results) {
       "RMS",
       "Crest",
       "Centroid",
+      "Bandwidth",
       "Rolloff",
+      "Flat",
       "High",
       "Inharm",
       "Stereo",
@@ -658,7 +723,9 @@ function formatTable(results) {
       fixed(features.rms),
       fixed(features.crestFactor, 2),
       `${rounded(features.spectrum.centroidHz)}Hz`,
+      `${rounded(features.spectrum.bandwidthHz)}Hz`,
       `${rounded(features.spectrum.rolloff85Hz)}Hz`,
+      fixed(features.spectrum.flatness, 4),
       `${rounded(features.spectrum.highRatio * 100)}%`,
       `${rounded(features.spectrum.inharmonicityCents)}c`,
       fixed(features.stereo.sideToMidRatio, 2),
@@ -685,7 +752,7 @@ function formatPeak(peak) {
 }
 
 function formatSpectrum(label, spectrumFeatures) {
-  return `${label}: centroid=${rounded(spectrumFeatures.centroidHz)}Hz rolloff85=${rounded(spectrumFeatures.rolloff85Hz)}Hz high=${rounded(spectrumFeatures.highRatio * 100)}% inharmonicity=${rounded(spectrumFeatures.inharmonicityCents)}c measuredAt=${fixed(spectrumFeatures.startSeconds, 2)}s`;
+  return `${label}: centroid=${rounded(spectrumFeatures.centroidHz)}Hz bandwidth=${rounded(spectrumFeatures.bandwidthHz)}Hz rolloff85=${rounded(spectrumFeatures.rolloff85Hz)}Hz flatness=${fixed(spectrumFeatures.flatness, 4)} high=${rounded(spectrumFeatures.highRatio * 100)}% inharmonicity=${rounded(spectrumFeatures.inharmonicityCents)}c measuredAt=${fixed(spectrumFeatures.startSeconds, 2)}s`;
 }
 
 function formatDetails(results) {
@@ -696,6 +763,7 @@ function formatDetails(results) {
       return [
         `${basename(result.file)} ${result.probe}`,
         `  probe: note=${noteLabel(result.note)} noteHz=${fixed(result.noteHz, 2)} velocity=${result.velocity} gate=${formatSeconds(result.gateSeconds)}s noteOff=${formatSeconds(result.noteOffSeconds)}s duration=${formatSeconds(result.durationSeconds)}s`,
+        `  measurement: method=${result.measurement.renderMethod} sampleRate=${result.measurement.playback.sampleRate}Hz channels=${result.measurement.playback.channels} masterVolume=${result.measurement.playback.masterVolume} track=${result.measurement.playback.track} actualGate=${formatSeconds(result.measurement.playback.actualGateSeconds)}s`,
         `  probe pattern: index=${result.probePattern.patternIndex} noteOffLine=${result.probePattern.noteOffLine} lineFrames=${result.probePattern.lineFrames} noteOnFrame=${result.probePattern.noteOnFrame} noteOffFrame=${result.probePattern.noteOffFrame}`,
         `  level: peak=${fixed(features.peak)} rms=${fixed(features.rms)} crest=${fixed(features.crestFactor, 2)} transient=${fixed(features.transientRms)} sustain=${fixed(features.sustainRms)} tail=${fixed(features.tailRms)} tail/sustain=${fixed(features.tailToSustainRatio, 2)}`,
         `  ${formatSpectrum("transient spectrum", features.transientSpectrum)}`,

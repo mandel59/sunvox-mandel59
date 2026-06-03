@@ -108,17 +108,20 @@ Pattern #1 Lead events
 
 `sunsynth:characterize` renders `.sunsynth` files through SunVox Lib with a
 fixed probe note and prints the probe parameters together with objective timbre
-features: peak/RMS loudness, crest factor, spectral centroid and rolloff,
-stereo side-to-mid ratio, attack and release timing, plus coarse tags such as
-`dark`, `wide`, or `slow-attack`. Use `--json` for machine-readable reports,
-`--note <note|midi>` to change the probe pitch, and `--velocity <1..129>` to
-change the trigger velocity. Pass `--probe <note>:<velocity>:<gateSeconds>`
-multiple times to compare several input conditions in one run. `--json` and
-`--detail` include the probe note frequency and generated probe pattern
-metadata, including note-off line and frame positions, so timbre measurements
-can be traced back to the actual sequencer playback condition. The
-`probePattern.events` list records the note-on and note-off pattern events that
-were written for the probe.
+features: peak/RMS loudness, crest factor, spectral centroid, bandwidth,
+rolloff, flatness, stereo side-to-mid ratio, attack and release timing, plus
+coarse tags such as `dark`, `wide`, or `slow-attack`. Use `--json` for
+machine-readable reports, `--note <note|midi>` to change the probe pitch, and
+`--velocity <1..129>` to change the trigger velocity. Pass
+`--probe <note>:<velocity>:<gateSeconds>` multiple times to compare several
+input conditions in one run. JSON reports include a `measurement` object with
+the source file, render method, sample rate, channel count, master volume,
+track, requested note/velocity/gate, actual note-on/off frame positions, and
+actual gate duration. Treat this `measurement` object as the source of truth for
+the measurement condition; legacy flat fields such as `noteOffSeconds` remain
+for compatibility. `--json` and `--detail` also include the generated probe
+pattern metadata, and `probePattern.events` records the note-on and note-off
+pattern events that were written for the probe.
 
 `sunvox:render-debug` is a lower-level SunVox Lib probe for checking whether a
 `.sunsynth` renders consistently through direct events and through sequencer
