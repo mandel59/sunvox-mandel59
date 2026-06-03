@@ -144,6 +144,33 @@ test("reports probe pattern metadata in JSON output", () => {
   assert.ok(result.measurement.playback.actualGateSeconds > 0);
 });
 
+test("runs note and velocity sweeps from CLI options", () => {
+  const output = execFileSync(
+    process.execPath,
+    [
+      "tools/sunsynth-characterize.mjs",
+      "--json",
+      "--note-sweep",
+      "C3,C4",
+      "--velocity-sweep",
+      "64,96",
+      "generated/instruments/Scratch FMX Tines.sunsynth",
+    ],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
+  const results = JSON.parse(output);
+
+  assert.deepEqual(
+    results.map((result) => [result.measurement.input.noteLabel, result.measurement.input.velocity]),
+    [
+      ["C3", 64],
+      ["C3", 96],
+      ["C4", 64],
+      ["C4", 96],
+    ],
+  );
+});
+
 test("characterizes a source-known Generator sine as a stable harmonic peak", async () => {
   const tempDir = await mkdtemp(resolve(tmpdir(), "sunsynth-characterize-"));
   const synthPath = resolve(tempDir, "known-generator-sine.sunsynth");

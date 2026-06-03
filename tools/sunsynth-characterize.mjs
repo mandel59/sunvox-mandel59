@@ -50,11 +50,12 @@ const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 
 function usage() {
   console.error(`Usage:
-  node tools/sunsynth-characterize.mjs [--json] [--detail] [--note <note|midi>] [--velocity <1..129>] <input.sunsynth> [...]
+  node tools/sunsynth-characterize.mjs [--json] [--detail] [--note <note|midi>] [--velocity <1..129>] [--note-sweep <notes>] [--velocity-sweep <values>] <input.sunsynth> [...]
 
 Examples:
   node tools/sunsynth-characterize.mjs instruments/*.sunsynth
   node tools/sunsynth-characterize.mjs --json --note C3 var/glass-chord-pad.sunsynth
+  node tools/sunsynth-characterize.mjs --note-sweep C2,C3,C4 --velocity-sweep 64,96 generated/instruments/Scratch\\ FMX\\ Tines.sunsynth
   node tools/sunsynth-characterize.mjs --probe C2:72:2.0 --probe C4:112:1.5 var/glass-chord-pad.sunsynth`);
 }
 
@@ -139,6 +140,17 @@ export function parseProbe(value) {
   );
 }
 
+function parseCommaSeparated(value, parser, label) {
+  const items = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (!items.length) {
+    throw new Error(`${label} requires at least one value`);
+  }
+  return items.map((item) => parser(item));
+}
+
 function parseArgs(argv) {
   const options = {
     json: false,
@@ -147,6 +159,8 @@ function parseArgs(argv) {
     velocity: DEFAULT_VELOCITY,
     durationSeconds: DEFAULT_DURATION_SECONDS,
     noteOffSeconds: DEFAULT_NOTE_OFF_SECONDS,
+    noteSweep: undefined,
+    velocitySweep: undefined,
     probes: [],
     files: [],
   };
@@ -168,6 +182,22 @@ function parseArgs(argv) {
         throw new Error("--velocity requires a value");
       }
       options.velocity = Math.max(1, Math.min(129, Math.round(parsePositiveNumber(argv[index], "--velocity"))));
+    } else if (arg === "--note-sweep") {
+      index += 1;
+      if (!argv[index]) {
+        throw new Error("--note-sweep requires a value");
+      }
+      options.noteSweep = parseCommaSeparated(argv[index], parseNote, "--note-sweep");
+    } else if (arg === "--velocity-sweep") {
+      index += 1;
+      if (!argv[index]) {
+        throw new Error("--velocity-sweep requires a value");
+      }
+      options.velocitySweep = parseCommaSeparated(
+        argv[index],
+        (value) => Math.max(1, Math.min(129, Math.round(parsePositiveNumber(value, "--velocity-sweep")))),
+        "--velocity-sweep",
+      );
     } else if (arg === "--duration") {
       index += 1;
       if (!argv[index]) {
@@ -198,17 +228,23 @@ function parseArgs(argv) {
     throw new Error("--note-off must be earlier than --duration");
   }
   if (!options.probes.length) {
-    const probe = normalizeProbe(
-      {
-        note: options.note,
-        velocity: options.velocity,
-        gateSeconds: options.noteOffSeconds - DEFAULT_NOTE_SECONDS,
-      },
-      "default probe",
-    );
-    probe.noteOffSeconds = options.noteOffSeconds;
-    probe.durationSeconds = options.durationSeconds;
-    options.probes.push(probe);
+    const notes = options.noteSweep ?? [options.note];
+    const velocities = options.velocitySweep ?? [options.velocity];
+    for (const note of notes) {
+      for (const velocity of velocities) {
+        const probe = normalizeProbe(
+          {
+            note,
+            velocity,
+            gateSeconds: options.noteOffSeconds - DEFAULT_NOTE_SECONDS,
+          },
+          "default probe",
+        );
+        probe.noteOffSeconds = options.noteOffSeconds;
+        probe.durationSeconds = options.durationSeconds;
+        options.probes.push(probe);
+      }
+    }
   }
   return options;
 }

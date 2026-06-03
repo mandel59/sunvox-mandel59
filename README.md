@@ -122,6 +122,8 @@ the measurement condition; legacy flat fields such as `noteOffSeconds` remain
 for compatibility. `--json` and `--detail` also include the generated probe
 pattern metadata, and `probePattern.events` records the note-on and note-off
 pattern events that were written for the probe.
+Use `--note-sweep C2,C3,C4` and `--velocity-sweep 64,96,129` to generate a
+cross-product of input conditions without writing each `--probe` manually.
 
 `sunvox:render-debug` is a lower-level SunVox Lib probe for checking whether a
 `.sunsynth` renders consistently through direct events and through sequencer
