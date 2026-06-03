@@ -168,7 +168,9 @@ argument reviews can cite the source directly. Important API boundary rules:
 `sv_new_pattern()` uses
 `clone < 0` for a fresh pattern, `sv_audio_callback()` expects `out_time` in
 SunVox system ticks, and `sv_send_event()` takes public velocity values
-`1..129` with `0` meaning default.
+`1..129` with `0` meaning default. The report also summarizes reviewed and
+unreviewed referenced APIs, plus reviewed APIs that are not currently called, so
+future audit work can focus on the remaining API boundary surface.
 
 `sunvox:edit-recipe` applies SunVox Edit Recipe files to create or edit
 `.sunsynth` outputs. Recipe files describe `.sunvox` / `.sunsynth` creation and

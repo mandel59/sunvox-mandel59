@@ -305,6 +305,23 @@ function collectSymbolsFromText(text, pattern) {
   return symbols;
 }
 
+function summarizeReviewedApi(item) {
+  return {
+    api: item.api,
+    calls: item.calls.length,
+    priority: item.review.priority,
+  };
+}
+
+function summarizeUnreviewedApi(item) {
+  return {
+    api: item.api,
+    calls: item.calls.length,
+    bindings: Array.from(new Set(item.calls.map((call) => call.binding))).sort(),
+    files: Array.from(new Set(item.calls.map((call) => call.file))).sort(),
+  };
+}
+
 function formatAudit(audit) {
   const rows = [];
   rows.push("SunVox API audit");
@@ -313,6 +330,11 @@ function formatAudit(audit) {
   rows.push(`Implementation: ${audit.implementationPath}`);
   rows.push(`JS wrapper: ${audit.wrapperPath}`);
   rows.push(`Scanned files: ${audit.scannedFileCount}`);
+  rows.push(
+    `Reviewed APIs: ${audit.reviewCoverage.reviewedApiCount}/${audit.reviewCoverage.referencedApiCount} ` +
+      `(high=${audit.reviewCoverage.byPriority.high ?? 0}, medium=${audit.reviewCoverage.byPriority.medium ?? 0})`,
+  );
+  rows.push(`Unreviewed referenced APIs: ${audit.reviewCoverage.unreviewedApiCount}`);
   rows.push("");
   rows.push("Referenced APIs:");
   for (const item of audit.apis) {
@@ -425,6 +447,20 @@ function formatAudit(audit) {
       );
     }
   }
+  if (audit.unreviewedApis.length) {
+    rows.push("");
+    rows.push("Unreviewed referenced APIs:");
+    for (const item of audit.unreviewedApis) {
+      rows.push(`- ${item.api}: calls=${item.calls} bindings=${item.bindings.join(", ")} files=${item.files.join(", ")}`);
+    }
+  }
+  if (audit.reviewedButUnreferencedApis.length) {
+    rows.push("");
+    rows.push("Reviewed APIs not currently referenced:");
+    for (const api of audit.reviewedButUnreferencedApis) {
+      rows.push(`- ${api}`);
+    }
+  }
   return `${rows.join("\n")}\n`;
 }
 
@@ -514,12 +550,31 @@ export async function collectApiAudit({
       api: item.api,
     })),
   );
+  const reviewedApis = apis.filter((item) => item.review).map(summarizeReviewedApi);
+  const unreviewedApis = apis.filter((item) => !item.review).map(summarizeUnreviewedApi);
+  const reviewedButUnreferencedApis = Object.keys(REVIEW_NOTES)
+    .filter((api) => !byApi.has(api))
+    .sort();
+  const byPriority = reviewedApis.reduce((counts, item) => {
+    counts[item.priority] = (counts[item.priority] ?? 0) + 1;
+    return counts;
+  }, {});
 
   return {
     headerPath,
     implementationPath,
     wrapperPath,
     scannedFileCount: files.length,
+    reviewCoverage: {
+      referencedApiCount: apis.length,
+      reviewedApiCount: reviewedApis.length,
+      unreviewedApiCount: unreviewedApis.length,
+      reviewedButUnreferencedApiCount: reviewedButUnreferencedApis.length,
+      byPriority,
+    },
+    reviewedApis,
+    unreviewedApis,
+    reviewedButUnreferencedApis,
     apis,
     missingHeader: apis.filter((item) => !item.header).map((item) => item.api),
     missingImplementation: apis.filter((item) => !item.implementation).map((item) => item.api),

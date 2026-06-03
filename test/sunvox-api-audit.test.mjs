@@ -28,7 +28,16 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   const audioCallback = audit.apis.find((item) => item.api === "sv_audio_callback");
   const loadProject = audit.apis.find((item) => item.api === "sv_load_from_memory");
   const loadModule = audit.apis.find((item) => item.api === "sv_load_module_from_memory");
+  const referencedApis = new Set(audit.apis.map((item) => item.api));
   assert.equal(audit.strictArityMismatches.length, 0);
+  assert.equal(audit.reviewCoverage.referencedApiCount, audit.apis.length);
+  assert.equal(audit.reviewCoverage.reviewedApiCount, audit.reviewedApis.length);
+  assert.equal(audit.reviewCoverage.unreviewedApiCount, audit.unreviewedApis.length);
+  assert.ok(audit.reviewCoverage.byPriority.high >= 1);
+  assert.ok(audit.reviewedApis.some((item) => item.api === "sv_send_event" && item.priority === "high"));
+  assert.ok(audit.unreviewedApis.every((item) => !audit.apis.find((api) => api.api === item.api).review));
+  assert.ok(audit.unreviewedApis.every((item) => item.calls > 0 && item.files.length > 0));
+  assert.ok(audit.reviewedButUnreferencedApis.every((api) => !referencedApis.has(api)));
   assert.match(sendEvent.header.text, /int sv_send_event/u);
   assert.match(sendEvent.implementation.text, /SUNVOX_EXPORT int sv_send_event/u);
   assert.equal(sendEvent.parameterCount, 7);
