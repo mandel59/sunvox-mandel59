@@ -374,16 +374,69 @@ function attackMs(windows, noteOnFrame, noteOffFrame, sampleRate) {
   return hit ? Math.max(0, ((hit.centerFrame - noteOnFrame) / sampleRate) * 1000) : undefined;
 }
 
-function releaseMs(windows, noteOffFrame, sampleRate) {
-  const beforeOff = windows.filter((window) => window.centerFrame >= noteOffFrame - sampleRate && window.centerFrame < noteOffFrame);
-  const reference = beforeOff.reduce((max, window) => Math.max(max, window.rms), 0);
-  if (!reference) {
+function decayMs(windows, noteOnFrame, noteOffFrame, sampleRate) {
+  const active = windows.filter((window) => window.centerFrame >= noteOnFrame && window.centerFrame < noteOffFrame);
+  const peakWindow = active.reduce((max, window) => (window.rms > (max?.rms ?? -1) ? window : max), undefined);
+  if (!peakWindow?.rms) {
     return undefined;
   }
-  const threshold = reference * 0.1;
+  const threshold = peakWindow.rms * 0.5;
+  const hit = active.find((window) => window.centerFrame > peakWindow.centerFrame && window.rms <= threshold);
+  return hit ? Math.max(0, ((hit.centerFrame - peakWindow.centerFrame) / sampleRate) * 1000) : undefined;
+}
+
+function releaseAnalysis(windows, noteOffFrame, sampleRate, peakRms) {
+  const beforeOff = windows.filter((window) => window.centerFrame >= noteOffFrame - sampleRate && window.centerFrame < noteOffFrame);
+  const referenceRms = beforeOff.reduce((max, window) => Math.max(max, window.rms), 0);
+  const thresholdRms = referenceRms * 0.1;
+  if (!referenceRms) {
+    return { status: "not-applicable", referenceRms, thresholdRms };
+  }
+  if (peakRms && referenceRms < peakRms * 0.08) {
+    return { status: "too-quiet-before-note-off", referenceRms, thresholdRms };
+  }
   const after = windows.filter((window) => window.centerFrame >= noteOffFrame);
-  const hit = after.find((window) => window.rms <= threshold);
-  return hit ? Math.max(0, ((hit.centerFrame - noteOffFrame) / sampleRate) * 1000) : undefined;
+  const hit = after.find((window) => window.rms <= thresholdRms);
+  if (!hit) {
+    return { status: "not-applicable", referenceRms, thresholdRms };
+  }
+  return {
+    status: "measured",
+    ms: Math.max(0, ((hit.centerFrame - noteOffFrame) / sampleRate) * 1000),
+    referenceRms,
+    thresholdRms,
+  };
+}
+
+function tailDurationMs(windows, noteOnFrame, sampleRate, peakRms) {
+  if (!peakRms) {
+    return undefined;
+  }
+  const threshold = Math.max(peakRms * 0.01, 1e-6);
+  const audible = windows.filter((window) => window.centerFrame >= noteOnFrame && window.rms > threshold);
+  const last = audible.at(-1);
+  return last ? Math.max(0, ((last.endFrame - noteOnFrame) / sampleRate) * 1000) : undefined;
+}
+
+function noteOffSensitivity(windows, noteOffFrame, sampleRate) {
+  const before = windows.filter(
+    (window) => window.centerFrame >= noteOffFrame - sampleRate * 0.12 && window.centerFrame < noteOffFrame,
+  );
+  const after = windows.filter(
+    (window) => window.centerFrame >= noteOffFrame && window.centerFrame < noteOffFrame + sampleRate * 0.12,
+  );
+  const meanRms = (items) => (items.length ? items.reduce((sum, window) => sum + window.rms, 0) / items.length : 0);
+  const beforeRms = meanRms(before);
+  const afterRms = meanRms(after);
+  const ratio = beforeRms ? afterRms / beforeRms : undefined;
+  const deltaDb = beforeRms && afterRms ? 20 * Math.log10(afterRms / beforeRms) : undefined;
+  return {
+    beforeRms,
+    afterRms,
+    ...(ratio === undefined ? {} : { ratio }),
+    ...(deltaDb === undefined ? {} : { deltaDb }),
+    changed: deltaDb === undefined ? false : Math.abs(deltaDb) >= 3,
+  };
 }
 
 function fft(real, imag) {
@@ -590,53 +643,55 @@ function dominantWindow(windows, startFrame, endFrame) {
 
 function diagnosticNotes(features) {
   const notes = [];
-  if (features.spectrum.highRatio > 0.42) {
-    notes.push("high-band energy is strong, so the tone can read as hard or metallic");
+  if (features.spectrum.transient.highRatio > 0.42) {
+    notes.push("high-band energy is strong during the transient");
   }
-  if (features.spectrum.inharmonicityCents > 65) {
+  if (features.spectrum.body.inharmonicityCents > 65) {
     notes.push("dominant peaks are far from harmonic multiples of the played note");
   }
-  if (features.crestFactor > 7.5) {
+  if (features.level.crestFactor > 7.5) {
     notes.push("the transient is spiky compared with the body level");
   }
-  if (features.releaseMs !== undefined && features.releaseMs > 900) {
+  if (features.envelope.release.status === "too-quiet-before-note-off") {
+    notes.push("release not measured because the signal was already quiet before note-off");
+  } else if (features.envelope.release.status === "measured" && features.envelope.release.ms > 900) {
     notes.push("the tail rings for a long time");
   }
-  if (features.tailToSustainRatio > 0.75) {
-    notes.push("tail energy is close to the held-note body level");
+  if (features.level.tailToBodyRatio > 0.75) {
+    notes.push("tail energy is close to the body level");
   }
   return notes;
 }
 
 function tagFeatures(features) {
   const tags = [];
-  if (features.rms < 0.06) {
+  if (features.level.rms < 0.06) {
     tags.push("quiet");
-  } else if (features.rms < 0.14) {
+  } else if (features.level.rms < 0.14) {
     tags.push("medium");
   } else {
     tags.push("loud");
   }
 
-  if (features.spectrum.centroidHz < 800) {
+  if (features.spectrum.body.centroidHz < 800) {
     tags.push("dark");
-  } else if (features.spectrum.centroidHz < 1800) {
+  } else if (features.spectrum.body.centroidHz < 1800) {
     tags.push("warm");
-  } else if (features.spectrum.centroidHz < 3500) {
+  } else if (features.spectrum.body.centroidHz < 3500) {
     tags.push("bright");
   } else {
     tags.push("airy");
   }
 
-  if (features.attackMs !== undefined && features.attackMs > 300) {
+  if (features.envelope.attackMs !== undefined && features.envelope.attackMs > 300) {
     tags.push("slow-attack");
-  } else if (features.attackMs !== undefined && features.attackMs < 90) {
+  } else if (features.envelope.attackMs !== undefined && features.envelope.attackMs < 90) {
     tags.push("fast-attack");
   }
 
-  if (features.releaseMs !== undefined && features.releaseMs > 800) {
+  if (features.envelope.release.status === "measured" && features.envelope.release.ms > 800) {
     tags.push("long-release");
-  } else if (features.releaseMs !== undefined && features.releaseMs < 200) {
+  } else if (features.envelope.release.status === "measured" && features.envelope.release.ms < 200) {
     tags.push("short-release");
   }
 
@@ -645,7 +700,7 @@ function tagFeatures(features) {
   } else if (features.stereo.sideToMidRatio < 0.1) {
     tags.push("narrow");
   }
-  if (features.spectrum.highRatio > 0.42 && features.spectrum.inharmonicityCents > 65) {
+  if (features.spectrum.transient.highRatio > 0.42 && features.spectrum.body.inharmonicityCents > 65) {
     tags.push("metallic");
   }
   return tags;
@@ -668,23 +723,34 @@ export function analyzeRenderedAudio(rendered) {
   const transientSpectrumStart = Math.round(noteOnFrame + sampleRate * 0.04 - SPECTRUM_SIZE / 2);
   const tailSpectrumStart = Math.round(noteOffFrame + sampleRate * 0.16 - SPECTRUM_SIZE / 2);
   const transientRms = frameRms(samples, channels, noteOnFrame, noteOnFrame + Math.round(sampleRate * 0.12));
-  const sustainRms = frameRms(samples, channels, Math.max(noteOnFrame, noteOffFrame - sampleRate), noteOffFrame);
+  const bodyRms = frameRms(samples, channels, Math.max(noteOnFrame, noteOffFrame - sampleRate), noteOffFrame);
   const tailRms = frameRms(samples, channels, noteOffFrame, frameCount);
   const fundamentalHz = noteFrequency(note ?? DEFAULT_NOTE);
+  const rms = samples.length ? Math.sqrt(sumSquares / samples.length) : 0;
+  const peakRms = windows.reduce((max, window) => Math.max(max, window.rms), 0);
   const features = {
-    peak,
-    rms: samples.length ? Math.sqrt(sumSquares / samples.length) : 0,
-    crestFactor: sumSquares ? peak / Math.sqrt(sumSquares / samples.length) : 0,
-    transientRms,
-    sustainRms,
-    tailRms,
-    tailToSustainRatio: sustainRms ? tailRms / sustainRms : 0,
-    attackMs: attackMs(windows, noteOnFrame, noteOffFrame, sampleRate),
-    releaseMs: releaseMs(windows, noteOffFrame, sampleRate),
-    spectrum: spectrum(samples, channels, sampleRate, spectrumStart, SPECTRUM_SIZE, fundamentalHz),
-    transientSpectrum: spectrum(samples, channels, sampleRate, transientSpectrumStart, SPECTRUM_SIZE, fundamentalHz),
-    tailSpectrum: spectrum(samples, channels, sampleRate, tailSpectrumStart, SPECTRUM_SIZE, fundamentalHz),
-    zeroCrossingRate: zeroCrossingRate(samples, channels, spectrumStart, SPECTRUM_SIZE),
+    level: {
+      peak,
+      rms,
+      crestFactor: rms ? peak / rms : 0,
+      transientRms,
+      bodyRms,
+      tailRms,
+      tailToBodyRatio: bodyRms ? tailRms / bodyRms : 0,
+    },
+    envelope: {
+      attackMs: attackMs(windows, noteOnFrame, noteOffFrame, sampleRate),
+      decayMs: decayMs(windows, noteOnFrame, noteOffFrame, sampleRate),
+      release: releaseAnalysis(windows, noteOffFrame, sampleRate, peakRms),
+      tailDurationMs: tailDurationMs(windows, noteOnFrame, sampleRate, peakRms),
+      noteOffSensitivity: noteOffSensitivity(windows, noteOffFrame, sampleRate),
+    },
+    spectrum: {
+      body: spectrum(samples, channels, sampleRate, spectrumStart, SPECTRUM_SIZE, fundamentalHz),
+      transient: spectrum(samples, channels, sampleRate, transientSpectrumStart, SPECTRUM_SIZE, fundamentalHz),
+      tail: spectrum(samples, channels, sampleRate, tailSpectrumStart, SPECTRUM_SIZE, fundamentalHz),
+      zeroCrossingRate: zeroCrossingRate(samples, channels, spectrumStart, SPECTRUM_SIZE),
+    },
     stereo: stereoFeatures(samples, channels),
   };
   return {
@@ -735,6 +801,7 @@ function formatTable(results) {
       "Inharm",
       "Stereo",
       "Attack",
+      "Decay",
       "Release",
       "Tags",
     ],
@@ -748,18 +815,21 @@ function formatTable(results) {
       `${fixed(measurement.input.noteHz, 2)}Hz`,
       String(measurement.input.velocity),
       `${formatSeconds(measurement.playback.actualGateSeconds)}s`,
-      fixed(features.peak),
-      fixed(features.rms),
-      fixed(features.crestFactor, 2),
-      `${rounded(features.spectrum.centroidHz)}Hz`,
-      `${rounded(features.spectrum.bandwidthHz)}Hz`,
-      `${rounded(features.spectrum.rolloff85Hz)}Hz`,
-      fixed(features.spectrum.flatness, 4),
-      `${rounded(features.spectrum.highRatio * 100)}%`,
-      `${rounded(features.spectrum.inharmonicityCents)}c`,
+      fixed(features.level.peak),
+      fixed(features.level.rms),
+      fixed(features.level.crestFactor, 2),
+      `${rounded(features.spectrum.body.centroidHz)}Hz`,
+      `${rounded(features.spectrum.body.bandwidthHz)}Hz`,
+      `${rounded(features.spectrum.body.rolloff85Hz)}Hz`,
+      fixed(features.spectrum.body.flatness, 4),
+      `${rounded(features.spectrum.body.highRatio * 100)}%`,
+      `${rounded(features.spectrum.body.inharmonicityCents)}c`,
       fixed(features.stereo.sideToMidRatio, 2),
-      features.attackMs === undefined ? "-" : `${rounded(features.attackMs)}ms`,
-      features.releaseMs === undefined ? "-" : `${rounded(features.releaseMs)}ms`,
+      features.envelope.attackMs === undefined ? "-" : `${rounded(features.envelope.attackMs)}ms`,
+      features.envelope.decayMs === undefined ? "-" : `${rounded(features.envelope.decayMs)}ms`,
+      features.envelope.release.status === "measured"
+        ? `${rounded(features.envelope.release.ms)}ms`
+        : features.envelope.release.status,
       features.tags.join(","),
     ]);
   }
@@ -794,11 +864,12 @@ function formatDetails(results) {
         `  input: note=${measurement.input.noteLabel} noteHz=${fixed(measurement.input.noteHz, 2)} velocity=${measurement.input.velocity} requestedGate=${formatSeconds(measurement.input.requestedGateSeconds)}s requestedDuration=${formatSeconds(measurement.input.requestedDurationSeconds)}s`,
         `  measurement: method=${measurement.renderMethod} sampleRate=${measurement.playback.sampleRate}Hz channels=${measurement.playback.channels} masterVolume=${measurement.playback.masterVolume} track=${measurement.playback.track} actualGate=${formatSeconds(measurement.playback.actualGateSeconds)}s`,
         `  probe pattern: index=${result.probePattern.patternIndex} noteOffLine=${result.probePattern.noteOffLine} lineFrames=${result.probePattern.lineFrames} noteOnFrame=${result.probePattern.noteOnFrame} noteOffFrame=${result.probePattern.noteOffFrame}`,
-        `  level: peak=${fixed(features.peak)} rms=${fixed(features.rms)} crest=${fixed(features.crestFactor, 2)} transient=${fixed(features.transientRms)} sustain=${fixed(features.sustainRms)} tail=${fixed(features.tailRms)} tail/sustain=${fixed(features.tailToSustainRatio, 2)}`,
-        `  ${formatSpectrum("transient spectrum", features.transientSpectrum)}`,
-        `  ${formatSpectrum("body spectrum", features.spectrum)}`,
-        `  ${formatSpectrum("tail spectrum", features.tailSpectrum)}`,
-        `  peaks: ${features.spectrum.dominantPeaks.map(formatPeak).join("; ") || "-"}`,
+        `  level: peak=${fixed(features.level.peak)} rms=${fixed(features.level.rms)} crest=${fixed(features.level.crestFactor, 2)} transient=${fixed(features.level.transientRms)} body=${fixed(features.level.bodyRms)} tail=${fixed(features.level.tailRms)} tail/body=${fixed(features.level.tailToBodyRatio, 2)}`,
+        `  envelope: attack=${features.envelope.attackMs === undefined ? "-" : `${rounded(features.envelope.attackMs)}ms`} decay=${features.envelope.decayMs === undefined ? "-" : `${rounded(features.envelope.decayMs)}ms`} release=${features.envelope.release.status}${features.envelope.release.ms === undefined ? "" : ` ${rounded(features.envelope.release.ms)}ms`} tailDuration=${features.envelope.tailDurationMs === undefined ? "-" : `${rounded(features.envelope.tailDurationMs)}ms`} noteOffDelta=${features.envelope.noteOffSensitivity.deltaDb === undefined ? "-" : `${fixed(features.envelope.noteOffSensitivity.deltaDb, 1)}dB`}`,
+        `  ${formatSpectrum("transient spectrum", features.spectrum.transient)}`,
+        `  ${formatSpectrum("body spectrum", features.spectrum.body)}`,
+        `  ${formatSpectrum("tail spectrum", features.spectrum.tail)}`,
+        `  peaks: ${features.spectrum.body.dominantPeaks.map(formatPeak).join("; ") || "-"}`,
         `  diagnosis: ${diagnosis.join("; ")}`,
       ].join("\n");
     })

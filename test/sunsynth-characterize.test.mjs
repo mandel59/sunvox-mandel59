@@ -28,6 +28,25 @@ function stereoSine({ frequency, sampleRate = 44100, seconds = 1, leftGain = 1, 
   };
 }
 
+function decayingSine({ frequency, sampleRate = 44100, seconds = 2, decaySeconds = 0.12 }) {
+  const frameCount = Math.round(sampleRate * seconds);
+  const samples = new Float32Array(frameCount * 2);
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    const envelope = Math.exp(-frame / (sampleRate * decaySeconds));
+    const value = Math.sin((2 * Math.PI * frequency * frame) / sampleRate) * envelope;
+    samples[frame * 2] = value;
+    samples[frame * 2 + 1] = value;
+  }
+  return {
+    samples,
+    sampleRate,
+    channels: 2,
+    noteOnFrame: 0,
+    noteOffFrame: Math.round(sampleRate * 1.5),
+    note: 69,
+  };
+}
+
 test("parses note names and numeric note values", () => {
   assert.equal(parseNote("48"), 48);
   assert.equal(parseNote("C3"), 48);
@@ -60,12 +79,12 @@ test("parses multi-probe specifications", () => {
 test("extracts spectral and stereo features from rendered audio", () => {
   const features = analyzeRenderedAudio(stereoSine({ frequency: 440, seconds: 1.2 }));
 
-  assert.ok(features.peak > 0.99);
-  assert.ok(features.rms > 0.69 && features.rms < 0.72);
-  assert.ok(features.spectrum.centroidHz > 430 && features.spectrum.centroidHz < 450);
-  assert.ok(features.spectrum.bandwidthHz > 0);
-  assert.ok(features.spectrum.rolloff85Hz > 430 && features.spectrum.rolloff85Hz < 460);
-  assert.ok(features.spectrum.flatness < 0.01);
+  assert.ok(features.level.peak > 0.99);
+  assert.ok(features.level.rms > 0.69 && features.level.rms < 0.72);
+  assert.ok(features.spectrum.body.centroidHz > 430 && features.spectrum.body.centroidHz < 450);
+  assert.ok(features.spectrum.body.bandwidthHz > 0);
+  assert.ok(features.spectrum.body.rolloff85Hz > 430 && features.spectrum.body.rolloff85Hz < 460);
+  assert.ok(features.spectrum.body.flatness < 0.01);
   assert.ok(features.stereo.correlation > 0.99);
   assert.ok(features.stereo.sideToMidRatio < 0.001);
   assert.ok(features.tags.includes("loud"));
@@ -78,6 +97,15 @@ test("reports side energy for anti-phase stereo material", () => {
   assert.ok(features.stereo.correlation < -0.99);
   assert.ok(features.stereo.sideToMidRatio > 1000);
   assert.ok(features.tags.includes("wide"));
+});
+
+test("marks release as too quiet before note-off for sustain-less decays", () => {
+  const features = analyzeRenderedAudio(decayingSine({ frequency: 440 }));
+
+  assert.equal(features.envelope.release.status, "too-quiet-before-note-off");
+  assert.ok(features.envelope.decayMs > 0);
+  assert.ok(features.envelope.tailDurationMs > 0);
+  assert.ok(features.diagnosis.includes("release not measured because the signal was already quiet before note-off"));
 });
 
 test("reports probe pattern metadata in JSON output", () => {
@@ -146,6 +174,9 @@ test("reports probe pattern metadata in JSON output", () => {
   for (const legacyField of ["file", "probe", "note", "noteHz", "velocity", "durationSeconds", "noteOffSeconds", "gateSeconds"]) {
     assert.equal(Object.hasOwn(result, legacyField), false, `${legacyField} should be nested under measurement`);
   }
+  for (const legacyField of ["peak", "rms", "crestFactor", "attackMs", "releaseMs"]) {
+    assert.equal(Object.hasOwn(result.features, legacyField), false, `${legacyField} should be nested under a feature group`);
+  }
 });
 
 test("runs note and velocity sweeps from CLI options", () => {
@@ -207,10 +238,10 @@ test("characterizes a source-known Generator sine as a stable harmonic peak", as
     { cwd: repoRoot, encoding: "utf8" },
   );
   const [result] = JSON.parse(output);
-  const strongestPeak = result.features.spectrum.dominantPeaks[0];
+  const strongestPeak = result.features.spectrum.body.dominantPeaks[0];
 
   assert.ok(Math.abs(strongestPeak.frequency - result.measurement.input.noteHz * 2) < 20);
   assert.equal(strongestPeak.harmonic, 2);
-  assert.ok(result.features.spectrum.inharmonicityCents < 80);
+  assert.ok(result.features.spectrum.body.inharmonicityCents < 80);
   assert.ok(result.features.tags.includes("dark") || result.features.tags.includes("warm"));
 });

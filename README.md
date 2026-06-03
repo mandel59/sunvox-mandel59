@@ -108,11 +108,16 @@ Pattern #1 Lead events
 
 `sunsynth:characterize` renders `.sunsynth` files through SunVox Lib with a
 fixed probe note and prints the probe parameters together with objective timbre
-features: peak/RMS loudness, crest factor, spectral centroid, bandwidth,
-rolloff, flatness, stereo side-to-mid ratio, attack and release timing, plus
-coarse tags such as `dark`, `wide`, or `slow-attack`. Use `--json` for
-machine-readable reports, `--note <note|midi>` to change the probe pitch, and
-`--velocity <1..129>` to change the trigger velocity. Pass
+features grouped as `level`, `envelope`, `spectrum`, and `stereo`. The level
+group includes peak/RMS loudness and crest factor. The envelope group reports
+attack, decay, tail duration, note-off sensitivity, and a status-bearing
+`release` object so sustain-less instruments are not forced into misleading
+release timings. The spectrum group keeps transient, body, and tail snapshots
+with centroid, bandwidth, rolloff, flatness, high-band energy, inharmonicity,
+and dominant peaks. Coarse tags such as `dark`, `wide`, or `slow-attack` are
+derived from those grouped observations. Use `--json` for machine-readable
+reports, `--note <note|midi>` to change the probe pitch, and `--velocity
+<1..129>` to change the trigger velocity. Pass
 `--probe <note>:<velocity>:<gateSeconds>` multiple times to compare several
 input conditions in one run. JSON reports include a `measurement` object with
 the source file, render method, sample rate, channel count, master volume,
