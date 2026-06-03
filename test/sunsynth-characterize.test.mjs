@@ -129,7 +129,9 @@ test("reports probe pattern metadata in JSON output", () => {
     noteLabels: ["C4"],
     velocities: [96],
     gateSeconds: [0.25],
+    renderMethods: ["pattern-playback"],
     probeCount: 1,
+    resultCount: 1,
   });
   assert.equal(result.measurement.input.id, "C4:96:0.25s");
   assert.ok(Math.abs(result.measurement.input.noteHz - 261.63) < 0.1);
@@ -188,6 +190,50 @@ test("reports probe pattern metadata in JSON output", () => {
   }
 });
 
+test("reports direct event metadata and both render methods", () => {
+  const output = execFileSync(
+    process.execPath,
+    [
+      "tools/sunsynth-characterize.mjs",
+      "--json",
+      "--render-method",
+      "both",
+      "--probe",
+      "C4:96:0.25",
+      "generated/instruments/Scratch FMX Tines.sunsynth",
+    ],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
+  const report = JSON.parse(output);
+
+  assert.deepEqual(report.sweep, {
+    mode: "explicit-probes",
+    notes: [60],
+    noteLabels: ["C4"],
+    velocities: [96],
+    gateSeconds: [0.25],
+    renderMethods: ["pattern-playback", "direct-event"],
+    probeCount: 1,
+    resultCount: 2,
+  });
+  assert.deepEqual(
+    report.results.map((result) => result.measurement.renderMethod),
+    ["pattern-playback", "direct-event"],
+  );
+  const eventResult = report.results[1];
+  assert.equal(Object.hasOwn(eventResult, "probePattern"), false);
+  assert.equal(eventResult.measurement.playback.track, 0);
+  assert.equal(eventResult.measurement.playback.moduleNumber, eventResult.eventTimeline.noteOn.module);
+  assert.equal(eventResult.eventTimeline.noteOn.note, 61);
+  assert.equal(eventResult.eventTimeline.noteOn.velocity, 96);
+  assert.equal(eventResult.eventTimeline.noteOff.note, 128);
+  assert.equal(eventResult.eventTimeline.noteOff.velocity, 0);
+  assert.equal(eventResult.eventTimeline.noteOff.frame, eventResult.measurement.playback.noteOff.frame);
+  assert.equal(eventResult.measurement.playback.noteOn.ticks, eventResult.eventTimeline.noteOn.ticks);
+  assert.equal(eventResult.measurement.playback.noteOff.ticks, eventResult.eventTimeline.noteOff.ticks);
+  assert.ok(Math.abs(eventResult.measurement.playback.actualGateSeconds - 0.25) < 1 / 44100);
+});
+
 test("runs note, velocity, and gate sweeps from CLI options", () => {
   const output = execFileSync(
     process.execPath,
@@ -212,7 +258,9 @@ test("runs note, velocity, and gate sweeps from CLI options", () => {
     noteLabels: ["C3", "C4"],
     velocities: [64, 96],
     gateSeconds: [0.25, 0.5],
+    renderMethods: ["pattern-playback"],
     probeCount: 8,
+    resultCount: 8,
   });
   assert.deepEqual(
     report.results.map((result) => [

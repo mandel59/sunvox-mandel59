@@ -9,10 +9,12 @@ import {
   DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
   DEFAULT_SAMPLE_RATE,
   DEFAULT_SLOT as SLOT,
+  SunVoxNoteCommands,
   assertSunVoxOk,
   createNoteProbePattern,
   loadSynthModuleFromBuffer,
   renderSlotAudio,
+  sunVoxNoteValue,
   withSunVoxSlot,
 } from "./sunvox-node.mjs";
 
@@ -23,7 +25,14 @@ const DEFAULT_NOTE = 48;
 const DEFAULT_VELOCITY = 96;
 const DEFAULT_MASTER_VOLUME = 256;
 const PROBE_TRACK = 0;
-const PROBE_RENDER_METHOD = "pattern-playback";
+const PATTERN_RENDER_METHOD = "pattern-playback";
+const DIRECT_EVENT_RENDER_METHOD = "direct-event";
+const RENDER_METHOD_ALIASES = new Map([
+  ["pattern", PATTERN_RENDER_METHOD],
+  ["pattern-playback", PATTERN_RENDER_METHOD],
+  ["event", DIRECT_EVENT_RENDER_METHOD],
+  ["direct-event", DIRECT_EVENT_RENDER_METHOD],
+]);
 const SPECTRUM_SIZE = 4096;
 const PATTERN_LINE_COUNT = 256;
 const SAMPLE_EXTENSIONS = new Set([".sunsynth"]);
@@ -50,13 +59,13 @@ const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 
 function usage() {
   console.error(`Usage:
-  node tools/sunsynth-characterize.mjs [--json] [--detail] [--note <note|midi>] [--velocity <1..129>] [--note-sweep <notes>] [--velocity-sweep <values>] [--gate-sweep <seconds>] <input.sunsynth> [...]
+  node tools/sunsynth-characterize.mjs [--json] [--detail] [--render-method <pattern|event|both>] [--note <note|midi>] [--velocity <1..129>] [--note-sweep <notes>] [--velocity-sweep <values>] [--gate-sweep <seconds>] <input.sunsynth> [...]
 
 Examples:
   node tools/sunsynth-characterize.mjs instruments/*.sunsynth
   node tools/sunsynth-characterize.mjs --json --note C3 var/glass-chord-pad.sunsynth
   node tools/sunsynth-characterize.mjs --note-sweep C2,C3,C4 --velocity-sweep 64,96 --gate-sweep 0.25,2 generated/instruments/Scratch\\ FMX\\ Tines.sunsynth
-  node tools/sunsynth-characterize.mjs --probe C2:72:2.0 --probe C4:112:1.5 var/glass-chord-pad.sunsynth`);
+  node tools/sunsynth-characterize.mjs --render-method both --probe C2:72:2.0 --probe C4:112:1.5 var/glass-chord-pad.sunsynth`);
 }
 
 function parsePositiveNumber(value, label) {
@@ -151,10 +160,22 @@ function parseCommaSeparated(value, parser, label) {
   return items.map((item) => parser(item));
 }
 
+function parseRenderMethods(value) {
+  if (value === "both") {
+    return [PATTERN_RENDER_METHOD, DIRECT_EVENT_RENDER_METHOD];
+  }
+  const renderMethod = RENDER_METHOD_ALIASES.get(value);
+  if (!renderMethod) {
+    throw new Error(`Invalid --render-method value: ${value}`);
+  }
+  return [renderMethod];
+}
+
 function parseArgs(argv) {
   const options = {
     json: false,
     detail: false,
+    renderMethods: [PATTERN_RENDER_METHOD],
     note: DEFAULT_NOTE,
     velocity: DEFAULT_VELOCITY,
     durationSeconds: DEFAULT_DURATION_SECONDS,
@@ -173,6 +194,12 @@ function parseArgs(argv) {
       options.json = true;
     } else if (arg === "--detail") {
       options.detail = true;
+    } else if (arg === "--render-method") {
+      index += 1;
+      if (!argv[index]) {
+        throw new Error("--render-method requires a value");
+      }
+      options.renderMethods = parseRenderMethods(argv[index]);
     } else if (arg === "--note") {
       index += 1;
       if (!argv[index]) {
@@ -287,11 +314,145 @@ function buildSweepMetadata(options) {
     noteLabels: notes.map(noteLabel),
     velocities,
     gateSeconds,
+    renderMethods: options.renderMethods,
     probeCount: options.probes.length,
+    resultCount: options.probes.length * options.renderMethods.length,
   };
 }
 
-async function renderSynth(filePath, probe) {
+function renderPatternProbe(module, { slot, moduleIndex, sampleRate, channels, probe }) {
+  const pattern = createNoteProbePattern(module, {
+    slot,
+    moduleIndex,
+    note: probe.note,
+    velocity: probe.velocity,
+    gateSeconds: probe.gateSeconds,
+    sampleRate,
+    lineCount: PATTERN_LINE_COUNT,
+    name: "sunsynth-characterize",
+  });
+  assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
+  const rendered = renderSlotAudio(module, {
+    slot,
+    sampleRate,
+    channels,
+    durationSeconds: probe.durationSeconds,
+    blockFrames: DEFAULT_BLOCK_FRAMES,
+  });
+  return {
+    ...rendered,
+    renderMethod: PATTERN_RENDER_METHOD,
+    note: probe.note,
+    noteOnFrame: pattern.noteOnFrame,
+    noteOffFrame: pattern.noteOffFrame,
+    moduleNumber: moduleIndex + 1,
+    track: PROBE_TRACK,
+    probePattern: pattern,
+  };
+}
+
+function renderSlotAudioAtFrame(module, { slot, sampleRate, channels, durationSeconds, startFrame, baseTicks }) {
+  const ticksPerSecond = module._sv_get_ticks_per_second();
+  return renderSlotAudio(module, {
+    slot,
+    sampleRate,
+    channels,
+    durationSeconds,
+    blockFrames: DEFAULT_BLOCK_FRAMES,
+    outTime: (frame) => baseTicks + Math.floor(((startFrame + frame) * ticksPerSecond) / sampleRate),
+  });
+}
+
+function concatRenderedAudio(segments, channels, sampleRate) {
+  const totalLength = segments.reduce((sum, segment) => sum + segment.samples.length, 0);
+  const samples = new Float32Array(totalLength);
+  let offset = 0;
+  for (const segment of segments) {
+    samples.set(segment.samples, offset);
+    offset += segment.samples.length;
+  }
+  return { samples, channels, sampleRate };
+}
+
+function renderDirectEventProbe(module, { slot, moduleIndex, sampleRate, channels, probe }) {
+  const noteValue = sunVoxNoteValue(probe.note);
+  const moduleNumber = moduleIndex + 1;
+  const gateFrames = Math.round(probe.gateSeconds * sampleRate);
+  const ticksPerSecond = module._sv_get_ticks_per_second();
+  const gateTicks = Math.floor(probe.gateSeconds * ticksPerSecond);
+  const releaseSeconds = Math.max(0, probe.durationSeconds - probe.gateSeconds);
+  const baseTicks = module._sv_get_ticks();
+  const noteOnTicks = baseTicks >>> 0;
+  const noteOffTicks = (baseTicks + gateTicks) >>> 0;
+  assertSunVoxOk(module._sv_play(slot), "sv_play");
+  assertSunVoxOk(module._sv_set_event_t(slot, 1, baseTicks), "sv_set_event_t note on");
+  assertSunVoxOk(module._sv_send_event(slot, PROBE_TRACK, noteValue, probe.velocity, moduleNumber, 0, 0), "sv_send_event note on");
+  const gate = renderSlotAudioAtFrame(module, {
+    slot,
+    sampleRate,
+    channels,
+    durationSeconds: probe.gateSeconds,
+    startFrame: 0,
+    baseTicks,
+  });
+  assertSunVoxOk(module._sv_set_event_t(slot, 1, baseTicks + gateTicks), "sv_set_event_t note off");
+  assertSunVoxOk(
+    module._sv_send_event(slot, PROBE_TRACK, SunVoxNoteCommands.noteOff, 0, moduleNumber, 0, 0),
+    "sv_send_event note off",
+  );
+  const release = renderSlotAudioAtFrame(module, {
+    slot,
+    sampleRate,
+    channels,
+    durationSeconds: releaseSeconds,
+    startFrame: gateFrames,
+    baseTicks,
+  });
+  assertSunVoxOk(module._sv_set_event_t(slot, 0, 0), "sv_set_event_t reset");
+  assertSunVoxOk(
+    module._sv_send_event(slot, PROBE_TRACK, SunVoxNoteCommands.allNotesOff, 0, 0, 0, 0),
+    "sv_send_event all notes off",
+  );
+  assertSunVoxOk(module._sv_stop(slot), "sv_stop");
+  const rendered = concatRenderedAudio([gate, release], channels, sampleRate);
+  return {
+    ...rendered,
+    renderMethod: DIRECT_EVENT_RENDER_METHOD,
+    note: probe.note,
+    noteOnFrame: 0,
+    noteOffFrame: gateFrames,
+    moduleNumber,
+    track: PROBE_TRACK,
+    eventTimeline: {
+      noteOn: {
+        ticks: noteOnTicks,
+        frame: 0,
+        track: PROBE_TRACK,
+        note: noteValue,
+        velocity: probe.velocity,
+        module: moduleNumber,
+        controller: 0,
+        value: 0,
+      },
+      noteOff: {
+        ticks: noteOffTicks,
+        frame: gateFrames,
+        track: PROBE_TRACK,
+        note: SunVoxNoteCommands.noteOff,
+        velocity: 0,
+        module: moduleNumber,
+        controller: 0,
+        value: 0,
+      },
+      ticksPerSecond,
+      gateTicks,
+      gateFrames,
+      releaseSeconds,
+    },
+  };
+}
+
+async function renderSynth(filePath, probe, renderMethod) {
   return withSunVoxSlot(
     {
       sampleRate: DEFAULT_SAMPLE_RATE,
@@ -303,46 +464,44 @@ async function renderSynth(filePath, probe) {
       const bytes = await readFile(filePath);
       const moduleIndex = loadSynthModuleFromBuffer(module, bytes, { slot });
       assertSunVoxOk(module._sv_volume(slot, DEFAULT_MASTER_VOLUME), "sv_volume");
-      const pattern = createNoteProbePattern(module, {
-        slot,
-        moduleIndex,
-        note: probe.note,
-        velocity: probe.velocity,
-        gateSeconds: probe.gateSeconds,
-        sampleRate,
-        lineCount: PATTERN_LINE_COUNT,
-        name: "sunsynth-characterize",
-      });
-      assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
-      const rendered = renderSlotAudio(module, {
-        slot,
-        sampleRate,
-        channels,
-        durationSeconds: probe.durationSeconds,
-        blockFrames: DEFAULT_BLOCK_FRAMES,
-      });
-      return {
-        ...rendered,
-        note: probe.note,
-        noteOnFrame: pattern.noteOnFrame,
-        noteOffFrame: pattern.noteOffFrame,
-        probePattern: pattern,
-      };
+      if (renderMethod === PATTERN_RENDER_METHOD) {
+        return renderPatternProbe(module, { slot, moduleIndex, sampleRate, channels, probe });
+      }
+      if (renderMethod === DIRECT_EVENT_RENDER_METHOD) {
+        return renderDirectEventProbe(module, { slot, moduleIndex, sampleRate, channels, probe });
+      }
+      throw new Error(`Unsupported render method: ${renderMethod}`);
     },
   );
 }
 
 function buildMeasurement(filePath, probe, rendered) {
-  const { sampleRate, channels, samples, probePattern } = rendered;
+  const { sampleRate, channels, samples } = rendered;
   const renderedFrameCount = Math.floor(samples.length / channels);
-  const noteOnFrame = probePattern.noteOnFrame;
-  const noteOffFrame = probePattern.noteOffFrame;
+  const noteOnFrame = rendered.noteOnFrame;
+  const noteOffFrame = rendered.noteOffFrame;
   const actualGateSeconds = Math.max(0, (noteOffFrame - noteOnFrame) / sampleRate);
-  const noteOnEvent = probePattern.events[0];
-  const noteOffEvent = probePattern.events[1];
+  const noteOnEvent = rendered.probePattern?.events[0] ?? rendered.eventTimeline?.noteOn;
+  const noteOffEvent = rendered.probePattern?.events[1] ?? rendered.eventTimeline?.noteOff;
+  const noteOn = {
+    frame: noteOnFrame,
+    seconds: noteOnFrame / sampleRate,
+  };
+  const noteOff = {
+    frame: noteOffFrame,
+    seconds: noteOffFrame / sampleRate,
+  };
+  if (rendered.probePattern) {
+    noteOn.line = noteOnEvent?.line ?? 0;
+    noteOff.line = noteOffEvent?.line ?? rendered.probePattern.noteOffLine;
+  }
+  if (rendered.eventTimeline) {
+    noteOn.ticks = rendered.eventTimeline.noteOn.ticks;
+    noteOff.ticks = rendered.eventTimeline.noteOff.ticks;
+  }
   return {
     sourceFile: relative(process.cwd(), filePath),
-    renderMethod: PROBE_RENDER_METHOD,
+    renderMethod: rendered.renderMethod,
     input: {
       id: probe.id,
       note: probe.note,
@@ -356,21 +515,16 @@ function buildMeasurement(filePath, probe, rendered) {
       sampleRate,
       channels,
       masterVolume: DEFAULT_MASTER_VOLUME,
-      track: PROBE_TRACK,
-      moduleNumber: noteOnEvent?.module,
+      track: rendered.track,
+      moduleNumber: rendered.moduleNumber ?? noteOnEvent?.module,
       durationSeconds: renderedFrameCount / sampleRate,
-      lineFrames: probePattern.lineFrames,
-      timingSource: "sv_get_time_map frames rendered through sv_audio_callback system ticks",
-      noteOn: {
-        line: noteOnEvent?.line ?? 0,
-        frame: noteOnFrame,
-        seconds: noteOnFrame / sampleRate,
-      },
-      noteOff: {
-        line: noteOffEvent?.line ?? probePattern.noteOffLine,
-        frame: noteOffFrame,
-        seconds: noteOffFrame / sampleRate,
-      },
+      lineFrames: rendered.probePattern?.lineFrames,
+      timingSource:
+        rendered.renderMethod === PATTERN_RENDER_METHOD
+          ? "sv_get_time_map frames rendered through sv_audio_callback system ticks"
+          : "sv_set_event_t ticks rendered through sv_audio_callback system ticks",
+      noteOn,
+      noteOff,
       actualGateSeconds,
     },
   };
@@ -802,17 +956,23 @@ export function analyzeRenderedAudio(rendered) {
   };
 }
 
-async function analyzeFile(file, probe) {
+async function analyzeFile(file, probe, renderMethod) {
   const filePath = resolve(file);
   if (!SAMPLE_EXTENSIONS.has(extname(filePath).toLowerCase())) {
     throw new Error(`${file} is not a .sunsynth file`);
   }
-  const rendered = await renderSynth(filePath, probe);
-  return {
+  const rendered = await renderSynth(filePath, probe, renderMethod);
+  const result = {
     measurement: buildMeasurement(filePath, probe, rendered),
-    probePattern: rendered.probePattern,
     features: analyzeRenderedAudio(rendered),
   };
+  if (rendered.probePattern) {
+    result.probePattern = rendered.probePattern;
+  }
+  if (rendered.eventTimeline) {
+    result.eventTimeline = rendered.eventTimeline;
+  }
+  return result;
 }
 
 function fixed(value, digits = 3) {
@@ -832,6 +992,7 @@ function formatTable(results) {
       "NoteHz",
       "Vel",
       "Gate",
+      "Method",
       "Peak",
       "RMS",
       "Crest",
@@ -857,6 +1018,7 @@ function formatTable(results) {
       `${fixed(measurement.input.noteHz, 2)}Hz`,
       String(measurement.input.velocity),
       `${formatSeconds(measurement.playback.actualGateSeconds)}s`,
+      measurement.renderMethod,
       fixed(features.level.peak),
       fixed(features.level.rms),
       fixed(features.level.crestFactor, 2),
@@ -901,11 +1063,14 @@ function formatDetails(results) {
     .map((result) => {
       const { features, measurement } = result;
       const diagnosis = features.diagnosis.length ? features.diagnosis : ["no obvious spectral issue detected"];
+      const probeLine = result.probePattern
+        ? `  probe pattern: index=${result.probePattern.patternIndex} noteOffLine=${result.probePattern.noteOffLine} lineFrames=${result.probePattern.lineFrames} noteOnFrame=${result.probePattern.noteOnFrame} noteOffFrame=${result.probePattern.noteOffFrame}`
+        : `  event timeline: noteOnTicks=${result.eventTimeline?.noteOn.ticks ?? "-"} noteOffTicks=${result.eventTimeline?.noteOff.ticks ?? "-"} gateTicks=${result.eventTimeline?.gateTicks ?? "-"} noteOnFrame=${measurement.playback.noteOn.frame} noteOffFrame=${measurement.playback.noteOff.frame}`;
       return [
         `${basename(measurement.sourceFile)} ${measurement.input.id}`,
         `  input: note=${measurement.input.noteLabel} noteHz=${fixed(measurement.input.noteHz, 2)} velocity=${measurement.input.velocity} requestedGate=${formatSeconds(measurement.input.requestedGateSeconds)}s requestedDuration=${formatSeconds(measurement.input.requestedDurationSeconds)}s`,
         `  measurement: method=${measurement.renderMethod} sampleRate=${measurement.playback.sampleRate}Hz channels=${measurement.playback.channels} masterVolume=${measurement.playback.masterVolume} track=${measurement.playback.track} actualGate=${formatSeconds(measurement.playback.actualGateSeconds)}s`,
-        `  probe pattern: index=${result.probePattern.patternIndex} noteOffLine=${result.probePattern.noteOffLine} lineFrames=${result.probePattern.lineFrames} noteOnFrame=${result.probePattern.noteOnFrame} noteOffFrame=${result.probePattern.noteOffFrame}`,
+        probeLine,
         `  level: peak=${fixed(features.level.peak)} rms=${fixed(features.level.rms)} crest=${fixed(features.level.crestFactor, 2)} transient=${fixed(features.level.transientRms)} body=${fixed(features.level.bodyRms)} tail=${fixed(features.level.tailRms)} tail/body=${fixed(features.level.tailToBodyRatio, 2)}`,
         `  envelope: attack=${features.envelope.attackMs === undefined ? "-" : `${rounded(features.envelope.attackMs)}ms`} decay=${features.envelope.decayMs === undefined ? "-" : `${rounded(features.envelope.decayMs)}ms`} release=${features.envelope.release.status}${features.envelope.release.ms === undefined ? "" : ` ${rounded(features.envelope.release.ms)}ms`} tailDuration=${features.envelope.tailDurationMs === undefined ? "-" : `${rounded(features.envelope.tailDurationMs)}ms`} noteOffDelta=${features.envelope.noteOffSensitivity.deltaDb === undefined ? "-" : `${fixed(features.envelope.noteOffSensitivity.deltaDb, 1)}dB`}`,
         `  ${formatSpectrum("transient spectrum", features.spectrum.transient)}`,
@@ -942,11 +1107,13 @@ async function main(argv) {
   let failures = 0;
   for (const file of options.files) {
     for (const probe of options.probes) {
-      try {
-        results.push(await analyzeFile(file, probe));
-      } catch (error) {
-        failures += 1;
-        console.error(`${file} ${probe.id}: ${error instanceof Error ? error.message : error}`);
+      for (const renderMethod of options.renderMethods) {
+        try {
+          results.push(await analyzeFile(file, probe, renderMethod));
+        } catch (error) {
+          failures += 1;
+          console.error(`${file} ${probe.id} ${renderMethod}: ${error instanceof Error ? error.message : error}`);
+        }
       }
     }
   }

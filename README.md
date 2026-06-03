@@ -119,15 +119,21 @@ derived from those grouped observations. Use `--json` for machine-readable
 reports, `--note <note|midi>` to change the probe pitch, and `--velocity
 <1..129>` to change the trigger velocity. Pass
 `--probe <note>:<velocity>:<gateSeconds>` multiple times to compare several
-input conditions in one run. JSON reports include a `measurement` object with
-the source file, render method, sample rate, channel count, master volume,
-track, requested note/velocity/gate, actual note-on/off frame positions, and
-actual gate duration. Treat this `measurement` object as the source of truth for
-the measurement condition. `--json` reports are shaped as `{ sweep, results }`,
-where `sweep` records the note, velocity, and gate values that produced the
-result set. `--json` and `--detail` also include the generated probe pattern
-metadata, and `probePattern.events` records the note-on and note-off pattern
-events that were written for the probe. Use `--note-sweep C2,C3,C4`,
+input conditions in one run. By default the tool creates a probe pattern and
+plays it through the SunVox sequencer. Pass `--render-method event` to render
+the same probe with explicit `sv_send_event()` note-on/note-off calls, or
+`--render-method both` to emit pattern and direct-event measurements for each
+probe. JSON reports include a `measurement` object with the source file, render
+method, sample rate, channel count, master volume, track, requested
+note/velocity/gate, actual note-on/off frame positions, and actual gate
+duration. Treat this `measurement` object as the source of truth for the
+measurement condition. `--json` reports are shaped as `{ sweep, results }`,
+where `sweep` records the note, velocity, gate, render method, probe count, and
+result count that produced the result set. Pattern results include the generated
+probe pattern metadata, and `probePattern.events` records the note-on and
+note-off pattern events that were written for the probe. Direct-event results
+include `eventTimeline` with the note-on/note-off `sv_send_event()` arguments,
+event ticks, gate ticks, and frame positions. Use `--note-sweep C2,C3,C4`,
 `--velocity-sweep 64,96,129`, and `--gate-sweep 0.25,2` to generate a
 cross-product of input conditions without writing each `--probe` manually.
 
