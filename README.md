@@ -127,13 +127,17 @@ probe. JSON reports include a `measurement` object with the source file, render
 method, sample rate, channel count, master volume, track, requested
 note/velocity/gate, actual note-on/off frame positions, and actual gate
 duration. Treat this `measurement` object as the source of truth for the
-measurement condition. `--json` reports are shaped as `{ sweep, results }`,
-where `sweep` records the note, velocity, gate, render method, probe count, and
-result count that produced the result set. Pattern results include the generated
+measurement condition. `--json` reports are shaped as
+`{ sweep, results, comparisons? }`, where `sweep` records the note, velocity,
+gate, render method, probe count, and result count that produced the result set.
+Pattern results include the generated
 probe pattern metadata, and `probePattern.events` records the note-on and
 note-off pattern events that were written for the probe. Direct-event results
 include `eventTimeline` with the note-on/note-off `sv_send_event()` arguments,
-event ticks, gate ticks, and frame positions. Use `--note-sweep C2,C3,C4`,
+event ticks, gate ticks, and frame positions. With `--render-method both`, JSON
+reports also include `comparisons`, which pairs pattern and direct-event results
+for each identical source/probe and summarizes deltas for gate timing, level,
+envelope, spectrum, stereo width, and tags. Use `--note-sweep C2,C3,C4`,
 `--velocity-sweep 64,96,129`, and `--gate-sweep 0.25,2` to generate a
 cross-product of input conditions without writing each `--probe` manually.
 

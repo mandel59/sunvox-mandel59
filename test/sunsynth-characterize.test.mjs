@@ -232,6 +232,26 @@ test("reports direct event metadata and both render methods", () => {
   assert.equal(eventResult.measurement.playback.noteOn.ticks, eventResult.eventTimeline.noteOn.ticks);
   assert.equal(eventResult.measurement.playback.noteOff.ticks, eventResult.eventTimeline.noteOff.ticks);
   assert.ok(Math.abs(eventResult.measurement.playback.actualGateSeconds - 0.25) < 1 / 44100);
+
+  assert.equal(report.comparisons.length, 1);
+  const [comparison] = report.comparisons;
+  assert.equal(comparison.sourceFile, report.results[0].measurement.sourceFile);
+  assert.equal(comparison.input.id, "C4:96:0.25s");
+  assert.deepEqual(comparison.methods, {
+    baseline: "pattern-playback",
+    candidate: "direct-event",
+  });
+  assert.equal(comparison.playback.actualGateSeconds.pattern, report.results[0].measurement.playback.actualGateSeconds);
+  assert.equal(comparison.playback.actualGateSeconds.directEvent, report.results[1].measurement.playback.actualGateSeconds);
+  assert.equal(comparison.playback.noteOffFrame.pattern, report.results[0].measurement.playback.noteOff.frame);
+  assert.equal(comparison.playback.noteOffFrame.directEvent, report.results[1].measurement.playback.noteOff.frame);
+  assert.equal(comparison.level.peak.pattern, report.results[0].features.level.peak);
+  assert.equal(comparison.level.peak.directEvent, report.results[1].features.level.peak);
+  assert.ok(comparison.level.rms.ratio > 0);
+  assert.equal(comparison.envelope.release.patternStatus, report.results[0].features.envelope.release.status);
+  assert.equal(comparison.envelope.release.directEventStatus, report.results[1].features.envelope.release.status);
+  assert.deepEqual(comparison.tags.pattern, report.results[0].features.tags);
+  assert.deepEqual(comparison.tags.directEvent, report.results[1].features.tags);
 });
 
 test("runs note, velocity, and gate sweeps from CLI options", () => {

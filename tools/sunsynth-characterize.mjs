@@ -975,6 +975,104 @@ async function analyzeFile(file, probe, renderMethod) {
   return result;
 }
 
+function compareNumber(pattern, directEvent) {
+  const delta = directEvent - pattern;
+  const comparison = {
+    pattern,
+    directEvent,
+    delta,
+  };
+  if (pattern !== 0) {
+    comparison.ratio = directEvent / pattern;
+  }
+  return comparison;
+}
+
+function measuredReleaseMs(result) {
+  const release = result.features.envelope.release;
+  return release.status === "measured" ? release.ms : undefined;
+}
+
+function tagComparison(patternTags, directEventTags) {
+  return {
+    pattern: patternTags,
+    directEvent: directEventTags,
+    added: directEventTags.filter((tag) => !patternTags.includes(tag)),
+    removed: patternTags.filter((tag) => !directEventTags.includes(tag)),
+  };
+}
+
+function comparisonKey(result) {
+  return `${result.measurement.sourceFile}\0${result.measurement.input.id}`;
+}
+
+function buildComparisons(results) {
+  const groups = new Map();
+  for (const result of results) {
+    const key = comparisonKey(result);
+    const group = groups.get(key) ?? {};
+    group[result.measurement.renderMethod] = result;
+    groups.set(key, group);
+  }
+  const comparisons = [];
+  for (const group of groups.values()) {
+    const pattern = group[PATTERN_RENDER_METHOD];
+    const directEvent = group[DIRECT_EVENT_RENDER_METHOD];
+    if (!pattern || !directEvent) {
+      continue;
+    }
+    comparisons.push({
+      sourceFile: pattern.measurement.sourceFile,
+      input: pattern.measurement.input,
+      methods: {
+        baseline: PATTERN_RENDER_METHOD,
+        candidate: DIRECT_EVENT_RENDER_METHOD,
+      },
+      playback: {
+        actualGateSeconds: compareNumber(
+          pattern.measurement.playback.actualGateSeconds,
+          directEvent.measurement.playback.actualGateSeconds,
+        ),
+        noteOffFrame: compareNumber(pattern.measurement.playback.noteOff.frame, directEvent.measurement.playback.noteOff.frame),
+      },
+      level: {
+        peak: compareNumber(pattern.features.level.peak, directEvent.features.level.peak),
+        rms: compareNumber(pattern.features.level.rms, directEvent.features.level.rms),
+        bodyRms: compareNumber(pattern.features.level.bodyRms, directEvent.features.level.bodyRms),
+        tailRms: compareNumber(pattern.features.level.tailRms, directEvent.features.level.tailRms),
+      },
+      envelope: {
+        attackMs: compareNumber(pattern.features.envelope.attackMs ?? 0, directEvent.features.envelope.attackMs ?? 0),
+        decayMs: compareNumber(pattern.features.envelope.decayMs ?? 0, directEvent.features.envelope.decayMs ?? 0),
+        release: {
+          patternStatus: pattern.features.envelope.release.status,
+          directEventStatus: directEvent.features.envelope.release.status,
+          ms: compareNumber(measuredReleaseMs(pattern) ?? 0, measuredReleaseMs(directEvent) ?? 0),
+        },
+      },
+      spectrum: {
+        bodyCentroidHz: compareNumber(
+          pattern.features.spectrum.body.centroidHz,
+          directEvent.features.spectrum.body.centroidHz,
+        ),
+        bodyRolloff85Hz: compareNumber(
+          pattern.features.spectrum.body.rolloff85Hz,
+          directEvent.features.spectrum.body.rolloff85Hz,
+        ),
+        bodyInharmonicityCents: compareNumber(
+          pattern.features.spectrum.body.inharmonicityCents,
+          directEvent.features.spectrum.body.inharmonicityCents,
+        ),
+      },
+      stereo: {
+        sideToMidRatio: compareNumber(pattern.features.stereo.sideToMidRatio, directEvent.features.stereo.sideToMidRatio),
+      },
+      tags: tagComparison(pattern.features.tags, directEvent.features.tags),
+    });
+  }
+  return comparisons;
+}
+
 function fixed(value, digits = 3) {
   return Number.isFinite(value) ? value.toFixed(digits) : "-";
 }
@@ -1119,7 +1217,12 @@ async function main(argv) {
   }
 
   if (options.json) {
-    console.log(JSON.stringify({ sweep: buildSweepMetadata(options), results }, null, 2));
+    const report = { sweep: buildSweepMetadata(options), results };
+    const comparisons = buildComparisons(results);
+    if (comparisons.length) {
+      report.comparisons = comparisons;
+    }
+    console.log(JSON.stringify(report, null, 2));
   } else if (results.length) {
     console.log(formatTable(results));
     if (options.detail) {
