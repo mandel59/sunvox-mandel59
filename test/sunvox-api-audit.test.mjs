@@ -28,6 +28,10 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   const audioCallback = audit.apis.find((item) => item.api === "sv_audio_callback");
   const loadProject = audit.apis.find((item) => item.api === "sv_load_from_memory");
   const loadModule = audit.apis.find((item) => item.api === "sv_load_module_from_memory");
+  const init = audit.apis.find((item) => item.api === "sv_init");
+  const openSlot = audit.apis.find((item) => item.api === "sv_open_slot");
+  const stop = audit.apis.find((item) => item.api === "sv_stop");
+  const volume = audit.apis.find((item) => item.api === "sv_volume");
   const referencedApis = new Set(audit.apis.map((item) => item.api));
   assert.equal(audit.strictArityMismatches.length, 0);
   assert.equal(audit.reviewCoverage.referencedApiCount, audit.apis.length);
@@ -91,6 +95,18 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   assert.equal(loadModule.review.argumentSemantics.data_size.unit, "bytes");
   assert.ok(loadModule.calls.some((call) => call.binding === "js-wrapper" && call.argumentCount === 5));
   assert.ok(loadModule.calls.some((call) => call.binding === "wasm-export" && call.argumentCount === 6));
+  assert.equal(init.review.argumentSemantics.freq.unit, "Hz");
+  assert.equal(init.review.argumentSemantics.freq.minimum, 44100);
+  assert.equal(init.review.argumentSemantics.channels.values[2], "stereo; only supported value documented");
+  assert.equal(init.review.argumentSemantics.flags.values.SV_INIT_FLAG_AUDIO_FLOAT32, "desired float32 output stream");
+  assert.equal(openSlot.review.argumentSemantics.slot.range, "0..SUNDOG_SOUND_SLOTS-1");
+  assert.equal(loadProject.review.argumentSemantics.data_size.unit, "bytes");
+  assert.match(stop.review.notes.join(" "), /second call resets/u);
+  assert.equal(volume.review.argumentSemantics.vol.range, "0..256");
+  assert.equal(
+    volume.review.argumentSemantics.vol.specialValues["<0"],
+    "ignored; previous volume is returned without changing volume",
+  );
   const newPattern = audit.apis.find((item) => item.api === "sv_new_pattern");
   const setPatternEvent = audit.apis.find((item) => item.api === "sv_set_pattern_event");
   const timeMap = audit.apis.find((item) => item.api === "sv_get_time_map");

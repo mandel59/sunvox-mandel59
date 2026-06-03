@@ -14,6 +14,123 @@ const SKIP_DIRECTORIES = new Set([".git", ".jj", "node_modules", "dist", "var", 
 const SKIP_FILES = new Set(["sunvox-api-audit.mjs", "sunvox-api-audit.test.mjs"]);
 
 const REVIEW_NOTES = {
+  sv_init: {
+    priority: "high",
+    notes: [
+      "Initializes the global sound system; returns negative if SunVox is already initialized or initialization fails.",
+      "Offline render tools should combine SV_INIT_FLAG_USER_AUDIO_CALLBACK or SV_INIT_FLAG_OFFLINE with an explicit audio sample format.",
+    ],
+    argumentSemantics: {
+      config: {
+        meaning: "additional configuration string",
+        format: "option=value|option=value",
+        specialValues: { NULL: "automatic configuration" },
+      },
+      freq: { meaning: "desired sample rate", unit: "Hz", minimum: 44100 },
+      channels: {
+        meaning: "number of output channels",
+        values: { 2: "stereo; only supported value documented" },
+      },
+      flags: {
+        meaning: "SV_INIT_FLAG_* bitmask",
+        values: {
+          SV_INIT_FLAG_NO_DEBUG_OUTPUT: "disable debug output",
+          SV_INIT_FLAG_USER_AUDIO_CALLBACK: "offline/user audio callback mode",
+          SV_INIT_FLAG_OFFLINE: "alias for SV_INIT_FLAG_USER_AUDIO_CALLBACK",
+          SV_INIT_FLAG_AUDIO_INT16: "desired int16 output stream",
+          SV_INIT_FLAG_AUDIO_FLOAT32: "desired float32 output stream",
+          SV_INIT_FLAG_ONE_THREAD: "single-threaded offline processing mode",
+        },
+      },
+    },
+  },
+  sv_open_slot: {
+    priority: "high",
+    notes: ["Opens a SunVox engine slot; invalid slot numbers return negative."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index", range: "0..SUNDOG_SOUND_SLOTS-1" },
+    },
+  },
+  sv_close_slot: {
+    priority: "medium",
+    notes: ["Closes an opened SunVox slot and releases the engine state."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index", range: "0..SUNDOG_SOUND_SLOTS-1" },
+    },
+  },
+  sv_lock_slot: {
+    priority: "high",
+    notes: ["Required around functions marked USE LOCK/UNLOCK and concurrent slot access."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index", range: "0..SUNDOG_SOUND_SLOTS-1" },
+    },
+  },
+  sv_unlock_slot: {
+    priority: "high",
+    notes: ["Releases a slot lock acquired by sv_lock_slot()."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index", range: "0..SUNDOG_SOUND_SLOTS-1" },
+    },
+  },
+  sv_load_from_memory: {
+    priority: "high",
+    notes: ["Loads a full .sunvox project from a memory block into an opened slot."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      data: { meaning: "SunVox project data block" },
+      data_size: { meaning: "data block size", unit: "bytes" },
+    },
+  },
+  sv_save_to_memory: {
+    priority: "medium",
+    notes: ["The C API returns a malloc-allocated memory block; the JS wrapper returns a UInt8Array."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      size: { meaning: "output pointer receiving byte length", unit: "bytes" },
+    },
+  },
+  sv_play: {
+    priority: "medium",
+    notes: ["Starts playback from the current project position."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+    },
+  },
+  sv_play_from_beginning: {
+    priority: "medium",
+    notes: ["Starts playback from line 0."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+    },
+  },
+  sv_stop: {
+    priority: "high",
+    notes: ["The first call stops playback; the second call resets all SunVox activity and switches the engine to standby."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+    },
+  },
+  sv_rewind: {
+    priority: "medium",
+    notes: ["Rewinds the project to the given line number."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      line_num: { meaning: "target line number", unit: "lines" },
+    },
+  },
+  sv_volume: {
+    priority: "high",
+    notes: ["Sets the global slot volume; negative values are ignored; returns the previous volume."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      vol: {
+        meaning: "global slot volume",
+        range: "0..256",
+        unit: "SunVox volume units",
+        specialValues: { "<0": "ignored; previous volume is returned without changing volume" },
+      },
+    },
+  },
   sv_audio_callback: {
     priority: "high",
     notes: ["out_time is SunVox system ticks, not seconds."],
