@@ -94,12 +94,13 @@ test("reports probe pattern metadata in JSON output", () => {
   );
   const [result] = JSON.parse(output);
 
-  assert.equal(result.probe, "C4:96:0.25s");
-  assert.ok(Math.abs(result.noteHz - 261.63) < 0.1);
+  assert.equal(result.measurement.input.id, "C4:96:0.25s");
+  assert.ok(Math.abs(result.measurement.input.noteHz - 261.63) < 0.1);
   assert.deepEqual(result.measurement.input, {
+    id: "C4:96:0.25s",
     note: 60,
     noteLabel: "C4",
-    noteHz: result.noteHz,
+    noteHz: result.measurement.input.noteHz,
     velocity: 96,
     requestedGateSeconds: 0.25,
     requestedDurationSeconds: 2.45,
@@ -142,6 +143,9 @@ test("reports probe pattern metadata in JSON output", () => {
   assert.equal(result.measurement.playback.noteOff.frame, result.probePattern.noteOffFrame);
   assert.equal(result.measurement.playback.noteOff.line, result.probePattern.noteOffLine);
   assert.ok(result.measurement.playback.actualGateSeconds > 0);
+  for (const legacyField of ["file", "probe", "note", "noteHz", "velocity", "durationSeconds", "noteOffSeconds", "gateSeconds"]) {
+    assert.equal(Object.hasOwn(result, legacyField), false, `${legacyField} should be nested under measurement`);
+  }
 });
 
 test("runs note and velocity sweeps from CLI options", () => {
@@ -205,7 +209,7 @@ test("characterizes a source-known Generator sine as a stable harmonic peak", as
   const [result] = JSON.parse(output);
   const strongestPeak = result.features.spectrum.dominantPeaks[0];
 
-  assert.ok(Math.abs(strongestPeak.frequency - result.noteHz * 2) < 20);
+  assert.ok(Math.abs(strongestPeak.frequency - result.measurement.input.noteHz * 2) < 20);
   assert.equal(strongestPeak.harmonic, 2);
   assert.ok(result.features.spectrum.inharmonicityCents < 80);
   assert.ok(result.features.tags.includes("dark") || result.features.tags.includes("warm"));

@@ -302,6 +302,7 @@ function buildMeasurement(filePath, probe, rendered) {
     sourceFile: relative(process.cwd(), filePath),
     renderMethod: PROBE_RENDER_METHOD,
     input: {
+      id: probe.id,
       note: probe.note,
       noteLabel: noteLabel(probe.note),
       noteHz: noteFrequency(probe.note),
@@ -700,15 +701,7 @@ async function analyzeFile(file, probe) {
   }
   const rendered = await renderSynth(filePath, probe);
   return {
-    file: relative(process.cwd(), filePath),
-    probe: probe.id,
     measurement: buildMeasurement(filePath, probe, rendered),
-    note: probe.note,
-    noteHz: noteFrequency(probe.note),
-    velocity: probe.velocity,
-    durationSeconds: probe.durationSeconds,
-    noteOffSeconds: probe.noteOffSeconds,
-    gateSeconds: probe.gateSeconds,
     probePattern: rendered.probePattern,
     features: analyzeRenderedAudio(rendered),
   };
@@ -747,14 +740,14 @@ function formatTable(results) {
     ],
   ];
   for (const result of results) {
-    const { features } = result;
+    const { features, measurement } = result;
     rows.push([
-      basename(result.file),
-      result.probe,
-      noteLabel(result.note),
-      `${fixed(result.noteHz, 2)}Hz`,
-      String(result.velocity),
-      `${formatSeconds(result.gateSeconds)}s`,
+      basename(measurement.sourceFile),
+      measurement.input.id,
+      measurement.input.noteLabel,
+      `${fixed(measurement.input.noteHz, 2)}Hz`,
+      String(measurement.input.velocity),
+      `${formatSeconds(measurement.playback.actualGateSeconds)}s`,
       fixed(features.peak),
       fixed(features.rms),
       fixed(features.crestFactor, 2),
@@ -794,12 +787,12 @@ function formatSpectrum(label, spectrumFeatures) {
 function formatDetails(results) {
   return results
     .map((result) => {
-      const { features } = result;
+      const { features, measurement } = result;
       const diagnosis = features.diagnosis.length ? features.diagnosis : ["no obvious spectral issue detected"];
       return [
-        `${basename(result.file)} ${result.probe}`,
-        `  probe: note=${noteLabel(result.note)} noteHz=${fixed(result.noteHz, 2)} velocity=${result.velocity} gate=${formatSeconds(result.gateSeconds)}s noteOff=${formatSeconds(result.noteOffSeconds)}s duration=${formatSeconds(result.durationSeconds)}s`,
-        `  measurement: method=${result.measurement.renderMethod} sampleRate=${result.measurement.playback.sampleRate}Hz channels=${result.measurement.playback.channels} masterVolume=${result.measurement.playback.masterVolume} track=${result.measurement.playback.track} actualGate=${formatSeconds(result.measurement.playback.actualGateSeconds)}s`,
+        `${basename(measurement.sourceFile)} ${measurement.input.id}`,
+        `  input: note=${measurement.input.noteLabel} noteHz=${fixed(measurement.input.noteHz, 2)} velocity=${measurement.input.velocity} requestedGate=${formatSeconds(measurement.input.requestedGateSeconds)}s requestedDuration=${formatSeconds(measurement.input.requestedDurationSeconds)}s`,
+        `  measurement: method=${measurement.renderMethod} sampleRate=${measurement.playback.sampleRate}Hz channels=${measurement.playback.channels} masterVolume=${measurement.playback.masterVolume} track=${measurement.playback.track} actualGate=${formatSeconds(measurement.playback.actualGateSeconds)}s`,
         `  probe pattern: index=${result.probePattern.patternIndex} noteOffLine=${result.probePattern.noteOffLine} lineFrames=${result.probePattern.lineFrames} noteOnFrame=${result.probePattern.noteOnFrame} noteOffFrame=${result.probePattern.noteOffFrame}`,
         `  level: peak=${fixed(features.peak)} rms=${fixed(features.rms)} crest=${fixed(features.crestFactor, 2)} transient=${fixed(features.transientRms)} sustain=${fixed(features.sustainRms)} tail=${fixed(features.tailRms)} tail/sustain=${fixed(features.tailToSustainRatio, 2)}`,
         `  ${formatSpectrum("transient spectrum", features.transientSpectrum)}`,

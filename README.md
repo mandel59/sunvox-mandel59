@@ -118,10 +118,9 @@ input conditions in one run. JSON reports include a `measurement` object with
 the source file, render method, sample rate, channel count, master volume,
 track, requested note/velocity/gate, actual note-on/off frame positions, and
 actual gate duration. Treat this `measurement` object as the source of truth for
-the measurement condition; legacy flat fields such as `noteOffSeconds` remain
-for compatibility. `--json` and `--detail` also include the generated probe
-pattern metadata, and `probePattern.events` records the note-on and note-off
-pattern events that were written for the probe.
+the measurement condition. `--json` and `--detail` also include the generated
+probe pattern metadata, and `probePattern.events` records the note-on and
+note-off pattern events that were written for the probe.
 Use `--note-sweep C2,C3,C4` and `--velocity-sweep 64,96,129` to generate a
 cross-product of input conditions without writing each `--probe` manually.
 
