@@ -410,8 +410,10 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         const noteOff = window.stopSynthNote(60);
         const acidBassNoteOn = await window.playSynthNote('generated/instruments/Scratch Acid Bass.sunsynth', 60, 128);
         const acidBassNoteOff = window.stopSynthNote(60);
+        const fmxTinesNoteOn = await window.playSynthNote('generated/instruments/Scratch FMX Tines.sunsynth', 60, 128);
+        const fmxTinesNoteOff = window.stopSynthNote(60);
         window.stopInstrumentNotes?.();
-        return { noteOn, controller, noteOff, acidBassNoteOn, acidBassNoteOff, calls };
+        return { noteOn, controller, noteOff, acidBassNoteOn, acidBassNoteOff, fmxTinesNoteOn, fmxTinesNoteOff, calls };
       } finally {
         window.sv_load_module_from_memory = originalLoadModule;
         window.sv_connect_module = originalConnectModule;
@@ -419,24 +421,32 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         window.sv_set_module_ctl_value = originalSetModuleCtlValue;
       }
     });
-    const loadedSynthModule = synthPlayback.calls.loadModule[0]?.moduleIndex;
+    const [loadedSynthLoad, acidBassLoad, fmxTinesLoad] = synthPlayback.calls.loadModule;
+    const loadedSynthModule = loadedSynthLoad?.moduleIndex;
     const noteOnEvent = synthPlayback.calls.sendEvent.find((event) => event.note === 61);
     const controllerEvent = synthPlayback.calls.setModuleCtlValue.find(
       (event) => event.controllerIndex === 0 && event.value === 144,
     );
     const noteOffEvent = synthPlayback.calls.sendEvent.find((event) => event.note === 128);
-    const acidBassModule = synthPlayback.calls.loadModule.at(-1)?.moduleIndex;
+    const acidBassModule = acidBassLoad?.moduleIndex;
     const acidBassNoteOnEvent = synthPlayback.calls.sendEvent
       .filter((event) => event.note === 61)
       .find((event) => event.module === acidBassModule + 1);
+    const fmxTinesModule = fmxTinesLoad?.moduleIndex;
+    const fmxTinesNoteOnEvent = synthPlayback.calls.sendEvent
+      .filter((event) => event.note === 61)
+      .find((event) => event.module === fmxTinesModule + 1);
     if (
       !synthPlayback.noteOn ||
       !synthPlayback.controller ||
       !synthPlayback.noteOff ||
       !synthPlayback.acidBassNoteOn ||
       !synthPlayback.acidBassNoteOff ||
+      !synthPlayback.fmxTinesNoteOn ||
+      !synthPlayback.fmxTinesNoteOff ||
       !(loadedSynthModule > 0) ||
       !(acidBassModule > 0) ||
+      !(fmxTinesModule > 0) ||
       synthPlayback.calls.connectModule[0]?.destination !== 0 ||
       noteOnEvent?.module !== loadedSynthModule + 1 ||
       noteOnEvent?.track !== 28 ||
@@ -446,7 +456,9 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       noteOffEvent?.module !== loadedSynthModule + 1 ||
       noteOffEvent?.track !== 28 ||
       acidBassNoteOnEvent?.track !== 28 ||
-      acidBassNoteOnEvent?.velocity !== 128
+      acidBassNoteOnEvent?.velocity !== 128 ||
+      fmxTinesNoteOnEvent?.track !== 28 ||
+      fmxTinesNoteOnEvent?.velocity !== 128
     ) {
       throw new Error(
         `Expected synth keyboard to load/connect/send note and controller events, got ${JSON.stringify(synthPlayback)}`,
