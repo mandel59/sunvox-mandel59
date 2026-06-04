@@ -60,7 +60,7 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.dbCheckErrors, 0);
   assert.equal(metrics.summary.runtimeConstraints, 10);
   assert.equal(metrics.summary.observedRuntimeBehaviors, 3);
-  assert.equal(metrics.summary.validationFiles, 15);
+  assert.equal(metrics.summary.validationFiles, 17);
   assert.equal(metrics.summary.validationIssues, 0);
   assert.equal(metrics.summary.validationWarnings, 0);
   assert.equal(metrics.summary.validationErrors, 0);
