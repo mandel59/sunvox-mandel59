@@ -32,6 +32,11 @@ verifies their note/controller calls against the browser SunVox wrapper.
 same checks. It is useful outside restricted sandboxes, but Vite may spawn
 helper processes while loading the config.
 
+In dev, local scratch files can be previewed without adding them to the deploy
+target by opening the app with `?previewRoots=var/synth-lab`. Set
+`SUNVOX_DEV_ROOTS` to a semicolon-separated list to add persistent local
+preview roots.
+
 The screenshot is written under `var/browser-debug`, which is ignored by git.
 
 In the Codex Windows shell sandbox, Playwright may fail with `spawn EPERM`

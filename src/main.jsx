@@ -56,6 +56,7 @@ const KEYBOARD_NOTE_OFFSETS = new Map([
   ["KeyI", 24],
 ]);
 const FILE_HASH_PREFIX = "#file=";
+const PREVIEW_ROOTS_PARAM = "previewRoots";
 const LEGACY_SUNSYNTH_RECIPE_PREFIX = "generated/recipes/sunsynth/";
 const SUNVOX_EDIT_RECIPE_PREFIX = "generated/recipes/sunvox-edit/";
 const MAIN_MODULE_GRAPH_ID = "main-module-graph";
@@ -109,6 +110,18 @@ function selectedPathFromLocation() {
   } catch {
     return "";
   }
+}
+
+function projectIndexPathFromLocation() {
+  if (typeof window === "undefined") {
+    return PROJECT_INDEX_PATH;
+  }
+  const params = new URLSearchParams();
+  for (const value of new URLSearchParams(window.location.search).getAll(PREVIEW_ROOTS_PARAM)) {
+    params.append("roots", value);
+  }
+  const query = params.toString();
+  return query ? `${PROJECT_INDEX_PATH}?${query}` : PROJECT_INDEX_PATH;
 }
 
 function compact(value) {
@@ -1953,7 +1966,7 @@ function App() {
   useEffect(() => {
     let alive = true;
     async function loadProjectIndex() {
-      const response = await fetch(PROJECT_INDEX_PATH);
+      const response = await fetch(projectIndexPathFromLocation());
       if (!response.ok) {
         throw new Error(`Project index ${response.status}`);
       }

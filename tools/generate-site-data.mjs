@@ -7,12 +7,41 @@ import { deflateSync } from "node:zlib";
 import { buildOutlineFromFile } from "./sunvox-outline.mjs";
 import { loadEditRecipe } from "./sunvox-edit-recipe.mjs";
 
-const DEFAULT_ROOTS = ["music", "instruments", "generated/music", "generated/instruments"];
+export const DEFAULT_ROOTS = ["music", "instruments", "generated/music", "generated/instruments"];
 const DEFAULT_RECIPE_ROOTS = ["generated/recipes/sunvox-edit"];
 const DEFAULT_OUTPUT = "site-data/sunvox-projects.json";
 const SUNVOX_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const RECIPE_EXTENSIONS = new Set([".mjs"]);
 const PATTERN_ICON_SIZE = 16;
+
+export function mergeRootLists(...rootLists) {
+  const merged = [];
+  const seen = new Set();
+  for (const roots of rootLists) {
+    for (const root of roots ?? []) {
+      if (typeof root !== "string") {
+        continue;
+      }
+      const trimmed = root.trim();
+      if (!trimmed || seen.has(trimmed)) {
+        continue;
+      }
+      seen.add(trimmed);
+      merged.push(trimmed);
+    }
+  }
+  return merged;
+}
+
+export function parsePreviewRoots(value) {
+  if (typeof value !== "string") {
+    return [];
+  }
+  return value
+    .split(/[;\r\n]+/u)
+    .map((root) => root.trim())
+    .filter(Boolean);
+}
 
 async function findSunVoxFiles(paths) {
   const files = [];

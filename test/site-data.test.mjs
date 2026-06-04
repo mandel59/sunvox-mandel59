@@ -6,7 +6,12 @@ import test from "node:test";
 import { inflateSync } from "node:zlib";
 
 import { buildContainer, TEXT_FORMAT } from "../tools/sunvox-codec.mjs";
-import { collectSiteData } from "../tools/generate-site-data.mjs";
+import {
+  collectSiteData,
+  DEFAULT_ROOTS,
+  mergeRootLists,
+  parsePreviewRoots,
+} from "../tools/generate-site-data.mjs";
 
 const SITE_DATA_PATH = "site-data/sunvox-projects.json";
 
@@ -191,4 +196,16 @@ test("site data includes clone patterns and inherits display metadata from the p
   } finally {
     await rm(fixtureDir, { recursive: true, force: true });
   }
+});
+
+test("preview roots merge defaults and explicit extras without duplicates", () => {
+  assert.deepEqual(parsePreviewRoots("var/private-preview; var/custom \nvar/synth-lab"), [
+    "var/private-preview",
+    "var/custom",
+    "var/synth-lab",
+  ]);
+  assert.deepEqual(
+    mergeRootLists(DEFAULT_ROOTS, ["var/synth-lab", "var/private-preview", "music", "var/synth-lab"]),
+    ["music", "instruments", "generated/music", "generated/instruments", "var/synth-lab", "var/private-preview"],
+  );
 });
