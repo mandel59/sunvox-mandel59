@@ -956,7 +956,7 @@ export function analyzeRenderedAudio(rendered) {
   };
 }
 
-async function analyzeFile(file, probe, renderMethod) {
+export async function analyzeSunsynthFile(file, probe, renderMethod = PATTERN_RENDER_METHOD) {
   const filePath = resolve(file);
   if (!SAMPLE_EXTENSIONS.has(extname(filePath).toLowerCase())) {
     throw new Error(`${file} is not a .sunsynth file`);
@@ -1207,7 +1207,7 @@ async function main(argv) {
     for (const probe of options.probes) {
       for (const renderMethod of options.renderMethods) {
         try {
-          results.push(await analyzeFile(file, probe, renderMethod));
+          results.push(await analyzeSunsynthFile(file, probe, renderMethod));
         } catch (error) {
           failures += 1;
           console.error(`${file} ${probe.id} ${renderMethod}: ${error instanceof Error ? error.message : error}`);

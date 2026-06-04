@@ -1,11 +1,269 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceRoots": [
     "music",
     "instruments",
     "generated/music",
     "generated/instruments"
   ],
+  "assetCatalog": {
+    "schemaVersion": 1,
+    "entries": [
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch FMX Bass.sunsynth",
+        "title": "Scratch FMX Bass",
+        "type": "synth",
+        "synthType": "FMX",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+          "name": "scratch-fmx.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch FMX Bass.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "peak": 0.08,
+            "rms": 0.01,
+            "bodyRms": 0.03,
+            "tailToBodyRatio": 0.13
+          },
+          "envelope": {
+            "attackMs": 10,
+            "releaseStatus": "measured",
+            "releaseMs": 210,
+            "tailDurationMs": 560
+          },
+          "spectrum": {
+            "bodyCentroidHz": 1408,
+            "bodyInharmonicityCents": 4.2,
+            "transientHighRatio": 0.08
+          },
+          "stereo": {
+            "sideToMidRatio": 0
+          },
+          "tags": [
+            "quiet",
+            "warm",
+            "fast-attack",
+            "narrow"
+          ],
+          "diagnosis": [
+            "the transient is spiky compared with the body level"
+          ]
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch FMX Bell.sunsynth",
+        "title": "Scratch FMX Bell",
+        "type": "synth",
+        "synthType": "FMX",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+          "name": "scratch-fmx.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch FMX Bell.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "peak": 0.07,
+            "rms": 0.01,
+            "bodyRms": 0.03,
+            "tailToBodyRatio": 0.16
+          },
+          "envelope": {
+            "attackMs": 10,
+            "releaseStatus": "measured",
+            "releaseMs": 350,
+            "tailDurationMs": 840
+          },
+          "spectrum": {
+            "bodyCentroidHz": 2506,
+            "bodyInharmonicityCents": 74.1,
+            "transientHighRatio": 0.95
+          },
+          "stereo": {
+            "sideToMidRatio": 0
+          },
+          "tags": [
+            "quiet",
+            "bright",
+            "fast-attack",
+            "narrow",
+            "metallic"
+          ],
+          "diagnosis": [
+            "high-band energy is strong during the transient",
+            "dominant peaks are far from harmonic multiples of the played note",
+            "the transient is spiky compared with the body level"
+          ]
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch FMX Pluck.sunsynth",
+        "title": "Scratch FMX Pluck",
+        "type": "synth",
+        "synthType": "FMX",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+          "name": "scratch-fmx.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch FMX Pluck.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "peak": 0.29,
+            "rms": 0.04,
+            "bodyRms": 0.12,
+            "tailToBodyRatio": 0.03
+          },
+          "envelope": {
+            "attackMs": 10,
+            "releaseStatus": "measured",
+            "releaseMs": 30,
+            "tailDurationMs": 320
+          },
+          "spectrum": {
+            "bodyCentroidHz": 541,
+            "bodyInharmonicityCents": 6.2,
+            "transientHighRatio": 0
+          },
+          "stereo": {
+            "sideToMidRatio": 0
+          },
+          "tags": [
+            "quiet",
+            "dark",
+            "fast-attack",
+            "short-release",
+            "narrow"
+          ],
+          "diagnosis": [
+            "the transient is spiky compared with the body level"
+          ]
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch FMX Tines.sunsynth",
+        "title": "Scratch FMX Tines",
+        "type": "synth",
+        "synthType": "FMX",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+          "name": "scratch-fmx.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch FMX Tines.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "peak": 0.3,
+            "rms": 0.03,
+            "bodyRms": 0.1,
+            "tailToBodyRatio": 0.09
+          },
+          "envelope": {
+            "attackMs": 10,
+            "releaseStatus": "measured",
+            "releaseMs": 130,
+            "tailDurationMs": 420
+          },
+          "spectrum": {
+            "bodyCentroidHz": 597,
+            "bodyInharmonicityCents": 9.9,
+            "transientHighRatio": 0.01
+          },
+          "stereo": {
+            "sideToMidRatio": 0
+          },
+          "tags": [
+            "quiet",
+            "dark",
+            "fast-attack",
+            "short-release",
+            "narrow"
+          ],
+          "diagnosis": [
+            "the transient is spiky compared with the body level"
+          ]
+        }
+      }
+    ]
+  },
   "projects": [
     {
       "path": "generated/instruments/Scratch Acid Bass.sunsynth",
@@ -3363,7 +3621,69 @@
       ],
       "links": [],
       "patterns": [],
-      "embedded": []
+      "embedded": [],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch FMX Bass.sunsynth",
+        "title": "Scratch FMX Bass",
+        "type": "synth",
+        "synthType": "FMX",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+          "name": "scratch-fmx.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch FMX Bass.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "peak": 0.08,
+            "rms": 0.01,
+            "bodyRms": 0.03,
+            "tailToBodyRatio": 0.13
+          },
+          "envelope": {
+            "attackMs": 10,
+            "releaseStatus": "measured",
+            "releaseMs": 210,
+            "tailDurationMs": 560
+          },
+          "spectrum": {
+            "bodyCentroidHz": 1408,
+            "bodyInharmonicityCents": 4.2,
+            "transientHighRatio": 0.08
+          },
+          "stereo": {
+            "sideToMidRatio": 0
+          },
+          "tags": [
+            "quiet",
+            "warm",
+            "fast-attack",
+            "narrow"
+          ],
+          "diagnosis": [
+            "the transient is spiky compared with the body level"
+          ]
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch FMX Bell.sunsynth",
@@ -5140,7 +5460,72 @@
       ],
       "links": [],
       "patterns": [],
-      "embedded": []
+      "embedded": [],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch FMX Bell.sunsynth",
+        "title": "Scratch FMX Bell",
+        "type": "synth",
+        "synthType": "FMX",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+          "name": "scratch-fmx.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch FMX Bell.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "peak": 0.07,
+            "rms": 0.01,
+            "bodyRms": 0.03,
+            "tailToBodyRatio": 0.16
+          },
+          "envelope": {
+            "attackMs": 10,
+            "releaseStatus": "measured",
+            "releaseMs": 350,
+            "tailDurationMs": 840
+          },
+          "spectrum": {
+            "bodyCentroidHz": 2506,
+            "bodyInharmonicityCents": 74.1,
+            "transientHighRatio": 0.95
+          },
+          "stereo": {
+            "sideToMidRatio": 0
+          },
+          "tags": [
+            "quiet",
+            "bright",
+            "fast-attack",
+            "narrow",
+            "metallic"
+          ],
+          "diagnosis": [
+            "high-band energy is strong during the transient",
+            "dominant peaks are far from harmonic multiples of the played note",
+            "the transient is spiky compared with the body level"
+          ]
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch FMX Pluck.sunsynth",
@@ -6917,7 +7302,70 @@
       ],
       "links": [],
       "patterns": [],
-      "embedded": []
+      "embedded": [],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch FMX Pluck.sunsynth",
+        "title": "Scratch FMX Pluck",
+        "type": "synth",
+        "synthType": "FMX",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+          "name": "scratch-fmx.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch FMX Pluck.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "peak": 0.29,
+            "rms": 0.04,
+            "bodyRms": 0.12,
+            "tailToBodyRatio": 0.03
+          },
+          "envelope": {
+            "attackMs": 10,
+            "releaseStatus": "measured",
+            "releaseMs": 30,
+            "tailDurationMs": 320
+          },
+          "spectrum": {
+            "bodyCentroidHz": 541,
+            "bodyInharmonicityCents": 6.2,
+            "transientHighRatio": 0
+          },
+          "stereo": {
+            "sideToMidRatio": 0
+          },
+          "tags": [
+            "quiet",
+            "dark",
+            "fast-attack",
+            "short-release",
+            "narrow"
+          ],
+          "diagnosis": [
+            "the transient is spiky compared with the body level"
+          ]
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch FMX Tines.sunsynth",
@@ -8694,7 +9142,70 @@
       ],
       "links": [],
       "patterns": [],
-      "embedded": []
+      "embedded": [],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch FMX Tines.sunsynth",
+        "title": "Scratch FMX Tines",
+        "type": "synth",
+        "synthType": "FMX",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+          "name": "scratch-fmx.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch FMX Tines.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "peak": 0.3,
+            "rms": 0.03,
+            "bodyRms": 0.1,
+            "tailToBodyRatio": 0.09
+          },
+          "envelope": {
+            "attackMs": 10,
+            "releaseStatus": "measured",
+            "releaseMs": 130,
+            "tailDurationMs": 420
+          },
+          "spectrum": {
+            "bodyCentroidHz": 597,
+            "bodyInharmonicityCents": 9.9,
+            "transientHighRatio": 0.01
+          },
+          "stereo": {
+            "sideToMidRatio": 0
+          },
+          "tags": [
+            "quiet",
+            "dark",
+            "fast-attack",
+            "short-release",
+            "narrow"
+          ],
+          "diagnosis": [
+            "the transient is spiky compared with the body level"
+          ]
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch Glass Bell.sunsynth",

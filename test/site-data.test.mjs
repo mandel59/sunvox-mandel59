@@ -63,8 +63,18 @@ test("site data summarizes project structure without embedding full event grids"
     (candidate) => candidate.path === "generated/instruments/Scratch Layered Pad.sunsynth",
   );
 
-  assert.equal(data.schemaVersion, 1);
+  assert.equal(data.schemaVersion, 2);
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
+  assert.equal(data.assetCatalog.schemaVersion, 1);
+  assert.deepEqual(
+    data.assetCatalog.entries.map((entry) => entry.path),
+    [
+      "generated/instruments/Scratch FMX Bass.sunsynth",
+      "generated/instruments/Scratch FMX Bell.sunsynth",
+      "generated/instruments/Scratch FMX Pluck.sunsynth",
+      "generated/instruments/Scratch FMX Tines.sunsynth",
+    ],
+  );
   assert.equal(data.projects.length, 16);
   assert.ok(project);
   assert.equal(project.type, "project");
@@ -115,6 +125,25 @@ test("site data summarizes project structure without embedding full event grids"
     path: "generated/recipes/sunvox-edit/scratch-fmx.mjs",
     name: "scratch-fmx.mjs",
   });
+  assert.equal(generatedRootFmx.catalog.path, generatedRootFmx.path);
+  assert.deepEqual(generatedRootFmx.catalog.deployment, {
+    status: "deploy",
+    deploy: true,
+    previewOnly: false,
+    root: "generated/instruments",
+  });
+  assert.deepEqual(generatedRootFmx.catalog.sourceRecipe, generatedRootFmx.sourceRecipe);
+  assert.deepEqual(generatedRootFmx.catalog.measurement.input, {
+    id: "C4:96:0.25s",
+    noteLabel: "C4",
+    velocity: 96,
+    gateSeconds: 0.25,
+  });
+  assert.equal(generatedRootFmx.catalog.measurement.tool, "sunsynth-characterize");
+  assert.equal(generatedRootFmx.catalog.measurement.renderMethod, "pattern-playback");
+  assert.equal(generatedRootFmx.catalog.measurement.playback.sampleRate, 44100);
+  assert.equal(generatedRootFmx.catalog.measurement.spectrum.bodyCentroidHz, 597);
+  assert.ok(generatedRootFmx.catalog.measurement.tags.includes("fast-attack"));
   assert.equal(generatedRootFmx.embedded.length, 0);
   assert.ok(generatedRootFmxPluck);
   assert.deepEqual(
@@ -127,8 +156,11 @@ test("site data summarizes project structure without embedding full event grids"
     path: "generated/recipes/sunvox-edit/scratch-fmx.mjs",
     name: "scratch-fmx.mjs",
   });
+  assert.equal(generatedRootFmxBell.catalog.measurement.spectrum.bodyInharmonicityCents, 74.1);
+  assert.ok(generatedRootFmxBell.catalog.measurement.tags.includes("metallic"));
   assert.ok(generatedRootFmxBass);
   assert.equal(generatedRootFmxBass.synth.type, "FMX");
+  assert.equal(generatedRootFmxBass.catalog.measurement.spectrum.bodyCentroidHz, 1408);
   assert.ok(generatedMetaModule);
   assert.equal(generatedMetaModule.type, "synth");
   assert.equal(generatedMetaModule.synth.type, "MetaModule");

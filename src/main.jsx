@@ -1529,6 +1529,54 @@ function synthControllerTargetModules(project) {
     : (project.modules ?? []).map((module) => ({ ...module, _graphId: MAIN_MODULE_GRAPH_ID }));
 }
 
+function formatCatalogNumber(value, suffix = "", digits = 0) {
+  if (!Number.isFinite(value)) {
+    return undefined;
+  }
+  return `${digits ? value.toFixed(digits) : Math.round(value)}${suffix}`;
+}
+
+function catalogStatus(catalog) {
+  return catalog?.deployment?.previewOnly ? "preview-only" : catalog?.deployment?.status;
+}
+
+function CatalogSummary({ catalog }) {
+  const measurement = catalog?.measurement;
+  if (!catalog) {
+    return null;
+  }
+  return (
+    <div className="property-block">
+      <h4>Catalog</h4>
+      <dl className="property-grid">
+        <PropertyRow label="Status" value={catalogStatus(catalog)} />
+        <PropertyRow label="Probe" value={measurement?.input?.id} />
+        <PropertyRow
+          label="Body"
+          value={[
+            formatCatalogNumber(measurement?.spectrum?.bodyCentroidHz, "Hz"),
+            formatCatalogNumber(measurement?.spectrum?.bodyInharmonicityCents, "c", 1),
+          ]
+            .filter(Boolean)
+            .join(" / ")}
+        />
+        <PropertyRow
+          label="Envelope"
+          value={[
+            formatCatalogNumber(measurement?.envelope?.attackMs, "ms atk"),
+            measurement?.envelope?.releaseMs === undefined
+              ? measurement?.envelope?.releaseStatus
+              : formatCatalogNumber(measurement.envelope.releaseMs, "ms rel"),
+          ]
+            .filter(Boolean)
+            .join(" / ")}
+        />
+      </dl>
+      {measurement?.tags?.length ? <FlagPills flags={measurement.tags} /> : null}
+    </div>
+  );
+}
+
 function ProjectPropertiesSection({ project, onSelectModuleTarget }) {
   const projectInfo = project.project;
   const synthInfo = project.synth;
@@ -1572,6 +1620,7 @@ function ProjectPropertiesSection({ project, onSelectModuleTarget }) {
                 <a href={sourceRecipe.path}>{sourceRecipe.name}</a>
               </div>
             ) : null}
+            <CatalogSummary catalog={project.catalog} />
             <div className="property-block">
               <h4>Data</h4>
               <DataChunkList

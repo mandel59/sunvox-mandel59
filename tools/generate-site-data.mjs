@@ -4,6 +4,7 @@ import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { deflateSync } from "node:zlib";
 
+import { analyzeSunsynthFile, parseProbe } from "./sunsynth-characterize.mjs";
 import { buildOutlineFromFile } from "./sunvox-outline.mjs";
 import { loadEditRecipe } from "./sunvox-edit-recipe.mjs";
 
@@ -13,6 +14,10 @@ const DEFAULT_OUTPUT = "site-data/sunvox-projects.json";
 const SUNVOX_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const RECIPE_EXTENSIONS = new Set([".mjs"]);
 const PATTERN_ICON_SIZE = 16;
+const CATALOG_SCHEMA_VERSION = 1;
+const CATALOG_PROBE = parseProbe("C4:96:0.25");
+const CATALOG_RENDER_METHOD = "pattern-playback";
+const FMX_ATLAS_RECIPE_PATH = "generated/recipes/sunvox-edit/scratch-fmx.mjs";
 
 export function mergeRootLists(...rootLists) {
   const merged = [];
@@ -93,14 +98,108 @@ async function collectGeneratedSourceRecipes(paths = DEFAULT_RECIPE_ROOTS) {
       if (output.kind !== "sunsynth" || extname(output.file).toLowerCase() !== ".sunsynth") {
         continue;
       }
-      const generatedPath = `generated/instruments/${basename(output.file)}`;
-      sources.set(generatedPath, {
+      const recipeSource = {
         path: recipePath,
         name: basename(recipePath),
-      });
+      };
+      const outputPath = output.file.replaceAll("\\", "/");
+      sources.set(outputPath, recipeSource);
+      const generatedPath = `generated/instruments/${basename(output.file)}`;
+      sources.set(generatedPath, recipeSource);
     }
   }
   return sources;
+}
+
+function sourceRootForPath(path, roots) {
+  return roots.find((root) => path === root || path.startsWith(`${root}/`));
+}
+
+function deploymentSummary(path, roots) {
+  const defaultRoot = sourceRootForPath(path, DEFAULT_ROOTS);
+  const sourceRoot = sourceRootForPath(path, roots);
+  return {
+    status: defaultRoot ? "deploy" : "preview-only",
+    deploy: Boolean(defaultRoot),
+    previewOnly: Boolean(sourceRoot && !defaultRoot),
+    root: sourceRoot ?? defaultRoot,
+  };
+}
+
+function finiteRounded(value, digits = 3) {
+  return Number.isFinite(value) ? Number(value.toFixed(digits)) : undefined;
+}
+
+function roundedInteger(value) {
+  return Number.isFinite(value) ? Math.round(value) : undefined;
+}
+
+function stripUndefinedEntries(value) {
+  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
+}
+
+function compactMeasurement(result) {
+  const { features, measurement } = result;
+  const release = features.envelope.release;
+  return {
+    tool: "sunsynth-characterize",
+    sourceFile: measurement.sourceFile.replaceAll("\\", "/"),
+    renderMethod: measurement.renderMethod,
+    input: {
+      id: measurement.input.id,
+      noteLabel: measurement.input.noteLabel,
+      velocity: measurement.input.velocity,
+      gateSeconds: measurement.input.requestedGateSeconds,
+    },
+    playback: {
+      sampleRate: measurement.playback.sampleRate,
+      channels: measurement.playback.channels,
+      actualGateSeconds: finiteRounded(measurement.playback.actualGateSeconds, 6),
+    },
+    level: stripUndefinedEntries({
+      peak: finiteRounded(features.level.peak, 2),
+      rms: finiteRounded(features.level.rms, 2),
+      bodyRms: finiteRounded(features.level.bodyRms, 2),
+      tailToBodyRatio: finiteRounded(features.level.tailToBodyRatio, 2),
+    }),
+    envelope: stripUndefinedEntries({
+      attackMs: roundedInteger(features.envelope.attackMs),
+      releaseStatus: release.status,
+      releaseMs: roundedInteger(release.ms),
+      tailDurationMs: roundedInteger(features.envelope.tailDurationMs),
+    }),
+    spectrum: stripUndefinedEntries({
+      bodyCentroidHz: roundedInteger(features.spectrum.body.centroidHz),
+      bodyInharmonicityCents: finiteRounded(features.spectrum.body.inharmonicityCents, 1),
+      transientHighRatio: finiteRounded(features.spectrum.transient.highRatio, 2),
+    }),
+    stereo: stripUndefinedEntries({
+      sideToMidRatio: finiteRounded(features.stereo.sideToMidRatio, 2),
+    }),
+    tags: features.tags,
+    diagnosis: features.diagnosis,
+  };
+}
+
+function shouldCatalogGeneratedAsset(project, sourceRecipe) {
+  return project.type === "synth" && project.synth?.type === "FMX" && sourceRecipe?.path === FMX_ATLAS_RECIPE_PATH;
+}
+
+async function generatedAssetCatalogEntry({ file, path, project, sourceRecipe, sourceRoots }) {
+  if (!shouldCatalogGeneratedAsset(project, sourceRecipe)) {
+    return undefined;
+  }
+  const measurement = compactMeasurement(await analyzeSunsynthFile(file, CATALOG_PROBE, CATALOG_RENDER_METHOD));
+  return {
+    schemaVersion: CATALOG_SCHEMA_VERSION,
+    path,
+    title: project.title,
+    type: project.type,
+    synthType: project.synth.type,
+    sourceRecipe,
+    deployment: deploymentSummary(path, sourceRoots),
+    measurement,
+  };
 }
 
 function fileTitle(path, outline) {
@@ -322,14 +421,26 @@ export async function collectSiteData(paths = DEFAULT_ROOTS) {
   const files = await findSunVoxFiles(paths);
   const generatedSourceRecipes = await collectGeneratedSourceRecipes();
   const projects = [];
+  const catalogEntries = [];
   for (const file of files) {
     const outline = await buildOutlineFromFile(file);
     const path = relative(process.cwd(), file).replaceAll("\\", "/");
-    projects.push(documentSummary(outline, path, { sourceRecipe: generatedSourceRecipes.get(path) }));
+    const sourceRecipe = generatedSourceRecipes.get(path);
+    const project = documentSummary(outline, path, { sourceRecipe });
+    const catalog = await generatedAssetCatalogEntry({ file, path, project, sourceRecipe, sourceRoots: paths });
+    if (catalog) {
+      project.catalog = catalog;
+      catalogEntries.push(catalog);
+    }
+    projects.push(project);
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     sourceRoots: paths,
+    assetCatalog: {
+      schemaVersion: CATALOG_SCHEMA_VERSION,
+      entries: catalogEntries,
+    },
     projects,
   };
 }
