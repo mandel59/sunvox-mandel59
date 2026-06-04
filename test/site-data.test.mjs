@@ -62,6 +62,9 @@ test("site data summarizes project structure without embedding full event grids"
   const generatedGlassBell = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch Glass Bell.sunsynth",
   );
+  const generatedPwmOrgan = data.projects.find(
+    (candidate) => candidate.path === "generated/instruments/Scratch PWM Organ.sunsynth",
+  );
   const generatedMetaModule = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch Layered Pad.sunsynth",
   );
@@ -173,6 +176,9 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(generatedGlassBell);
   assert.equal(generatedGlassBell.catalog.measurement.level.loudness, "loud");
   assert.deepEqual(generatedGlassBell.catalog.measurement.tags, ["loud"]);
+  assert.ok(generatedPwmOrgan);
+  assert.equal(generatedPwmOrgan.catalog.measurement.level.loudness, "medium");
+  assert.deepEqual(generatedPwmOrgan.catalog.measurement.tags, ["medium"]);
   assert.ok(generatedMetaModule);
   assert.equal(generatedMetaModule.type, "synth");
   assert.equal(generatedMetaModule.synth.type, "MetaModule");

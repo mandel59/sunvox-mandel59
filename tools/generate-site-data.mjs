@@ -143,7 +143,7 @@ function catalogLoudness(features) {
   if (activeRms >= 0.16 || features.level.peak >= 0.4) {
     return "loud";
   }
-  if (activeRms < 0.1 && features.level.peak < 0.25) {
+  if (activeRms < 0.08 && features.level.peak < 0.25) {
     return "quiet";
   }
   return "medium";

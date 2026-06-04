@@ -489,10 +489,10 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "loudness": "quiet"
+            "loudness": "medium"
           },
           "tags": [
-            "quiet"
+            "medium"
           ]
         }
       },
@@ -14363,10 +14363,10 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "loudness": "quiet"
+            "loudness": "medium"
           },
           "tags": [
-            "quiet"
+            "medium"
           ]
         }
       }
