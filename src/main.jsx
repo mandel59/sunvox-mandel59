@@ -1550,27 +1550,31 @@ function CatalogSummary({ catalog }) {
       <h4>Catalog</h4>
       <dl className="property-grid">
         <PropertyRow label="Status" value={catalogStatus(catalog)} />
-        <PropertyRow label="Probe" value={measurement?.input?.id} />
-        <PropertyRow
-          label="Body"
-          value={[
-            formatCatalogNumber(measurement?.spectrum?.bodyCentroidHz, "Hz"),
-            formatCatalogNumber(measurement?.spectrum?.bodyInharmonicityCents, "c", 1),
-          ]
-            .filter(Boolean)
-            .join(" / ")}
-        />
-        <PropertyRow
-          label="Envelope"
-          value={[
-            formatCatalogNumber(measurement?.envelope?.attackMs, "ms atk"),
-            measurement?.envelope?.releaseMs === undefined
-              ? measurement?.envelope?.releaseStatus
-              : formatCatalogNumber(measurement.envelope.releaseMs, "ms rel"),
-          ]
-            .filter(Boolean)
-            .join(" / ")}
-        />
+        {measurement ? (
+          <>
+            <PropertyRow label="Probe" value={measurement.input?.id} />
+            <PropertyRow
+              label="Body"
+              value={[
+                formatCatalogNumber(measurement.spectrum?.bodyCentroidHz, "Hz"),
+                formatCatalogNumber(measurement.spectrum?.bodyInharmonicityCents, "c", 1),
+              ]
+                .filter(Boolean)
+                .join(" / ")}
+            />
+            <PropertyRow
+              label="Envelope"
+              value={[
+                formatCatalogNumber(measurement.envelope?.attackMs, "ms atk"),
+                measurement.envelope?.releaseMs === undefined
+                  ? measurement.envelope?.releaseStatus
+                  : formatCatalogNumber(measurement.envelope.releaseMs, "ms rel"),
+              ]
+                .filter(Boolean)
+                .join(" / ")}
+            />
+          </>
+        ) : null}
       </dl>
       {measurement?.tags?.length ? <FlagPills flags={measurement.tags} /> : null}
     </div>

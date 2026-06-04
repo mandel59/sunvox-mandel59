@@ -11,6 +11,40 @@
     "entries": [
       {
         "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Acid Bass.sunsynth",
+        "title": "Scratch Acid Bass",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+          "name": "scratch-assorted-instruments.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Analog.sunsynth",
+        "title": "Scratch Analog",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-analog.mjs",
+          "name": "scratch-analog.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      },
+      {
+        "schemaVersion": 1,
         "path": "generated/instruments/Scratch FMX Bass.sunsynth",
         "title": "Scratch FMX Bass",
         "type": "synth",
@@ -260,6 +294,100 @@
           "diagnosis": [
             "the transient is spiky compared with the body level"
           ]
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Glass Bell.sunsynth",
+        "title": "Scratch Glass Bell",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+          "name": "scratch-assorted-instruments.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Kick Snap.sunsynth",
+        "title": "Scratch Kick Snap",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+          "name": "scratch-assorted-instruments.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Layered Pad.sunsynth",
+        "title": "Scratch Layered Pad",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
+          "name": "scratch-layered-pad.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch PWM Organ.sunsynth",
+        "title": "Scratch PWM Organ",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+          "name": "scratch-assorted-instruments.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "instruments/mandel59 shepard.sunsynth",
+        "title": "Shepard tone",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "instruments"
+        }
+      },
+      {
+        "schemaVersion": 1,
+        "path": "instruments/mandel59 SuperSaw.sunsynth",
+        "title": "SuperSaw",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "instruments"
         }
       }
     ]
@@ -1273,7 +1401,24 @@
             "embedded": []
           }
         }
-      ]
+      ],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Acid Bass.sunsynth",
+        "title": "Scratch Acid Bass",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+          "name": "scratch-assorted-instruments.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch Analog.sunsynth",
@@ -1844,7 +1989,24 @@
             "embedded": []
           }
         }
-      ]
+      ],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Analog.sunsynth",
+        "title": "Scratch Analog",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-analog.mjs",
+          "name": "scratch-analog.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch FMX Bass.sunsynth",
@@ -10395,7 +10557,24 @@
             "embedded": []
           }
         }
-      ]
+      ],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Glass Bell.sunsynth",
+        "title": "Scratch Glass Bell",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+          "name": "scratch-assorted-instruments.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch Kick Snap.sunsynth",
@@ -11156,7 +11335,24 @@
             "embedded": []
           }
         }
-      ]
+      ],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Kick Snap.sunsynth",
+        "title": "Scratch Kick Snap",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+          "name": "scratch-assorted-instruments.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch Layered Pad.sunsynth",
@@ -12653,7 +12849,24 @@
             "embedded": []
           }
         }
-      ]
+      ],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch Layered Pad.sunsynth",
+        "title": "Scratch Layered Pad",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
+          "name": "scratch-layered-pad.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      }
     },
     {
       "path": "generated/instruments/Scratch PWM Organ.sunsynth",
@@ -13871,7 +14084,24 @@
             "embedded": []
           }
         }
-      ]
+      ],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "generated/instruments/Scratch PWM Organ.sunsynth",
+        "title": "Scratch PWM Organ",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "sourceRecipe": {
+          "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+          "name": "scratch-assorted-instruments.mjs"
+        },
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "generated/instruments"
+        }
+      }
     },
     {
       "path": "instruments/mandel59 shepard.sunsynth",
@@ -15318,7 +15548,20 @@
             "embedded": []
           }
         }
-      ]
+      ],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "instruments/mandel59 shepard.sunsynth",
+        "title": "Shepard tone",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "instruments"
+        }
+      }
     },
     {
       "path": "instruments/mandel59 SuperSaw.sunsynth",
@@ -19007,7 +19250,20 @@
             "embedded": []
           }
         }
-      ]
+      ],
+      "catalog": {
+        "schemaVersion": 1,
+        "path": "instruments/mandel59 SuperSaw.sunsynth",
+        "title": "SuperSaw",
+        "type": "synth",
+        "synthType": "MetaModule",
+        "deployment": {
+          "status": "deploy",
+          "deploy": true,
+          "previewOnly": false,
+          "root": "instruments"
+        }
+      }
     },
     {
       "path": "music/2022-04-16.sunvox",

@@ -181,24 +181,30 @@ function compactMeasurement(result) {
   };
 }
 
-function shouldCatalogGeneratedAsset(project, sourceRecipe) {
-  return project.type === "synth" && project.synth?.type === "FMX" && sourceRecipe?.path === FMX_ATLAS_RECIPE_PATH;
+function shouldCatalogAsset(project) {
+  return project.type === "synth";
+}
+
+function shouldMeasureCatalogAsset(project, sourceRecipe) {
+  return project.synth?.type === "FMX" && sourceRecipe?.path === FMX_ATLAS_RECIPE_PATH;
 }
 
 async function generatedAssetCatalogEntry({ file, path, project, sourceRecipe, sourceRoots }) {
-  if (!shouldCatalogGeneratedAsset(project, sourceRecipe)) {
+  if (!shouldCatalogAsset(project)) {
     return undefined;
   }
-  const measurement = compactMeasurement(await analyzeSunsynthFile(file, CATALOG_PROBE, CATALOG_RENDER_METHOD));
+  const measurement = shouldMeasureCatalogAsset(project, sourceRecipe)
+    ? compactMeasurement(await analyzeSunsynthFile(file, CATALOG_PROBE, CATALOG_RENDER_METHOD))
+    : undefined;
   return {
     schemaVersion: CATALOG_SCHEMA_VERSION,
     path,
     title: project.title,
     type: project.type,
     synthType: project.synth.type,
-    sourceRecipe,
+    ...(sourceRecipe ? { sourceRecipe } : {}),
     deployment: deploymentSummary(path, sourceRoots),
-    measurement,
+    ...(measurement ? { measurement } : {}),
   };
 }
 

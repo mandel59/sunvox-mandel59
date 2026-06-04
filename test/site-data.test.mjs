@@ -66,15 +66,10 @@ test("site data summarizes project structure without embedding full event grids"
   assert.equal(data.schemaVersion, 2);
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
   assert.equal(data.assetCatalog.schemaVersion, 1);
-  assert.deepEqual(
-    data.assetCatalog.entries.map((entry) => entry.path),
-    [
-      "generated/instruments/Scratch FMX Bass.sunsynth",
-      "generated/instruments/Scratch FMX Bell.sunsynth",
-      "generated/instruments/Scratch FMX Pluck.sunsynth",
-      "generated/instruments/Scratch FMX Tines.sunsynth",
-    ],
-  );
+  assert.equal(data.assetCatalog.entries.length, 12);
+  assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "instruments/mandel59 shepard.sunsynth"));
+  assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch Analog.sunsynth"));
+  assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch FMX Bell.sunsynth"));
   assert.equal(data.projects.length, 16);
   assert.ok(project);
   assert.equal(project.type, "project");
@@ -116,6 +111,13 @@ test("site data summarizes project structure without embedding full event grids"
   ]);
   assert.ok(synth);
   assert.equal(synth.type, "synth");
+  assert.deepEqual(synth.catalog.deployment, {
+    status: "deploy",
+    deploy: true,
+    previewOnly: false,
+    root: "instruments",
+  });
+  assert.equal(Object.hasOwn(synth.catalog, "measurement"), false);
   assert.equal(synth.embedded.length, 1);
   assert.equal(synth.embedded[0].document.type, "project");
   assert.ok(generatedRootFmx);
@@ -168,6 +170,14 @@ test("site data summarizes project structure without embedding full event grids"
     path: "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
     name: "scratch-layered-pad.mjs",
   });
+  assert.deepEqual(generatedMetaModule.catalog.sourceRecipe, generatedMetaModule.sourceRecipe);
+  assert.deepEqual(generatedMetaModule.catalog.deployment, {
+    status: "deploy",
+    deploy: true,
+    previewOnly: false,
+    root: "generated/instruments",
+  });
+  assert.equal(Object.hasOwn(generatedMetaModule.catalog, "measurement"), false);
   assert.equal(generatedMetaModule.embedded.length, 1);
   assert.equal(generatedMetaModule.embedded[0].document.stats.activeModules, 9);
   assert.ok(synthWithNamedPatterns);
@@ -290,6 +300,12 @@ test("explicit preview roots include non-deploy synths without changing the defa
     assert.ok(previewProject);
     assert.equal(previewProject.type, "synth");
     assert.equal(previewProject.synth.name, "Preview Fixture");
+    assert.deepEqual(previewProject.catalog.deployment, {
+      status: "preview-only",
+      deploy: false,
+      previewOnly: true,
+      root: fixtureRoot,
+    });
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });
   }
