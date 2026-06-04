@@ -14,6 +14,10 @@ function parseDeclaredFunctionParameterCounts(text) {
   return declarations;
 }
 
+function isPlayerCall(call) {
+  return call.file.replaceAll("\\", "/") === "js/player.js";
+}
+
 test("audits checked-in SunVox Lib API calls against the source fixture", async () => {
   const audit = await collectApiAudit();
 
@@ -166,7 +170,7 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
   const playerApis = new Set(
     audit.apis.flatMap((item) =>
       item.calls
-        .filter((call) => call.binding === "js-wrapper" && call.file === "js\\player.js")
+        .filter((call) => call.binding === "js-wrapper" && isPlayerCall(call))
         .map((call) => call.api),
     ),
   );
@@ -187,7 +191,7 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
   assert.ok(
     playerSendEvent.calls.some(
       (call) =>
-        call.file === "js\\player.js" &&
+        isPlayerCall(call) &&
         /sv_send_event\(0, noteTrack\(note\), noteValue, noteVelocity, moduleIndex \+ 1, 0, 0\)/u.test(call.text),
     ),
     "browser player should send note-on events with public velocity and module number + 1",
@@ -195,21 +199,21 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
   assert.ok(
     playerSendEvent.calls.some(
       (call) =>
-        call.file === "js\\player.js" &&
+        isPlayerCall(call) &&
         /sv_send_event\(0, noteTrack\(note\), NOTE_OFF, 0, loadedSynthModule \+ 1, 0, 0\)/u.test(call.text),
     ),
     "browser player should send note-off events back to the active synth module on the matching track",
   );
   assert.ok(
     playerSendEvent.calls.some(
-      (call) => call.file === "js\\player.js" && /sv_send_event\(0, 0, ALL_NOTES_OFF, 0, 0, 0, 0\)/u.test(call.text),
+      (call) => isPlayerCall(call) && /sv_send_event\(0, 0, ALL_NOTES_OFF, 0, 0, 0, 0\)/u.test(call.text),
     ),
     "browser player should use the global all-notes-off event for synth cleanup",
   );
   assert.ok(
     playerSetController.calls.some(
       (call) =>
-        call.file === "js\\player.js" &&
+        isPlayerCall(call) &&
         /sv_set_module_ctl_value\(0, moduleIndex, controllerNumber, controllerValue, 0\)/u.test(call.text),
     ),
     "browser player should send raw controller values with scaled=0",
@@ -217,14 +221,14 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
   assert.ok(
     playerSendEvent.calls.some(
       (call) =>
-        call.file === "js\\player.js" &&
+        isPlayerCall(call) &&
         /sv_send_event\(0, 0, 0, 0, moduleIndex \+ 1, \(controllerNumber \+ 1\) << 8, controllerValue\)/u.test(call.text),
     ),
     "browser player fallback controller path should keep the controller write on track 0",
   );
   assert.ok(
     playerConnectModule.calls.some(
-      (call) => call.file === "js\\player.js" && /sv_connect_module\(0, moduleIndex, INSTRUMENT_OUTPUT_MODULE\)/u.test(call.text),
+      (call) => isPlayerCall(call) && /sv_connect_module\(0, moduleIndex, INSTRUMENT_OUTPUT_MODULE\)/u.test(call.text),
     ),
     "browser player should connect loaded synth modules to output module 0",
   );

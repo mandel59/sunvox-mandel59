@@ -225,19 +225,40 @@ test("preview roots merge defaults and explicit extras without duplicates", () =
 });
 
 test("explicit preview roots include non-deploy synths without changing the default index", async () => {
-  const defaultData = await collectSiteData();
-  const previewData = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, ["var/synth-lab"]));
+  const fixtureRoot = "var/site-data-preview-fixture";
+  const fixturePath = "Preview Fixture.sunsynth";
+  await rm(fixtureRoot, { recursive: true, force: true });
+  await mkdir(fixtureRoot, { recursive: true });
 
-  assert.equal(defaultData.projects.length, 16);
-  assert.equal(defaultData.sourceRoots.includes("var/synth-lab"), false);
-  assert.equal(
-    defaultData.projects.some((project) => project.path.startsWith("var/synth-lab/")),
-    false,
-  );
+  try {
+    await writeFile(
+      join(fixtureRoot, fixturePath),
+      buildContainer({
+        format: TEXT_FORMAT,
+        magic: "SSYN",
+        headerTailHex: "00000000",
+        module: {
+          name: "Preview Fixture",
+          type: "FMX",
+          flags: { exists: true, generator: true },
+        },
+      }),
+    );
 
-  assert.equal(previewData.sourceRoots.includes("var/synth-lab"), true);
-  assert.ok(previewData.projects.length > defaultData.projects.length);
-  assert.ok(
-    previewData.projects.some((project) => project.path === "var/synth-lab/mandel59 Scratch Acid Bass.sunsynth"),
-  );
+    const defaultData = await collectSiteData();
+    const previewData = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, [fixtureRoot]));
+    const projectPath = `${fixtureRoot}/${fixturePath}`;
+
+    assert.equal(defaultData.projects.length, 16);
+    assert.equal(defaultData.sourceRoots.includes(fixtureRoot), false);
+    assert.equal(defaultData.projects.some((project) => project.path === projectPath), false);
+
+    assert.equal(previewData.sourceRoots.includes(fixtureRoot), true);
+    const previewProject = previewData.projects.find((project) => project.path === projectPath);
+    assert.ok(previewProject);
+    assert.equal(previewProject.type, "synth");
+    assert.equal(previewProject.synth.name, "Preview Fixture");
+  } finally {
+    await rm(fixtureRoot, { recursive: true, force: true });
+  }
 });
