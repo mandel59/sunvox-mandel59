@@ -209,3 +209,21 @@ test("preview roots merge defaults and explicit extras without duplicates", () =
     ["music", "instruments", "generated/music", "generated/instruments", "var/synth-lab", "var/private-preview"],
   );
 });
+
+test("explicit preview roots include non-deploy synths without changing the default index", async () => {
+  const defaultData = await collectSiteData();
+  const previewData = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, ["var/synth-lab"]));
+
+  assert.equal(defaultData.projects.length, 14);
+  assert.equal(defaultData.sourceRoots.includes("var/synth-lab"), false);
+  assert.equal(
+    defaultData.projects.some((project) => project.path.startsWith("var/synth-lab/")),
+    false,
+  );
+
+  assert.equal(previewData.sourceRoots.includes("var/synth-lab"), true);
+  assert.ok(previewData.projects.length > defaultData.projects.length);
+  assert.ok(
+    previewData.projects.some((project) => project.path === "var/synth-lab/mandel59 Scratch Acid Bass.sunsynth"),
+  );
+});
