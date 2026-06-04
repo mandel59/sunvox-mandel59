@@ -467,6 +467,42 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       );
     }
 
+    const fmxAtlasSources = [];
+    for (const path of [
+      'generated/instruments/Scratch FMX Bell.sunsynth',
+      'generated/instruments/Scratch FMX Bass.sunsynth',
+    ]) {
+      const button = page.locator('.project-button', { hasText: path });
+      await button.click();
+      await page.waitForTimeout(100);
+      fmxAtlasSources.push(
+        await page.evaluate((expectedPath) => {
+          const sourceBlock = Array.from(
+            document.querySelectorAll('[aria-labelledby="properties-heading"] .property-block'),
+          ).find((block) => block.querySelector('h4')?.textContent.trim() === 'Source');
+          const link = sourceBlock?.querySelector('a');
+          return {
+            expectedPath,
+            selected: document.querySelector('#project-details h2')?.textContent ?? null,
+            sourceHeading: sourceBlock?.querySelector('h4')?.textContent.trim() ?? null,
+            sourceText: link?.textContent.trim() ?? null,
+            sourceHref: link?.getAttribute('href') ?? null,
+          };
+        }, path),
+      );
+    }
+    if (
+      fmxAtlasSources.some(
+        (source) =>
+          !source.selected?.startsWith('Scratch FMX ') ||
+          source.sourceHeading !== 'Source' ||
+          source.sourceText !== 'scratch-fmx.mjs' ||
+          source.sourceHref !== 'generated/recipes/sunvox-edit/scratch-fmx.mjs',
+      )
+    ) {
+      throw new Error(`Expected FMX atlas synths to show source recipe links, got ${JSON.stringify(fmxAtlasSources)}`);
+    }
+
     const superSawButton = page.locator('.project-button', { hasText: 'instruments/mandel59 SuperSaw.sunsynth' });
     await superSawButton.click();
     await page.waitForTimeout(100);
