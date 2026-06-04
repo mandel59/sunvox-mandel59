@@ -477,14 +477,18 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       await page.waitForTimeout(100);
       fmxAtlasSources.push(
         await page.evaluate((expectedPath) => {
-          const sourceBlock = Array.from(
-            document.querySelectorAll('[aria-labelledby="properties-heading"] .property-block'),
-          ).find((block) => block.querySelector('h4')?.textContent.trim() === 'Source');
-          const link = sourceBlock?.querySelector('a');
+          const catalogSection = document.querySelector('[aria-labelledby="catalog-heading"]');
+          const propertiesPanel = document.querySelector('[aria-labelledby="properties-heading"] .properties-panel');
+          const sourceRow = Array.from(catalogSection?.querySelectorAll('.property-row') ?? []).find(
+            (row) => row.querySelector('dt')?.textContent.trim() === 'Source',
+          );
+          const link = sourceRow?.querySelector('a');
           return {
             expectedPath,
             selected: document.querySelector('#project-details h2')?.textContent ?? null,
-            sourceHeading: sourceBlock?.querySelector('h4')?.textContent.trim() ?? null,
+            catalogHeading: catalogSection?.querySelector('h3')?.textContent.trim() ?? null,
+            catalogText: catalogSection?.textContent ?? null,
+            sourceInsideProperties: propertiesPanel?.textContent?.includes('scratch-fmx.mjs') ?? false,
             sourceText: link?.textContent.trim() ?? null,
             sourceHref: link?.getAttribute('href') ?? null,
           };
@@ -495,12 +499,14 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       fmxAtlasSources.some(
         (source) =>
           !source.selected?.startsWith('Scratch FMX ') ||
-          source.sourceHeading !== 'Source' ||
+          source.catalogHeading !== 'Catalog' ||
+          !source.catalogText?.includes('Statusdeploy') ||
+          source.sourceInsideProperties ||
           source.sourceText !== 'scratch-fmx.mjs' ||
           source.sourceHref !== 'generated/recipes/sunvox-edit/scratch-fmx.mjs',
       )
     ) {
-      throw new Error(`Expected FMX atlas synths to show source recipe links, got ${JSON.stringify(fmxAtlasSources)}`);
+      throw new Error(`Expected FMX atlas synths to show catalog source recipe links, got ${JSON.stringify(fmxAtlasSources)}`);
     }
 
     const superSawButton = page.locator('.project-button', { hasText: 'instruments/mandel59 SuperSaw.sunsynth' });

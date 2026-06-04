@@ -123,10 +123,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(generatedRootFmx);
   assert.equal(generatedRootFmx.type, "synth");
   assert.equal(generatedRootFmx.synth.type, "FMX");
-  assert.deepEqual(generatedRootFmx.sourceRecipe, {
-    path: "generated/recipes/sunvox-edit/scratch-fmx.mjs",
-    name: "scratch-fmx.mjs",
-  });
+  assert.equal(Object.hasOwn(generatedRootFmx, "sourceRecipe"), false);
   assert.equal(generatedRootFmx.catalog.path, generatedRootFmx.path);
   assert.deepEqual(generatedRootFmx.catalog.deployment, {
     status: "deploy",
@@ -134,7 +131,10 @@ test("site data summarizes project structure without embedding full event grids"
     previewOnly: false,
     root: "generated/instruments",
   });
-  assert.deepEqual(generatedRootFmx.catalog.sourceRecipe, generatedRootFmx.sourceRecipe);
+  assert.deepEqual(generatedRootFmx.catalog.sourceRecipe, {
+    path: "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+    name: "scratch-fmx.mjs",
+  });
   assert.deepEqual(generatedRootFmx.catalog.measurement.input, {
     id: "C4:96:0.25s",
     noteLabel: "C4",
@@ -154,7 +154,8 @@ test("site data summarizes project structure without embedding full event grids"
   );
   assert.ok(generatedRootFmxBell);
   assert.equal(generatedRootFmxBell.synth.type, "FMX");
-  assert.deepEqual(generatedRootFmxBell.sourceRecipe, {
+  assert.equal(Object.hasOwn(generatedRootFmxBell, "sourceRecipe"), false);
+  assert.deepEqual(generatedRootFmxBell.catalog.sourceRecipe, {
     path: "generated/recipes/sunvox-edit/scratch-fmx.mjs",
     name: "scratch-fmx.mjs",
   });
@@ -166,11 +167,11 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(generatedMetaModule);
   assert.equal(generatedMetaModule.type, "synth");
   assert.equal(generatedMetaModule.synth.type, "MetaModule");
-  assert.deepEqual(generatedMetaModule.sourceRecipe, {
+  assert.equal(Object.hasOwn(generatedMetaModule, "sourceRecipe"), false);
+  assert.deepEqual(generatedMetaModule.catalog.sourceRecipe, {
     path: "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
     name: "scratch-layered-pad.mjs",
   });
-  assert.deepEqual(generatedMetaModule.catalog.sourceRecipe, generatedMetaModule.sourceRecipe);
   assert.deepEqual(generatedMetaModule.catalog.deployment, {
     status: "deploy",
     deploy: true,

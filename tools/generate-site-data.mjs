@@ -403,7 +403,7 @@ function embeddedSummary(embedded) {
   };
 }
 
-function documentSummary(outline, path, metadata = {}) {
+function documentSummary(outline, path) {
   const modules = outline.modules ?? [];
   const visiblePatterns = (outline.patterns ?? []).filter(isVisiblePattern);
   const patternsByIndex = new Map((outline.patterns ?? []).map((pattern) => [pattern.index, pattern]));
@@ -412,7 +412,6 @@ function documentSummary(outline, path, metadata = {}) {
     title: fileTitle(path, outline),
     magic: outline.magic,
     type: outline.magic === "SSYN" ? "synth" : "project",
-    ...(metadata.sourceRecipe ? { sourceRecipe: metadata.sourceRecipe } : {}),
     ...(outline.project ? { project: outline.project } : {}),
     ...(outline.synth ? { synth: moduleSummary(outline.synth, { includeRanges: true }) } : {}),
     stats: outlineStats(outline),
@@ -432,7 +431,7 @@ export async function collectSiteData(paths = DEFAULT_ROOTS) {
     const outline = await buildOutlineFromFile(file);
     const path = relative(process.cwd(), file).replaceAll("\\", "/");
     const sourceRecipe = generatedSourceRecipes.get(path);
-    const project = documentSummary(outline, path, { sourceRecipe });
+    const project = documentSummary(outline, path);
     const catalog = await generatedAssetCatalogEntry({ file, path, project, sourceRecipe, sourceRoots: paths });
     if (catalog) {
       project.catalog = catalog;

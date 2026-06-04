@@ -1540,44 +1540,53 @@ function catalogStatus(catalog) {
   return catalog?.deployment?.previewOnly ? "preview-only" : catalog?.deployment?.status;
 }
 
-function CatalogSummary({ catalog }) {
+function CatalogSection({ catalog }) {
   const measurement = catalog?.measurement;
+  const sourceRecipe = sourceRecipeLink(catalog?.sourceRecipe);
   if (!catalog) {
     return null;
   }
   return (
-    <div className="property-block">
-      <h4>Catalog</h4>
-      <dl className="property-grid">
-        <PropertyRow label="Status" value={catalogStatus(catalog)} />
-        {measurement ? (
-          <>
-            <PropertyRow label="Probe" value={measurement.input?.id} />
-            <PropertyRow
-              label="Body"
-              value={[
-                formatCatalogNumber(measurement.spectrum?.bodyCentroidHz, "Hz"),
-                formatCatalogNumber(measurement.spectrum?.bodyInharmonicityCents, "c", 1),
-              ]
-                .filter(Boolean)
-                .join(" / ")}
-            />
-            <PropertyRow
-              label="Envelope"
-              value={[
-                formatCatalogNumber(measurement.envelope?.attackMs, "ms atk"),
-                measurement.envelope?.releaseMs === undefined
-                  ? measurement.envelope?.releaseStatus
-                  : formatCatalogNumber(measurement.envelope.releaseMs, "ms rel"),
-              ]
-                .filter(Boolean)
-                .join(" / ")}
-            />
-          </>
+    <section className="section-grid" aria-labelledby="catalog-heading">
+      <h3 id="catalog-heading">Catalog</h3>
+      <div className="properties-panel">
+        <dl className="property-grid">
+          <PropertyRow label="Status" value={catalogStatus(catalog)} />
+          {sourceRecipe ? <PropertyRow label="Source" value={<a href={sourceRecipe.path}>{sourceRecipe.name}</a>} /> : null}
+          {measurement ? (
+            <>
+              <PropertyRow label="Probe" value={measurement.input?.id} />
+              <PropertyRow
+                label="Body"
+                value={[
+                  formatCatalogNumber(measurement.spectrum?.bodyCentroidHz, "Hz"),
+                  formatCatalogNumber(measurement.spectrum?.bodyInharmonicityCents, "c", 1),
+                ]
+                  .filter(Boolean)
+                  .join(" / ")}
+              />
+              <PropertyRow
+                label="Envelope"
+                value={[
+                  formatCatalogNumber(measurement.envelope?.attackMs, "ms atk"),
+                  measurement.envelope?.releaseMs === undefined
+                    ? measurement.envelope?.releaseStatus
+                    : formatCatalogNumber(measurement.envelope.releaseMs, "ms rel"),
+                ]
+                  .filter(Boolean)
+                  .join(" / ")}
+              />
+            </>
+          ) : null}
+        </dl>
+        {measurement?.tags?.length ? (
+          <div className="property-block">
+            <h4>Tags</h4>
+            <FlagPills flags={measurement.tags} />
+          </div>
         ) : null}
-      </dl>
-      {measurement?.tags?.length ? <FlagPills flags={measurement.tags} /> : null}
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -1585,7 +1594,6 @@ function ProjectPropertiesSection({ project, onSelectModuleTarget }) {
   const projectInfo = project.project;
   const synthInfo = project.synth;
   const timeline = projectInfo?.timeline;
-  const sourceRecipe = sourceRecipeLink(project.sourceRecipe);
   const targetModules = synthInfo ? synthControllerTargetModules(project) : project.modules;
   const synthEmbeddedTargets = synthInfo
     ? embeddedTargetsForModule(project.embedded, synthInfo.index ?? 0)
@@ -1618,13 +1626,6 @@ function ProjectPropertiesSection({ project, onSelectModuleTarget }) {
         {synthInfo ? (
           <>
             <ModuleReferencePill module={synthInfo} className="graph-detail-module-pill" />
-            {sourceRecipe ? (
-              <div className="property-block">
-                <h4>Source</h4>
-                <a href={sourceRecipe.path}>{sourceRecipe.name}</a>
-              </div>
-            ) : null}
-            <CatalogSummary catalog={project.catalog} />
             <div className="property-block">
               <h4>Data</h4>
               <DataChunkList
@@ -1985,6 +1986,7 @@ function ProjectDetails({ project, error }) {
       </div>
 
       <div className="section-grid">
+        <CatalogSection catalog={project.catalog} />
         {project.type === "synth" ? null : <ProjectPropertiesSection project={project} />}
         <ModuleGraphSection
           project={project}

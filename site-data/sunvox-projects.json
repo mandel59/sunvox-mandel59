@@ -398,10 +398,6 @@
       "title": "Scratch Acid Bass",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
-        "name": "scratch-assorted-instruments.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch Acid Bass",
@@ -1425,10 +1421,6 @@
       "title": "Scratch Analog",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-analog.mjs",
-        "name": "scratch-analog.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch Analog",
@@ -2013,10 +2005,6 @@
       "title": "Scratch FMX Bass",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
-        "name": "scratch-fmx.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch FMX Bass",
@@ -3852,10 +3840,6 @@
       "title": "Scratch FMX Bell",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
-        "name": "scratch-fmx.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch FMX Bell",
@@ -5694,10 +5678,6 @@
       "title": "Scratch FMX Pluck",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
-        "name": "scratch-fmx.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch FMX Pluck",
@@ -7534,10 +7514,6 @@
       "title": "Scratch FMX Tines",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
-        "name": "scratch-fmx.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch FMX Tines",
@@ -9374,10 +9350,6 @@
       "title": "Scratch Glass Bell",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
-        "name": "scratch-assorted-instruments.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch Glass Bell",
@@ -10581,10 +10553,6 @@
       "title": "Scratch Kick Snap",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
-        "name": "scratch-assorted-instruments.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch Kick Snap",
@@ -11359,10 +11327,6 @@
       "title": "Scratch Layered Pad",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
-        "name": "scratch-layered-pad.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch Layered Pad",
@@ -12873,10 +12837,6 @@
       "title": "Scratch PWM Organ",
       "magic": "SSYN",
       "type": "synth",
-      "sourceRecipe": {
-        "path": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
-        "name": "scratch-assorted-instruments.mjs"
-      },
       "synth": {
         "index": 0,
         "name": "Scratch PWM Organ",
