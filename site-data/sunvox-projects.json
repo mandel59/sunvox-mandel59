@@ -1623,7 +1623,7 @@
             "index": 0,
             "path": "volume",
             "label": "Volume",
-            "value": 15600,
+            "value": 17000,
             "min": 0,
             "max": 32768
           },
@@ -1864,7 +1864,7 @@
             "index": 31,
             "path": "operators.1.volume",
             "label": "Operator 2 Volume",
-            "value": 12800,
+            "value": 8200,
             "min": 0,
             "max": 32768
           },
@@ -1937,10 +1937,10 @@
             "index": 41,
             "path": "operators.1.envScaling",
             "label": "Operator 2 Envelope scaling",
-            "value": 80,
+            "value": 64,
             "min": 0,
             "max": 256,
-            "displayValue": -48
+            "displayValue": -64
           },
           {
             "index": 42,
@@ -2040,7 +2040,7 @@
             "index": 53,
             "path": "operators.2.volume",
             "label": "Operator 3 Volume",
-            "value": 9800,
+            "value": 7600,
             "min": 0,
             "max": 32768
           },
@@ -2216,7 +2216,7 @@
             "index": 75,
             "path": "operators.3.volume",
             "label": "Operator 4 Volume",
-            "value": 7400,
+            "value": 3600,
             "min": 0,
             "max": 32768
           },
@@ -2322,7 +2322,7 @@
             "index": 89,
             "path": "operators.3.noise",
             "label": "Operator 4 Noise",
-            "value": 30,
+            "value": 0,
             "min": 0,
             "max": 32768
           },
@@ -2338,7 +2338,7 @@
             "index": 91,
             "path": "operators.3.freqMul",
             "label": "Operator 4 Frequency multiplier",
-            "value": 2000,
+            "value": 1500,
             "min": 0,
             "max": 32000,
             "unit": "1/1000"
@@ -2357,7 +2357,7 @@
             "index": 93,
             "path": "operators.3.selfMod",
             "label": "Operator 4 Self-modulation",
-            "value": 360,
+            "value": 120,
             "min": 0,
             "max": 32768
           },
@@ -2392,7 +2392,7 @@
             "index": 97,
             "path": "operators.4.volume",
             "label": "Operator 5 Volume",
-            "value": 5200,
+            "value": 2200,
             "min": 0,
             "max": 32768
           },
@@ -2498,7 +2498,7 @@
             "index": 111,
             "path": "operators.4.noise",
             "label": "Operator 5 Noise",
-            "value": 55,
+            "value": 0,
             "min": 0,
             "max": 32768
           },
@@ -2514,7 +2514,7 @@
             "index": 113,
             "path": "operators.4.freqMul",
             "label": "Operator 5 Frequency multiplier",
-            "value": 3000,
+            "value": 2000,
             "min": 0,
             "max": 32000,
             "unit": "1/1000"
@@ -2533,7 +2533,7 @@
             "index": 115,
             "path": "operators.4.selfMod",
             "label": "Operator 5 Self-modulation",
-            "value": 260,
+            "value": 80,
             "min": 0,
             "max": 32768
           },
@@ -2599,7 +2599,7 @@
               "index": 0,
               "path": "volume",
               "label": "Volume",
-              "value": 15600
+              "value": 17000
             },
             {
               "index": 1,
@@ -2795,7 +2795,7 @@
               "index": 31,
               "path": "operators.1.volume",
               "label": "Operator 2 Volume",
-              "value": 12800
+              "value": 8200
             },
             {
               "index": 32,
@@ -2858,8 +2858,8 @@
               "index": 41,
               "path": "operators.1.envScaling",
               "label": "Operator 2 Envelope scaling",
-              "value": 80,
-              "displayValue": -48
+              "value": 64,
+              "displayValue": -64
             },
             {
               "index": 42,
@@ -2936,7 +2936,7 @@
               "index": 53,
               "path": "operators.2.volume",
               "label": "Operator 3 Volume",
-              "value": 9800
+              "value": 7600
             },
             {
               "index": 54,
@@ -3077,7 +3077,7 @@
               "index": 75,
               "path": "operators.3.volume",
               "label": "Operator 4 Volume",
-              "value": 7400
+              "value": 3600
             },
             {
               "index": 76,
@@ -3167,7 +3167,7 @@
               "index": 89,
               "path": "operators.3.noise",
               "label": "Operator 4 Noise",
-              "value": 30
+              "value": 0
             },
             {
               "index": 90,
@@ -3179,7 +3179,7 @@
               "index": 91,
               "path": "operators.3.freqMul",
               "label": "Operator 4 Frequency multiplier",
-              "value": 2000,
+              "value": 1500,
               "unit": "1/1000"
             },
             {
@@ -3194,7 +3194,7 @@
               "index": 93,
               "path": "operators.3.selfMod",
               "label": "Operator 4 Self-modulation",
-              "value": 360
+              "value": 120
             },
             {
               "index": 94,
@@ -3218,7 +3218,7 @@
               "index": 97,
               "path": "operators.4.volume",
               "label": "Operator 5 Volume",
-              "value": 5200
+              "value": 2200
             },
             {
               "index": 98,
@@ -3308,7 +3308,7 @@
               "index": 111,
               "path": "operators.4.noise",
               "label": "Operator 5 Noise",
-              "value": 55
+              "value": 0
             },
             {
               "index": 112,
@@ -3320,7 +3320,7 @@
               "index": 113,
               "path": "operators.4.freqMul",
               "label": "Operator 5 Frequency multiplier",
-              "value": 3000,
+              "value": 2000,
               "unit": "1/1000"
             },
             {
@@ -3335,7 +3335,7 @@
               "index": 115,
               "path": "operators.4.selfMod",
               "label": "Operator 5 Self-modulation",
-              "value": 260
+              "value": 80
             },
             {
               "index": 116,
@@ -3400,7 +3400,7 @@
             "index": 0,
             "path": "volume",
             "label": "Volume",
-            "value": 12200,
+            "value": 14000,
             "min": 0,
             "max": 32768
           },
@@ -3556,10 +3556,10 @@
             "index": 21,
             "path": "operators.0.velocitySensitivity",
             "label": "Operator 1 Velocity sensitivity",
-            "value": 210,
+            "value": 230,
             "min": 0,
             "max": 256,
-            "displayValue": 82
+            "displayValue": 102
           },
           {
             "index": 22,
@@ -3641,7 +3641,7 @@
             "index": 31,
             "path": "operators.1.volume",
             "label": "Operator 2 Volume",
-            "value": 10400,
+            "value": 11600,
             "min": 0,
             "max": 32768
           },
@@ -3658,7 +3658,7 @@
             "index": 33,
             "path": "operators.1.decay",
             "label": "Operator 2 Decay",
-            "value": 2600,
+            "value": 2400,
             "min": 0,
             "max": 10000,
             "unit": "ms"
@@ -3675,7 +3675,7 @@
             "index": 35,
             "path": "operators.1.release",
             "label": "Operator 2 Release",
-            "value": 900,
+            "value": 760,
             "min": 0,
             "max": 10000,
             "unit": "ms"
@@ -3732,10 +3732,10 @@
             "index": 43,
             "path": "operators.1.velocitySensitivity",
             "label": "Operator 2 Velocity sensitivity",
-            "value": 210,
+            "value": 230,
             "min": 0,
             "max": 256,
-            "displayValue": 82
+            "displayValue": 102
           },
           {
             "index": 44,
@@ -3763,7 +3763,7 @@
             "index": 47,
             "path": "operators.1.freqMul",
             "label": "Operator 2 Frequency multiplier",
-            "value": 3000,
+            "value": 2710,
             "min": 0,
             "max": 32000,
             "unit": "1/1000"
@@ -3817,7 +3817,7 @@
             "index": 53,
             "path": "operators.2.volume",
             "label": "Operator 3 Volume",
-            "value": 6600,
+            "value": 7600,
             "min": 0,
             "max": 32768
           },
@@ -3908,10 +3908,10 @@
             "index": 65,
             "path": "operators.2.velocitySensitivity",
             "label": "Operator 3 Velocity sensitivity",
-            "value": 180,
+            "value": 220,
             "min": 0,
             "max": 256,
-            "displayValue": 52
+            "displayValue": 92
           },
           {
             "index": 66,
@@ -3939,7 +3939,7 @@
             "index": 69,
             "path": "operators.2.freqMul",
             "label": "Operator 3 Frequency multiplier",
-            "value": 2000,
+            "value": 4140,
             "min": 0,
             "max": 32000,
             "unit": "1/1000"
@@ -3993,7 +3993,7 @@
             "index": 75,
             "path": "operators.3.volume",
             "label": "Operator 4 Volume",
-            "value": 4200,
+            "value": 3400,
             "min": 0,
             "max": 32768
           },
@@ -4115,7 +4115,7 @@
             "index": 91,
             "path": "operators.3.freqMul",
             "label": "Operator 4 Frequency multiplier",
-            "value": 5000,
+            "value": 6200,
             "min": 0,
             "max": 32000,
             "unit": "1/1000"
@@ -4169,7 +4169,7 @@
             "index": 97,
             "path": "operators.4.volume",
             "label": "Operator 5 Volume",
-            "value": 2200,
+            "value": 1500,
             "min": 0,
             "max": 32768
           },
@@ -4275,7 +4275,7 @@
             "index": 111,
             "path": "operators.4.noise",
             "label": "Operator 5 Noise",
-            "value": 20,
+            "value": 10,
             "min": 0,
             "max": 32768
           },
@@ -4291,7 +4291,7 @@
             "index": 113,
             "path": "operators.4.freqMul",
             "label": "Operator 5 Frequency multiplier",
-            "value": 7000,
+            "value": 8250,
             "min": 0,
             "max": 32000,
             "unit": "1/1000"
@@ -4332,7 +4332,7 @@
             "index": 118,
             "path": "envelopeGain",
             "label": "Envelope gain",
-            "value": 980,
+            "value": 1100,
             "min": 0,
             "max": 8000,
             "unit": "1/1000"
@@ -4376,7 +4376,7 @@
               "index": 0,
               "path": "volume",
               "label": "Volume",
-              "value": 12200
+              "value": 14000
             },
             {
               "index": 1,
@@ -4508,8 +4508,8 @@
               "index": 21,
               "path": "operators.0.velocitySensitivity",
               "label": "Operator 1 Velocity sensitivity",
-              "value": 210,
-              "displayValue": 82
+              "value": 230,
+              "displayValue": 102
             },
             {
               "index": 22,
@@ -4572,7 +4572,7 @@
               "index": 31,
               "path": "operators.1.volume",
               "label": "Operator 2 Volume",
-              "value": 10400
+              "value": 11600
             },
             {
               "index": 32,
@@ -4585,7 +4585,7 @@
               "index": 33,
               "path": "operators.1.decay",
               "label": "Operator 2 Decay",
-              "value": 2600,
+              "value": 2400,
               "unit": "ms"
             },
             {
@@ -4598,7 +4598,7 @@
               "index": 35,
               "path": "operators.1.release",
               "label": "Operator 2 Release",
-              "value": 900,
+              "value": 760,
               "unit": "ms"
             },
             {
@@ -4649,8 +4649,8 @@
               "index": 43,
               "path": "operators.1.velocitySensitivity",
               "label": "Operator 2 Velocity sensitivity",
-              "value": 210,
-              "displayValue": 82
+              "value": 230,
+              "displayValue": 102
             },
             {
               "index": 44,
@@ -4674,7 +4674,7 @@
               "index": 47,
               "path": "operators.1.freqMul",
               "label": "Operator 2 Frequency multiplier",
-              "value": 3000,
+              "value": 2710,
               "unit": "1/1000"
             },
             {
@@ -4713,7 +4713,7 @@
               "index": 53,
               "path": "operators.2.volume",
               "label": "Operator 3 Volume",
-              "value": 6600
+              "value": 7600
             },
             {
               "index": 54,
@@ -4790,8 +4790,8 @@
               "index": 65,
               "path": "operators.2.velocitySensitivity",
               "label": "Operator 3 Velocity sensitivity",
-              "value": 180,
-              "displayValue": 52
+              "value": 220,
+              "displayValue": 92
             },
             {
               "index": 66,
@@ -4815,7 +4815,7 @@
               "index": 69,
               "path": "operators.2.freqMul",
               "label": "Operator 3 Frequency multiplier",
-              "value": 2000,
+              "value": 4140,
               "unit": "1/1000"
             },
             {
@@ -4854,7 +4854,7 @@
               "index": 75,
               "path": "operators.3.volume",
               "label": "Operator 4 Volume",
-              "value": 4200
+              "value": 3400
             },
             {
               "index": 76,
@@ -4956,7 +4956,7 @@
               "index": 91,
               "path": "operators.3.freqMul",
               "label": "Operator 4 Frequency multiplier",
-              "value": 5000,
+              "value": 6200,
               "unit": "1/1000"
             },
             {
@@ -4995,7 +4995,7 @@
               "index": 97,
               "path": "operators.4.volume",
               "label": "Operator 5 Volume",
-              "value": 2200
+              "value": 1500
             },
             {
               "index": 98,
@@ -5085,7 +5085,7 @@
               "index": 111,
               "path": "operators.4.noise",
               "label": "Operator 5 Noise",
-              "value": 20
+              "value": 10
             },
             {
               "index": 112,
@@ -5097,7 +5097,7 @@
               "index": 113,
               "path": "operators.4.freqMul",
               "label": "Operator 5 Frequency multiplier",
-              "value": 7000,
+              "value": 8250,
               "unit": "1/1000"
             },
             {
@@ -5130,7 +5130,7 @@
               "index": 118,
               "path": "envelopeGain",
               "label": "Envelope gain",
-              "value": 980,
+              "value": 1100,
               "unit": "1/1000"
             }
           ],

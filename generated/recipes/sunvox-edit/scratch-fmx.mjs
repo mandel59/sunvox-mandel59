@@ -222,7 +222,7 @@ const recipe = {
           "name": "Scratch FMX Bell",
           "color": "#5fe3ff",
           "controllers": {
-            "volume": 12200,
+            "volume": 14000,
             "panning": 128,
             "sampleRate": "native",
             "polyphony": 10,
@@ -231,7 +231,7 @@ const recipe = {
             "inputToCustomWave": "off",
             "adsrSmoothTransitions": "restartSmootherVolumeChange",
             "noiseFilter": 32768,
-            "envelopeGain": 980,
+            "envelopeGain": 1100,
             "operators": [
               {
                 "volume": 32768,
@@ -246,28 +246,28 @@ const recipe = {
                 "waveform": "sin",
                 "freqMul": 1000,
                 "volumeScaling": 112,
-                "velocitySensitivity": 210,
+                "velocitySensitivity": 230,
                 "outputMode": 0
               },
               {
-                "volume": 10400,
+                "volume": 11600,
                 "attack": 1,
-                "decay": 2600,
+                "decay": 2400,
                 "sustainLevel": 0,
-                "release": 900,
+                "release": 760,
                 "attackCurve": "negExp1",
                 "decayCurve": "exp2",
                 "releaseCurve": "exp1",
                 "sustain": "off",
                 "waveform": "sin",
-                "freqMul": 3000,
+                "freqMul": 2710,
                 "envScaling": 96,
                 "volumeScaling": 128,
-                "velocitySensitivity": 210,
+                "velocitySensitivity": 230,
                 "outputMode": 8
               },
               {
-                "volume": 6600,
+                "volume": 7600,
                 "attack": 1,
                 "decay": 3600,
                 "sustainLevel": 0,
@@ -277,14 +277,14 @@ const recipe = {
                 "releaseCurve": "exp1",
                 "sustain": "off",
                 "waveform": "sin",
-                "freqMul": 2000,
+                "freqMul": 4140,
                 "envScaling": 104,
                 "volumeScaling": 128,
-                "velocitySensitivity": 180,
+                "velocitySensitivity": 220,
                 "outputMode": 1
               },
               {
-                "volume": 4200,
+                "volume": 3400,
                 "attack": 1,
                 "decay": 2800,
                 "sustainLevel": 0,
@@ -294,14 +294,14 @@ const recipe = {
                 "releaseCurve": "exp1",
                 "sustain": "off",
                 "waveform": "triangle",
-                "freqMul": 5000,
+                "freqMul": 6200,
                 "selfMod": 0,
                 "volumeScaling": 104,
                 "velocitySensitivity": 180,
                 "outputMode": 1
               },
               {
-                "volume": 2200,
+                "volume": 1500,
                 "attack": 1,
                 "decay": 1800,
                 "sustainLevel": 0,
@@ -311,8 +311,8 @@ const recipe = {
                 "releaseCurve": "exp1",
                 "sustain": "off",
                 "waveform": "sin",
-                "noise": 20,
-                "freqMul": 7000,
+                "noise": 10,
+                "freqMul": 8250,
                 "selfMod": 0,
                 "volumeScaling": 96,
                 "velocitySensitivity": 180
@@ -329,7 +329,7 @@ const recipe = {
           "name": "Scratch FMX Bass",
           "color": "#3fd36b",
           "controllers": {
-            "volume": 15600,
+            "volume": 17000,
             "panning": 128,
             "sampleRate": "native",
             "polyphony": 6,
@@ -357,7 +357,7 @@ const recipe = {
                 "outputMode": 0
               },
               {
-                "volume": 12800,
+                "volume": 8200,
                 "attack": 1,
                 "decay": 900,
                 "sustainLevel": 3600,
@@ -368,13 +368,13 @@ const recipe = {
                 "sustain": "on",
                 "waveform": "sin",
                 "freqMul": 1000,
-                "envScaling": 80,
+                "envScaling": 64,
                 "volumeScaling": 128,
                 "velocitySensitivity": 210,
                 "outputMode": 8
               },
               {
-                "volume": 9800,
+                "volume": 7600,
                 "attack": 1,
                 "decay": 1500,
                 "sustainLevel": 8200,
@@ -390,7 +390,7 @@ const recipe = {
                 "outputMode": 1
               },
               {
-                "volume": 7400,
+                "volume": 3600,
                 "attack": 1,
                 "decay": 800,
                 "sustainLevel": 0,
@@ -400,14 +400,14 @@ const recipe = {
                 "releaseCurve": "linear",
                 "sustain": "off",
                 "waveform": "saw",
-                "noise": 30,
-                "freqMul": 2000,
-                "selfMod": 360,
+                "noise": 0,
+                "freqMul": 1500,
+                "selfMod": 120,
                 "velocitySensitivity": 220,
                 "outputMode": 1
               },
               {
-                "volume": 5200,
+                "volume": 2200,
                 "attack": 1,
                 "decay": 700,
                 "sustainLevel": 0,
@@ -417,9 +417,9 @@ const recipe = {
                 "releaseCurve": "linear",
                 "sustain": "off",
                 "waveform": "square",
-                "noise": 55,
-                "freqMul": 3000,
-                "selfMod": 260
+                "noise": 0,
+                "freqMul": 2000,
+                "selfMod": 80
               }
             ]
           }
