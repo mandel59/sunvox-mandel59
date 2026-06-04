@@ -87,7 +87,7 @@ async function collectGeneratedSourceRecipes(paths = DEFAULT_RECIPE_ROOTS) {
   const recipeFiles = await findRecipeFiles(paths);
   const sources = new Map();
   for (const recipeFile of recipeFiles) {
-    const recipe = await loadEditRecipe(recipeFile);
+    const recipe = await loadEditRecipe(recipeFile, { cacheBust: true });
     const recipePath = relative(process.cwd(), recipeFile).replaceAll("\\", "/");
     for (const output of Object.values(recipe.outputs)) {
       if (output.kind !== "sunsynth" || extname(output.file).toLowerCase() !== ".sunsynth") {

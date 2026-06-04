@@ -6,6 +6,7 @@ import { buildGraphLayout, graphNodeSize } from "./project-graph.js";
 import "./styles.css";
 
 const PROJECT_INDEX_PATH = "site-data/sunvox-projects.json";
+const SITE_DATA_UPDATE_EVENT = "sunvox-site-data:update";
 const GRAPH_LABEL_INSET = 2;
 const TIMELINE_LANE_HEIGHT = 32;
 const TIMELINE_PATTERN_HEIGHT = 28;
@@ -1966,7 +1967,7 @@ function App() {
   useEffect(() => {
     let alive = true;
     async function loadProjectIndex() {
-      const response = await fetch(projectIndexPathFromLocation());
+      const response = await fetch(projectIndexPathFromLocation(), { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`Project index ${response.status}`);
       }
@@ -1975,18 +1976,27 @@ function App() {
         return;
       }
       const nextProjects = data.projects ?? [];
-      const hashPath = selectedPathFromLocation();
-      const initialProject = nextProjects.find((project) => project.path === hashPath) ?? nextProjects[0];
       setProjects(nextProjects);
-      setSelectedPath(initialProject?.path ?? "");
+      setSelectedPath((currentPath) => {
+        const hashPath = selectedPathFromLocation();
+        const hashProject = nextProjects.find((project) => project.path === hashPath);
+        const currentProject = nextProjects.find((project) => project.path === currentPath);
+        return hashProject?.path ?? currentProject?.path ?? nextProjects[0]?.path ?? "";
+      });
+      setError("");
     }
+    const handleSiteDataUpdate = () => {
+      void loadProjectIndex();
+    };
     loadProjectIndex().catch((loadError) => {
       if (alive) {
         setError(loadError.message);
       }
     });
+    import.meta.hot?.on(SITE_DATA_UPDATE_EVENT, handleSiteDataUpdate);
     return () => {
       alive = false;
+      import.meta.hot?.off(SITE_DATA_UPDATE_EVENT, handleSiteDataUpdate);
     };
   }, []);
 

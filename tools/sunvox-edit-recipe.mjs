@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdir } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -37,8 +37,14 @@ function resolveRecipePath(value, recipeDir) {
   return resolve(recipeDir, value);
 }
 
-export async function loadEditRecipe(recipePath) {
-  const module = await import(pathToFileURL(recipePath));
+export async function loadEditRecipe(recipePath, options = {}) {
+  const moduleUrl = pathToFileURL(recipePath);
+  if (options.cacheBust) {
+    const recipeStat = await stat(recipePath);
+    moduleUrl.searchParams.set("mtime", String(recipeStat.mtimeMs));
+    moduleUrl.searchParams.set("size", String(recipeStat.size));
+  }
+  const module = await import(moduleUrl.href);
   return normalizeRecipe(module.default ?? module.recipe);
 }
 

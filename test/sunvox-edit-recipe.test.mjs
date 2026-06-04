@@ -4,12 +4,37 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { runEditRecipe } from "../tools/sunvox-edit-recipe.mjs";
+import { loadEditRecipe, runEditRecipe } from "../tools/sunvox-edit-recipe.mjs";
 import { parseContainer } from "../tools/sunvox-codec.mjs";
 
 async function parseFile(filePath) {
   return parseContainer(await readFile(filePath));
 }
+
+test("SunVox Edit Recipe loader can bypass stale module imports", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-cache-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  const source = (id) => `const recipe = {
+  schemaVersion: 1,
+  outputs: {
+    ${id}: {
+      kind: "sunsynth",
+      file: "var/synth-lab/${id}.sunsynth",
+      create: { module: "FMX", name: "${id}" }
+    }
+  }
+};
+
+export default recipe;
+`;
+
+  await writeFile(recipePath, source("first"), "utf8");
+  assert.deepEqual(Object.keys((await loadEditRecipe(recipePath)).outputs), ["first"]);
+
+  await writeFile(recipePath, source("second"), "utf8");
+  assert.deepEqual(Object.keys((await loadEditRecipe(recipePath)).outputs), ["first"]);
+  assert.deepEqual(Object.keys((await loadEditRecipe(recipePath, { cacheBust: true })).outputs), ["second"]);
+});
 
 test("SunVox Edit Recipe creates a SunSynth with type-only recipe imports", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-create-"));
