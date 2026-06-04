@@ -298,6 +298,8 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       };
       window.stopInstrumentNotes = () => true;
       try {
+        document.querySelector('.virtual-keyboard-frame')?.scrollIntoView({ block: 'center', inline: 'nearest' });
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         const keyC = document.querySelector('.piano-key[aria-label="C5"]');
         const keyD = document.querySelector('.piano-key[aria-label="D5"]');
         const keyE = document.querySelector('.piano-key[aria-label="E5"]');
