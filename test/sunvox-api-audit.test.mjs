@@ -181,4 +181,51 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
       wrapper: item.wrapperParameterCount,
     }));
   assert.deepEqual(arityMismatches, []);
+  const playerSendEvent = audit.apis.find((item) => item.api === "sv_send_event");
+  const playerSetController = audit.apis.find((item) => item.api === "sv_set_module_ctl_value");
+  const playerConnectModule = audit.apis.find((item) => item.api === "sv_connect_module");
+  assert.ok(
+    playerSendEvent.calls.some(
+      (call) =>
+        call.file === "js\\player.js" &&
+        /sv_send_event\(0, noteTrack\(note\), noteValue, noteVelocity, moduleIndex \+ 1, 0, 0\)/u.test(call.text),
+    ),
+    "browser player should send note-on events with public velocity and module number + 1",
+  );
+  assert.ok(
+    playerSendEvent.calls.some(
+      (call) =>
+        call.file === "js\\player.js" &&
+        /sv_send_event\(0, noteTrack\(note\), NOTE_OFF, 0, loadedSynthModule \+ 1, 0, 0\)/u.test(call.text),
+    ),
+    "browser player should send note-off events back to the active synth module on the matching track",
+  );
+  assert.ok(
+    playerSendEvent.calls.some(
+      (call) => call.file === "js\\player.js" && /sv_send_event\(0, 0, ALL_NOTES_OFF, 0, 0, 0, 0\)/u.test(call.text),
+    ),
+    "browser player should use the global all-notes-off event for synth cleanup",
+  );
+  assert.ok(
+    playerSetController.calls.some(
+      (call) =>
+        call.file === "js\\player.js" &&
+        /sv_set_module_ctl_value\(0, moduleIndex, controllerNumber, controllerValue, 0\)/u.test(call.text),
+    ),
+    "browser player should send raw controller values with scaled=0",
+  );
+  assert.ok(
+    playerSendEvent.calls.some(
+      (call) =>
+        call.file === "js\\player.js" &&
+        /sv_send_event\(0, 0, 0, 0, moduleIndex \+ 1, \(controllerNumber \+ 1\) << 8, controllerValue\)/u.test(call.text),
+    ),
+    "browser player fallback controller path should keep the controller write on track 0",
+  );
+  assert.ok(
+    playerConnectModule.calls.some(
+      (call) => call.file === "js\\player.js" && /sv_connect_module\(0, moduleIndex, INSTRUMENT_OUTPUT_MODULE\)/u.test(call.text),
+    ),
+    "browser player should connect loaded synth modules to output module 0",
+  );
 });

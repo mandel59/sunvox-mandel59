@@ -23,8 +23,11 @@ npm run browser:check:dev
 
 `browser:check` serves the existing `dist/` directory with a small Node HTTP
 server, opens the Pages inspector, selects `music/2022-04-17.sunvox`, and checks
-the module graph, pattern list, module list, license links, and browser console
-errors.
+the module graph, pattern list, module list, license links, browser console
+errors, and representative browser synth playback paths. The playback check
+covers the checked-in `mandel59 shepard` instrument plus generated
+`Scratch Acid Bass` and `Scratch FMX Tines` regression fixtures, and verifies
+their note/controller calls against the browser SunVox wrapper.
 
 `browser:check:dev` starts the Vite dev server in-process before running the
 same checks. It is useful outside restricted sandboxes, but Vite may spawn helper
