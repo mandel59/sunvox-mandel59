@@ -59,6 +59,9 @@ test("site data summarizes project structure without embedding full event grids"
   const generatedRootFmxBass = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch FMX Bass.sunsynth",
   );
+  const generatedGlassBell = data.projects.find(
+    (candidate) => candidate.path === "generated/instruments/Scratch Glass Bell.sunsynth",
+  );
   const generatedMetaModule = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch Layered Pad.sunsynth",
   );
@@ -67,6 +70,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
   assert.equal(data.assetCatalog.schemaVersion, 1);
   assert.equal(data.assetCatalog.entries.length, 12);
+  assert.equal(data.assetCatalog.entries.every((entry) => entry.measurement), true);
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "instruments/mandel59 shepard.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch Analog.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch FMX Bell.sunsynth"));
@@ -117,7 +121,9 @@ test("site data summarizes project structure without embedding full event grids"
     previewOnly: false,
     root: "instruments",
   });
-  assert.equal(Object.hasOwn(synth.catalog, "measurement"), false);
+  assert.equal(synth.catalog.measurement.input.id, "C4:96:0.25s");
+  assert.equal(synth.catalog.measurement.level.loudness, "medium");
+  assert.deepEqual(synth.catalog.measurement.tags, ["medium"]);
   assert.equal(synth.embedded.length, 1);
   assert.equal(synth.embedded[0].document.type, "project");
   assert.ok(generatedRootFmx);
@@ -164,6 +170,9 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(generatedRootFmxBass);
   assert.equal(generatedRootFmxBass.synth.type, "FMX");
   assert.equal(generatedRootFmxBass.catalog.measurement.spectrum.bodyCentroidHz, 1408);
+  assert.ok(generatedGlassBell);
+  assert.equal(generatedGlassBell.catalog.measurement.level.loudness, "loud");
+  assert.deepEqual(generatedGlassBell.catalog.measurement.tags, ["loud"]);
   assert.ok(generatedMetaModule);
   assert.equal(generatedMetaModule.type, "synth");
   assert.equal(generatedMetaModule.synth.type, "MetaModule");
@@ -178,7 +187,8 @@ test("site data summarizes project structure without embedding full event grids"
     previewOnly: false,
     root: "generated/instruments",
   });
-  assert.equal(Object.hasOwn(generatedMetaModule.catalog, "measurement"), false);
+  assert.equal(generatedMetaModule.catalog.measurement.level.loudness, "medium");
+  assert.deepEqual(generatedMetaModule.catalog.measurement.tags, ["medium"]);
   assert.equal(generatedMetaModule.embedded.length, 1);
   assert.equal(generatedMetaModule.embedded[0].document.stats.activeModules, 9);
   assert.ok(synthWithNamedPatterns);
@@ -307,6 +317,8 @@ test("explicit preview roots include non-deploy synths without changing the defa
       previewOnly: true,
       root: fixtureRoot,
     });
+    assert.equal(previewProject.catalog.measurement.input.id, "C4:96:0.25s");
+    assert.equal(previewProject.catalog.measurement.sourceFile, projectPath);
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });
   }

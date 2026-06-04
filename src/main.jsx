@@ -1536,8 +1536,20 @@ function formatCatalogNumber(value, suffix = "", digits = 0) {
   return `${digits ? value.toFixed(digits) : Math.round(value)}${suffix}`;
 }
 
+function formatCatalogLevel(level) {
+  if (!level) {
+    return undefined;
+  }
+  const rms = Number.isFinite(level.rms) ? `${level.rms.toFixed(2)} RMS` : undefined;
+  return [level.loudness, rms].filter(Boolean).join(" / ");
+}
+
 function catalogStatus(catalog) {
   return catalog?.deployment?.previewOnly ? "preview-only" : catalog?.deployment?.status;
+}
+
+function CatalogOptionalRow({ label, value }) {
+  return value ? <PropertyRow label={label} value={value} /> : null;
 }
 
 function CatalogSection({ catalog }) {
@@ -1556,7 +1568,8 @@ function CatalogSection({ catalog }) {
           {measurement ? (
             <>
               <PropertyRow label="Probe" value={measurement.input?.id} />
-              <PropertyRow
+              <PropertyRow label="Level" value={formatCatalogLevel(measurement.level)} />
+              <CatalogOptionalRow
                 label="Body"
                 value={[
                   formatCatalogNumber(measurement.spectrum?.bodyCentroidHz, "Hz"),
@@ -1565,7 +1578,7 @@ function CatalogSection({ catalog }) {
                   .filter(Boolean)
                   .join(" / ")}
               />
-              <PropertyRow
+              <CatalogOptionalRow
                 label="Envelope"
                 value={[
                   formatCatalogNumber(measurement.envelope?.attackMs, "ms atk"),

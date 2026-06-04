@@ -24,6 +24,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Acid Bass.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       },
       {
@@ -41,6 +63,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Analog.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       },
       {
@@ -75,11 +119,17 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "peak": 0.08,
+            "loudness": "quiet",
             "rms": 0.01,
+            "peak": 0.08,
             "bodyRms": 0.03,
             "tailToBodyRatio": 0.13
           },
+          "tags": [
+            "quiet",
+            "fast-attack",
+            "narrow"
+          ],
           "envelope": {
             "attackMs": 10,
             "releaseStatus": "measured",
@@ -94,12 +144,6 @@
           "stereo": {
             "sideToMidRatio": 0
           },
-          "tags": [
-            "quiet",
-            "warm",
-            "fast-attack",
-            "narrow"
-          ],
           "diagnosis": [
             "the transient is spiky compared with the body level"
           ]
@@ -137,11 +181,18 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "peak": 0.07,
+            "loudness": "quiet",
             "rms": 0.01,
+            "peak": 0.07,
             "bodyRms": 0.03,
             "tailToBodyRatio": 0.16
           },
+          "tags": [
+            "quiet",
+            "fast-attack",
+            "narrow",
+            "metallic"
+          ],
           "envelope": {
             "attackMs": 10,
             "releaseStatus": "measured",
@@ -156,13 +207,6 @@
           "stereo": {
             "sideToMidRatio": 0
           },
-          "tags": [
-            "quiet",
-            "bright",
-            "fast-attack",
-            "narrow",
-            "metallic"
-          ],
           "diagnosis": [
             "high-band energy is strong during the transient",
             "dominant peaks are far from harmonic multiples of the played note",
@@ -202,11 +246,18 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "peak": 0.29,
+            "loudness": "medium",
             "rms": 0.04,
+            "peak": 0.29,
             "bodyRms": 0.12,
             "tailToBodyRatio": 0.03
           },
+          "tags": [
+            "medium",
+            "fast-attack",
+            "short-release",
+            "narrow"
+          ],
           "envelope": {
             "attackMs": 10,
             "releaseStatus": "measured",
@@ -221,13 +272,6 @@
           "stereo": {
             "sideToMidRatio": 0
           },
-          "tags": [
-            "quiet",
-            "dark",
-            "fast-attack",
-            "short-release",
-            "narrow"
-          ],
           "diagnosis": [
             "the transient is spiky compared with the body level"
           ]
@@ -265,11 +309,18 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "peak": 0.3,
+            "loudness": "medium",
             "rms": 0.03,
+            "peak": 0.3,
             "bodyRms": 0.1,
             "tailToBodyRatio": 0.09
           },
+          "tags": [
+            "medium",
+            "fast-attack",
+            "short-release",
+            "narrow"
+          ],
           "envelope": {
             "attackMs": 10,
             "releaseStatus": "measured",
@@ -284,13 +335,6 @@
           "stereo": {
             "sideToMidRatio": 0
           },
-          "tags": [
-            "quiet",
-            "dark",
-            "fast-attack",
-            "short-release",
-            "narrow"
-          ],
           "diagnosis": [
             "the transient is spiky compared with the body level"
           ]
@@ -311,6 +355,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Glass Bell.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       },
       {
@@ -328,6 +394,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Kick Snap.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       },
       {
@@ -345,6 +433,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Layered Pad.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "medium"
+          },
+          "tags": [
+            "medium"
+          ]
         }
       },
       {
@@ -362,6 +472,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch PWM Organ.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "quiet"
+          },
+          "tags": [
+            "quiet"
+          ]
         }
       },
       {
@@ -375,6 +507,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "instruments/mandel59 shepard.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "medium"
+          },
+          "tags": [
+            "medium"
+          ]
         }
       },
       {
@@ -388,6 +542,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "instruments/mandel59 SuperSaw.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       }
     ]
@@ -1413,6 +1589,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Acid Bass.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       }
     },
@@ -1997,6 +2195,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Analog.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       }
     },
@@ -3804,11 +4024,17 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "peak": 0.08,
+            "loudness": "quiet",
             "rms": 0.01,
+            "peak": 0.08,
             "bodyRms": 0.03,
             "tailToBodyRatio": 0.13
           },
+          "tags": [
+            "quiet",
+            "fast-attack",
+            "narrow"
+          ],
           "envelope": {
             "attackMs": 10,
             "releaseStatus": "measured",
@@ -3823,12 +4049,6 @@
           "stereo": {
             "sideToMidRatio": 0
           },
-          "tags": [
-            "quiet",
-            "warm",
-            "fast-attack",
-            "narrow"
-          ],
           "diagnosis": [
             "the transient is spiky compared with the body level"
           ]
@@ -5639,11 +5859,18 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "peak": 0.07,
+            "loudness": "quiet",
             "rms": 0.01,
+            "peak": 0.07,
             "bodyRms": 0.03,
             "tailToBodyRatio": 0.16
           },
+          "tags": [
+            "quiet",
+            "fast-attack",
+            "narrow",
+            "metallic"
+          ],
           "envelope": {
             "attackMs": 10,
             "releaseStatus": "measured",
@@ -5658,13 +5885,6 @@
           "stereo": {
             "sideToMidRatio": 0
           },
-          "tags": [
-            "quiet",
-            "bright",
-            "fast-attack",
-            "narrow",
-            "metallic"
-          ],
           "diagnosis": [
             "high-band energy is strong during the transient",
             "dominant peaks are far from harmonic multiples of the played note",
@@ -7477,11 +7697,18 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "peak": 0.29,
+            "loudness": "medium",
             "rms": 0.04,
+            "peak": 0.29,
             "bodyRms": 0.12,
             "tailToBodyRatio": 0.03
           },
+          "tags": [
+            "medium",
+            "fast-attack",
+            "short-release",
+            "narrow"
+          ],
           "envelope": {
             "attackMs": 10,
             "releaseStatus": "measured",
@@ -7496,13 +7723,6 @@
           "stereo": {
             "sideToMidRatio": 0
           },
-          "tags": [
-            "quiet",
-            "dark",
-            "fast-attack",
-            "short-release",
-            "narrow"
-          ],
           "diagnosis": [
             "the transient is spiky compared with the body level"
           ]
@@ -9313,11 +9533,18 @@
             "actualGateSeconds": 0.24
           },
           "level": {
-            "peak": 0.3,
+            "loudness": "medium",
             "rms": 0.03,
+            "peak": 0.3,
             "bodyRms": 0.1,
             "tailToBodyRatio": 0.09
           },
+          "tags": [
+            "medium",
+            "fast-attack",
+            "short-release",
+            "narrow"
+          ],
           "envelope": {
             "attackMs": 10,
             "releaseStatus": "measured",
@@ -9332,13 +9559,6 @@
           "stereo": {
             "sideToMidRatio": 0
           },
-          "tags": [
-            "quiet",
-            "dark",
-            "fast-attack",
-            "short-release",
-            "narrow"
-          ],
           "diagnosis": [
             "the transient is spiky compared with the body level"
           ]
@@ -10545,6 +10765,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Glass Bell.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       }
     },
@@ -11319,6 +11561,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Kick Snap.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       }
     },
@@ -12829,6 +13093,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch Layered Pad.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "medium"
+          },
+          "tags": [
+            "medium"
+          ]
         }
       }
     },
@@ -14060,6 +14346,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "generated/instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "generated/instruments/Scratch PWM Organ.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "quiet"
+          },
+          "tags": [
+            "quiet"
+          ]
         }
       }
     },
@@ -15520,6 +15828,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "instruments/mandel59 shepard.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "medium"
+          },
+          "tags": [
+            "medium"
+          ]
         }
       }
     },
@@ -19222,6 +19552,28 @@
           "deploy": true,
           "previewOnly": false,
           "root": "instruments"
+        },
+        "measurement": {
+          "tool": "sunsynth-characterize",
+          "sourceFile": "instruments/mandel59 SuperSaw.sunsynth",
+          "renderMethod": "pattern-playback",
+          "input": {
+            "id": "C4:96:0.25s",
+            "noteLabel": "C4",
+            "velocity": 96,
+            "gateSeconds": 0.25
+          },
+          "playback": {
+            "sampleRate": 44100,
+            "channels": 2,
+            "actualGateSeconds": 0.24
+          },
+          "level": {
+            "loudness": "loud"
+          },
+          "tags": [
+            "loud"
+          ]
         }
       }
     },

@@ -17,7 +17,7 @@ const PATTERN_ICON_SIZE = 16;
 const CATALOG_SCHEMA_VERSION = 1;
 const CATALOG_PROBE = parseProbe("C4:96:0.25");
 const CATALOG_RENDER_METHOD = "pattern-playback";
-const FMX_ATLAS_RECIPE_PATH = "generated/recipes/sunvox-edit/scratch-fmx.mjs";
+const DETAILED_CATALOG_RECIPE_PATH = "generated/recipes/sunvox-edit/scratch-fmx.mjs";
 
 export function mergeRootLists(...rootLists) {
   const merged = [];
@@ -138,10 +138,33 @@ function stripUndefinedEntries(value) {
   return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
 }
 
-function compactMeasurement(result) {
+function catalogLoudness(features) {
+  const activeRms = Math.max(features.level.transientRms, features.level.bodyRms);
+  if (activeRms >= 0.16 || features.level.peak >= 0.4) {
+    return "loud";
+  }
+  if (activeRms < 0.1 && features.level.peak < 0.25) {
+    return "quiet";
+  }
+  return "medium";
+}
+
+function stableCatalogTags(tags, { detailed = false, loudness } = {}) {
+  if (!detailed) {
+    return loudness ? [loudness] : [];
+  }
+  const stableTags = tags.filter((tag) => !["quiet", "medium", "loud", "dark", "warm", "bright", "airy"].includes(tag));
+  if (loudness) {
+    stableTags.unshift(loudness);
+  }
+  return stableTags.length ? stableTags : tags.slice(0, 1);
+}
+
+function compactMeasurement(result, { detailed = false } = {}) {
   const { features, measurement } = result;
   const release = features.envelope.release;
-  return {
+  const loudness = catalogLoudness(features);
+  const summary = {
     tool: "sunsynth-characterize",
     sourceFile: measurement.sourceFile.replaceAll("\\", "/"),
     renderMethod: measurement.renderMethod,
@@ -157,8 +180,19 @@ function compactMeasurement(result) {
       actualGateSeconds: finiteRounded(measurement.playback.actualGateSeconds, 6),
     },
     level: stripUndefinedEntries({
-      peak: finiteRounded(features.level.peak, 2),
+      loudness,
+    }),
+    tags: stableCatalogTags(features.tags, { detailed, loudness }),
+  };
+  if (!detailed) {
+    return summary;
+  }
+  return {
+    ...summary,
+    level: stripUndefinedEntries({
+      ...summary.level,
       rms: finiteRounded(features.level.rms, 2),
+      peak: finiteRounded(features.level.peak, 2),
       bodyRms: finiteRounded(features.level.bodyRms, 2),
       tailToBodyRatio: finiteRounded(features.level.tailToBodyRatio, 2),
     }),
@@ -176,7 +210,6 @@ function compactMeasurement(result) {
     stereo: stripUndefinedEntries({
       sideToMidRatio: finiteRounded(features.stereo.sideToMidRatio, 2),
     }),
-    tags: features.tags,
     diagnosis: features.diagnosis,
   };
 }
@@ -185,17 +218,14 @@ function shouldCatalogAsset(project) {
   return project.type === "synth";
 }
 
-function shouldMeasureCatalogAsset(project, sourceRecipe) {
-  return project.synth?.type === "FMX" && sourceRecipe?.path === FMX_ATLAS_RECIPE_PATH;
-}
-
 async function generatedAssetCatalogEntry({ file, path, project, sourceRecipe, sourceRoots }) {
   if (!shouldCatalogAsset(project)) {
     return undefined;
   }
-  const measurement = shouldMeasureCatalogAsset(project, sourceRecipe)
-    ? compactMeasurement(await analyzeSunsynthFile(file, CATALOG_PROBE, CATALOG_RENDER_METHOD))
-    : undefined;
+  const detailed = project.synth?.type === "FMX" && sourceRecipe?.path === DETAILED_CATALOG_RECIPE_PATH;
+  const measurement = compactMeasurement(await analyzeSunsynthFile(file, CATALOG_PROBE, CATALOG_RENDER_METHOD), {
+    detailed,
+  });
   return {
     schemaVersion: CATALOG_SCHEMA_VERSION,
     path,
