@@ -105,7 +105,8 @@ attack, decay, tail duration, note-off sensitivity, and a status-bearing
 release timings. The spectrum group keeps transient, body, and tail snapshots
 with centroid, bandwidth, rolloff, flatness, high-band energy, inharmonicity,
 and dominant peaks. Coarse tags such as `dark`, `wide`, or `slow-attack` are
-derived from those observations.
+derived from those observations. Treat tags and diagnosis as observations, not
+quality scores, and compare sounds only under matching measurement conditions.
 
 Use `--json` for machine-readable output, `--note <note|midi>` and
 `--velocity <1..129>` to change the probe, and
