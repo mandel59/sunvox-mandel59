@@ -172,6 +172,8 @@ test("checked-in SunVox Edit Recipes generate SunSynth outputs", async () => {
       "var/synth-lab/mandel59 Lab Soft SuperSaw F4200 R3600.sunsynth",
       "var/synth-lab/Scratch Acid Bass.sunsynth",
       "var/synth-lab/Scratch Analog.sunsynth",
+      "var/synth-lab/Scratch FMX Bass.sunsynth",
+      "var/synth-lab/Scratch FMX Bell.sunsynth",
       "var/synth-lab/Scratch FMX Pluck.sunsynth",
       "var/synth-lab/Scratch FMX Tines.sunsynth",
       "var/synth-lab/Scratch Glass Bell.sunsynth",
@@ -299,6 +301,8 @@ test("checked-in Edit Recipes reproduce generated instruments byte-for-byte", as
   const generatedNames = new Set([
     "Scratch Acid Bass.sunsynth",
     "Scratch Analog.sunsynth",
+    "Scratch FMX Bass.sunsynth",
+    "Scratch FMX Bell.sunsynth",
     "Scratch FMX Pluck.sunsynth",
     "Scratch FMX Tines.sunsynth",
     "Scratch Glass Bell.sunsynth",

@@ -1589,6 +1589,3560 @@
       ]
     },
     {
+      "path": "generated/instruments/Scratch FMX Bass.sunsynth",
+      "title": "Scratch FMX Bass",
+      "magic": "SSYN",
+      "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+        "name": "scratch-fmx.mjs"
+      },
+      "synth": {
+        "index": 0,
+        "name": "Scratch FMX Bass",
+        "kind": "FMX",
+        "type": "FMX",
+        "position": {
+          "x": 192,
+          "y": 512,
+          "z": 0
+        },
+        "scale": 256,
+        "color": "#3fd36b",
+        "flags": [
+          "exists",
+          "generator",
+          "effect",
+          "initialized"
+        ],
+        "inputCount": 0,
+        "outputCount": 0,
+        "controllerCount": 11,
+        "controllers": [
+          {
+            "index": 0,
+            "path": "volume",
+            "label": "Volume",
+            "value": 15600,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 1,
+            "path": "panning",
+            "label": "Panning",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 2,
+            "path": "sampleRate",
+            "label": "Sample rate",
+            "value": "native"
+          },
+          {
+            "index": 3,
+            "path": "polyphony",
+            "label": "Polyphony",
+            "value": 6,
+            "min": 1,
+            "max": 32
+          },
+          {
+            "index": 4,
+            "path": "channels",
+            "label": "Channels",
+            "value": "stereo"
+          },
+          {
+            "index": 5,
+            "path": "inputToOperator",
+            "label": "Input to operator",
+            "value": 0,
+            "min": 0,
+            "max": 5
+          },
+          {
+            "index": 6,
+            "path": "inputToCustomWave",
+            "label": "Input to custom waveform",
+            "value": "off"
+          },
+          {
+            "index": 7,
+            "path": "adsrSmoothTransitions",
+            "label": "ADSR smooth transitions",
+            "value": "restartVolumeChange"
+          },
+          {
+            "index": 8,
+            "path": "noiseFilter",
+            "label": "Noise filter",
+            "value": 32768,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 9,
+            "path": "operators.0.volume",
+            "label": "Operator 1 Volume",
+            "value": 32768,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 10,
+            "path": "operators.0.attack",
+            "label": "Operator 1 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 11,
+            "path": "operators.0.decay",
+            "label": "Operator 1 Decay",
+            "value": 2200,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 12,
+            "path": "operators.0.sustainLevel",
+            "label": "Operator 1 Sustain level",
+            "value": 23500,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 13,
+            "path": "operators.0.release",
+            "label": "Operator 1 Release",
+            "value": 420,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 14,
+            "path": "operators.0.attackCurve",
+            "label": "Operator 1 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 15,
+            "path": "operators.0.decayCurve",
+            "label": "Operator 1 Decay curve",
+            "value": "exp1"
+          },
+          {
+            "index": 16,
+            "path": "operators.0.releaseCurve",
+            "label": "Operator 1 Release curve",
+            "value": "exp1"
+          },
+          {
+            "index": 17,
+            "path": "operators.0.sustain",
+            "label": "Operator 1 Sustain",
+            "value": "on"
+          },
+          {
+            "index": 18,
+            "path": "operators.0.sustainPedal",
+            "label": "Operator 1 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 19,
+            "path": "operators.0.envScaling",
+            "label": "Operator 1 Envelope scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 20,
+            "path": "operators.0.volumeScaling",
+            "label": "Operator 1 Volume scaling",
+            "value": 96,
+            "min": 0,
+            "max": 256,
+            "displayValue": -32
+          },
+          {
+            "index": 21,
+            "path": "operators.0.velocitySensitivity",
+            "label": "Operator 1 Velocity sensitivity",
+            "value": 168,
+            "min": 0,
+            "max": 256,
+            "displayValue": 40
+          },
+          {
+            "index": 22,
+            "path": "operators.0.waveform",
+            "label": "Operator 1 Waveform",
+            "value": "sin"
+          },
+          {
+            "index": 23,
+            "path": "operators.0.noise",
+            "label": "Operator 1 Noise",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 24,
+            "path": "operators.0.phase",
+            "label": "Operator 1 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 25,
+            "path": "operators.0.freqMul",
+            "label": "Operator 1 Frequency multiplier",
+            "value": 500,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 26,
+            "path": "operators.0.constPitch",
+            "label": "Operator 1 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 27,
+            "path": "operators.0.selfMod",
+            "label": "Operator 1 Self-modulation",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 28,
+            "path": "operators.0.feedback",
+            "label": "Operator 1 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 29,
+            "path": "operators.0.modulationType",
+            "label": "Operator 1 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 30,
+            "path": "operators.0.outputMode",
+            "label": "Operator 1 Output mode",
+            "value": 0,
+            "min": 0,
+            "max": [
+              31,
+              15,
+              7,
+              3
+            ]
+          },
+          {
+            "index": 31,
+            "path": "operators.1.volume",
+            "label": "Operator 2 Volume",
+            "value": 12800,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 32,
+            "path": "operators.1.attack",
+            "label": "Operator 2 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 33,
+            "path": "operators.1.decay",
+            "label": "Operator 2 Decay",
+            "value": 900,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 34,
+            "path": "operators.1.sustainLevel",
+            "label": "Operator 2 Sustain level",
+            "value": 3600,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 35,
+            "path": "operators.1.release",
+            "label": "Operator 2 Release",
+            "value": 250,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 36,
+            "path": "operators.1.attackCurve",
+            "label": "Operator 2 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 37,
+            "path": "operators.1.decayCurve",
+            "label": "Operator 2 Decay curve",
+            "value": "exp2"
+          },
+          {
+            "index": 38,
+            "path": "operators.1.releaseCurve",
+            "label": "Operator 2 Release curve",
+            "value": "linear"
+          },
+          {
+            "index": 39,
+            "path": "operators.1.sustain",
+            "label": "Operator 2 Sustain",
+            "value": "on"
+          },
+          {
+            "index": 40,
+            "path": "operators.1.sustainPedal",
+            "label": "Operator 2 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 41,
+            "path": "operators.1.envScaling",
+            "label": "Operator 2 Envelope scaling",
+            "value": 80,
+            "min": 0,
+            "max": 256,
+            "displayValue": -48
+          },
+          {
+            "index": 42,
+            "path": "operators.1.volumeScaling",
+            "label": "Operator 2 Volume scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 43,
+            "path": "operators.1.velocitySensitivity",
+            "label": "Operator 2 Velocity sensitivity",
+            "value": 210,
+            "min": 0,
+            "max": 256,
+            "displayValue": 82
+          },
+          {
+            "index": 44,
+            "path": "operators.1.waveform",
+            "label": "Operator 2 Waveform",
+            "value": "sin"
+          },
+          {
+            "index": 45,
+            "path": "operators.1.noise",
+            "label": "Operator 2 Noise",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 46,
+            "path": "operators.1.phase",
+            "label": "Operator 2 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 47,
+            "path": "operators.1.freqMul",
+            "label": "Operator 2 Frequency multiplier",
+            "value": 1000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 48,
+            "path": "operators.1.constPitch",
+            "label": "Operator 2 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 49,
+            "path": "operators.1.selfMod",
+            "label": "Operator 2 Self-modulation",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 50,
+            "path": "operators.1.feedback",
+            "label": "Operator 2 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 51,
+            "path": "operators.1.modulationType",
+            "label": "Operator 2 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 52,
+            "path": "operators.1.outputMode",
+            "label": "Operator 2 Output mode",
+            "value": 8,
+            "min": 0,
+            "max": [
+              31,
+              15,
+              7,
+              3
+            ]
+          },
+          {
+            "index": 53,
+            "path": "operators.2.volume",
+            "label": "Operator 3 Volume",
+            "value": 9800,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 54,
+            "path": "operators.2.attack",
+            "label": "Operator 3 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 55,
+            "path": "operators.2.decay",
+            "label": "Operator 3 Decay",
+            "value": 1500,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 56,
+            "path": "operators.2.sustainLevel",
+            "label": "Operator 3 Sustain level",
+            "value": 8200,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 57,
+            "path": "operators.2.release",
+            "label": "Operator 3 Release",
+            "value": 380,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 58,
+            "path": "operators.2.attackCurve",
+            "label": "Operator 3 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 59,
+            "path": "operators.2.decayCurve",
+            "label": "Operator 3 Decay curve",
+            "value": "exp1"
+          },
+          {
+            "index": 60,
+            "path": "operators.2.releaseCurve",
+            "label": "Operator 3 Release curve",
+            "value": "exp1"
+          },
+          {
+            "index": 61,
+            "path": "operators.2.sustain",
+            "label": "Operator 3 Sustain",
+            "value": "on"
+          },
+          {
+            "index": 62,
+            "path": "operators.2.sustainPedal",
+            "label": "Operator 3 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 63,
+            "path": "operators.2.envScaling",
+            "label": "Operator 3 Envelope scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 64,
+            "path": "operators.2.volumeScaling",
+            "label": "Operator 3 Volume scaling",
+            "value": 96,
+            "min": 0,
+            "max": 256,
+            "displayValue": -32
+          },
+          {
+            "index": 65,
+            "path": "operators.2.velocitySensitivity",
+            "label": "Operator 3 Velocity sensitivity",
+            "value": 180,
+            "min": 0,
+            "max": 256,
+            "displayValue": 52
+          },
+          {
+            "index": 66,
+            "path": "operators.2.waveform",
+            "label": "Operator 3 Waveform",
+            "value": "triangle"
+          },
+          {
+            "index": 67,
+            "path": "operators.2.noise",
+            "label": "Operator 3 Noise",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 68,
+            "path": "operators.2.phase",
+            "label": "Operator 3 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 69,
+            "path": "operators.2.freqMul",
+            "label": "Operator 3 Frequency multiplier",
+            "value": 1000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 70,
+            "path": "operators.2.constPitch",
+            "label": "Operator 3 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 71,
+            "path": "operators.2.selfMod",
+            "label": "Operator 3 Self-modulation",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 72,
+            "path": "operators.2.feedback",
+            "label": "Operator 3 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 73,
+            "path": "operators.2.modulationType",
+            "label": "Operator 3 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 74,
+            "path": "operators.2.outputMode",
+            "label": "Operator 3 Output mode",
+            "value": 1,
+            "min": 0,
+            "max": [
+              31,
+              15,
+              7,
+              3
+            ]
+          },
+          {
+            "index": 75,
+            "path": "operators.3.volume",
+            "label": "Operator 4 Volume",
+            "value": 7400,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 76,
+            "path": "operators.3.attack",
+            "label": "Operator 4 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 77,
+            "path": "operators.3.decay",
+            "label": "Operator 4 Decay",
+            "value": 800,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 78,
+            "path": "operators.3.sustainLevel",
+            "label": "Operator 4 Sustain level",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 79,
+            "path": "operators.3.release",
+            "label": "Operator 4 Release",
+            "value": 160,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 80,
+            "path": "operators.3.attackCurve",
+            "label": "Operator 4 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 81,
+            "path": "operators.3.decayCurve",
+            "label": "Operator 4 Decay curve",
+            "value": "exp2"
+          },
+          {
+            "index": 82,
+            "path": "operators.3.releaseCurve",
+            "label": "Operator 4 Release curve",
+            "value": "linear"
+          },
+          {
+            "index": 83,
+            "path": "operators.3.sustain",
+            "label": "Operator 4 Sustain",
+            "value": "off"
+          },
+          {
+            "index": 84,
+            "path": "operators.3.sustainPedal",
+            "label": "Operator 4 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 85,
+            "path": "operators.3.envScaling",
+            "label": "Operator 4 Envelope scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 86,
+            "path": "operators.3.volumeScaling",
+            "label": "Operator 4 Volume scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 87,
+            "path": "operators.3.velocitySensitivity",
+            "label": "Operator 4 Velocity sensitivity",
+            "value": 220,
+            "min": 0,
+            "max": 256,
+            "displayValue": 92
+          },
+          {
+            "index": 88,
+            "path": "operators.3.waveform",
+            "label": "Operator 4 Waveform",
+            "value": "saw"
+          },
+          {
+            "index": 89,
+            "path": "operators.3.noise",
+            "label": "Operator 4 Noise",
+            "value": 30,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 90,
+            "path": "operators.3.phase",
+            "label": "Operator 4 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 91,
+            "path": "operators.3.freqMul",
+            "label": "Operator 4 Frequency multiplier",
+            "value": 2000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 92,
+            "path": "operators.3.constPitch",
+            "label": "Operator 4 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 93,
+            "path": "operators.3.selfMod",
+            "label": "Operator 4 Self-modulation",
+            "value": 360,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 94,
+            "path": "operators.3.feedback",
+            "label": "Operator 4 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 95,
+            "path": "operators.3.modulationType",
+            "label": "Operator 4 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 96,
+            "path": "operators.3.outputMode",
+            "label": "Operator 4 Output mode",
+            "value": 1,
+            "min": 0,
+            "max": [
+              31,
+              15,
+              7,
+              3
+            ]
+          },
+          {
+            "index": 97,
+            "path": "operators.4.volume",
+            "label": "Operator 5 Volume",
+            "value": 5200,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 98,
+            "path": "operators.4.attack",
+            "label": "Operator 5 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 99,
+            "path": "operators.4.decay",
+            "label": "Operator 5 Decay",
+            "value": 700,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 100,
+            "path": "operators.4.sustainLevel",
+            "label": "Operator 5 Sustain level",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 101,
+            "path": "operators.4.release",
+            "label": "Operator 5 Release",
+            "value": 140,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 102,
+            "path": "operators.4.attackCurve",
+            "label": "Operator 5 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 103,
+            "path": "operators.4.decayCurve",
+            "label": "Operator 5 Decay curve",
+            "value": "exp2"
+          },
+          {
+            "index": 104,
+            "path": "operators.4.releaseCurve",
+            "label": "Operator 5 Release curve",
+            "value": "linear"
+          },
+          {
+            "index": 105,
+            "path": "operators.4.sustain",
+            "label": "Operator 5 Sustain",
+            "value": "off"
+          },
+          {
+            "index": 106,
+            "path": "operators.4.sustainPedal",
+            "label": "Operator 5 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 107,
+            "path": "operators.4.envScaling",
+            "label": "Operator 5 Envelope scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 108,
+            "path": "operators.4.volumeScaling",
+            "label": "Operator 5 Volume scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 109,
+            "path": "operators.4.velocitySensitivity",
+            "label": "Operator 5 Velocity sensitivity",
+            "value": 192,
+            "min": 0,
+            "max": 256,
+            "displayValue": 64
+          },
+          {
+            "index": 110,
+            "path": "operators.4.waveform",
+            "label": "Operator 5 Waveform",
+            "value": "square"
+          },
+          {
+            "index": 111,
+            "path": "operators.4.noise",
+            "label": "Operator 5 Noise",
+            "value": 55,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 112,
+            "path": "operators.4.phase",
+            "label": "Operator 5 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 113,
+            "path": "operators.4.freqMul",
+            "label": "Operator 5 Frequency multiplier",
+            "value": 3000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 114,
+            "path": "operators.4.constPitch",
+            "label": "Operator 5 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 115,
+            "path": "operators.4.selfMod",
+            "label": "Operator 5 Self-modulation",
+            "value": 260,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 116,
+            "path": "operators.4.feedback",
+            "label": "Operator 5 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 117,
+            "path": "operators.4.modulationType",
+            "label": "Operator 5 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 118,
+            "path": "envelopeGain",
+            "label": "Envelope gain",
+            "value": 950,
+            "min": 0,
+            "max": 8000,
+            "unit": "1/1000"
+          }
+        ],
+        "dataChunkCount": 0,
+        "embeddedCount": 0
+      },
+      "stats": {
+        "modules": 1,
+        "activeModules": 1,
+        "links": 0,
+        "patterns": 0,
+        "events": 0,
+        "embeddedContainers": 0
+      },
+      "modules": [
+        {
+          "index": 0,
+          "name": "Scratch FMX Bass",
+          "kind": "FMX",
+          "type": "FMX",
+          "position": {
+            "x": 192,
+            "y": 512,
+            "z": 0
+          },
+          "scale": 256,
+          "color": "#3fd36b",
+          "flags": [
+            "exists",
+            "generator",
+            "effect",
+            "initialized"
+          ],
+          "inputCount": 0,
+          "outputCount": 0,
+          "controllerCount": 11,
+          "controllers": [
+            {
+              "index": 0,
+              "path": "volume",
+              "label": "Volume",
+              "value": 15600
+            },
+            {
+              "index": 1,
+              "path": "panning",
+              "label": "Panning",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 2,
+              "path": "sampleRate",
+              "label": "Sample rate",
+              "value": "native"
+            },
+            {
+              "index": 3,
+              "path": "polyphony",
+              "label": "Polyphony",
+              "value": 6
+            },
+            {
+              "index": 4,
+              "path": "channels",
+              "label": "Channels",
+              "value": "stereo"
+            },
+            {
+              "index": 5,
+              "path": "inputToOperator",
+              "label": "Input to operator",
+              "value": 0
+            },
+            {
+              "index": 6,
+              "path": "inputToCustomWave",
+              "label": "Input to custom waveform",
+              "value": "off"
+            },
+            {
+              "index": 7,
+              "path": "adsrSmoothTransitions",
+              "label": "ADSR smooth transitions",
+              "value": "restartVolumeChange"
+            },
+            {
+              "index": 8,
+              "path": "noiseFilter",
+              "label": "Noise filter",
+              "value": 32768
+            },
+            {
+              "index": 9,
+              "path": "operators.0.volume",
+              "label": "Operator 1 Volume",
+              "value": 32768
+            },
+            {
+              "index": 10,
+              "path": "operators.0.attack",
+              "label": "Operator 1 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 11,
+              "path": "operators.0.decay",
+              "label": "Operator 1 Decay",
+              "value": 2200,
+              "unit": "ms"
+            },
+            {
+              "index": 12,
+              "path": "operators.0.sustainLevel",
+              "label": "Operator 1 Sustain level",
+              "value": 23500
+            },
+            {
+              "index": 13,
+              "path": "operators.0.release",
+              "label": "Operator 1 Release",
+              "value": 420,
+              "unit": "ms"
+            },
+            {
+              "index": 14,
+              "path": "operators.0.attackCurve",
+              "label": "Operator 1 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 15,
+              "path": "operators.0.decayCurve",
+              "label": "Operator 1 Decay curve",
+              "value": "exp1"
+            },
+            {
+              "index": 16,
+              "path": "operators.0.releaseCurve",
+              "label": "Operator 1 Release curve",
+              "value": "exp1"
+            },
+            {
+              "index": 17,
+              "path": "operators.0.sustain",
+              "label": "Operator 1 Sustain",
+              "value": "on"
+            },
+            {
+              "index": 18,
+              "path": "operators.0.sustainPedal",
+              "label": "Operator 1 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 19,
+              "path": "operators.0.envScaling",
+              "label": "Operator 1 Envelope scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 20,
+              "path": "operators.0.volumeScaling",
+              "label": "Operator 1 Volume scaling",
+              "value": 96,
+              "displayValue": -32
+            },
+            {
+              "index": 21,
+              "path": "operators.0.velocitySensitivity",
+              "label": "Operator 1 Velocity sensitivity",
+              "value": 168,
+              "displayValue": 40
+            },
+            {
+              "index": 22,
+              "path": "operators.0.waveform",
+              "label": "Operator 1 Waveform",
+              "value": "sin"
+            },
+            {
+              "index": 23,
+              "path": "operators.0.noise",
+              "label": "Operator 1 Noise",
+              "value": 0
+            },
+            {
+              "index": 24,
+              "path": "operators.0.phase",
+              "label": "Operator 1 Phase",
+              "value": 0
+            },
+            {
+              "index": 25,
+              "path": "operators.0.freqMul",
+              "label": "Operator 1 Frequency multiplier",
+              "value": 500,
+              "unit": "1/1000"
+            },
+            {
+              "index": 26,
+              "path": "operators.0.constPitch",
+              "label": "Operator 1 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 27,
+              "path": "operators.0.selfMod",
+              "label": "Operator 1 Self-modulation",
+              "value": 0
+            },
+            {
+              "index": 28,
+              "path": "operators.0.feedback",
+              "label": "Operator 1 Feedback",
+              "value": 0
+            },
+            {
+              "index": 29,
+              "path": "operators.0.modulationType",
+              "label": "Operator 1 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 30,
+              "path": "operators.0.outputMode",
+              "label": "Operator 1 Output mode",
+              "value": 0
+            },
+            {
+              "index": 31,
+              "path": "operators.1.volume",
+              "label": "Operator 2 Volume",
+              "value": 12800
+            },
+            {
+              "index": 32,
+              "path": "operators.1.attack",
+              "label": "Operator 2 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 33,
+              "path": "operators.1.decay",
+              "label": "Operator 2 Decay",
+              "value": 900,
+              "unit": "ms"
+            },
+            {
+              "index": 34,
+              "path": "operators.1.sustainLevel",
+              "label": "Operator 2 Sustain level",
+              "value": 3600
+            },
+            {
+              "index": 35,
+              "path": "operators.1.release",
+              "label": "Operator 2 Release",
+              "value": 250,
+              "unit": "ms"
+            },
+            {
+              "index": 36,
+              "path": "operators.1.attackCurve",
+              "label": "Operator 2 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 37,
+              "path": "operators.1.decayCurve",
+              "label": "Operator 2 Decay curve",
+              "value": "exp2"
+            },
+            {
+              "index": 38,
+              "path": "operators.1.releaseCurve",
+              "label": "Operator 2 Release curve",
+              "value": "linear"
+            },
+            {
+              "index": 39,
+              "path": "operators.1.sustain",
+              "label": "Operator 2 Sustain",
+              "value": "on"
+            },
+            {
+              "index": 40,
+              "path": "operators.1.sustainPedal",
+              "label": "Operator 2 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 41,
+              "path": "operators.1.envScaling",
+              "label": "Operator 2 Envelope scaling",
+              "value": 80,
+              "displayValue": -48
+            },
+            {
+              "index": 42,
+              "path": "operators.1.volumeScaling",
+              "label": "Operator 2 Volume scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 43,
+              "path": "operators.1.velocitySensitivity",
+              "label": "Operator 2 Velocity sensitivity",
+              "value": 210,
+              "displayValue": 82
+            },
+            {
+              "index": 44,
+              "path": "operators.1.waveform",
+              "label": "Operator 2 Waveform",
+              "value": "sin"
+            },
+            {
+              "index": 45,
+              "path": "operators.1.noise",
+              "label": "Operator 2 Noise",
+              "value": 0
+            },
+            {
+              "index": 46,
+              "path": "operators.1.phase",
+              "label": "Operator 2 Phase",
+              "value": 0
+            },
+            {
+              "index": 47,
+              "path": "operators.1.freqMul",
+              "label": "Operator 2 Frequency multiplier",
+              "value": 1000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 48,
+              "path": "operators.1.constPitch",
+              "label": "Operator 2 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 49,
+              "path": "operators.1.selfMod",
+              "label": "Operator 2 Self-modulation",
+              "value": 0
+            },
+            {
+              "index": 50,
+              "path": "operators.1.feedback",
+              "label": "Operator 2 Feedback",
+              "value": 0
+            },
+            {
+              "index": 51,
+              "path": "operators.1.modulationType",
+              "label": "Operator 2 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 52,
+              "path": "operators.1.outputMode",
+              "label": "Operator 2 Output mode",
+              "value": 8
+            },
+            {
+              "index": 53,
+              "path": "operators.2.volume",
+              "label": "Operator 3 Volume",
+              "value": 9800
+            },
+            {
+              "index": 54,
+              "path": "operators.2.attack",
+              "label": "Operator 3 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 55,
+              "path": "operators.2.decay",
+              "label": "Operator 3 Decay",
+              "value": 1500,
+              "unit": "ms"
+            },
+            {
+              "index": 56,
+              "path": "operators.2.sustainLevel",
+              "label": "Operator 3 Sustain level",
+              "value": 8200
+            },
+            {
+              "index": 57,
+              "path": "operators.2.release",
+              "label": "Operator 3 Release",
+              "value": 380,
+              "unit": "ms"
+            },
+            {
+              "index": 58,
+              "path": "operators.2.attackCurve",
+              "label": "Operator 3 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 59,
+              "path": "operators.2.decayCurve",
+              "label": "Operator 3 Decay curve",
+              "value": "exp1"
+            },
+            {
+              "index": 60,
+              "path": "operators.2.releaseCurve",
+              "label": "Operator 3 Release curve",
+              "value": "exp1"
+            },
+            {
+              "index": 61,
+              "path": "operators.2.sustain",
+              "label": "Operator 3 Sustain",
+              "value": "on"
+            },
+            {
+              "index": 62,
+              "path": "operators.2.sustainPedal",
+              "label": "Operator 3 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 63,
+              "path": "operators.2.envScaling",
+              "label": "Operator 3 Envelope scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 64,
+              "path": "operators.2.volumeScaling",
+              "label": "Operator 3 Volume scaling",
+              "value": 96,
+              "displayValue": -32
+            },
+            {
+              "index": 65,
+              "path": "operators.2.velocitySensitivity",
+              "label": "Operator 3 Velocity sensitivity",
+              "value": 180,
+              "displayValue": 52
+            },
+            {
+              "index": 66,
+              "path": "operators.2.waveform",
+              "label": "Operator 3 Waveform",
+              "value": "triangle"
+            },
+            {
+              "index": 67,
+              "path": "operators.2.noise",
+              "label": "Operator 3 Noise",
+              "value": 0
+            },
+            {
+              "index": 68,
+              "path": "operators.2.phase",
+              "label": "Operator 3 Phase",
+              "value": 0
+            },
+            {
+              "index": 69,
+              "path": "operators.2.freqMul",
+              "label": "Operator 3 Frequency multiplier",
+              "value": 1000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 70,
+              "path": "operators.2.constPitch",
+              "label": "Operator 3 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 71,
+              "path": "operators.2.selfMod",
+              "label": "Operator 3 Self-modulation",
+              "value": 0
+            },
+            {
+              "index": 72,
+              "path": "operators.2.feedback",
+              "label": "Operator 3 Feedback",
+              "value": 0
+            },
+            {
+              "index": 73,
+              "path": "operators.2.modulationType",
+              "label": "Operator 3 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 74,
+              "path": "operators.2.outputMode",
+              "label": "Operator 3 Output mode",
+              "value": 1
+            },
+            {
+              "index": 75,
+              "path": "operators.3.volume",
+              "label": "Operator 4 Volume",
+              "value": 7400
+            },
+            {
+              "index": 76,
+              "path": "operators.3.attack",
+              "label": "Operator 4 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 77,
+              "path": "operators.3.decay",
+              "label": "Operator 4 Decay",
+              "value": 800,
+              "unit": "ms"
+            },
+            {
+              "index": 78,
+              "path": "operators.3.sustainLevel",
+              "label": "Operator 4 Sustain level",
+              "value": 0
+            },
+            {
+              "index": 79,
+              "path": "operators.3.release",
+              "label": "Operator 4 Release",
+              "value": 160,
+              "unit": "ms"
+            },
+            {
+              "index": 80,
+              "path": "operators.3.attackCurve",
+              "label": "Operator 4 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 81,
+              "path": "operators.3.decayCurve",
+              "label": "Operator 4 Decay curve",
+              "value": "exp2"
+            },
+            {
+              "index": 82,
+              "path": "operators.3.releaseCurve",
+              "label": "Operator 4 Release curve",
+              "value": "linear"
+            },
+            {
+              "index": 83,
+              "path": "operators.3.sustain",
+              "label": "Operator 4 Sustain",
+              "value": "off"
+            },
+            {
+              "index": 84,
+              "path": "operators.3.sustainPedal",
+              "label": "Operator 4 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 85,
+              "path": "operators.3.envScaling",
+              "label": "Operator 4 Envelope scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 86,
+              "path": "operators.3.volumeScaling",
+              "label": "Operator 4 Volume scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 87,
+              "path": "operators.3.velocitySensitivity",
+              "label": "Operator 4 Velocity sensitivity",
+              "value": 220,
+              "displayValue": 92
+            },
+            {
+              "index": 88,
+              "path": "operators.3.waveform",
+              "label": "Operator 4 Waveform",
+              "value": "saw"
+            },
+            {
+              "index": 89,
+              "path": "operators.3.noise",
+              "label": "Operator 4 Noise",
+              "value": 30
+            },
+            {
+              "index": 90,
+              "path": "operators.3.phase",
+              "label": "Operator 4 Phase",
+              "value": 0
+            },
+            {
+              "index": 91,
+              "path": "operators.3.freqMul",
+              "label": "Operator 4 Frequency multiplier",
+              "value": 2000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 92,
+              "path": "operators.3.constPitch",
+              "label": "Operator 4 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 93,
+              "path": "operators.3.selfMod",
+              "label": "Operator 4 Self-modulation",
+              "value": 360
+            },
+            {
+              "index": 94,
+              "path": "operators.3.feedback",
+              "label": "Operator 4 Feedback",
+              "value": 0
+            },
+            {
+              "index": 95,
+              "path": "operators.3.modulationType",
+              "label": "Operator 4 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 96,
+              "path": "operators.3.outputMode",
+              "label": "Operator 4 Output mode",
+              "value": 1
+            },
+            {
+              "index": 97,
+              "path": "operators.4.volume",
+              "label": "Operator 5 Volume",
+              "value": 5200
+            },
+            {
+              "index": 98,
+              "path": "operators.4.attack",
+              "label": "Operator 5 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 99,
+              "path": "operators.4.decay",
+              "label": "Operator 5 Decay",
+              "value": 700,
+              "unit": "ms"
+            },
+            {
+              "index": 100,
+              "path": "operators.4.sustainLevel",
+              "label": "Operator 5 Sustain level",
+              "value": 0
+            },
+            {
+              "index": 101,
+              "path": "operators.4.release",
+              "label": "Operator 5 Release",
+              "value": 140,
+              "unit": "ms"
+            },
+            {
+              "index": 102,
+              "path": "operators.4.attackCurve",
+              "label": "Operator 5 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 103,
+              "path": "operators.4.decayCurve",
+              "label": "Operator 5 Decay curve",
+              "value": "exp2"
+            },
+            {
+              "index": 104,
+              "path": "operators.4.releaseCurve",
+              "label": "Operator 5 Release curve",
+              "value": "linear"
+            },
+            {
+              "index": 105,
+              "path": "operators.4.sustain",
+              "label": "Operator 5 Sustain",
+              "value": "off"
+            },
+            {
+              "index": 106,
+              "path": "operators.4.sustainPedal",
+              "label": "Operator 5 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 107,
+              "path": "operators.4.envScaling",
+              "label": "Operator 5 Envelope scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 108,
+              "path": "operators.4.volumeScaling",
+              "label": "Operator 5 Volume scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 109,
+              "path": "operators.4.velocitySensitivity",
+              "label": "Operator 5 Velocity sensitivity",
+              "value": 192,
+              "displayValue": 64
+            },
+            {
+              "index": 110,
+              "path": "operators.4.waveform",
+              "label": "Operator 5 Waveform",
+              "value": "square"
+            },
+            {
+              "index": 111,
+              "path": "operators.4.noise",
+              "label": "Operator 5 Noise",
+              "value": 55
+            },
+            {
+              "index": 112,
+              "path": "operators.4.phase",
+              "label": "Operator 5 Phase",
+              "value": 0
+            },
+            {
+              "index": 113,
+              "path": "operators.4.freqMul",
+              "label": "Operator 5 Frequency multiplier",
+              "value": 3000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 114,
+              "path": "operators.4.constPitch",
+              "label": "Operator 5 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 115,
+              "path": "operators.4.selfMod",
+              "label": "Operator 5 Self-modulation",
+              "value": 260
+            },
+            {
+              "index": 116,
+              "path": "operators.4.feedback",
+              "label": "Operator 5 Feedback",
+              "value": 0
+            },
+            {
+              "index": 117,
+              "path": "operators.4.modulationType",
+              "label": "Operator 5 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 118,
+              "path": "envelopeGain",
+              "label": "Envelope gain",
+              "value": 950,
+              "unit": "1/1000"
+            }
+          ],
+          "dataChunkCount": 0,
+          "embeddedCount": 0
+        }
+      ],
+      "links": [],
+      "patterns": [],
+      "embedded": []
+    },
+    {
+      "path": "generated/instruments/Scratch FMX Bell.sunsynth",
+      "title": "Scratch FMX Bell",
+      "magic": "SSYN",
+      "type": "synth",
+      "sourceRecipe": {
+        "path": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+        "name": "scratch-fmx.mjs"
+      },
+      "synth": {
+        "index": 0,
+        "name": "Scratch FMX Bell",
+        "kind": "FMX",
+        "type": "FMX",
+        "position": {
+          "x": 192,
+          "y": 512,
+          "z": 0
+        },
+        "scale": 256,
+        "color": "#5fe3ff",
+        "flags": [
+          "exists",
+          "generator",
+          "effect",
+          "initialized"
+        ],
+        "inputCount": 0,
+        "outputCount": 0,
+        "controllerCount": 11,
+        "controllers": [
+          {
+            "index": 0,
+            "path": "volume",
+            "label": "Volume",
+            "value": 12200,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 1,
+            "path": "panning",
+            "label": "Panning",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 2,
+            "path": "sampleRate",
+            "label": "Sample rate",
+            "value": "native"
+          },
+          {
+            "index": 3,
+            "path": "polyphony",
+            "label": "Polyphony",
+            "value": 10,
+            "min": 1,
+            "max": 32
+          },
+          {
+            "index": 4,
+            "path": "channels",
+            "label": "Channels",
+            "value": "stereo"
+          },
+          {
+            "index": 5,
+            "path": "inputToOperator",
+            "label": "Input to operator",
+            "value": 0,
+            "min": 0,
+            "max": 5
+          },
+          {
+            "index": 6,
+            "path": "inputToCustomWave",
+            "label": "Input to custom waveform",
+            "value": "off"
+          },
+          {
+            "index": 7,
+            "path": "adsrSmoothTransitions",
+            "label": "ADSR smooth transitions",
+            "value": "restartSmootherVolumeChange"
+          },
+          {
+            "index": 8,
+            "path": "noiseFilter",
+            "label": "Noise filter",
+            "value": 32768,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 9,
+            "path": "operators.0.volume",
+            "label": "Operator 1 Volume",
+            "value": 32768,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 10,
+            "path": "operators.0.attack",
+            "label": "Operator 1 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 11,
+            "path": "operators.0.decay",
+            "label": "Operator 1 Decay",
+            "value": 4300,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 12,
+            "path": "operators.0.sustainLevel",
+            "label": "Operator 1 Sustain level",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 13,
+            "path": "operators.0.release",
+            "label": "Operator 1 Release",
+            "value": 1200,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 14,
+            "path": "operators.0.attackCurve",
+            "label": "Operator 1 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 15,
+            "path": "operators.0.decayCurve",
+            "label": "Operator 1 Decay curve",
+            "value": "exp2"
+          },
+          {
+            "index": 16,
+            "path": "operators.0.releaseCurve",
+            "label": "Operator 1 Release curve",
+            "value": "exp1"
+          },
+          {
+            "index": 17,
+            "path": "operators.0.sustain",
+            "label": "Operator 1 Sustain",
+            "value": "off"
+          },
+          {
+            "index": 18,
+            "path": "operators.0.sustainPedal",
+            "label": "Operator 1 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 19,
+            "path": "operators.0.envScaling",
+            "label": "Operator 1 Envelope scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 20,
+            "path": "operators.0.volumeScaling",
+            "label": "Operator 1 Volume scaling",
+            "value": 112,
+            "min": 0,
+            "max": 256,
+            "displayValue": -16
+          },
+          {
+            "index": 21,
+            "path": "operators.0.velocitySensitivity",
+            "label": "Operator 1 Velocity sensitivity",
+            "value": 210,
+            "min": 0,
+            "max": 256,
+            "displayValue": 82
+          },
+          {
+            "index": 22,
+            "path": "operators.0.waveform",
+            "label": "Operator 1 Waveform",
+            "value": "sin"
+          },
+          {
+            "index": 23,
+            "path": "operators.0.noise",
+            "label": "Operator 1 Noise",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 24,
+            "path": "operators.0.phase",
+            "label": "Operator 1 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 25,
+            "path": "operators.0.freqMul",
+            "label": "Operator 1 Frequency multiplier",
+            "value": 1000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 26,
+            "path": "operators.0.constPitch",
+            "label": "Operator 1 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 27,
+            "path": "operators.0.selfMod",
+            "label": "Operator 1 Self-modulation",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 28,
+            "path": "operators.0.feedback",
+            "label": "Operator 1 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 29,
+            "path": "operators.0.modulationType",
+            "label": "Operator 1 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 30,
+            "path": "operators.0.outputMode",
+            "label": "Operator 1 Output mode",
+            "value": 0,
+            "min": 0,
+            "max": [
+              31,
+              15,
+              7,
+              3
+            ]
+          },
+          {
+            "index": 31,
+            "path": "operators.1.volume",
+            "label": "Operator 2 Volume",
+            "value": 10400,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 32,
+            "path": "operators.1.attack",
+            "label": "Operator 2 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 33,
+            "path": "operators.1.decay",
+            "label": "Operator 2 Decay",
+            "value": 2600,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 34,
+            "path": "operators.1.sustainLevel",
+            "label": "Operator 2 Sustain level",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 35,
+            "path": "operators.1.release",
+            "label": "Operator 2 Release",
+            "value": 900,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 36,
+            "path": "operators.1.attackCurve",
+            "label": "Operator 2 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 37,
+            "path": "operators.1.decayCurve",
+            "label": "Operator 2 Decay curve",
+            "value": "exp2"
+          },
+          {
+            "index": 38,
+            "path": "operators.1.releaseCurve",
+            "label": "Operator 2 Release curve",
+            "value": "exp1"
+          },
+          {
+            "index": 39,
+            "path": "operators.1.sustain",
+            "label": "Operator 2 Sustain",
+            "value": "off"
+          },
+          {
+            "index": 40,
+            "path": "operators.1.sustainPedal",
+            "label": "Operator 2 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 41,
+            "path": "operators.1.envScaling",
+            "label": "Operator 2 Envelope scaling",
+            "value": 96,
+            "min": 0,
+            "max": 256,
+            "displayValue": -32
+          },
+          {
+            "index": 42,
+            "path": "operators.1.volumeScaling",
+            "label": "Operator 2 Volume scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 43,
+            "path": "operators.1.velocitySensitivity",
+            "label": "Operator 2 Velocity sensitivity",
+            "value": 210,
+            "min": 0,
+            "max": 256,
+            "displayValue": 82
+          },
+          {
+            "index": 44,
+            "path": "operators.1.waveform",
+            "label": "Operator 2 Waveform",
+            "value": "sin"
+          },
+          {
+            "index": 45,
+            "path": "operators.1.noise",
+            "label": "Operator 2 Noise",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 46,
+            "path": "operators.1.phase",
+            "label": "Operator 2 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 47,
+            "path": "operators.1.freqMul",
+            "label": "Operator 2 Frequency multiplier",
+            "value": 3000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 48,
+            "path": "operators.1.constPitch",
+            "label": "Operator 2 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 49,
+            "path": "operators.1.selfMod",
+            "label": "Operator 2 Self-modulation",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 50,
+            "path": "operators.1.feedback",
+            "label": "Operator 2 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 51,
+            "path": "operators.1.modulationType",
+            "label": "Operator 2 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 52,
+            "path": "operators.1.outputMode",
+            "label": "Operator 2 Output mode",
+            "value": 8,
+            "min": 0,
+            "max": [
+              31,
+              15,
+              7,
+              3
+            ]
+          },
+          {
+            "index": 53,
+            "path": "operators.2.volume",
+            "label": "Operator 3 Volume",
+            "value": 6600,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 54,
+            "path": "operators.2.attack",
+            "label": "Operator 3 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 55,
+            "path": "operators.2.decay",
+            "label": "Operator 3 Decay",
+            "value": 3600,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 56,
+            "path": "operators.2.sustainLevel",
+            "label": "Operator 3 Sustain level",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 57,
+            "path": "operators.2.release",
+            "label": "Operator 3 Release",
+            "value": 1100,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 58,
+            "path": "operators.2.attackCurve",
+            "label": "Operator 3 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 59,
+            "path": "operators.2.decayCurve",
+            "label": "Operator 3 Decay curve",
+            "value": "exp2"
+          },
+          {
+            "index": 60,
+            "path": "operators.2.releaseCurve",
+            "label": "Operator 3 Release curve",
+            "value": "exp1"
+          },
+          {
+            "index": 61,
+            "path": "operators.2.sustain",
+            "label": "Operator 3 Sustain",
+            "value": "off"
+          },
+          {
+            "index": 62,
+            "path": "operators.2.sustainPedal",
+            "label": "Operator 3 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 63,
+            "path": "operators.2.envScaling",
+            "label": "Operator 3 Envelope scaling",
+            "value": 104,
+            "min": 0,
+            "max": 256,
+            "displayValue": -24
+          },
+          {
+            "index": 64,
+            "path": "operators.2.volumeScaling",
+            "label": "Operator 3 Volume scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 65,
+            "path": "operators.2.velocitySensitivity",
+            "label": "Operator 3 Velocity sensitivity",
+            "value": 180,
+            "min": 0,
+            "max": 256,
+            "displayValue": 52
+          },
+          {
+            "index": 66,
+            "path": "operators.2.waveform",
+            "label": "Operator 3 Waveform",
+            "value": "sin"
+          },
+          {
+            "index": 67,
+            "path": "operators.2.noise",
+            "label": "Operator 3 Noise",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 68,
+            "path": "operators.2.phase",
+            "label": "Operator 3 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 69,
+            "path": "operators.2.freqMul",
+            "label": "Operator 3 Frequency multiplier",
+            "value": 2000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 70,
+            "path": "operators.2.constPitch",
+            "label": "Operator 3 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 71,
+            "path": "operators.2.selfMod",
+            "label": "Operator 3 Self-modulation",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 72,
+            "path": "operators.2.feedback",
+            "label": "Operator 3 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 73,
+            "path": "operators.2.modulationType",
+            "label": "Operator 3 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 74,
+            "path": "operators.2.outputMode",
+            "label": "Operator 3 Output mode",
+            "value": 1,
+            "min": 0,
+            "max": [
+              31,
+              15,
+              7,
+              3
+            ]
+          },
+          {
+            "index": 75,
+            "path": "operators.3.volume",
+            "label": "Operator 4 Volume",
+            "value": 4200,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 76,
+            "path": "operators.3.attack",
+            "label": "Operator 4 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 77,
+            "path": "operators.3.decay",
+            "label": "Operator 4 Decay",
+            "value": 2800,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 78,
+            "path": "operators.3.sustainLevel",
+            "label": "Operator 4 Sustain level",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 79,
+            "path": "operators.3.release",
+            "label": "Operator 4 Release",
+            "value": 850,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 80,
+            "path": "operators.3.attackCurve",
+            "label": "Operator 4 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 81,
+            "path": "operators.3.decayCurve",
+            "label": "Operator 4 Decay curve",
+            "value": "exp2"
+          },
+          {
+            "index": 82,
+            "path": "operators.3.releaseCurve",
+            "label": "Operator 4 Release curve",
+            "value": "exp1"
+          },
+          {
+            "index": 83,
+            "path": "operators.3.sustain",
+            "label": "Operator 4 Sustain",
+            "value": "off"
+          },
+          {
+            "index": 84,
+            "path": "operators.3.sustainPedal",
+            "label": "Operator 4 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 85,
+            "path": "operators.3.envScaling",
+            "label": "Operator 4 Envelope scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 86,
+            "path": "operators.3.volumeScaling",
+            "label": "Operator 4 Volume scaling",
+            "value": 104,
+            "min": 0,
+            "max": 256,
+            "displayValue": -24
+          },
+          {
+            "index": 87,
+            "path": "operators.3.velocitySensitivity",
+            "label": "Operator 4 Velocity sensitivity",
+            "value": 180,
+            "min": 0,
+            "max": 256,
+            "displayValue": 52
+          },
+          {
+            "index": 88,
+            "path": "operators.3.waveform",
+            "label": "Operator 4 Waveform",
+            "value": "triangle"
+          },
+          {
+            "index": 89,
+            "path": "operators.3.noise",
+            "label": "Operator 4 Noise",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 90,
+            "path": "operators.3.phase",
+            "label": "Operator 4 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 91,
+            "path": "operators.3.freqMul",
+            "label": "Operator 4 Frequency multiplier",
+            "value": 5000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 92,
+            "path": "operators.3.constPitch",
+            "label": "Operator 4 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 93,
+            "path": "operators.3.selfMod",
+            "label": "Operator 4 Self-modulation",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 94,
+            "path": "operators.3.feedback",
+            "label": "Operator 4 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 95,
+            "path": "operators.3.modulationType",
+            "label": "Operator 4 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 96,
+            "path": "operators.3.outputMode",
+            "label": "Operator 4 Output mode",
+            "value": 1,
+            "min": 0,
+            "max": [
+              31,
+              15,
+              7,
+              3
+            ]
+          },
+          {
+            "index": 97,
+            "path": "operators.4.volume",
+            "label": "Operator 5 Volume",
+            "value": 2200,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 98,
+            "path": "operators.4.attack",
+            "label": "Operator 5 Attack",
+            "value": 1,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 99,
+            "path": "operators.4.decay",
+            "label": "Operator 5 Decay",
+            "value": 1800,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 100,
+            "path": "operators.4.sustainLevel",
+            "label": "Operator 5 Sustain level",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 101,
+            "path": "operators.4.release",
+            "label": "Operator 5 Release",
+            "value": 600,
+            "min": 0,
+            "max": 10000,
+            "unit": "ms"
+          },
+          {
+            "index": 102,
+            "path": "operators.4.attackCurve",
+            "label": "Operator 5 Attack curve",
+            "value": "negExp1"
+          },
+          {
+            "index": 103,
+            "path": "operators.4.decayCurve",
+            "label": "Operator 5 Decay curve",
+            "value": "exp2"
+          },
+          {
+            "index": 104,
+            "path": "operators.4.releaseCurve",
+            "label": "Operator 5 Release curve",
+            "value": "exp1"
+          },
+          {
+            "index": 105,
+            "path": "operators.4.sustain",
+            "label": "Operator 5 Sustain",
+            "value": "off"
+          },
+          {
+            "index": 106,
+            "path": "operators.4.sustainPedal",
+            "label": "Operator 5 Sustain pedal",
+            "value": "off"
+          },
+          {
+            "index": 107,
+            "path": "operators.4.envScaling",
+            "label": "Operator 5 Envelope scaling",
+            "value": 128,
+            "min": 0,
+            "max": 256,
+            "displayValue": 0
+          },
+          {
+            "index": 108,
+            "path": "operators.4.volumeScaling",
+            "label": "Operator 5 Volume scaling",
+            "value": 96,
+            "min": 0,
+            "max": 256,
+            "displayValue": -32
+          },
+          {
+            "index": 109,
+            "path": "operators.4.velocitySensitivity",
+            "label": "Operator 5 Velocity sensitivity",
+            "value": 180,
+            "min": 0,
+            "max": 256,
+            "displayValue": 52
+          },
+          {
+            "index": 110,
+            "path": "operators.4.waveform",
+            "label": "Operator 5 Waveform",
+            "value": "sin"
+          },
+          {
+            "index": 111,
+            "path": "operators.4.noise",
+            "label": "Operator 5 Noise",
+            "value": 20,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 112,
+            "path": "operators.4.phase",
+            "label": "Operator 5 Phase",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 113,
+            "path": "operators.4.freqMul",
+            "label": "Operator 5 Frequency multiplier",
+            "value": 7000,
+            "min": 0,
+            "max": 32000,
+            "unit": "1/1000"
+          },
+          {
+            "index": 114,
+            "path": "operators.4.constPitch",
+            "label": "Operator 5 Constant pitch",
+            "value": 8192,
+            "min": 0,
+            "max": 16384,
+            "unit": "semitone/64",
+            "displayValue": 0
+          },
+          {
+            "index": 115,
+            "path": "operators.4.selfMod",
+            "label": "Operator 5 Self-modulation",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 116,
+            "path": "operators.4.feedback",
+            "label": "Operator 5 Feedback",
+            "value": 0,
+            "min": 0,
+            "max": 32768
+          },
+          {
+            "index": 117,
+            "path": "operators.4.modulationType",
+            "label": "Operator 5 Modulation type",
+            "value": "phase"
+          },
+          {
+            "index": 118,
+            "path": "envelopeGain",
+            "label": "Envelope gain",
+            "value": 980,
+            "min": 0,
+            "max": 8000,
+            "unit": "1/1000"
+          }
+        ],
+        "dataChunkCount": 0,
+        "embeddedCount": 0
+      },
+      "stats": {
+        "modules": 1,
+        "activeModules": 1,
+        "links": 0,
+        "patterns": 0,
+        "events": 0,
+        "embeddedContainers": 0
+      },
+      "modules": [
+        {
+          "index": 0,
+          "name": "Scratch FMX Bell",
+          "kind": "FMX",
+          "type": "FMX",
+          "position": {
+            "x": 192,
+            "y": 512,
+            "z": 0
+          },
+          "scale": 256,
+          "color": "#5fe3ff",
+          "flags": [
+            "exists",
+            "generator",
+            "effect",
+            "initialized"
+          ],
+          "inputCount": 0,
+          "outputCount": 0,
+          "controllerCount": 11,
+          "controllers": [
+            {
+              "index": 0,
+              "path": "volume",
+              "label": "Volume",
+              "value": 12200
+            },
+            {
+              "index": 1,
+              "path": "panning",
+              "label": "Panning",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 2,
+              "path": "sampleRate",
+              "label": "Sample rate",
+              "value": "native"
+            },
+            {
+              "index": 3,
+              "path": "polyphony",
+              "label": "Polyphony",
+              "value": 10
+            },
+            {
+              "index": 4,
+              "path": "channels",
+              "label": "Channels",
+              "value": "stereo"
+            },
+            {
+              "index": 5,
+              "path": "inputToOperator",
+              "label": "Input to operator",
+              "value": 0
+            },
+            {
+              "index": 6,
+              "path": "inputToCustomWave",
+              "label": "Input to custom waveform",
+              "value": "off"
+            },
+            {
+              "index": 7,
+              "path": "adsrSmoothTransitions",
+              "label": "ADSR smooth transitions",
+              "value": "restartSmootherVolumeChange"
+            },
+            {
+              "index": 8,
+              "path": "noiseFilter",
+              "label": "Noise filter",
+              "value": 32768
+            },
+            {
+              "index": 9,
+              "path": "operators.0.volume",
+              "label": "Operator 1 Volume",
+              "value": 32768
+            },
+            {
+              "index": 10,
+              "path": "operators.0.attack",
+              "label": "Operator 1 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 11,
+              "path": "operators.0.decay",
+              "label": "Operator 1 Decay",
+              "value": 4300,
+              "unit": "ms"
+            },
+            {
+              "index": 12,
+              "path": "operators.0.sustainLevel",
+              "label": "Operator 1 Sustain level",
+              "value": 0
+            },
+            {
+              "index": 13,
+              "path": "operators.0.release",
+              "label": "Operator 1 Release",
+              "value": 1200,
+              "unit": "ms"
+            },
+            {
+              "index": 14,
+              "path": "operators.0.attackCurve",
+              "label": "Operator 1 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 15,
+              "path": "operators.0.decayCurve",
+              "label": "Operator 1 Decay curve",
+              "value": "exp2"
+            },
+            {
+              "index": 16,
+              "path": "operators.0.releaseCurve",
+              "label": "Operator 1 Release curve",
+              "value": "exp1"
+            },
+            {
+              "index": 17,
+              "path": "operators.0.sustain",
+              "label": "Operator 1 Sustain",
+              "value": "off"
+            },
+            {
+              "index": 18,
+              "path": "operators.0.sustainPedal",
+              "label": "Operator 1 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 19,
+              "path": "operators.0.envScaling",
+              "label": "Operator 1 Envelope scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 20,
+              "path": "operators.0.volumeScaling",
+              "label": "Operator 1 Volume scaling",
+              "value": 112,
+              "displayValue": -16
+            },
+            {
+              "index": 21,
+              "path": "operators.0.velocitySensitivity",
+              "label": "Operator 1 Velocity sensitivity",
+              "value": 210,
+              "displayValue": 82
+            },
+            {
+              "index": 22,
+              "path": "operators.0.waveform",
+              "label": "Operator 1 Waveform",
+              "value": "sin"
+            },
+            {
+              "index": 23,
+              "path": "operators.0.noise",
+              "label": "Operator 1 Noise",
+              "value": 0
+            },
+            {
+              "index": 24,
+              "path": "operators.0.phase",
+              "label": "Operator 1 Phase",
+              "value": 0
+            },
+            {
+              "index": 25,
+              "path": "operators.0.freqMul",
+              "label": "Operator 1 Frequency multiplier",
+              "value": 1000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 26,
+              "path": "operators.0.constPitch",
+              "label": "Operator 1 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 27,
+              "path": "operators.0.selfMod",
+              "label": "Operator 1 Self-modulation",
+              "value": 0
+            },
+            {
+              "index": 28,
+              "path": "operators.0.feedback",
+              "label": "Operator 1 Feedback",
+              "value": 0
+            },
+            {
+              "index": 29,
+              "path": "operators.0.modulationType",
+              "label": "Operator 1 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 30,
+              "path": "operators.0.outputMode",
+              "label": "Operator 1 Output mode",
+              "value": 0
+            },
+            {
+              "index": 31,
+              "path": "operators.1.volume",
+              "label": "Operator 2 Volume",
+              "value": 10400
+            },
+            {
+              "index": 32,
+              "path": "operators.1.attack",
+              "label": "Operator 2 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 33,
+              "path": "operators.1.decay",
+              "label": "Operator 2 Decay",
+              "value": 2600,
+              "unit": "ms"
+            },
+            {
+              "index": 34,
+              "path": "operators.1.sustainLevel",
+              "label": "Operator 2 Sustain level",
+              "value": 0
+            },
+            {
+              "index": 35,
+              "path": "operators.1.release",
+              "label": "Operator 2 Release",
+              "value": 900,
+              "unit": "ms"
+            },
+            {
+              "index": 36,
+              "path": "operators.1.attackCurve",
+              "label": "Operator 2 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 37,
+              "path": "operators.1.decayCurve",
+              "label": "Operator 2 Decay curve",
+              "value": "exp2"
+            },
+            {
+              "index": 38,
+              "path": "operators.1.releaseCurve",
+              "label": "Operator 2 Release curve",
+              "value": "exp1"
+            },
+            {
+              "index": 39,
+              "path": "operators.1.sustain",
+              "label": "Operator 2 Sustain",
+              "value": "off"
+            },
+            {
+              "index": 40,
+              "path": "operators.1.sustainPedal",
+              "label": "Operator 2 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 41,
+              "path": "operators.1.envScaling",
+              "label": "Operator 2 Envelope scaling",
+              "value": 96,
+              "displayValue": -32
+            },
+            {
+              "index": 42,
+              "path": "operators.1.volumeScaling",
+              "label": "Operator 2 Volume scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 43,
+              "path": "operators.1.velocitySensitivity",
+              "label": "Operator 2 Velocity sensitivity",
+              "value": 210,
+              "displayValue": 82
+            },
+            {
+              "index": 44,
+              "path": "operators.1.waveform",
+              "label": "Operator 2 Waveform",
+              "value": "sin"
+            },
+            {
+              "index": 45,
+              "path": "operators.1.noise",
+              "label": "Operator 2 Noise",
+              "value": 0
+            },
+            {
+              "index": 46,
+              "path": "operators.1.phase",
+              "label": "Operator 2 Phase",
+              "value": 0
+            },
+            {
+              "index": 47,
+              "path": "operators.1.freqMul",
+              "label": "Operator 2 Frequency multiplier",
+              "value": 3000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 48,
+              "path": "operators.1.constPitch",
+              "label": "Operator 2 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 49,
+              "path": "operators.1.selfMod",
+              "label": "Operator 2 Self-modulation",
+              "value": 0
+            },
+            {
+              "index": 50,
+              "path": "operators.1.feedback",
+              "label": "Operator 2 Feedback",
+              "value": 0
+            },
+            {
+              "index": 51,
+              "path": "operators.1.modulationType",
+              "label": "Operator 2 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 52,
+              "path": "operators.1.outputMode",
+              "label": "Operator 2 Output mode",
+              "value": 8
+            },
+            {
+              "index": 53,
+              "path": "operators.2.volume",
+              "label": "Operator 3 Volume",
+              "value": 6600
+            },
+            {
+              "index": 54,
+              "path": "operators.2.attack",
+              "label": "Operator 3 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 55,
+              "path": "operators.2.decay",
+              "label": "Operator 3 Decay",
+              "value": 3600,
+              "unit": "ms"
+            },
+            {
+              "index": 56,
+              "path": "operators.2.sustainLevel",
+              "label": "Operator 3 Sustain level",
+              "value": 0
+            },
+            {
+              "index": 57,
+              "path": "operators.2.release",
+              "label": "Operator 3 Release",
+              "value": 1100,
+              "unit": "ms"
+            },
+            {
+              "index": 58,
+              "path": "operators.2.attackCurve",
+              "label": "Operator 3 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 59,
+              "path": "operators.2.decayCurve",
+              "label": "Operator 3 Decay curve",
+              "value": "exp2"
+            },
+            {
+              "index": 60,
+              "path": "operators.2.releaseCurve",
+              "label": "Operator 3 Release curve",
+              "value": "exp1"
+            },
+            {
+              "index": 61,
+              "path": "operators.2.sustain",
+              "label": "Operator 3 Sustain",
+              "value": "off"
+            },
+            {
+              "index": 62,
+              "path": "operators.2.sustainPedal",
+              "label": "Operator 3 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 63,
+              "path": "operators.2.envScaling",
+              "label": "Operator 3 Envelope scaling",
+              "value": 104,
+              "displayValue": -24
+            },
+            {
+              "index": 64,
+              "path": "operators.2.volumeScaling",
+              "label": "Operator 3 Volume scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 65,
+              "path": "operators.2.velocitySensitivity",
+              "label": "Operator 3 Velocity sensitivity",
+              "value": 180,
+              "displayValue": 52
+            },
+            {
+              "index": 66,
+              "path": "operators.2.waveform",
+              "label": "Operator 3 Waveform",
+              "value": "sin"
+            },
+            {
+              "index": 67,
+              "path": "operators.2.noise",
+              "label": "Operator 3 Noise",
+              "value": 0
+            },
+            {
+              "index": 68,
+              "path": "operators.2.phase",
+              "label": "Operator 3 Phase",
+              "value": 0
+            },
+            {
+              "index": 69,
+              "path": "operators.2.freqMul",
+              "label": "Operator 3 Frequency multiplier",
+              "value": 2000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 70,
+              "path": "operators.2.constPitch",
+              "label": "Operator 3 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 71,
+              "path": "operators.2.selfMod",
+              "label": "Operator 3 Self-modulation",
+              "value": 0
+            },
+            {
+              "index": 72,
+              "path": "operators.2.feedback",
+              "label": "Operator 3 Feedback",
+              "value": 0
+            },
+            {
+              "index": 73,
+              "path": "operators.2.modulationType",
+              "label": "Operator 3 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 74,
+              "path": "operators.2.outputMode",
+              "label": "Operator 3 Output mode",
+              "value": 1
+            },
+            {
+              "index": 75,
+              "path": "operators.3.volume",
+              "label": "Operator 4 Volume",
+              "value": 4200
+            },
+            {
+              "index": 76,
+              "path": "operators.3.attack",
+              "label": "Operator 4 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 77,
+              "path": "operators.3.decay",
+              "label": "Operator 4 Decay",
+              "value": 2800,
+              "unit": "ms"
+            },
+            {
+              "index": 78,
+              "path": "operators.3.sustainLevel",
+              "label": "Operator 4 Sustain level",
+              "value": 0
+            },
+            {
+              "index": 79,
+              "path": "operators.3.release",
+              "label": "Operator 4 Release",
+              "value": 850,
+              "unit": "ms"
+            },
+            {
+              "index": 80,
+              "path": "operators.3.attackCurve",
+              "label": "Operator 4 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 81,
+              "path": "operators.3.decayCurve",
+              "label": "Operator 4 Decay curve",
+              "value": "exp2"
+            },
+            {
+              "index": 82,
+              "path": "operators.3.releaseCurve",
+              "label": "Operator 4 Release curve",
+              "value": "exp1"
+            },
+            {
+              "index": 83,
+              "path": "operators.3.sustain",
+              "label": "Operator 4 Sustain",
+              "value": "off"
+            },
+            {
+              "index": 84,
+              "path": "operators.3.sustainPedal",
+              "label": "Operator 4 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 85,
+              "path": "operators.3.envScaling",
+              "label": "Operator 4 Envelope scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 86,
+              "path": "operators.3.volumeScaling",
+              "label": "Operator 4 Volume scaling",
+              "value": 104,
+              "displayValue": -24
+            },
+            {
+              "index": 87,
+              "path": "operators.3.velocitySensitivity",
+              "label": "Operator 4 Velocity sensitivity",
+              "value": 180,
+              "displayValue": 52
+            },
+            {
+              "index": 88,
+              "path": "operators.3.waveform",
+              "label": "Operator 4 Waveform",
+              "value": "triangle"
+            },
+            {
+              "index": 89,
+              "path": "operators.3.noise",
+              "label": "Operator 4 Noise",
+              "value": 0
+            },
+            {
+              "index": 90,
+              "path": "operators.3.phase",
+              "label": "Operator 4 Phase",
+              "value": 0
+            },
+            {
+              "index": 91,
+              "path": "operators.3.freqMul",
+              "label": "Operator 4 Frequency multiplier",
+              "value": 5000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 92,
+              "path": "operators.3.constPitch",
+              "label": "Operator 4 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 93,
+              "path": "operators.3.selfMod",
+              "label": "Operator 4 Self-modulation",
+              "value": 0
+            },
+            {
+              "index": 94,
+              "path": "operators.3.feedback",
+              "label": "Operator 4 Feedback",
+              "value": 0
+            },
+            {
+              "index": 95,
+              "path": "operators.3.modulationType",
+              "label": "Operator 4 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 96,
+              "path": "operators.3.outputMode",
+              "label": "Operator 4 Output mode",
+              "value": 1
+            },
+            {
+              "index": 97,
+              "path": "operators.4.volume",
+              "label": "Operator 5 Volume",
+              "value": 2200
+            },
+            {
+              "index": 98,
+              "path": "operators.4.attack",
+              "label": "Operator 5 Attack",
+              "value": 1,
+              "unit": "ms"
+            },
+            {
+              "index": 99,
+              "path": "operators.4.decay",
+              "label": "Operator 5 Decay",
+              "value": 1800,
+              "unit": "ms"
+            },
+            {
+              "index": 100,
+              "path": "operators.4.sustainLevel",
+              "label": "Operator 5 Sustain level",
+              "value": 0
+            },
+            {
+              "index": 101,
+              "path": "operators.4.release",
+              "label": "Operator 5 Release",
+              "value": 600,
+              "unit": "ms"
+            },
+            {
+              "index": 102,
+              "path": "operators.4.attackCurve",
+              "label": "Operator 5 Attack curve",
+              "value": "negExp1"
+            },
+            {
+              "index": 103,
+              "path": "operators.4.decayCurve",
+              "label": "Operator 5 Decay curve",
+              "value": "exp2"
+            },
+            {
+              "index": 104,
+              "path": "operators.4.releaseCurve",
+              "label": "Operator 5 Release curve",
+              "value": "exp1"
+            },
+            {
+              "index": 105,
+              "path": "operators.4.sustain",
+              "label": "Operator 5 Sustain",
+              "value": "off"
+            },
+            {
+              "index": 106,
+              "path": "operators.4.sustainPedal",
+              "label": "Operator 5 Sustain pedal",
+              "value": "off"
+            },
+            {
+              "index": 107,
+              "path": "operators.4.envScaling",
+              "label": "Operator 5 Envelope scaling",
+              "value": 128,
+              "displayValue": 0
+            },
+            {
+              "index": 108,
+              "path": "operators.4.volumeScaling",
+              "label": "Operator 5 Volume scaling",
+              "value": 96,
+              "displayValue": -32
+            },
+            {
+              "index": 109,
+              "path": "operators.4.velocitySensitivity",
+              "label": "Operator 5 Velocity sensitivity",
+              "value": 180,
+              "displayValue": 52
+            },
+            {
+              "index": 110,
+              "path": "operators.4.waveform",
+              "label": "Operator 5 Waveform",
+              "value": "sin"
+            },
+            {
+              "index": 111,
+              "path": "operators.4.noise",
+              "label": "Operator 5 Noise",
+              "value": 20
+            },
+            {
+              "index": 112,
+              "path": "operators.4.phase",
+              "label": "Operator 5 Phase",
+              "value": 0
+            },
+            {
+              "index": 113,
+              "path": "operators.4.freqMul",
+              "label": "Operator 5 Frequency multiplier",
+              "value": 7000,
+              "unit": "1/1000"
+            },
+            {
+              "index": 114,
+              "path": "operators.4.constPitch",
+              "label": "Operator 5 Constant pitch",
+              "value": 8192,
+              "unit": "semitone/64",
+              "displayValue": 0
+            },
+            {
+              "index": 115,
+              "path": "operators.4.selfMod",
+              "label": "Operator 5 Self-modulation",
+              "value": 0
+            },
+            {
+              "index": 116,
+              "path": "operators.4.feedback",
+              "label": "Operator 5 Feedback",
+              "value": 0
+            },
+            {
+              "index": 117,
+              "path": "operators.4.modulationType",
+              "label": "Operator 5 Modulation type",
+              "value": "phase"
+            },
+            {
+              "index": 118,
+              "path": "envelopeGain",
+              "label": "Envelope gain",
+              "value": 980,
+              "unit": "1/1000"
+            }
+          ],
+          "dataChunkCount": 0,
+          "embeddedCount": 0
+        }
+      ],
+      "links": [],
+      "patterns": [],
+      "embedded": []
+    },
+    {
       "path": "generated/instruments/Scratch FMX Pluck.sunsynth",
       "title": "Scratch FMX Pluck",
       "magic": "SSYN",

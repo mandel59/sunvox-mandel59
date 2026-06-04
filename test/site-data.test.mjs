@@ -53,13 +53,19 @@ test("site data summarizes project structure without embedding full event grids"
   const generatedRootFmxPluck = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch FMX Pluck.sunsynth",
   );
+  const generatedRootFmxBell = data.projects.find(
+    (candidate) => candidate.path === "generated/instruments/Scratch FMX Bell.sunsynth",
+  );
+  const generatedRootFmxBass = data.projects.find(
+    (candidate) => candidate.path === "generated/instruments/Scratch FMX Bass.sunsynth",
+  );
   const generatedMetaModule = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch Layered Pad.sunsynth",
   );
 
   assert.equal(data.schemaVersion, 1);
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
-  assert.equal(data.projects.length, 14);
+  assert.equal(data.projects.length, 16);
   assert.ok(project);
   assert.equal(project.type, "project");
   assert.deepEqual(project.project.flags, {});
@@ -115,6 +121,14 @@ test("site data summarizes project structure without embedding full event grids"
     generatedRootFmxPluck.synth.controllers.find((controller) => controller.path === "volume"),
     { index: 0, path: "volume", label: "Volume", value: 13200, min: 0, max: 32768 },
   );
+  assert.ok(generatedRootFmxBell);
+  assert.equal(generatedRootFmxBell.synth.type, "FMX");
+  assert.deepEqual(generatedRootFmxBell.sourceRecipe, {
+    path: "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+    name: "scratch-fmx.mjs",
+  });
+  assert.ok(generatedRootFmxBass);
+  assert.equal(generatedRootFmxBass.synth.type, "FMX");
   assert.ok(generatedMetaModule);
   assert.equal(generatedMetaModule.type, "synth");
   assert.equal(generatedMetaModule.synth.type, "MetaModule");
@@ -214,7 +228,7 @@ test("explicit preview roots include non-deploy synths without changing the defa
   const defaultData = await collectSiteData();
   const previewData = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, ["var/synth-lab"]));
 
-  assert.equal(defaultData.projects.length, 14);
+  assert.equal(defaultData.projects.length, 16);
   assert.equal(defaultData.sourceRoots.includes("var/synth-lab"), false);
   assert.equal(
     defaultData.projects.some((project) => project.path.startsWith("var/synth-lab/")),

@@ -304,7 +304,7 @@ function uniqueNumbers(values) {
   return [...new Set(values)].sort((a, b) => a - b);
 }
 
-function buildSweepMetadata(options) {
+function buildSweepMetadata(options, resultCount = options.probes.length * options.renderMethods.length) {
   const notes = uniqueNumbers(options.probes.map((probe) => probe.note));
   const velocities = uniqueNumbers(options.probes.map((probe) => probe.velocity));
   const gateSeconds = uniqueNumbers(options.probes.map((probe) => probe.gateSeconds));
@@ -316,7 +316,7 @@ function buildSweepMetadata(options) {
     gateSeconds,
     renderMethods: options.renderMethods,
     probeCount: options.probes.length,
-    resultCount: options.probes.length * options.renderMethods.length,
+    resultCount,
   };
 }
 
@@ -1217,7 +1217,7 @@ async function main(argv) {
   }
 
   if (options.json) {
-    const report = { sweep: buildSweepMetadata(options), results };
+    const report = { sweep: buildSweepMetadata(options, results.length), results };
     const comparisons = buildComparisons(results);
     if (comparisons.length) {
       report.comparisons = comparisons;

@@ -301,6 +301,30 @@ test("runs note, velocity, and gate sweeps from CLI options", () => {
   );
 });
 
+test("counts characterization results across multiple input files", () => {
+  const output = execFileSync(
+    process.execPath,
+    [
+      "tools/sunsynth-characterize.mjs",
+      "--json",
+      "--probe",
+      "C4:96:0.25",
+      "generated/instruments/Scratch FMX Tines.sunsynth",
+      "generated/instruments/Scratch FMX Bell.sunsynth",
+    ],
+    { cwd: repoRoot, encoding: "utf8" },
+  );
+  const report = JSON.parse(output);
+
+  assert.equal(report.sweep.probeCount, 1);
+  assert.equal(report.sweep.resultCount, 2);
+  assert.equal(report.results.length, 2);
+  assert.deepEqual(
+    report.results.map((result) => result.measurement.sourceFile.split(/[\\/]/u).at(-1)),
+    ["Scratch FMX Tines.sunsynth", "Scratch FMX Bell.sunsynth"],
+  );
+});
+
 test("characterizes a source-known Generator sine as a stable harmonic peak", async () => {
   const tempDir = await mkdtemp(resolve(tmpdir(), "sunsynth-characterize-"));
   const synthPath = resolve(tempDir, "known-generator-sine.sunsynth");
