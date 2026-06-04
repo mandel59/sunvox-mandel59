@@ -14,29 +14,19 @@ generated binary.
 
 The codec uses the machine-readable database under
 [tools/sunvox-db](tools/sunvox-db/) to translate module controllers, enums, and
-packed bitfields into editable names, and to emit chunks in the canonical order
-for each structured scope. The database currently covers all module controller
-layouts detected from the bundled SunVox source. MetaModule project payloads
-are decoded recursively when they contain an embedded SunVox container;
-MetaModule user controller links, options, custom controller names, and user
-controller values are decoded into named fields. Those controller links keep
-their numeric module/controller references and add auxiliary target module and
-controller names when the embedded project makes them available.
-Repeated controller layouts can be represented as nested structures; for
-example, FMX operators are decoded into an `operators` array instead of a raw
-controller list. MultiCtl output slots and response curves are also decoded
-when present. MultiSynth, WaveShaper, SpectraVoice, Generator, and Analog
-generator module data chunks are decoded into typed arrays or named option
-fields where the SunVox source layout is known. Sampler instrument, sample,
-option, and envelope chunks are decoded into structured records; sample PCM
-bytes remain reversible as `bytesBase64` with decoded format flags. Sound2Ctl
-controller values and options are decoded into named fields. Pattern note data
-is emitted as sparse `line` / `track` event objects with note names and
-auxiliary module names, while the dense binary grid remains round-trip safe.
-Module graph links are emitted as editable `inputs` / `outputs` objects with
-local `slot`, target `module`, and optional peer `peerSlot` fields instead of
-raw parallel link arrays. `inputSlotCount` / `outputSlotCount` are kept only
-when needed to preserve empty or trailing SunVox link slots exactly.
+packed bitfields into editable names and to emit chunks in canonical order.
+It covers all controller layouts currently detected from the bundled SunVox
+source. Embedded MetaModule projects are decoded recursively; user controller
+links, options, custom controller names, and user controller values become
+named fields. Repeated layouts can become nested structures, such as FMX
+`operators` instead of a flat controller list. Known module data chunks are
+decoded into typed arrays or named option fields, including MultiCtl curves,
+MultiSynth/WaveShaper/SpectraVoice/Generator/Analog generator data, Sampler
+instrument/sample/option/envelope records, and Sound2Ctl options. Pattern data
+is emitted as sparse `line` / `track` events, and module graph links become
+editable `inputs` / `outputs` objects with `slot`, target `module`, and
+optional `peerSlot`. `inputSlotCount` / `outputSlotCount` are kept only when
+needed to preserve empty or trailing link slots exactly.
 
 ```sh
 npm run sunvox:encode -- music/2022-04-17.sunvox var/2022-04-17.sunvox.json
@@ -115,51 +105,40 @@ attack, decay, tail duration, note-off sensitivity, and a status-bearing
 release timings. The spectrum group keeps transient, body, and tail snapshots
 with centroid, bandwidth, rolloff, flatness, high-band energy, inharmonicity,
 and dominant peaks. Coarse tags such as `dark`, `wide`, or `slow-attack` are
-derived from those grouped observations. Use `--json` for machine-readable
-reports, `--note <note|midi>` to change the probe pitch, and `--velocity
-<1..129>` to change the trigger velocity. Pass
-`--probe <note>:<velocity>:<gateSeconds>` multiple times to compare several
-input conditions in one run. By default the tool creates a probe pattern and
-plays it through the SunVox sequencer. Pass `--render-method event` to render
-the same probe with explicit `sv_send_event()` note-on/note-off calls, or
-`--render-method both` to emit pattern and direct-event measurements for each
-probe. JSON reports include a `measurement` object with the source file, render
-method, sample rate, channel count, master volume, track, requested
-note/velocity/gate, actual note-on/off frame positions, and actual gate
-duration. Treat this `measurement` object as the source of truth for the
-measurement condition. `--json` reports are shaped as
-`{ sweep, results, comparisons? }`, where `sweep` records the note, velocity,
-gate, render method, probe count, and result count that produced the result set.
-Pattern results include the generated
-probe pattern metadata, and `probePattern.events` records the note-on and
-note-off pattern events that were written for the probe. Direct-event results
-include `eventTimeline` with the note-on/note-off `sv_send_event()` arguments,
-event ticks, gate ticks, and frame positions. With `--render-method both`, JSON
-reports also include `comparisons`, which pairs pattern and direct-event results
-for each identical source/probe and summarizes deltas for gate timing, level,
-envelope, spectrum, stereo width, and tags. Use `--note-sweep C2,C3,C4`,
-`--velocity-sweep 64,96,129`, and `--gate-sweep 0.25,2` to generate a
-cross-product of input conditions without writing each `--probe` manually.
+derived from those observations.
+
+Use `--json` for machine-readable output, `--note <note|midi>` and
+`--velocity <1..129>` to change the probe, and
+`--probe <note>:<velocity>:<gateSeconds>` multiple times for explicit
+comparisons. By default the tool measures a generated probe pattern through the
+sequencer. `--render-method event` instead uses explicit `sv_send_event()`
+note-on/note-off calls, and `--render-method both` emits both paths plus a
+comparison summary.
+
+JSON output is shaped as `{ sweep, results, comparisons? }`. `sweep` records
+the requested conditions. Each result includes `measurement` as the source of
+truth for actual playback conditions. Pattern results include `probePattern`
+metadata and events; direct-event results include `eventTimeline` with the
+actual `sv_send_event()` arguments, ticks, and frame positions. `comparisons`,
+when present, summarizes deltas for gate timing, level, envelope, spectrum,
+stereo width, and tags. Use `--note-sweep C2,C3,C4`, `--velocity-sweep
+64,96,129`, and `--gate-sweep 0.25,2` to generate a cross-product without
+writing each `--probe` manually.
 
 `sunvox:render-debug` is a lower-level SunVox Lib probe for checking whether a
 `.sunsynth` renders consistently through direct events and through sequencer
 patterns. In `--mode event`, it loads the synth with
 `sv_load_module_from_memory`, connects it to module `0` Output, sends
 `sv_send_event()` with SunVox public velocity `1..129`, and schedules
-note-on/note-off timestamps explicitly with `_sv_set_event_t()` in SunVox system
-ticks before offline `sv_audio_callback()` rendering. Event probes use track `0`
-by default; pass `--event-track <0..31>` to reproduce browser keyboard playback
-conditions such as C4 on track `28`. In `--mode pattern`, it creates a one-track
-probe pattern with the same note/module/velocity values and places note-off on
-the nearest line from the slot time map. Use `--mode both` with simple
-source-known synths first when investigating render discrepancies. `--json`
-includes an `eventTimeline` for direct event passes with the actual note-on and
-note-off `sv_send_event()` arguments, event ticks, gate ticks, and frame
-positions. Pattern passes expose the generated `probePattern.events`, so
-event/pattern comparisons can be traced back to concrete playback conditions on
-both paths. When both paths are rendered, `comparisons` pairs event and pattern
-passes by pass number and reports metric deltas, ratios, and relative
-differences for peak, RMS, activity counts, and leading silence.
+note-on/note-off timestamps explicitly with `_sv_set_event_t()` in SunVox
+system ticks before offline `sv_audio_callback()` rendering. Event probes use
+track `0` by default; pass `--event-track <0..31>` to reproduce browser
+keyboard playback conditions such as C4 on track `28`. In `--mode pattern`, it
+creates a one-track probe pattern with the same note/module/velocity values and
+places note-off on the nearest line from the slot time map. `--json` includes
+`eventTimeline` for direct-event passes and `probePattern.events` for pattern
+passes. When both paths are rendered, `comparisons` reports deltas, ratios, and
+relative differences for peak, RMS, activity counts, and leading silence.
 
 SunVox Lib integration code shared by Node tools lives in
 [tools/sunvox-node.mjs](tools/sunvox-node.mjs). It wraps the JS/WASM runtime
@@ -167,9 +146,9 @@ load, `sv_init` / slot open / cleanup lifecycle, malloc/free buffer transfer,
 project and synth loading, pattern event creation, time-map lookup, and offline
 Float32 rendering. Tools that need to ask SunVox Lib about runtime behavior
 should use this helper rather than reimplementing slot setup, memory handling,
-or probe playback. Probe rendering is pattern-based, so offline analysis follows
-the same sequencer path as project playback instead of relying on realtime
-`sv_send_event` timestamps.
+or probe playback. Probe rendering is pattern-based, so offline analysis
+follows the sequencer path instead of relying on realtime `sv_send_event`
+timestamps.
 
 SunVox Lib API arguments must be checked against the pinned source fixture
 rather than inferred from observed audio. Use `npm run sunvox:api-audit` to list
@@ -179,23 +158,16 @@ current `_sv_*` / `sv_*` calls and compare them with
 `npm run sunvox:api-audit -- --check` to fail when a referenced API is missing
 from either source file or when a source-backed call uses the wrong argument
 count. The audit checks `module._sv_*` WASM exports against `sunvox.h`, and
-browser-side `sv_*` calls against `sunvox_lib_loader.js`; this keeps TypedArray
-load helpers such as `sv_load_from_memory(slot, byteArray)` distinct from the C
+browser-side `sv_*` calls against `sunvox_lib_loader.js`, so wrapper helpers
+such as `sv_load_from_memory(slot, byteArray)` stay distinct from the C
 signature that also takes `data_size`. The report prints each call's binding
-style and `args=actual/expected`. Reviewed APIs also print argument semantics
-such as units, value ranges, packed formats, and special values; high-priority
-APIs print the matching header, JS wrapper, and implementation lines so
-argument reviews can cite the source directly. Important API boundary rules:
-`sv_new_pattern()` uses
-`clone < 0` for a fresh pattern, `sv_audio_callback()` expects `out_time` in
-SunVox system ticks, and `sv_send_event()` takes public velocity values
-`1..129` with `0` meaning default. The reviewed set also covers the playback
-lifecycle used by the browser and Node render tools: initialization, slot
-locking, project load/save, playback control, rewind, and volume. It also
-covers the module, pattern, song, and system tick getters currently referenced
-by local tools. The report summarizes reviewed and unreviewed referenced APIs,
-plus reviewed APIs that are not currently called, so future audit work can
-focus on any newly introduced API boundary surface.
+style and `args=actual/expected`, plus reviewed argument semantics such as
+units, value ranges, packed formats, and special values. High-priority APIs
+also print the matching header, JS wrapper, and implementation lines. Key
+boundary rules: `sv_new_pattern()` uses `clone < 0` for a fresh pattern,
+`sv_audio_callback()` expects `out_time` in SunVox system ticks, and
+`sv_send_event()` uses public velocity values `1..129` with `0` meaning
+default.
 
 `sunvox:edit-recipe` applies SunVox Edit Recipe files to create or edit
 `.sunsynth` outputs. Recipe files describe `.sunvox` / `.sunsynth` creation and
@@ -203,17 +175,14 @@ editing as one workflow, with plain JavaScript recipe files that need no
 runtime imports. Recipes can still use `apply(editor)` for procedural edits;
 the MVP exposes `SunSynthEditor` and `SunVoxProjectEditor` facades backed by
 the existing SunSynth lab implementation. Type inference comes from
-`tools/sunvox-edit-recipe.d.ts`. Generated drafts and throwaway experiments
-should normally go under `var/synth-lab/`. Generated files that are reviewed
-and intentionally committed should go under `generated/instruments/` or
-`generated/music/`, so they stay separate from human-authored distribution
-assets under `instruments/` and `music/`. Human-authored recipes live under
-`recipes/`; machine-generated recipes live under `generated/recipes/`. The
+`tools/sunvox-edit-recipe.d.ts`. Put throwaway output under `var/synth-lab/`;
+put reviewed generated files under `generated/instruments/` or
+`generated/music/`; keep human-authored recipes under `recipes/` and
+machine-generated recipes under `generated/recipes/`. The
 [scratch-analog Edit Recipe example](generated/recipes/sunvox-edit/scratch-analog.mjs)
-shows the migrated style: `create.module` selects the SunSynth root module type,
-so `module: "MetaModule"` initializes an embedded project while `module: "FMX"`
-creates a direct FMX root module. A MultiSynth module is created explicitly,
-then set as the MetaModule input with `synth.setInputModule(...)`.
+shows the migrated style: `create.module` selects the SunSynth root module
+type, so `module: "MetaModule"` initializes an embedded project while
+`module: "FMX"` creates a direct FMX root module.
 [scratch-layered-pad](generated/recipes/sunvox-edit/scratch-layered-pad.mjs),
 [scratch-assorted-instruments](generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs),
 and [scratch-fmx](generated/recipes/sunvox-edit/scratch-fmx.mjs) cover larger
@@ -281,16 +250,14 @@ always regenerated from the verified archive.
 
 ### Human-authored instruments under [instruments/](instruments/)
 
-Created by Ryusei Yamaguchi (@mandel59).
-
-Distributed under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+Created by Ryusei Yamaguchi (@mandel59). Distributed under
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 
 ### Generated instruments under [generated/instruments/](generated/instruments/)
 
 Built by project tooling from Codex-generated recipes under
-[generated/recipes/](generated/recipes/).
-
-Distributed under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+[generated/recipes/](generated/recipes/). Distributed under
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 
 The generated site index automatically records each generated `.sunsynth`
 file's source recipe by reading checked-in recipe `variants[].fileName` values.
@@ -299,9 +266,8 @@ view instead of maintaining a hand-written list in the license notice.
 
 ### Human-authored music under [music/](music/)
 
-Music by Ryusei Yamaguchi (@mandel59).
-
-Distributed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Music by Ryusei Yamaguchi (@mandel59). Distributed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 Some music project files use modules by Aden Cheney (ACheney). Those modules
 are distributed under the
 [ACheney modules MIT License](sunvox/docs/license/ACheney%20modules.txt).
@@ -323,6 +289,6 @@ third-party license text files from the deployed page.
 Run `npm run licenses:check` to verify that the source frontend includes the
 required SunVox notice and links every TXT file under
 `sunvox_lib/sunvox_lib/docs/license/`, plus the project data module license
-under `sunvox/docs/license/`. After `npm run build`, run `npm run
-licenses:check:dist` to verify that the GitHub Pages output keeps the same
-notice and copied license files.
+under `sunvox/docs/license/`. After `npm run build`, run
+`npm run licenses:check:dist` to verify that the GitHub Pages output keeps the
+same notice and copied license files.
