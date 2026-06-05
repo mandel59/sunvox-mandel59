@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import test from "node:test";
 
 import { loadEditRecipe, runEditRecipe } from "../tools/sunvox-edit-recipe.mjs";
+import { collectSiteData } from "../tools/generate-site-data.mjs";
 import { parseContainer } from "../tools/sunvox-codec.mjs";
 
 async function parseFile(filePath) {
@@ -316,42 +317,42 @@ export default recipe;
   assert.deepEqual(project.modules[2].inputs.map((link) => [link.slot, link.module]), [[0, 1]]);
 });
 
-test("checked-in Edit Recipes reproduce generated instruments byte-for-byte", async () => {
+test("cataloged Edit Recipes reproduce generated instruments byte-for-byte", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-edit-recipe-generated-"));
-  const recipeDir = "generated/recipes/sunvox-edit";
-  const recipeFiles = (await readdir(recipeDir))
-    .filter((file) => file.endsWith(".mjs"))
-    .sort()
-    .map((file) => join(recipeDir, file));
-  const generatedNames = new Set([
-    "Scratch Acid Bass.sunsynth",
-    "Scratch Analog.sunsynth",
-    "Scratch FMX Bass.sunsynth",
-    "Scratch FMX Bell.sunsynth",
-    "Scratch FMX Pluck.sunsynth",
-    "Scratch FMX Tines.sunsynth",
-    "Scratch Glass Bell.sunsynth",
-    "Scratch Kick Snap.sunsynth",
-    "Scratch Layered Pad.sunsynth",
-    "Scratch PWM Organ.sunsynth",
-  ]);
-  const outputs = [];
-  for (const recipeFile of recipeFiles) {
-    outputs.push(...await runEditRecipe(recipeFile, { outDir: tempDir }));
-  }
-
-  const generatedOutputs = outputs.filter((output) => generatedNames.has(output.split(/[\\/]/u).at(-1)));
+  const siteData = await collectSiteData();
+  const catalogTargets = siteData.assetCatalog.entries
+    .filter(({ path, sourceRecipe }) => path.startsWith("generated/instruments/") && sourceRecipe)
+    .sort((a, b) => a.path.localeCompare(b.path));
+  const catalogTargetPaths = catalogTargets.map(({ path }) => path);
+  const catalogTargetPathSet = new Set(catalogTargetPaths);
+  assert.ok(catalogTargets.length > 0);
   assert.deepEqual(
-    generatedOutputs.map((output) => output.split(/[\\/]/u).at(-1)).sort(),
-    [...generatedNames].sort(),
+    siteData.assetCatalog.entries
+      .filter(({ path }) => path.startsWith("generated/instruments/"))
+      .filter(({ sourceRecipe }) => !sourceRecipe)
+      .map(({ path }) => path),
+    [],
   );
 
-  for (const output of generatedOutputs) {
-    const outputName = output.split(/[\\/]/u).at(-1);
-    const expectedPath = join("generated/instruments", outputName);
+  const outputsByCatalogPath = new Map();
+  for (const recipeFile of [...new Set(catalogTargets.map(({ sourceRecipe }) => sourceRecipe.path))].sort()) {
+    for (const output of await runEditRecipe(recipeFile, { outDir: tempDir })) {
+      outputsByCatalogPath.set(`generated/instruments/${output.split(/[\\/]/u).at(-1)}`, output);
+    }
+  }
+
+  assert.deepEqual(
+    [...outputsByCatalogPath.keys()].filter((path) => catalogTargetPathSet.has(path)).sort(),
+    catalogTargetPaths,
+  );
+
+  for (const { path, sourceRecipe } of catalogTargets) {
+    const output = outputsByCatalogPath.get(path);
+    assert.ok(output, `${path} generated from ${sourceRecipe.path}`);
+    const expectedPath = join(...path.split("/"));
     const editBytes = await readFile(output);
     const expectedBytes = await readFile(expectedPath);
-    assert.deepEqual(editBytes, expectedBytes, `${outputName} binary`);
-    assert.deepEqual(parseContainer(editBytes), parseContainer(expectedBytes), outputName);
+    assert.deepEqual(editBytes, expectedBytes, `${path} binary`);
+    assert.deepEqual(parseContainer(editBytes), parseContainer(expectedBytes), path);
   }
 });
