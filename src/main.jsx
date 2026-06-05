@@ -1544,8 +1544,8 @@ function formatCatalogLevel(level) {
   return [level.loudness, rms].filter(Boolean).join(" / ");
 }
 
-function catalogStatus(catalog) {
-  return catalog?.deployment?.previewOnly ? "preview-only" : catalog?.deployment?.status;
+function catalogStatusLabel(catalog) {
+  return catalog?.deployment?.previewOnly ? "preview-only" : undefined;
 }
 
 function CatalogOptionalRow({ label, value }) {
@@ -1563,7 +1563,7 @@ function CatalogSection({ catalog }) {
       <h3 id="catalog-heading">Catalog</h3>
       <div className="properties-panel">
         <dl className="property-grid">
-          <PropertyRow label="Status" value={catalogStatus(catalog)} />
+          <CatalogOptionalRow label="Status" value={catalogStatusLabel(catalog)} />
           {sourceRecipe ? <PropertyRow label="Source" value={<a href={sourceRecipe.path}>{sourceRecipe.name}</a>} /> : null}
           {measurement ? (
             <>

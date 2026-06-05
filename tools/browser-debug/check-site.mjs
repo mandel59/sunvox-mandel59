@@ -500,7 +500,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         (source) =>
           !source.selected?.startsWith('Scratch FMX ') ||
           source.catalogHeading !== 'Catalog' ||
-          !source.catalogText?.includes('Statusdeploy') ||
+          source.catalogText?.includes('Statusdeploy') ||
           source.sourceInsideProperties ||
           source.sourceText !== 'scratch-fmx.mjs' ||
           source.sourceHref !== 'generated/recipes/sunvox-edit/scratch-fmx.mjs',
