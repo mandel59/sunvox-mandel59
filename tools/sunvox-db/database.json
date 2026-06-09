@@ -10,6 +10,17 @@
       "description": "SunVox module PS_CMD_GET_INFO strings are user-facing help text, not file-format or editability facts required by the codec. Track their source presence here, but keep the full help text out of the codec DB until a frontend/manual knowledge DB needs it."
     }
   ],
+  "runtimeProfiles": [
+    {
+      "id": "bundled-js-wasm-2.1.4d",
+      "label": "Bundled SunVox Lib JS/WASM 2.1.4d",
+      "engineVersion": "0x20104",
+      "compileOptions": {
+        "WITH_INTERPOLATION": false
+      },
+      "description": "Runtime profile for sunvox_lib/sunvox_lib/js/lib/sunvox.js and sunvox.wasm checked into this repository. Distortion interpolation is disabled in this build."
+    }
+  ],
   "chunks": [
     { "id": "VERS", "scope": "project", "name": "version", "type": "uint32", "label": "SunVox engine version", "sourceType": "uint32", "valueKind": "version", "sourceSymbol": "SUNVOX_ENGINE_VERSION" },
     { "id": "BVER", "scope": "project", "name": "baseVersion", "type": "uint32", "label": "base engine version", "sourceType": "uint32", "valueKind": "version", "sourceSymbol": "sunvox_engine::base_version" },
@@ -1802,7 +1813,24 @@
         { "index": 3, "name": "bitDepth", "label": "Bit depth", "type": "int32", "min": 1, "max": 16, "default": 16, "normal": -1, "group": 2 },
         { "index": 4, "name": "freq", "label": "Freq", "type": "int32", "min": 0, "max": 44100, "default": 44100, "normal": -1, "group": 2, "unit": "Hz", "scale": "exp3" },
         { "index": 5, "name": "noise", "label": "Noise", "type": "int32", "min": 0, "max": 256, "default": 0, "normal": -1, "group": 3 },
-        { "index": 6, "name": "interpolation", "label": "Interpolation", "type": "enum", "enum": "sample_interp", "min": 0, "max": 2, "default": 0, "normal": -1, "group": 2 }
+        {
+          "index": 6,
+          "name": "interpolation",
+          "label": "Interpolation",
+          "type": "enum",
+          "enum": "sample_interp",
+          "min": 0,
+          "max": 2,
+          "default": 0,
+          "normal": -1,
+          "group": 2,
+          "compileCondition": {
+            "macro": "WITH_INTERPOLATION",
+            "whenDefined": true,
+            "source": "psynths_distortion.cpp:#ifdef WITH_INTERPOLATION",
+            "description": "Only registered by Distortion builds compiled with WITH_INTERPOLATION. The bundled JS/WASM runtime currently exposes six Distortion controllers and rejects runtime set attempts for this index."
+          }
+        }
       ]
     },
     "EQ": {

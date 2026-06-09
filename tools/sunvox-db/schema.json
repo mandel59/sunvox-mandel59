@@ -3,7 +3,7 @@
   "$id": "https://mandel59.github.io/sunvox-mandel59/sunvox-db.schema.json",
   "title": "SunVox codec knowledge database",
   "type": "object",
-  "required": ["version", "chunks", "enums", "bitfields", "grammar", "moduleDataChunkGrammar", "runtimeConstraints", "modules"],
+  "required": ["version", "chunks", "enums", "bitfields", "grammar", "moduleDataChunkGrammar", "runtimeProfiles", "runtimeConstraints", "modules"],
   "properties": {
     "version": { "type": "integer", "minimum": 1 },
     "knowledgeScopes": {
@@ -17,6 +17,24 @@
           "source": { "type": "string" },
           "status": { "enum": ["inCodecScope", "outOfCodecScope", "candidate"] },
           "trackingIssue": { "type": "integer", "minimum": 1 },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "runtimeProfiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "engineVersion", "compileOptions", "description"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "engineVersion": { "type": "string", "pattern": "^0x[0-9A-Fa-f]+$" },
+          "compileOptions": {
+            "type": "object",
+            "additionalProperties": { "type": "boolean" }
+          },
           "description": { "type": "string" }
         },
         "additionalProperties": false
@@ -596,6 +614,17 @@
                         "additionalProperties": false
                       }
                     }
+                  },
+                  "additionalProperties": false
+                },
+                "compileCondition": {
+                  "type": "object",
+                  "required": ["macro", "whenDefined"],
+                  "properties": {
+                    "macro": { "type": "string" },
+                    "whenDefined": { "type": "boolean" },
+                    "source": { "type": "string" },
+                    "description": { "type": "string" }
                   },
                   "additionalProperties": false
                 },

@@ -42,6 +42,10 @@ can either interpret it directly or generate conversion code from it later.
   and errors that are useful during editing before a build or runtime probe
   fails. These include project/module checks as well as pattern effect
   parameter values that SunVox accepts in the file but clamps at runtime.
+- `runtimeProfiles`: records compile-time options for concrete bundled
+  SunVox Lib runtimes. Controller definitions can reference those options with
+  `compileCondition` when source metadata exists only for specific builds, such
+  as `Distortion.interpolation` behind `WITH_INTERPOLATION`.
 - `knowledgeScopes`: records source-backed knowledge that is intentionally in
   or out of codec scope. The first policy tracks `PS_CMD_GET_INFO` module help
   strings as source/user-facing information that should not be copied into the
@@ -95,6 +99,8 @@ one function:
 - structs, fixed record layouts, bitfields, bitflags, enums, and value aliases
 - module catalog data, controller definitions, data chunk layouts, and link
   relations
+- compile-time controller conditions when the same source tree can produce
+  different runtime controller sets
 - runtime constraints or save-normalization rules once they can be tested
   against SunVox Lib behavior
 - fixed-size text budgets such as `SNAM` through both grammar `textSize` and a

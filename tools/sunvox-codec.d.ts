@@ -186,9 +186,18 @@ export interface SunVoxKnowledgeScopeDefinition {
   description: string;
 }
 
+export interface SunVoxRuntimeProfileDefinition {
+  id: string;
+  label?: string;
+  engineVersion: string;
+  compileOptions: Record<string, boolean>;
+  description: string;
+}
+
 export interface SunVoxDatabase {
   version: number;
   knowledgeScopes?: SunVoxKnowledgeScopeDefinition[];
+  runtimeProfiles: SunVoxRuntimeProfileDefinition[];
   chunks: Array<Record<string, unknown>>;
   enums: Record<string, Record<string, string>>;
   patternEffectRanges?: SunVoxPatternEffectRangeDefinition[];

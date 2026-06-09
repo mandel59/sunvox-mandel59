@@ -58,6 +58,9 @@ test("project metrics summarize current coverage and gate state", () => {
   assert.equal(metrics.summary.patternEffectParameterHandlingCoveragePercent, 100);
   assert.equal(metrics.summary.controllerMetadataMismatches, 0);
   assert.equal(metrics.summary.dbCheckErrors, 0);
+  assert.equal(metrics.summary.runtimeProfiles, 1);
+  assert.equal(metrics.summary.runtimeCompileOptions, 1);
+  assert.equal(metrics.summary.conditionalControllers, 1);
   assert.equal(metrics.summary.runtimeConstraints, 10);
   assert.equal(metrics.summary.observedRuntimeBehaviors, 3);
   assert.equal(metrics.summary.validationFiles, 17);
@@ -244,6 +247,10 @@ test("scaffold preserves signed, unit, empty, and suffix enum value names", () =
   });
 
   assert.equal(collectScaffold("SpectraVoice").enums.harmonic_type[14], "overtones1Wide");
+  assert.deepEqual(collectScaffold("Distortion").modules.Distortion.controllers[6].compileCondition, {
+    macro: "WITH_INTERPOLATION",
+    whenDefined: true,
+  });
 });
 
 test("DB check validates data chunk ranges and metadata references", () => {
@@ -257,6 +264,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousLinkSlots = linkSlotChunk.linkSlots;
   const dataChunkGrammar = SUNVOX_DB.moduleDataChunkGrammar;
   const previousDataChunkGrammar = JSON.parse(JSON.stringify(dataChunkGrammar));
+  const previousRuntimeProfiles = JSON.parse(JSON.stringify(SUNVOX_DB.runtimeProfiles));
   const previousRuntimeConstraints = SUNVOX_DB.runtimeConstraints.slice();
   const bitfield = SUNVOX_DB.bitfields.psynth_midi_input_flags;
   const previousBitfieldFields = bitfield.fields;
@@ -295,6 +303,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
         default: 0,
         normal: 0,
         group: 0,
+        compileCondition: { macro: "__UNKNOWN_MACRO", whenDefined: "yes" },
         dynamicLimits: { controller: "missingCtl", source: "missing_change_ctl_limits", cases: { nope: {} } },
       },
     ],
@@ -337,6 +346,12 @@ test("DB check validates data chunk ranges and metadata references", () => {
   linkSlotChunk.linkSlots = { linkChunk: "NOPE" };
   dataChunkGrammar.countChunk = "NOPE";
   dataChunkGrammar.metadataChunks = [{ chunk: "NOPE", path: "brokenMetadata", field: "value" }];
+  SUNVOX_DB.runtimeProfiles.push({
+    id: "bundled-js-wasm-2.1.4d",
+    engineVersion: "20104",
+    compileOptions: { BROKEN_OPTION: "yes" },
+    description: "broken runtime profile",
+  });
   SUNVOX_DB.runtimeConstraints.push(
     {
       id: "broken.runtime",
@@ -471,6 +486,9 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /chunk SLnK linkSlots is missing slotCountPath/u);
     assert.match(errors, /moduleDataChunkGrammar countChunk references missing chunk NOPE/u);
     assert.match(errors, /moduleDataChunkGrammar metadata brokenMetadata references missing chunk NOPE/u);
+    assert.match(errors, /duplicate runtime profile id bundled-js-wasm-2\.1\.4d/u);
+    assert.match(errors, /runtime profile bundled-js-wasm-2\.1\.4d has invalid engineVersion 20104/u);
+    assert.match(errors, /runtime profile bundled-js-wasm-2\.1\.4d compile option BROKEN_OPTION must be boolean/u);
     assert.match(errors, /duplicate runtime constraint id broken\.runtime/u);
     assert.match(errors, /runtime constraint broken\.runtime has invalid severity fatal/u);
     assert.match(errors, /runtime constraint broken\.runtime has invalid trackingIssue -1/u);
@@ -481,6 +499,14 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(
       errors,
       /__BrokenDbCheckFixture: controller brokenCtl dynamicLimits references missing controller missingCtl/u,
+    );
+    assert.match(
+      errors,
+      /__BrokenDbCheckFixture: controller brokenCtl compileCondition is missing boolean whenDefined/u,
+    );
+    assert.match(
+      errors,
+      /__BrokenDbCheckFixture: controller brokenCtl compileCondition references unknown compile option __UNKNOWN_MACRO/u,
     );
     assert.match(
       errors,
@@ -546,6 +572,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
     patternFields.length = previousPatternFieldCount;
     linkSlotChunk.linkSlots = previousLinkSlots;
     Object.assign(dataChunkGrammar, previousDataChunkGrammar);
+    SUNVOX_DB.runtimeProfiles.length = 0;
+    SUNVOX_DB.runtimeProfiles.push(...previousRuntimeProfiles);
     SUNVOX_DB.runtimeConstraints.length = 0;
     SUNVOX_DB.runtimeConstraints.push(...previousRuntimeConstraints);
     bitfield.fields = previousBitfieldFields;

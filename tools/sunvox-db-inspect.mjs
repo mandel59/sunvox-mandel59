@@ -592,6 +592,28 @@ function collectDbDynamicLimits() {
   );
 }
 
+function collectRuntimeCompileOptions() {
+  return new Set((SUNVOX_DB.runtimeProfiles ?? []).flatMap((profile) => Object.keys(profile.compileOptions ?? {})));
+}
+
+function collectConditionalControllers() {
+  const rows = [];
+  for (const [moduleName, moduleDefinition] of Object.entries(SUNVOX_DB.modules)) {
+    for (const controller of expandControllerDefinitions(moduleDefinition.controllers)) {
+      if (!controller.compileCondition) {
+        continue;
+      }
+      rows.push({
+        module: moduleName,
+        controller: controllerKey(controller),
+        macro: controller.compileCondition.macro,
+        whenDefined: controller.compileCondition.whenDefined,
+      });
+    }
+  }
+  return rows.sort((a, b) => compareText(a.module, b.module) || compareText(a.controller, b.controller));
+}
+
 function collectModuleCatalogGaps(sourceModules) {
   return MODULE_CATALOG_FIELDS.map((field) => {
     const sourceModulesWithField = sourceModules.filter((module) => module[field] !== undefined);
@@ -686,10 +708,48 @@ function splitArguments(text) {
 }
 
 function extractRegisterCalls(text) {
+  return extractRegisterCallsWithConditions(text).map((call) => call.args);
+}
+
+function extractActiveCompileConditions(text, offset) {
+  const conditions = [];
+  for (const line of text.slice(0, offset).split(/\r?\n/u)) {
+    const trimmed = line.trim();
+    const ifdef = /^#\s*ifdef\s+([A-Za-z_][A-Za-z0-9_]*)\b/u.exec(trimmed);
+    if (ifdef) {
+      conditions.push({ macro: ifdef[1], whenDefined: true });
+      continue;
+    }
+    const ifndef = /^#\s*ifndef\s+([A-Za-z_][A-Za-z0-9_]*)\b/u.exec(trimmed);
+    if (ifndef) {
+      conditions.push({ macro: ifndef[1], whenDefined: false });
+      continue;
+    }
+    const ifDefined = /^#\s*if\s+defined\s*\(?\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)?\s*$/u.exec(trimmed);
+    if (ifDefined) {
+      conditions.push({ macro: ifDefined[1], whenDefined: true });
+      continue;
+    }
+    if (/^#\s*else\b/u.test(trimmed) && conditions.length) {
+      const previous = conditions.pop();
+      conditions.push({ ...previous, whenDefined: !previous.whenDefined });
+      continue;
+    }
+    if (/^#\s*endif\b/u.test(trimmed)) {
+      conditions.pop();
+    }
+  }
+  return conditions;
+}
+
+function extractRegisterCallsWithConditions(text) {
   const calls = [];
   const pattern = /psynth_register_ctl\s*\(([\s\S]*?)\);/gu;
   for (const match of text.matchAll(pattern)) {
-    calls.push(splitArguments(match[1]));
+    calls.push({
+      args: splitArguments(match[1]),
+      compileCondition: extractActiveCompileConditions(text, match.index).at(-1),
+    });
   }
   return calls;
 }
@@ -825,8 +885,11 @@ function collectSourceModuleControllers(module, strings) {
   };
   const controllers = [];
   const enums = new Map();
-  extractRegisterCalls(text).forEach((call, index) => {
-    const scaffolded = scaffoldController(call, index, strings, metadata);
+  extractRegisterCallsWithConditions(text).forEach((call, index) => {
+    const scaffolded = scaffoldController(call.args, index, strings, metadata);
+    if (call.compileCondition) {
+      scaffolded.controller.compileCondition = call.compileCondition;
+    }
     controllers.push(scaffolded.controller);
     if (scaffolded.enum) {
       enums.set(scaffolded.enum[0], scaffolded.enum[1]);
@@ -1001,6 +1064,23 @@ function enumValuesEqual(left, right, leftName = "", rightName = "", leftControl
   return keys.every((key) => canonicalEnumValue(left[key], leftName) === canonicalEnumValue(right[key], rightName));
 }
 
+function compileConditionsEqual(left, right) {
+  if (!left && !right) {
+    return true;
+  }
+  if (!left || !right) {
+    return false;
+  }
+  return left.macro === right.macro && left.whenDefined === right.whenDefined;
+}
+
+function compileConditionText(condition) {
+  if (!condition) {
+    return undefined;
+  }
+  return `${condition.whenDefined ? "defined" : "not defined"} ${condition.macro}`;
+}
+
 export function collectControllerDiff(sourceRoot = DEFAULT_SOURCE_ROOT) {
   const report = collectSourceReport(sourceRoot);
   const strings = loadStringTable();
@@ -1062,6 +1142,16 @@ export function collectControllerDiff(sourceRoot = DEFAULT_SOURCE_ROOT) {
             db: dbController[field],
           });
         }
+      }
+      if (!compileConditionsEqual(sourceController.compileCondition, dbController.compileCondition)) {
+        mismatches.push({
+          module: sourceModule.module,
+          index: sourceController.index,
+          controller: dbController.name ?? sourceController.name,
+          field: "compileCondition",
+          source: compileConditionText(sourceController.compileCondition),
+          db: compileConditionText(dbController.compileCondition),
+        });
       }
       if (sourceController.type === "enum") {
         const sourceEnumValues = sourceScaffold.enums[sourceController.enum];
@@ -1710,6 +1800,69 @@ function checkRuntimeConstraints(errors) {
   }
 }
 
+function checkRuntimeProfiles(errors) {
+  const ids = new Set();
+  const compileOptionProfiles = new Map();
+  const profiles = Array.isArray(SUNVOX_DB.runtimeProfiles) ? SUNVOX_DB.runtimeProfiles : [];
+  if (!Array.isArray(SUNVOX_DB.runtimeProfiles)) {
+    errors.push("runtimeProfiles must be an array");
+    return { profiles, compileOptionProfiles };
+  }
+  for (const profile of profiles) {
+    if (!profile.id) {
+      errors.push("runtime profile is missing id");
+      continue;
+    }
+    if (ids.has(profile.id)) {
+      errors.push(`duplicate runtime profile id ${profile.id}`);
+    }
+    ids.add(profile.id);
+    if (typeof profile.engineVersion !== "string" || !/^0x[0-9A-Fa-f]+$/u.test(profile.engineVersion)) {
+      errors.push(`runtime profile ${profile.id} has invalid engineVersion ${profile.engineVersion}`);
+    }
+    if (!profile.compileOptions || typeof profile.compileOptions !== "object" || Array.isArray(profile.compileOptions)) {
+      errors.push(`runtime profile ${profile.id} compileOptions must be an object`);
+      continue;
+    }
+    for (const [macro, value] of Object.entries(profile.compileOptions)) {
+      if (!macro) {
+        errors.push(`runtime profile ${profile.id} has an empty compile option macro`);
+        continue;
+      }
+      if (typeof value !== "boolean") {
+        errors.push(`runtime profile ${profile.id} compile option ${macro} must be boolean`);
+      }
+      if (!compileOptionProfiles.has(macro)) {
+        compileOptionProfiles.set(macro, new Set());
+      }
+      compileOptionProfiles.get(macro).add(profile.id);
+    }
+  }
+  return { profiles, compileOptionProfiles };
+}
+
+function checkControllerCompileCondition(errors, warnings, moduleName, controller, runtimeProfileCheck) {
+  const condition = controller.compileCondition;
+  if (!condition) {
+    return;
+  }
+  const subject = `${moduleName}: controller ${controller.name ?? "(unnamed)"} compileCondition`;
+  if (!condition.macro) {
+    errors.push(`${subject} is missing macro`);
+  }
+  if (typeof condition.whenDefined !== "boolean") {
+    errors.push(`${subject} is missing boolean whenDefined`);
+  }
+  if (condition.macro && !runtimeProfileCheck.compileOptionProfiles.has(condition.macro)) {
+    errors.push(`${subject} references unknown compile option ${condition.macro}`);
+  }
+  for (const profile of runtimeProfileCheck.profiles) {
+    if (condition.macro && !Object.hasOwn(profile.compileOptions ?? {}, condition.macro)) {
+      warnings.push(`${subject} references ${condition.macro}, but runtime profile ${profile.id} does not declare it`);
+    }
+  }
+}
+
 function checkPatternEffectEnum(errors, warnings, sourceRoot) {
   const effectEnum = SUNVOX_DB.enums.sunvox_pattern_effect;
   if (!effectEnum) {
@@ -1861,6 +2014,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
   checkBitfieldDefinitions(errors);
   checkStructDefinitions(errors);
   checkRuntimeConstraints(errors);
+  const runtimeProfileCheck = checkRuntimeProfiles(errors);
   checkKnowledgeScopes(errors, warnings, sourceReport);
   checkPatternEffectEnum(errors, warnings, sourceRoot);
   checkPatternEffectRanges(errors);
@@ -1885,6 +2039,7 @@ export function collectDbCheck(sourceRoot = DEFAULT_SOURCE_ROOT) {
       if (controller.enum && !SUNVOX_DB.enums[controller.enum]) {
         errors.push(`${moduleName}: controller ${controller.name} references missing enum ${controller.enum}`);
       }
+      checkControllerCompileCondition(errors, warnings, moduleName, controller, runtimeProfileCheck);
       checkControllerDynamicLimits(errors, moduleName, controller, controllersByKey, sourceDynamicLimitSources);
     }
 
@@ -2060,6 +2215,8 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
   const dataChunkLayouts = collectDataChunkLayoutMetrics();
   const moduleCatalog = collectModuleCatalogMetrics(report);
   const patternEffectCoverage = collectPatternEffectCoverage(sourceRoot);
+  const runtimeCompileOptions = collectRuntimeCompileOptions();
+  const conditionalControllers = collectConditionalControllers();
   const patternEffectParameterSchemas = Object.keys(SUNVOX_DB.patternEffectParameters ?? {}).length;
   const parameterlessPatternEffects = Object.keys(SUNVOX_DB.parameterlessPatternEffects ?? {}).length;
   const handledPatternEffectParameters = patternEffectParameterSchemas + parameterlessPatternEffects;
@@ -2113,6 +2270,9 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       controllerMetadataMismatches: controllerDiff.summary.mismatches,
       dbCheckErrors: dbCheck.summary.errors,
       dbCheckWarnings: dbCheck.summary.warnings,
+      runtimeProfiles: SUNVOX_DB.runtimeProfiles?.length ?? 0,
+      runtimeCompileOptions: runtimeCompileOptions.size,
+      conditionalControllers: conditionalControllers.length,
       runtimeConstraints: SUNVOX_DB.runtimeConstraints?.length ?? 0,
       observedRuntimeBehaviors: (SUNVOX_DB.runtimeConstraints ?? []).filter((rule) => rule.observedBehavior).length,
       validationFiles: validation.files,
@@ -2161,6 +2321,11 @@ export function collectProjectMetrics(sampleRoots = DEFAULT_SAMPLE_ROOTS, source
       dbLimits: report.dbDynamicLimits,
       missingSources: report.missingDynamicLimitSources,
       unknownSources: report.unknownDynamicLimitSources,
+    },
+    runtimeProfiles: {
+      profiles: SUNVOX_DB.runtimeProfiles ?? [],
+      compileOptions: [...runtimeCompileOptions].sort(compareText),
+      conditionalControllers,
     },
     validation,
     chunkStorage,
@@ -2584,6 +2749,9 @@ function formatProjectMetrics(metrics) {
     },
     { metric: "Controller metadata mismatches", value: metrics.summary.controllerMetadataMismatches },
     { metric: "DB check errors", value: metrics.summary.dbCheckErrors },
+    { metric: "Runtime profiles", value: metrics.summary.runtimeProfiles },
+    { metric: "Runtime compile options", value: metrics.summary.runtimeCompileOptions },
+    { metric: "Conditional controllers", value: metrics.summary.conditionalControllers },
     { metric: "Runtime constraints", value: metrics.summary.runtimeConstraints },
     { metric: "Observed runtime behaviors", value: metrics.summary.observedRuntimeBehaviors },
     { metric: "Validation files", value: metrics.summary.validationFiles },
@@ -2647,6 +2815,21 @@ function formatProjectMetrics(metrics) {
             (row) => `  - unknown DB source: ${row.source} (${row.controllers.join(", ")})`,
           ),
         ].join("\n")
+      : "(none)",
+    "",
+    "Runtime compile options:",
+    metrics.runtimeProfiles.compileOptions.length
+      ? metrics.runtimeProfiles.compileOptions.map((macro) => `  - ${macro}`).join("\n")
+      : "(none)",
+    "",
+    "Conditional controllers:",
+    metrics.runtimeProfiles.conditionalControllers.length
+      ? metrics.runtimeProfiles.conditionalControllers
+          .map(
+            (row) =>
+              `  - ${row.module}.${row.controller}: ${row.whenDefined ? "defined" : "not defined"} ${row.macro}`,
+          )
+          .join("\n")
       : "(none)",
     "",
     "Unnamed source pattern effects:",
