@@ -22,6 +22,7 @@ let MODULE_LINK_RELATIONS;
 const PATTERN_CHUNKS = scopedChunkSet("pattern");
 const MODULE_CHUNKS = scopedChunkSet("module");
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const DEFAULT_PATTERN_ICON_BASE64 = Buffer.alloc(32).toString("base64");
 
 function chunkDefinition(id) {
   return CHUNKS_BY_ID.get(id);
@@ -969,6 +970,18 @@ function patternEventRecords(pattern, modules) {
     records[index] = patternSemanticEventToRecord(event, modules, definition);
   }
   return records;
+}
+
+function patternNeedsRuntimeIcon(pattern) {
+  return (
+    pattern?.iconBase64 === undefined &&
+    !pattern?.infoFlags?.clone &&
+    (Array.isArray(pattern?.events) ||
+      pattern?.tracks !== undefined ||
+      pattern?.lines !== undefined ||
+      pattern?.eventColumns !== undefined ||
+      pattern?.eventRows !== undefined)
+  );
 }
 
 function makeEditableChunk(id, data) {
@@ -3057,6 +3070,20 @@ function syncPattern(pattern, modules = []) {
       const records = patternEventRecords(pattern, modules);
       if (field && records !== undefined) {
         chunks.push(makeSemanticChunk("PDTA", field.field, records, field));
+      }
+      continue;
+    }
+    if (token === "PICO") {
+      const chunk = emitScopeField("pattern", pattern, token);
+      if (chunk) {
+        chunks.push(chunk);
+        continue;
+      }
+      if (patternNeedsRuntimeIcon(pattern)) {
+        const field = scopeGrammar("pattern").fields.find((candidate) => candidate.chunk === "PICO");
+        if (field) {
+          chunks.push(makeSemanticChunk("PICO", field.field, DEFAULT_PATTERN_ICON_BASE64, field));
+        }
       }
       continue;
     }
