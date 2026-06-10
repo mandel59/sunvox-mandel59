@@ -1446,7 +1446,7 @@
           { "chunk": "PLIN", "path": "lines", "field": "value" },
           { "chunk": "PYSZ", "path": "ySize", "field": "value" },
           { "chunk": "PFLG", "path": "flags", "field": "value", "bitflags": "sunvox_pattern_flags" },
-          { "chunk": "PICO", "path": "iconBase64", "field": "base64" },
+          { "chunk": "PICO", "path": "iconBase64", "field": "base64", "emitDefault": { "kind": "zeroBytes", "byteLength": 32, "when": "ownPatternData", "source": "var/sunvox_lib/lib_sunvox/sunvox_engine_load_proj.cpp:1283", "trackingIssue": 33, "description": "SunVox removes loaded non-clone patterns when PICO is missing, even if PDTA/PCHN/PLIN are present." } },
           { "chunk": "PFGC", "path": "foreground", "field": "rgb" },
           { "chunk": "PBGC", "path": "background", "field": "rgb" },
           { "chunk": "PNME", "path": "name", "field": "text" },
@@ -1461,7 +1461,7 @@
       "module": {
         "terminator": "SEND",
         "fields": [
-          { "chunk": "SFFF", "path": "flags", "field": "value", "bitflags": "psynth_flags" },
+          { "chunk": "SFFF", "path": "flags", "field": "value", "bitflags": "psynth_flags", "emitDefault": { "kind": "bitflags", "value": { "exists": true }, "when": "ownModuleData", "source": "var/sunvox_lib/lib_sunvox/sunvox_engine_load_proj.cpp:1454", "trackingIssue": 35, "description": "SunVox project loader does not materialize typed modules unless SFFF has PSYNTH_FLAG_EXISTS." } },
           { "chunk": "SNAM", "path": "name", "field": "text", "textSize": 32 },
           { "chunk": "STYP", "path": "type", "field": "text" },
           { "chunk": "SFIN", "path": "finetune", "field": "value" },

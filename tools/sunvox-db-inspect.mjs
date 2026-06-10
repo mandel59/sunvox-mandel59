@@ -1518,6 +1518,8 @@ const CHUNK_VALUE_KINDS = new Set([
 const RUNTIME_CONSTRAINT_SCOPES = new Set(["project", "module", "moduleLink", "patternEffectParameter"]);
 const RUNTIME_CONSTRAINT_KINDS = new Set(["integerRange", "maxUtf8Bytes"]);
 const RUNTIME_CONSTRAINT_SEVERITIES = new Set(["warning", "error"]);
+const GRAMMAR_EMIT_DEFAULT_KINDS = new Set(["bitflags", "zeroBytes"]);
+const GRAMMAR_EMIT_DEFAULT_CONDITIONS = new Set(["ownModuleData", "ownPatternData"]);
 const TEXT_LAYOUT_FIELD_ENCODINGS = new Set([
   "packedPatternControllerEffect",
   "oneBasedModuleIndex",
@@ -1664,6 +1666,7 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
         errors.push(`grammar scope ${scopeName} references ${field.chunk} with chunk scope ${chunk.scope}`);
       }
       checkFixedTextSizeRuntimeConstraint(errors, scopeName, field);
+      checkGrammarEmitDefault(errors, scopeName, field, chunk);
       checkNamedReference(errors, `grammar:${scopeName}`, `field ${field.path}`, "enum", field.enum, SUNVOX_DB.enums);
       checkNamedReference(
         errors,
@@ -1737,6 +1740,64 @@ function checkFixedTextSizeRuntimeConstraint(errors, scopeName, field) {
     errors.push(
       `grammar:${scopeName}: field ${field.path} fixed textSize ${field.textSize} is missing matching maxUtf8Bytes runtime constraint`,
     );
+  }
+}
+
+function checkGrammarEmitDefault(errors, scopeName, field, chunk) {
+  const rule = field.emitDefault;
+  if (!rule) {
+    return;
+  }
+  const subject = `grammar:${scopeName}: field ${field.path} emitDefault`;
+  if (!GRAMMAR_EMIT_DEFAULT_KINDS.has(rule.kind)) {
+    errors.push(`${subject} has invalid kind ${rule.kind}`);
+  }
+  if (!GRAMMAR_EMIT_DEFAULT_CONDITIONS.has(rule.when)) {
+    errors.push(`${subject} has invalid condition ${rule.when}`);
+  }
+  if (typeof rule.source !== "string" || !rule.source) {
+    errors.push(`${subject} is missing source`);
+  }
+  if (!Number.isInteger(rule.trackingIssue) || rule.trackingIssue < 1) {
+    errors.push(`${subject} has invalid trackingIssue ${rule.trackingIssue}`);
+  }
+  if (typeof rule.description !== "string" || !rule.description) {
+    errors.push(`${subject} is missing description`);
+  }
+  if (rule.kind === "zeroBytes") {
+    if (!Number.isInteger(rule.byteLength) || rule.byteLength < 0) {
+      errors.push(`${subject} has invalid byteLength ${rule.byteLength}`);
+    }
+    if (field.field !== "base64") {
+      errors.push(`${subject} zeroBytes requires a base64 grammar field`);
+    }
+    if (chunk && chunk.type !== "bytes") {
+      errors.push(`${subject} zeroBytes requires a bytes chunk`);
+    }
+  }
+  if (rule.kind === "bitflags") {
+    if (field.field !== "value" || !field.bitflags) {
+      errors.push(`${subject} bitflags requires a value grammar field with bitflags`);
+    }
+    if (chunk && !["uint32", "int32"].includes(chunk.type)) {
+      errors.push(`${subject} bitflags requires an integer chunk`);
+    }
+    if (!rule.value || typeof rule.value !== "object" || Array.isArray(rule.value)) {
+      errors.push(`${subject} bitflags is missing object value`);
+    } else {
+      const knownFlags = new Set((SUNVOX_DB.bitflags?.[field.bitflags] ?? []).map((flag) => flag.name));
+      for (const flagName of Object.keys(rule.value)) {
+        if (flagName !== "unknown" && !knownFlags.has(flagName)) {
+          errors.push(`${subject} bitflags references missing flag ${flagName}`);
+        }
+      }
+    }
+  }
+  if (rule.when === "ownPatternData" && scopeName !== "pattern") {
+    errors.push(`${subject} condition ownPatternData requires pattern scope`);
+  }
+  if (rule.when === "ownModuleData" && scopeName !== "module") {
+    errors.push(`${subject} condition ownModuleData requires module scope`);
   }
 }
 

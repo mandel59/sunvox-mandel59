@@ -260,6 +260,8 @@ test("DB check validates data chunk ranges and metadata references", () => {
   const previousProjectFieldCount = projectFields.length;
   const patternFields = SUNVOX_DB.grammar.scopes.pattern.fields;
   const previousPatternFieldCount = patternFields.length;
+  const moduleFields = SUNVOX_DB.grammar.scopes.module.fields;
+  const previousModuleFieldCount = moduleFields.length;
   const linkSlotChunk = SUNVOX_DB.chunks.find((chunk) => chunk.id === "SLnK");
   const previousLinkSlots = linkSlotChunk.linkSlots;
   const dataChunkGrammar = SUNVOX_DB.moduleDataChunkGrammar;
@@ -338,10 +340,50 @@ test("DB check validates data chunk ranges and metadata references", () => {
     bitfield: "__missing_grammar_bitfield",
     bitflags: "__missing_grammar_bitflags",
   });
+  projectFields.push({
+    chunk: "NAME",
+    path: "brokenEmitDefault",
+    field: "text",
+    emitDefault: {
+      kind: "zeroBytes",
+      byteLength: -1,
+      when: "ownPatternData",
+      source: "",
+      trackingIssue: 0,
+      description: "",
+    },
+  });
   patternFields.push({
     chunk: "PATN",
     path: "brokenPatternCurrentPattern",
     field: "value",
+  });
+  patternFields.push({
+    chunk: "PNME",
+    path: "brokenPatternEmitDefault",
+    field: "text",
+    emitDefault: {
+      kind: "brokenKind",
+      byteLength: 0,
+      when: "brokenCondition",
+      source: "broken source",
+      trackingIssue: 1,
+      description: "broken emit default rule",
+    },
+  });
+  moduleFields.push({
+    chunk: "SFFF",
+    path: "brokenModuleEmitDefault",
+    field: "value",
+    bitflags: "psynth_flags",
+    emitDefault: {
+      kind: "bitflags",
+      value: { notAFlag: true },
+      when: "ownModuleData",
+      source: "broken source",
+      trackingIssue: 35,
+      description: "broken module emit default rule",
+    },
   });
   linkSlotChunk.linkSlots = { linkChunk: "NOPE" };
   dataChunkGrammar.countChunk = "NOPE";
@@ -480,6 +522,22 @@ test("DB check validates data chunk ranges and metadata references", () => {
     assert.match(errors, /grammar:project: field brokenGrammarField references missing enum __missing_grammar_enum/u);
     assert.match(errors, /grammar:project: field brokenGrammarField references missing bitfield __missing_grammar_bitfield/u);
     assert.match(errors, /grammar:project: field brokenGrammarField references missing bitflags __missing_grammar_bitflags/u);
+    assert.match(errors, /grammar:project: field brokenEmitDefault emitDefault has invalid byteLength -1/u);
+    assert.match(errors, /grammar:project: field brokenEmitDefault emitDefault is missing source/u);
+    assert.match(errors, /grammar:project: field brokenEmitDefault emitDefault has invalid trackingIssue 0/u);
+    assert.match(errors, /grammar:project: field brokenEmitDefault emitDefault is missing description/u);
+    assert.match(errors, /grammar:project: field brokenEmitDefault emitDefault zeroBytes requires a base64 grammar field/u);
+    assert.match(errors, /grammar:project: field brokenEmitDefault emitDefault zeroBytes requires a bytes chunk/u);
+    assert.match(errors, /grammar:project: field brokenEmitDefault emitDefault condition ownPatternData requires pattern scope/u);
+    assert.match(errors, /grammar:pattern: field brokenPatternEmitDefault emitDefault has invalid kind brokenKind/u);
+    assert.match(
+      errors,
+      /grammar:pattern: field brokenPatternEmitDefault emitDefault has invalid condition brokenCondition/u,
+    );
+    assert.match(
+      errors,
+      /grammar:module: field brokenModuleEmitDefault emitDefault bitflags references missing flag notAFlag/u,
+    );
     assert.match(errors, /chunk SLnK linkSlots references missing link chunk NOPE/u);
     assert.match(errors, /chunk SLnK linkSlots is missing localLinksPath/u);
     assert.match(errors, /chunk SLnK linkSlots is missing semanticPath/u);
@@ -570,6 +628,7 @@ test("DB check validates data chunk ranges and metadata references", () => {
   } finally {
     projectFields.length = previousProjectFieldCount;
     patternFields.length = previousPatternFieldCount;
+    moduleFields.length = previousModuleFieldCount;
     linkSlotChunk.linkSlots = previousLinkSlots;
     Object.assign(dataChunkGrammar, previousDataChunkGrammar);
     SUNVOX_DB.runtimeProfiles.length = 0;

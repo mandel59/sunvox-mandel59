@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import { buildContainer, TEXT_FORMAT } from "../tools/sunvox-codec.mjs";
 import {
   DEFAULT_CHANNELS,
   DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
@@ -13,7 +14,9 @@ import {
   createPattern,
   createNoteProbePattern,
   lineFramesFromTimeMap,
+  loadProjectFromBuffer,
   loadSynthModuleFromBuffer,
+  readCString,
   renderSlotAudio,
   sunVoxNoteValue,
   withSunVoxSlot,
@@ -51,6 +54,106 @@ test(
         assert.equal(module._sv_get_pattern_lines(slot, first), 32);
         assert.equal(module._sv_get_pattern_tracks(slot, second), 1);
         assert.equal(module._sv_get_pattern_lines(slot, second), 256);
+      },
+    );
+  },
+);
+
+test(
+  "loads a newly codec-built semantic pattern into SunVox Lib",
+  { skip: existsSync(DEFAULT_SUNVOX_JS_PATH) ? false : "SunVox Lib runtime is not installed" },
+  async () => {
+    const bytes = buildContainer({
+      format: TEXT_FORMAT,
+      magic: "SVOX",
+      headerTailHex: "00000000",
+      project: { name: "semantic pattern probe", bpm: 125, speed: 6 },
+      patterns: [
+        {
+          name: "Probe",
+          position: { x: 0, y: 0 },
+          tracks: 1,
+          lines: 4,
+          events: [{ line: 0, track: 0, note: "C4", velocity: 112 }],
+        },
+      ],
+      modules: [
+        {
+          flags: {
+            exists: true,
+            output: true,
+          },
+          name: "Output",
+          position: { x: 0, y: 0 },
+        },
+      ],
+      trailingChunks: [],
+    });
+
+    await withSunVoxSlot(
+      {
+        sampleRate: DEFAULT_SAMPLE_RATE,
+        channels: DEFAULT_CHANNELS,
+        flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
+        slot: DEFAULT_SLOT,
+      },
+      async ({ module, slot }) => {
+        loadProjectFromBuffer(module, bytes, { slot });
+
+        assert.equal(module._sv_get_pattern_tracks(slot, 0), 1);
+        assert.equal(module._sv_get_pattern_lines(slot, 0), 4);
+
+        const eventPointer = module._sv_get_pattern_data(slot, 0);
+        assert.notEqual(eventPointer, 0);
+        assert.equal(module.HEAPU8[eventPointer], 49);
+        assert.equal(module.HEAPU8[eventPointer + 1], 112);
+      },
+    );
+  },
+);
+
+test(
+  "loads a newly codec-built semantic module into SunVox Lib",
+  { skip: existsSync(DEFAULT_SUNVOX_JS_PATH) ? false : "SunVox Lib runtime is not installed" },
+  async () => {
+    const bytes = buildContainer({
+      format: TEXT_FORMAT,
+      magic: "SVOX",
+      headerTailHex: "00000000",
+      project: { name: "semantic module probe", bpm: 125, speed: 6 },
+      patterns: [],
+      modules: [
+        {
+          flags: {
+            exists: true,
+            output: true,
+          },
+          name: "Output",
+          position: { x: 0, y: 0 },
+        },
+        {
+          type: "Generator",
+          name: "Tone",
+          position: { x: 128, y: 0 },
+        },
+      ],
+      trailingChunks: [],
+    });
+
+    await withSunVoxSlot(
+      {
+        sampleRate: DEFAULT_SAMPLE_RATE,
+        channels: DEFAULT_CHANNELS,
+        flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
+        slot: DEFAULT_SLOT,
+      },
+      async ({ module, slot }) => {
+        loadProjectFromBuffer(module, bytes, { slot });
+
+        assert.equal(module._sv_get_number_of_modules(slot), 2);
+        assert.equal(readCString(module, module._sv_get_module_type(slot, 1)), "Generator");
+        assert.equal(readCString(module, module._sv_get_module_name(slot, 1)), "Tone");
+        assert.equal(module._sv_get_module_flags(slot, 1) & 1, 1);
       },
     );
   },
