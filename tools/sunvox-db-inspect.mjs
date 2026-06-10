@@ -1518,6 +1518,8 @@ const CHUNK_VALUE_KINDS = new Set([
 const RUNTIME_CONSTRAINT_SCOPES = new Set(["project", "module", "moduleLink", "patternEffectParameter"]);
 const RUNTIME_CONSTRAINT_KINDS = new Set(["integerRange", "maxUtf8Bytes"]);
 const RUNTIME_CONSTRAINT_SEVERITIES = new Set(["warning", "error"]);
+const GRAMMAR_EMIT_DEFAULT_KINDS = new Set(["zeroBytes"]);
+const GRAMMAR_EMIT_DEFAULT_CONDITIONS = new Set(["ownPatternData"]);
 const TEXT_LAYOUT_FIELD_ENCODINGS = new Set([
   "packedPatternControllerEffect",
   "oneBasedModuleIndex",
@@ -1664,6 +1666,7 @@ function checkChunkDefinitions(errors, warnings, sourceRoot) {
         errors.push(`grammar scope ${scopeName} references ${field.chunk} with chunk scope ${chunk.scope}`);
       }
       checkFixedTextSizeRuntimeConstraint(errors, scopeName, field);
+      checkGrammarEmitDefault(errors, scopeName, field, chunk);
       checkNamedReference(errors, `grammar:${scopeName}`, `field ${field.path}`, "enum", field.enum, SUNVOX_DB.enums);
       checkNamedReference(
         errors,
@@ -1737,6 +1740,43 @@ function checkFixedTextSizeRuntimeConstraint(errors, scopeName, field) {
     errors.push(
       `grammar:${scopeName}: field ${field.path} fixed textSize ${field.textSize} is missing matching maxUtf8Bytes runtime constraint`,
     );
+  }
+}
+
+function checkGrammarEmitDefault(errors, scopeName, field, chunk) {
+  const rule = field.emitDefault;
+  if (!rule) {
+    return;
+  }
+  const subject = `grammar:${scopeName}: field ${field.path} emitDefault`;
+  if (!GRAMMAR_EMIT_DEFAULT_KINDS.has(rule.kind)) {
+    errors.push(`${subject} has invalid kind ${rule.kind}`);
+  }
+  if (!GRAMMAR_EMIT_DEFAULT_CONDITIONS.has(rule.when)) {
+    errors.push(`${subject} has invalid condition ${rule.when}`);
+  }
+  if (!Number.isInteger(rule.byteLength) || rule.byteLength < 0) {
+    errors.push(`${subject} has invalid byteLength ${rule.byteLength}`);
+  }
+  if (typeof rule.source !== "string" || !rule.source) {
+    errors.push(`${subject} is missing source`);
+  }
+  if (!Number.isInteger(rule.trackingIssue) || rule.trackingIssue < 1) {
+    errors.push(`${subject} has invalid trackingIssue ${rule.trackingIssue}`);
+  }
+  if (typeof rule.description !== "string" || !rule.description) {
+    errors.push(`${subject} is missing description`);
+  }
+  if (rule.kind === "zeroBytes") {
+    if (field.field !== "base64") {
+      errors.push(`${subject} zeroBytes requires a base64 grammar field`);
+    }
+    if (chunk && chunk.type !== "bytes") {
+      errors.push(`${subject} zeroBytes requires a bytes chunk`);
+    }
+  }
+  if (rule.when === "ownPatternData" && scopeName !== "pattern") {
+    errors.push(`${subject} condition ownPatternData requires pattern scope`);
   }
 }
 

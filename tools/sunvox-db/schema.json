@@ -362,7 +362,20 @@
                     "bitfield": { "type": "string" },
                     "bitflags": { "type": "string" },
                     "omitDefaults": { "type": "boolean" },
-                    "textSize": { "type": "integer", "minimum": 0 }
+                    "textSize": { "type": "integer", "minimum": 0 },
+                    "emitDefault": {
+                      "type": "object",
+                      "required": ["kind", "byteLength", "when", "source", "trackingIssue", "description"],
+                      "properties": {
+                        "kind": { "enum": ["zeroBytes"] },
+                        "byteLength": { "type": "integer", "minimum": 0 },
+                        "when": { "enum": ["ownPatternData"] },
+                        "source": { "type": "string" },
+                        "trackingIssue": { "type": "integer", "minimum": 1 },
+                        "description": { "type": "string" }
+                      },
+                      "additionalProperties": false
+                    }
                   },
                   "additionalProperties": false
                 }

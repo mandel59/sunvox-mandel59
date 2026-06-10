@@ -746,6 +746,34 @@ test("decodes pattern note data", async () => {
   assert.equal(sha256(buildContainer(document)), sha256(buffer));
 });
 
+test("emits DB default pattern icons for new own-data patterns", () => {
+  const picoField = SUNVOX_DB.grammar.scopes.pattern.fields.find((field) => field.chunk === "PICO");
+  assert.equal(picoField.emitDefault.when, "ownPatternData");
+  assert.equal(picoField.emitDefault.kind, "zeroBytes");
+  assert.equal(picoField.emitDefault.byteLength, 32);
+  assert.equal(picoField.emitDefault.trackingIssue, 33);
+
+  const buffer = buildContainer({
+    format: TEXT_FORMAT,
+    magic: "SVOX",
+    headerTailHex: "00000000",
+    project: { name: "default pattern icon probe" },
+    patterns: [
+      {
+        name: "Probe",
+        tracks: 1,
+        lines: 4,
+        events: [{ line: 0, track: 0, note: "C4" }],
+      },
+    ],
+    modules: [],
+  });
+  const pico = parseVerboseContainer(buffer).chunks.find((chunk) => chunk.id === "PICO");
+
+  assert.equal(pico.size, 32);
+  assert.equal(pico.dataBase64, Buffer.alloc(32).toString("base64"));
+});
+
 test("uses DB text layout position field names for pattern events", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const layout = SUNVOX_DB.structs.sunvox_note.textLayout;

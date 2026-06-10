@@ -22,7 +22,6 @@ let MODULE_LINK_RELATIONS;
 const PATTERN_CHUNKS = scopedChunkSet("pattern");
 const MODULE_CHUNKS = scopedChunkSet("module");
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const DEFAULT_PATTERN_ICON_BASE64 = Buffer.alloc(32).toString("base64");
 
 function chunkDefinition(id) {
   return CHUNKS_BY_ID.get(id);
@@ -972,15 +971,13 @@ function patternEventRecords(pattern, modules) {
   return records;
 }
 
-function patternNeedsRuntimeIcon(pattern) {
+function hasOwnPatternData(pattern) {
   return (
-    pattern?.iconBase64 === undefined &&
-    !pattern?.infoFlags?.clone &&
-    (Array.isArray(pattern?.events) ||
-      pattern?.tracks !== undefined ||
-      pattern?.lines !== undefined ||
-      pattern?.eventColumns !== undefined ||
-      pattern?.eventRows !== undefined)
+    Array.isArray(pattern?.events) ||
+    pattern?.tracks !== undefined ||
+    pattern?.lines !== undefined ||
+    pattern?.eventColumns !== undefined ||
+    pattern?.eventRows !== undefined
   );
 }
 
@@ -1109,6 +1106,10 @@ function scopeGrammar(scopeName) {
   return grammar;
 }
 
+function grammarFieldForChunk(scopeName, chunkId) {
+  return scopeGrammar(scopeName).fields.find((candidate) => candidate.chunk === chunkId);
+}
+
 function getPath(object, path) {
   let current = object;
   for (const segment of path.split(".")) {
@@ -1184,6 +1185,36 @@ function makeSemanticChunk(chunkId, field, value, options = {}) {
     chunk.textSize = options.textSize;
   }
   return chunk;
+}
+
+function emitDefaultRuleMatches(scopeName, object, field) {
+  switch (field.emitDefault?.when) {
+    case "ownPatternData":
+      return scopeName === "pattern" && !object?.infoFlags?.clone && hasOwnPatternData(object);
+    default:
+      return false;
+  }
+}
+
+function emitDefaultValue(field) {
+  switch (field.emitDefault?.kind) {
+    case "zeroBytes":
+      return Buffer.alloc(field.emitDefault.byteLength).toString("base64");
+    default:
+      return undefined;
+  }
+}
+
+function emitScopeFieldWithDefault(scopeName, object, chunkId) {
+  const chunk = emitScopeField(scopeName, object, chunkId);
+  if (chunk) {
+    return chunk;
+  }
+  const field = grammarFieldForChunk(scopeName, chunkId);
+  if (!field?.emitDefault || !emitDefaultRuleMatches(scopeName, object, field)) {
+    return undefined;
+  }
+  return makeSemanticChunk(chunkId, field.field, emitDefaultValue(field), field);
 }
 
 function moduleLinkRelations() {
@@ -3042,7 +3073,7 @@ function syncProject(project) {
       chunks.push(...(project?.extraChunks ?? []).map(cloneJson));
       continue;
     }
-    const chunk = emitScopeField("project", project, token);
+    const chunk = emitScopeFieldWithDefault("project", project, token);
     if (chunk) {
       chunks.push(chunk);
     }
@@ -3066,28 +3097,14 @@ function syncPattern(pattern, modules = []) {
       continue;
     }
     if (token === "PDTA") {
-      const field = scopeGrammar("pattern").fields.find((candidate) => candidate.chunk === "PDTA");
+      const field = grammarFieldForChunk("pattern", "PDTA");
       const records = patternEventRecords(pattern, modules);
       if (field && records !== undefined) {
         chunks.push(makeSemanticChunk("PDTA", field.field, records, field));
       }
       continue;
     }
-    if (token === "PICO") {
-      const chunk = emitScopeField("pattern", pattern, token);
-      if (chunk) {
-        chunks.push(chunk);
-        continue;
-      }
-      if (patternNeedsRuntimeIcon(pattern)) {
-        const field = scopeGrammar("pattern").fields.find((candidate) => candidate.chunk === "PICO");
-        if (field) {
-          chunks.push(makeSemanticChunk("PICO", field.field, DEFAULT_PATTERN_ICON_BASE64, field));
-        }
-      }
-      continue;
-    }
-    const chunk = emitScopeField("pattern", pattern, token);
+    const chunk = emitScopeFieldWithDefault("pattern", pattern, token);
     if (chunk) {
       chunks.push(chunk);
     }
@@ -3139,7 +3156,7 @@ function syncModule(module) {
       }
       continue;
     }
-    const chunk = emitScopeField("module", module, token);
+    const chunk = emitScopeFieldWithDefault("module", module, token);
     if (chunk) {
       chunks.push(chunk);
     }
