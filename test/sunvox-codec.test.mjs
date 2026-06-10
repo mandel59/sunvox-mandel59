@@ -774,6 +774,33 @@ test("emits DB default pattern icons for new own-data patterns", () => {
   assert.equal(pico.dataBase64, Buffer.alloc(32).toString("base64"));
 });
 
+test("emits DB default module exists flags for new own-data modules", () => {
+  const flagsField = SUNVOX_DB.grammar.scopes.module.fields.find((field) => field.chunk === "SFFF");
+  assert.equal(flagsField.emitDefault.when, "ownModuleData");
+  assert.equal(flagsField.emitDefault.kind, "bitflags");
+  assert.deepEqual(flagsField.emitDefault.value, { exists: true });
+  assert.equal(flagsField.emitDefault.trackingIssue, 35);
+
+  const buffer = buildContainer({
+    format: TEXT_FORMAT,
+    magic: "SVOX",
+    headerTailHex: "00000000",
+    project: { name: "default module flags probe" },
+    patterns: [],
+    modules: [
+      { flags: { exists: true, output: true }, name: "Output" },
+      { type: "Generator", name: "Tone" },
+      { type: "Amplifier", name: "Amp", flags: { effect: true } },
+      { type: "Filter", name: "Explicit Missing", flags: { exists: false } },
+    ],
+  });
+  const parsed = parseContainer(buffer);
+
+  assert.deepEqual(parsed.modules[1].flags, { exists: true });
+  assert.deepEqual(parsed.modules[2].flags, { exists: true, effect: true });
+  assert.deepEqual(parsed.modules[3].flags, {});
+});
+
 test("uses DB text layout position field names for pattern events", async () => {
   const buffer = await readFile("music/2022-04-17.sunvox");
   const layout = SUNVOX_DB.structs.sunvox_note.textLayout;

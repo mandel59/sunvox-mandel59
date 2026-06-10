@@ -365,11 +365,12 @@
                     "textSize": { "type": "integer", "minimum": 0 },
                     "emitDefault": {
                       "type": "object",
-                      "required": ["kind", "byteLength", "when", "source", "trackingIssue", "description"],
+                      "required": ["kind", "when", "source", "trackingIssue", "description"],
                       "properties": {
-                        "kind": { "enum": ["zeroBytes"] },
+                        "kind": { "enum": ["bitflags", "zeroBytes"] },
                         "byteLength": { "type": "integer", "minimum": 0 },
-                        "when": { "enum": ["ownPatternData"] },
+                        "value": { "type": "object" },
+                        "when": { "enum": ["ownModuleData", "ownPatternData"] },
                         "source": { "type": "string" },
                         "trackingIssue": { "type": "integer", "minimum": 1 },
                         "description": { "type": "string" }

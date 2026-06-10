@@ -981,6 +981,17 @@ function hasOwnPatternData(pattern) {
   );
 }
 
+function hasOwnModuleData(module) {
+  return (
+    module?.type !== undefined ||
+    module?.controllers !== undefined ||
+    Array.isArray(module?.inputs) ||
+    Array.isArray(module?.outputs) ||
+    Array.isArray(module?.dataChunks) ||
+    Array.isArray(module?.midiBindings)
+  );
+}
+
 function makeEditableChunk(id, data) {
   const chunk = { id };
   const structArray = structArrayDefinition(chunkType(id));
@@ -1191,6 +1202,8 @@ function emitDefaultRuleMatches(scopeName, object, field) {
   switch (field.emitDefault?.when) {
     case "ownPatternData":
       return scopeName === "pattern" && !object?.infoFlags?.clone && hasOwnPatternData(object);
+    case "ownModuleData":
+      return scopeName === "module" && hasOwnModuleData(object);
     default:
       return false;
   }
@@ -1198,6 +1211,8 @@ function emitDefaultRuleMatches(scopeName, object, field) {
 
 function emitDefaultValue(field) {
   switch (field.emitDefault?.kind) {
+    case "bitflags":
+      return cloneJson(field.emitDefault.value ?? {});
     case "zeroBytes":
       return Buffer.alloc(field.emitDefault.byteLength).toString("base64");
     default:
@@ -1205,13 +1220,30 @@ function emitDefaultValue(field) {
   }
 }
 
+function mergeDefaultSemanticValue(field, value) {
+  if (
+    field.emitDefault?.kind === "bitflags" &&
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
+    return { ...emitDefaultValue(field), ...value };
+  }
+  return value;
+}
+
 function emitScopeFieldWithDefault(scopeName, object, chunkId) {
+  const field = grammarFieldForChunk(scopeName, chunkId);
+  const defaultApplies = field?.emitDefault && emitDefaultRuleMatches(scopeName, object, field);
+  const value = field ? getPath(object, field.path) : undefined;
+  if (defaultApplies && value !== undefined) {
+    return makeSemanticChunk(chunkId, field.field, mergeDefaultSemanticValue(field, value), field);
+  }
   const chunk = emitScopeField(scopeName, object, chunkId);
   if (chunk) {
     return chunk;
   }
-  const field = grammarFieldForChunk(scopeName, chunkId);
-  if (!field?.emitDefault || !emitDefaultRuleMatches(scopeName, object, field)) {
+  if (!defaultApplies) {
     return undefined;
   }
   return makeSemanticChunk(chunkId, field.field, emitDefaultValue(field), field);

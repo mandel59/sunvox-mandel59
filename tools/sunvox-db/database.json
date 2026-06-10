@@ -1461,7 +1461,7 @@
       "module": {
         "terminator": "SEND",
         "fields": [
-          { "chunk": "SFFF", "path": "flags", "field": "value", "bitflags": "psynth_flags" },
+          { "chunk": "SFFF", "path": "flags", "field": "value", "bitflags": "psynth_flags", "emitDefault": { "kind": "bitflags", "value": { "exists": true }, "when": "ownModuleData", "source": "var/sunvox_lib/lib_sunvox/sunvox_engine_load_proj.cpp:1454", "trackingIssue": 35, "description": "SunVox project loader does not materialize typed modules unless SFFF has PSYNTH_FLAG_EXISTS." } },
           { "chunk": "SNAM", "path": "name", "field": "text", "textSize": 32 },
           { "chunk": "STYP", "path": "type", "field": "text" },
           { "chunk": "SFIN", "path": "finetune", "field": "value" },
