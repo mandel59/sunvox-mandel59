@@ -80,6 +80,7 @@ test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", 
   const recipeFiles = [
     "generated/recipes/music/short-video-bgm.mjs",
     "generated/recipes/music/short-video-alt-palette.mjs",
+    "generated/recipes/music/short-video-poly-vocoder.mjs",
     "generated/recipes/music/podcast-bed-loop.mjs",
     "generated/recipes/music/podcast-purpose-pack.mjs",
   ];
@@ -101,6 +102,9 @@ test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", 
       "generated/music/podcast-cold-open-title.sunvox",
       "generated/music/podcast-outro-credits.sunvox",
       "generated/music/podcast-section-transition.sunvox",
+      "generated/music/poly-odd-robot-break.sunvox",
+      "generated/music/poly-soft-vocoder-kaleidoscope.sunvox",
+      "generated/music/poly-vocoder-syllable-grid.sunvox",
       "generated/music/tech-demo-stinger.sunvox",
     ],
   );
