@@ -314,7 +314,7 @@ const recipe = {
       create: {
         module: "MetaModule",
         name: "Wa Shakuhachi Breath",
-        volume: 2400,
+        volume: 1024,
         bpm: 92,
         tpl: 6,
         color: "#75a59a",
@@ -435,6 +435,17 @@ const recipe = {
             randomSeed: 59,
           },
         });
+        const outputTrim = project.addModule("Amplifier", {
+          name: "Output Trim",
+          color: "#a8d3cb",
+          position: { x: 1264, y: 512, z: 0 },
+          controllers: {
+            volume: 640,
+            balance: 128,
+            fineVolume: 32768,
+            gain: 1,
+          },
+        });
         project.connect(noteInput, pipeTone);
         project.connect(noteInput, breathNoise);
         project.connect(pipeTone, vowelBore);
@@ -442,7 +453,8 @@ const recipe = {
         project.connect(vowelBore, yuriVibrato);
         project.connect(yuriVibrato, bambooAir);
         project.connect(bambooAir, smallRoom);
-        project.connect(smallRoom, project.output);
+        project.connect(smallRoom, outputTrim);
+        project.connect(outputTrim, project.output);
         synth.expose("Tone volume", pipeTone, "volume");
         synth.expose("Breath volume", breathNoise, "volume");
         synth.expose("Formant", vowelBore, "vowelPosition");
