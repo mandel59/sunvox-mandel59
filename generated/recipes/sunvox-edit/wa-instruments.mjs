@@ -314,7 +314,7 @@ const recipe = {
       create: {
         module: "MetaModule",
         name: "Wa Shakuhachi Breath",
-        volume: 236,
+        volume: 2400,
         bpm: 92,
         tpl: 6,
         color: "#75a59a",

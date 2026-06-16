@@ -119,13 +119,13 @@ const recipe = {
       kind: "sunsynth",
       file: "var/synth-lab/Scratch Glass Bell.sunsynth",
       create: {
-          "module": "MetaModule",
-          "name": "Scratch Glass Bell",
-          "volume": 220,
-          "bpm": 120,
-          "tpl": 6,
-          "color": "#62d9ff"
-        },
+        "module": "MetaModule",
+        "name": "Scratch Glass Bell",
+        "volume": 185,
+        "bpm": 120,
+        "tpl": 6,
+        "color": "#62d9ff"
+      },
       apply(synth) {
         const project = synth.embeddedProject();
         project.setOutput({
