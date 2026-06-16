@@ -28,6 +28,7 @@
     "sunvox:validate:all": "node tools/sunvox-validate-all.mjs",
     "sunvox:verify": "node tools/sunvox-codec.mjs verify",
     "sunvox:verify:all": "node tools/sunvox-verify-all.mjs",
+    "sunvox:analyze-balance": "node tools/analyze-sunvox-balance.mjs",
     "sunvox:edit-recipe": "node tools/sunvox-edit-recipe.mjs",
     "sunvox:music-recipe": "node tools/sunvox-music-recipe.mjs",
     "sunsynth:characterize": "node tools/sunsynth-characterize.mjs",
