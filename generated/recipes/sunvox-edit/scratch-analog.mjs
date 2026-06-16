@@ -10,6 +10,7 @@ const recipe = {
       create: {
         module: "MetaModule",
         name: "Scratch Analog",
+        volume: 120,
         color: "#ff9a4a",
       },
       apply(synth) {

@@ -10,7 +10,7 @@ const recipe = {
       create: {
           "module": "MetaModule",
           "name": "Scratch Layered Pad",
-          "volume": 256,
+          "volume": 180,
           "bpm": 120,
           "tpl": 6,
           "color": "#a7d84f"

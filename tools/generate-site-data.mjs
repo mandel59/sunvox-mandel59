@@ -160,10 +160,17 @@ function stripUndefinedEntries(value) {
 function catalogLoudness(features) {
   const activeRms = Math.max(features.loudness?.maxShortRms ?? 0, features.level.transientRms, features.level.bodyRms);
   const headroomDb = features.loudness?.headroomDb ?? (features.level.peak > 0 ? -20 * Math.log10(features.level.peak) : 120);
-  if (features.loudness?.clippedSamples > 0 || headroomDb < 1 || activeRms >= 0.16 || features.level.peak >= 0.8) {
+  const maxMomentaryLufs = features.loudness?.maxMomentaryLufs;
+  if (
+    features.loudness?.clippedSamples > 0 ||
+    headroomDb < 1 ||
+    (Number.isFinite(maxMomentaryLufs) && maxMomentaryLufs >= -13) ||
+    activeRms >= 0.2 ||
+    features.level.peak >= 0.8
+  ) {
     return "loud";
   }
-  if (activeRms < 0.08 && features.level.peak < 0.25) {
+  if ((Number.isFinite(maxMomentaryLufs) && maxMomentaryLufs <= -24) || (activeRms < 0.06 && features.level.peak < 0.25)) {
     return "quiet";
   }
   return "medium";
@@ -215,6 +222,8 @@ function compactMeasurement(result, { detailed = false } = {}) {
       peak: finiteRounded(features.level.peak, 2),
       activeRms: finiteRounded(features.loudness?.activeRms, 2),
       maxShortRms: finiteRounded(features.loudness?.maxShortRms, 2),
+      activeLufs: finiteRounded(features.loudness?.activeLufs, 1),
+      maxMomentaryLufs: finiteRounded(features.loudness?.maxMomentaryLufs, 1),
       headroomDb: finiteRounded(features.loudness?.headroomDb, 1),
       bodyRms: finiteRounded(features.level.bodyRms, 2),
       tailToBodyRatio: finiteRounded(features.level.tailToBodyRatio, 2),

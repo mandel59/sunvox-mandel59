@@ -121,7 +121,7 @@ const recipe = {
       create: {
           "module": "MetaModule",
           "name": "Scratch Glass Bell",
-          "volume": 256,
+          "volume": 220,
           "bpm": 120,
           "tpl": 6,
           "color": "#62d9ff"
@@ -286,7 +286,7 @@ const recipe = {
       create: {
           "module": "MetaModule",
           "name": "Scratch PWM Organ",
-          "volume": 256,
+          "volume": 180,
           "bpm": 120,
           "tpl": 6,
           "color": "#e8dd5c"
@@ -421,7 +421,7 @@ const recipe = {
       create: {
           "module": "MetaModule",
           "name": "Scratch Kick Snap",
-          "volume": 160,
+          "volume": 145,
           "bpm": 128,
           "tpl": 6,
           "color": "#ff626e"

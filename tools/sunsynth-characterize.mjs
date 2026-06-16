@@ -39,6 +39,17 @@ const SAMPLE_EXTENSIONS = new Set([".sunsynth"]);
 const DB_FLOOR = -120;
 const ACTIVE_GATE_DB = -24;
 const NEAR_CLIP_THRESHOLD = 0.98;
+const BS1770_OFFSET_LUFS = -0.691;
+const K_WEIGHT_HIGH_SHELF = Object.freeze({
+  frequency: 1681.974450955533,
+  q: 0.7071752369554196,
+  gainDb: 3.99984385397,
+});
+const K_WEIGHT_HIGH_PASS = Object.freeze({
+  frequency: 38.13547087602444,
+  q: 0.5003270373238773,
+});
+const BS1770_CHANNEL_WEIGHTS = Object.freeze([1, 1, 1, 1.41, 1.41]);
 const NOTE_NAMES = new Map([
   ["C", 0],
   ["C#", 1],
@@ -546,6 +557,108 @@ function frameRms(samples, channels, startFrame, endFrame) {
   return count ? Math.sqrt(sumSquares / count) : 0;
 }
 
+function normalizeBiquad({ b0, b1, b2, a0, a1, a2 }) {
+  return {
+    b0: b0 / a0,
+    b1: b1 / a0,
+    b2: b2 / a0,
+    a1: a1 / a0,
+    a2: a2 / a0,
+  };
+}
+
+function highPassBiquad(sampleRate, frequency, q) {
+  const omega = (2 * Math.PI * frequency) / sampleRate;
+  const cos = Math.cos(omega);
+  const alpha = Math.sin(omega) / (2 * q);
+  return normalizeBiquad({
+    b0: (1 + cos) / 2,
+    b1: -(1 + cos),
+    b2: (1 + cos) / 2,
+    a0: 1 + alpha,
+    a1: -2 * cos,
+    a2: 1 - alpha,
+  });
+}
+
+function highShelfBiquad(sampleRate, frequency, q, gainDb) {
+  const amplitude = 10 ** (gainDb / 40);
+  const omega = (2 * Math.PI * frequency) / sampleRate;
+  const cos = Math.cos(omega);
+  const alpha = Math.sin(omega) / (2 * q);
+  const rootAmplitude = Math.sqrt(amplitude);
+  return normalizeBiquad({
+    b0: amplitude * ((amplitude + 1) + (amplitude - 1) * cos + 2 * rootAmplitude * alpha),
+    b1: -2 * amplitude * ((amplitude - 1) + (amplitude + 1) * cos),
+    b2: amplitude * ((amplitude + 1) + (amplitude - 1) * cos - 2 * rootAmplitude * alpha),
+    a0: (amplitude + 1) - (amplitude - 1) * cos + 2 * rootAmplitude * alpha,
+    a1: 2 * ((amplitude - 1) - (amplitude + 1) * cos),
+    a2: (amplitude + 1) - (amplitude - 1) * cos - 2 * rootAmplitude * alpha,
+  });
+}
+
+function applyBiquad(samples, channels, coefficients) {
+  const output = new Float64Array(samples.length);
+  for (let channel = 0; channel < channels; channel += 1) {
+    let x1 = 0;
+    let x2 = 0;
+    let y1 = 0;
+    let y2 = 0;
+    for (let index = channel; index < samples.length; index += channels) {
+      const x0 = samples[index];
+      const y0 =
+        coefficients.b0 * x0 +
+        coefficients.b1 * x1 +
+        coefficients.b2 * x2 -
+        coefficients.a1 * y1 -
+        coefficients.a2 * y2;
+      output[index] = y0;
+      x2 = x1;
+      x1 = x0;
+      y2 = y1;
+      y1 = y0;
+    }
+  }
+  return output;
+}
+
+function kWeightedSamples(samples, channels, sampleRate) {
+  const shelved = applyBiquad(
+    samples,
+    channels,
+    highShelfBiquad(sampleRate, K_WEIGHT_HIGH_SHELF.frequency, K_WEIGHT_HIGH_SHELF.q, K_WEIGHT_HIGH_SHELF.gainDb),
+  );
+  return applyBiquad(shelved, channels, highPassBiquad(sampleRate, K_WEIGHT_HIGH_PASS.frequency, K_WEIGHT_HIGH_PASS.q));
+}
+
+function kWeightedPower(samples, channels, startFrame, endFrame) {
+  const frameCount = Math.floor(samples.length / channels);
+  const start = Math.max(0, Math.min(frameCount, Math.round(startFrame)));
+  const end = Math.max(start, Math.min(frameCount, Math.round(endFrame)));
+  const frames = end - start;
+  if (!frames) {
+    return 0;
+  }
+  let weightedPower = 0;
+  for (let channel = 0; channel < channels; channel += 1) {
+    let sumSquares = 0;
+    for (let frame = start; frame < end; frame += 1) {
+      const value = samples[frame * channels + channel];
+      sumSquares += value * value;
+    }
+    weightedPower += (BS1770_CHANNEL_WEIGHTS[channel] ?? 1) * (sumSquares / frames);
+  }
+  return weightedPower;
+}
+
+function lufsFromPower(power) {
+  return power > 0 ? BS1770_OFFSET_LUFS + 10 * Math.log10(power) : Number.NEGATIVE_INFINITY;
+}
+
+function frameLufs(samples, channels, startFrame, endFrame) {
+  return lufsFromPower(kWeightedPower(samples, channels, startFrame, endFrame));
+}
+
 function framePeak(samples, channels, startFrame, endFrame) {
   let peak = 0;
   const frameCount = Math.floor(samples.length / channels);
@@ -594,6 +707,29 @@ function maxWindowRms(samples, channels, sampleRate, startFrame, endFrame, windo
   return maxRms;
 }
 
+function maxWindowLufs(samples, channels, sampleRate, startFrame, endFrame, windowMs) {
+  const frameCount = Math.floor(samples.length / channels);
+  const clampedStart = Math.max(0, Math.min(frameCount, Math.round(startFrame)));
+  const clampedEnd = Math.max(clampedStart, Math.min(frameCount, Math.round(endFrame)));
+  if (clampedEnd <= clampedStart) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  const windowFrames = Math.max(1, Math.round((windowMs / 1000) * sampleRate));
+  if (clampedEnd - clampedStart <= windowFrames) {
+    return frameLufs(samples, channels, clampedStart, clampedEnd);
+  }
+  const stepFrames = Math.max(1, Math.round(sampleRate * 0.02));
+  let maxLufs = Number.NEGATIVE_INFINITY;
+  for (let start = clampedStart; start <= clampedEnd - windowFrames; start += stepFrames) {
+    maxLufs = Math.max(maxLufs, frameLufs(samples, channels, start, start + windowFrames));
+  }
+  const finalStart = clampedEnd - windowFrames;
+  if ((finalStart - clampedStart) % stepFrames !== 0) {
+    maxLufs = Math.max(maxLufs, frameLufs(samples, channels, finalStart, clampedEnd));
+  }
+  return maxLufs;
+}
+
 function activeRange(windows, noteOnFrame, frameCount, peakRms) {
   const thresholdRms = Math.max(peakRms * 10 ** (ACTIVE_GATE_DB / 20), 1e-6);
   const active = windows.filter((window) => window.centerFrame >= noteOnFrame && window.rms >= thresholdRms);
@@ -614,6 +750,7 @@ function activeRange(windows, noteOnFrame, frameCount, peakRms) {
 }
 
 function loudnessFeatures(samples, channels, sampleRate, windows, noteOnFrame, noteOffFrame, frameCount, peak, rms, peakRms) {
+  const kWeighted = kWeightedSamples(samples, channels, sampleRate);
   const active = activeRange(windows, noteOnFrame, frameCount, peakRms);
   const minimumEndFrame = Math.min(frameCount, Math.max(noteOffFrame, noteOnFrame + Math.round(sampleRate * 0.12)));
   const loudnessEndFrame = Math.max(active.endFrame, minimumEndFrame);
@@ -621,6 +758,9 @@ function loudnessFeatures(samples, channels, sampleRate, windows, noteOnFrame, n
   const activePeak = framePeak(samples, channels, active.startFrame, loudnessEndFrame);
   const maxShortRms = maxWindowRms(samples, channels, sampleRate, noteOnFrame, loudnessEndFrame, 120);
   const maxMomentaryRms = maxWindowRms(samples, channels, sampleRate, noteOnFrame, loudnessEndFrame, 400);
+  const activeLufs = frameLufs(kWeighted, channels, active.startFrame, loudnessEndFrame);
+  const fullLufs = frameLufs(kWeighted, channels, 0, frameCount);
+  const maxMomentaryLufs = maxWindowLufs(kWeighted, channels, sampleRate, noteOnFrame, loudnessEndFrame, 400);
   const peakDb = amplitudeDb(peak);
   const maxShortRmsDb = amplitudeDb(maxShortRms);
   const fullRmsDb = amplitudeDb(rms);
@@ -640,6 +780,9 @@ function loudnessFeatures(samples, channels, sampleRate, windows, noteOnFrame, n
     maxShortRmsDb,
     maxMomentaryRms,
     maxMomentaryRmsDb: amplitudeDb(maxMomentaryRms),
+    activeLufs,
+    fullLufs,
+    maxMomentaryLufs,
     fullRmsDb,
     peakDb,
     headroomDb: -peakDb,
@@ -976,9 +1119,10 @@ function diagnosticNotes(features) {
 function tagFeatures(features) {
   const tags = [];
   const loudnessRms = Math.max(features.loudness.maxShortRms, features.level.transientRms, features.level.bodyRms);
-  if (loudnessRms < 0.06 && features.level.peak < 0.25) {
+  const maxMomentaryLufs = features.loudness.maxMomentaryLufs;
+  if (maxMomentaryLufs <= -24 || (loudnessRms < 0.06 && features.level.peak < 0.25)) {
     tags.push("quiet");
-  } else if (loudnessRms < 0.14 && features.level.peak < 0.65) {
+  } else if (maxMomentaryLufs < -13 && loudnessRms < 0.2 && features.level.peak < 0.75) {
     tags.push("medium");
   } else {
     tags.push("loud");
@@ -1156,6 +1300,11 @@ function buildComparisons(results) {
         rms: compareNumber(pattern.features.level.rms, directEvent.features.level.rms),
         activeRms: compareNumber(pattern.features.loudness.activeRms, directEvent.features.loudness.activeRms),
         maxShortRms: compareNumber(pattern.features.loudness.maxShortRms, directEvent.features.loudness.maxShortRms),
+        activeLufs: compareNumber(pattern.features.loudness.activeLufs, directEvent.features.loudness.activeLufs),
+        maxMomentaryLufs: compareNumber(
+          pattern.features.loudness.maxMomentaryLufs,
+          directEvent.features.loudness.maxMomentaryLufs,
+        ),
         headroomDb: compareNumber(pattern.features.loudness.headroomDb, directEvent.features.loudness.headroomDb),
         bodyRms: compareNumber(pattern.features.level.bodyRms, directEvent.features.level.bodyRms),
         tailRms: compareNumber(pattern.features.level.tailRms, directEvent.features.level.tailRms),
@@ -1214,6 +1363,8 @@ function formatTable(results) {
       "RMS",
       "Short",
       "Active",
+      "M LUFS",
+      "A LUFS",
       "Headroom",
       "Crest",
       "Centroid",
@@ -1243,6 +1394,8 @@ function formatTable(results) {
       fixed(features.level.rms),
       fixed(features.loudness.maxShortRms),
       fixed(features.loudness.activeRms),
+      fixed(features.loudness.maxMomentaryLufs, 1),
+      fixed(features.loudness.activeLufs, 1),
       `${fixed(features.loudness.headroomDb, 1)}dB`,
       fixed(features.level.crestFactor, 2),
       `${rounded(features.spectrum.body.centroidHz)}Hz`,
@@ -1294,7 +1447,7 @@ function formatDetails(results) {
         `  input: note=${measurement.input.noteLabel} noteHz=${fixed(measurement.input.noteHz, 2)} velocity=${measurement.input.velocity} requestedGate=${formatSeconds(measurement.input.requestedGateSeconds)}s requestedDuration=${formatSeconds(measurement.input.requestedDurationSeconds)}s`,
         `  measurement: method=${measurement.renderMethod} sampleRate=${measurement.playback.sampleRate}Hz channels=${measurement.playback.channels} masterVolume=${measurement.playback.masterVolume} track=${measurement.playback.track} actualGate=${formatSeconds(measurement.playback.actualGateSeconds)}s`,
         probeLine,
-        `  level: peak=${fixed(features.level.peak)} headroom=${fixed(features.loudness.headroomDb, 1)}dB rms=${fixed(features.level.rms)} short120=${fixed(features.loudness.maxShortRms)} active=${fixed(features.loudness.activeRms)} momentary400=${fixed(features.loudness.maxMomentaryRms)} full-to-short=${fixed(features.loudness.fullToShortDeltaDb, 1)}dB crest=${fixed(features.level.crestFactor, 2)} transient=${fixed(features.level.transientRms)} body=${fixed(features.level.bodyRms)} tail=${fixed(features.level.tailRms)} tail/body=${fixed(features.level.tailToBodyRatio, 2)} nearClipSamples=${features.loudness.nearClipSamples} clippedSamples=${features.loudness.clippedSamples}`,
+        `  level: peak=${fixed(features.level.peak)} headroom=${fixed(features.loudness.headroomDb, 1)}dB rms=${fixed(features.level.rms)} short120=${fixed(features.loudness.maxShortRms)} active=${fixed(features.loudness.activeRms)} momentary400=${fixed(features.loudness.maxMomentaryRms)} maxMomentaryLufs=${fixed(features.loudness.maxMomentaryLufs, 1)} activeLufs=${fixed(features.loudness.activeLufs, 1)} fullLufs=${fixed(features.loudness.fullLufs, 1)} full-to-short=${fixed(features.loudness.fullToShortDeltaDb, 1)}dB crest=${fixed(features.level.crestFactor, 2)} transient=${fixed(features.level.transientRms)} body=${fixed(features.level.bodyRms)} tail=${fixed(features.level.tailRms)} tail/body=${fixed(features.level.tailToBodyRatio, 2)} nearClipSamples=${features.loudness.nearClipSamples} clippedSamples=${features.loudness.clippedSamples}`,
         `  envelope: attack=${features.envelope.attackMs === undefined ? "-" : `${rounded(features.envelope.attackMs)}ms`} decay=${features.envelope.decayMs === undefined ? "-" : `${rounded(features.envelope.decayMs)}ms`} release=${features.envelope.release.status}${features.envelope.release.ms === undefined ? "" : ` ${rounded(features.envelope.release.ms)}ms`} tailDuration=${features.envelope.tailDurationMs === undefined ? "-" : `${rounded(features.envelope.tailDurationMs)}ms`} noteOffDelta=${features.envelope.noteOffSensitivity.deltaDb === undefined ? "-" : `${fixed(features.envelope.noteOffSensitivity.deltaDb, 1)}dB`}`,
         `  ${formatSpectrum("transient spectrum", features.spectrum.transient)}`,
         `  ${formatSpectrum("body spectrum", features.spectrum.body)}`,
