@@ -74,3 +74,38 @@ test("SunVox Music Recipe creates a validated SunVox project and summary", async
   assert.equal(summary.project.events, 1);
   assert.deepEqual(summary.validation, { ok: true, issues: [] });
 });
+
+test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-generated-"));
+  const recipeFiles = [
+    "generated/recipes/music/podcast-bed-loop.mjs",
+    "generated/recipes/music/podcast-purpose-pack.mjs",
+  ];
+  const outputs = [];
+  for (const recipeFile of recipeFiles) {
+    outputs.push(...await runMusicRecipe(recipeFile, { outDir: tempDir }));
+  }
+
+  assert.deepEqual(
+    outputs.map((output) => output.outputPath.replaceAll("\\", "/").replace(`${tempDir.replaceAll("\\", "/")}/`, "")).sort(),
+    [
+      "generated/music/podcast-ad-read-bed.sunvox",
+      "generated/music/podcast-bed-loop.sunvox",
+      "generated/music/podcast-cold-open-title.sunvox",
+      "generated/music/podcast-outro-credits.sunvox",
+      "generated/music/podcast-section-transition.sunvox",
+    ],
+  );
+
+  for (const output of outputs) {
+    const relativeOutput = output.outputPath
+      .replaceAll("\\", "/")
+      .replace(`${tempDir.replaceAll("\\", "/")}/`, "");
+    assert.deepEqual(await readFile(output.outputPath), await readFile(relativeOutput), relativeOutput);
+    assert.ok(output.summaryPath, `${relativeOutput} writes a summary`);
+    const summary = JSON.parse(await readFile(output.summaryPath, "utf8"));
+    assert.equal(summary.recipe.issue, 38);
+    assert.equal(summary.validation.ok, true);
+    assert.ok(summary.project.events > 0);
+  }
+});

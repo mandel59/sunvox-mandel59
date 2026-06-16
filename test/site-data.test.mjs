@@ -69,6 +69,12 @@ test("site data summarizes project structure without embedding full event grids"
   const generatedMetaModule = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch Layered Pad.sunsynth",
   );
+  const podcastBed = data.projects.find(
+    (candidate) => candidate.path === "generated/music/podcast-bed-loop.sunvox",
+  );
+  const podcastTransition = data.projects.find(
+    (candidate) => candidate.path === "generated/music/podcast-section-transition.sunvox",
+  );
 
   assert.equal(data.schemaVersion, 2);
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
@@ -78,7 +84,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "instruments/mandel59 shepard.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch Analog.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch FMX Bell.sunsynth"));
-  assert.equal(data.projects.length, 16);
+  assert.equal(data.projects.length, 21);
   assert.ok(project);
   assert.equal(project.type, "project");
   assert.deepEqual(project.project.flags, {});
@@ -207,6 +213,19 @@ test("site data summarizes project structure without embedding full event grids"
     ],
   );
   assert.equal(Object.hasOwn(synthWithNamedPatterns.embedded[0].document.patterns[0], "icon"), false);
+  assert.ok(podcastBed);
+  assert.equal(podcastBed.type, "project");
+  assert.deepEqual(podcastBed.sourceRecipe, {
+    path: "generated/recipes/music/podcast-bed-loop.mjs",
+    name: "podcast-bed-loop.mjs",
+  });
+  assert.equal(podcastBed.project.bpm, 96);
+  assert.equal(podcastBed.stats.patterns, 1);
+  assert.ok(podcastTransition);
+  assert.deepEqual(podcastTransition.sourceRecipe, {
+    path: "generated/recipes/music/podcast-purpose-pack.mjs",
+    name: "podcast-purpose-pack.mjs",
+  });
 });
 
 test("site data includes clone patterns and inherits display metadata from the parent", async () => {
@@ -359,7 +378,7 @@ test("explicit preview roots include non-deploy synths without changing the defa
     const previewData = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, [fixtureRoot]));
     const projectPath = `${fixtureRoot}/${fixturePath}`;
 
-    assert.equal(defaultData.projects.length, 16);
+    assert.equal(defaultData.projects.length, 21);
     assert.equal(defaultData.sourceRoots.includes(fixtureRoot), false);
     assert.equal(defaultData.projects.some((project) => project.path === projectPath), false);
 
