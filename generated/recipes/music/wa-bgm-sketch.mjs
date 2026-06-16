@@ -448,7 +448,7 @@ async function buildRuntimeProject() {
       const busIndex = newModule(module, slot, "Compressor", "Wa Bus", { x: 792, y: 512, z: 0 });
       assertSunVoxOk(module._sv_set_module_color(slot, busIndex, rgbToSunVoxColor("#d8d8d8")), "bus color");
       setModuleControllers(module, slot, busIndex, {
-        0: 178,
+        0: 140,
         1: 246,
         2: 86,
         3: 2,
