@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { buildContainer, formatValidationIssue, parseContainer, validateContainer } from "../../../tools/sunvox-codec.mjs";
+import { deterministicIconBase64 } from "../../../tools/sunvox-music-recipe-helpers.mjs";
 import {
   DEFAULT_CHANNELS,
   DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
@@ -79,18 +80,6 @@ function rgbToSunVoxColor(value) {
   const g = Number.parseInt(hex.slice(2, 4), 16);
   const b = Number.parseInt(hex.slice(4, 6), 16);
   return r | (g << 8) | (b << 16);
-}
-
-function deterministicIconBase64(seed, salt) {
-  let state = (Math.imul(seed + 1, 0x45d9f3b) ^ Math.imul(salt + 1, 0x9e3779b1)) >>> 0;
-  const bytes = Buffer.alloc(32);
-  for (let index = 0; index < bytes.length; index += 1) {
-    state ^= state << 13;
-    state ^= state >>> 17;
-    state ^= state << 5;
-    bytes[index] = state & 0xff;
-  }
-  return bytes.toString("base64");
 }
 
 function applyDeterministicPatternIcons(document) {

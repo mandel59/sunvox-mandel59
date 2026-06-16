@@ -20,6 +20,7 @@ import {
   withSunVoxSlot,
 } from "../../../tools/sunvox-node.mjs";
 import { SUNVOX_DB, buildContainer, parseContainer } from "../../../tools/sunvox-codec.mjs";
+import { deterministicIconBase64 } from "../../../tools/sunvox-music-recipe-helpers.mjs";
 
 const OUTPUT_DIR = "generated/music";
 const SUMMARY_DIR = "var/music-recipe";
@@ -726,18 +727,6 @@ function averageY(sourceIds) {
 
 function withZ(position) {
   return { x: position.x, y: position.y, z: position.z ?? 0 };
-}
-
-function deterministicIconBase64(seed, salt) {
-  let state = (Math.imul(seed + 1, 0x45d9f3b) ^ Math.imul(salt + 1, 0x9e3779b1)) >>> 0;
-  const bytes = Buffer.alloc(32);
-  for (let index = 0; index < bytes.length; index += 1) {
-    state ^= state << 13;
-    state ^= state >>> 17;
-    state ^= state << 5;
-    bytes[index] = state & 0xff;
-  }
-  return bytes.toString("base64");
 }
 
 function applyDeterministicPatternIcons(document, theme) {
