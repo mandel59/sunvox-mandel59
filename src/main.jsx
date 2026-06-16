@@ -62,6 +62,18 @@ const LEGACY_SUNSYNTH_RECIPE_PREFIX = "generated/recipes/sunsynth/";
 const SUNVOX_EDIT_RECIPE_PREFIX = "generated/recipes/sunvox-edit/";
 const MAIN_MODULE_GRAPH_ID = "main-module-graph";
 const PROJECT_PROPERTIES_SECTION_ID = "project-properties-section";
+const PROJECT_FILE_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "music", label: "Music" },
+  { id: "synth", label: "Synths" },
+  { id: "generated", label: "Generated" },
+];
+const PROJECT_GROUP_LABELS = new Map([
+  ["generated/instruments", "Generated instruments"],
+  ["generated/music", "Generated music"],
+  ["instruments", "Instruments"],
+  ["music", "Music"],
+]);
 
 function projectPermalinkHash(path) {
   return `${FILE_HASH_PREFIX}${encodeURIComponent(path)}`;
@@ -141,6 +153,60 @@ function sourceRecipeLink(sourceRecipe) {
 
 function typeLabel(project) {
   return project.type === "synth" ? "SunSynth" : "SunVox";
+}
+
+function projectFileGroup(project) {
+  const [firstPart, secondPart] = project.path.split("/");
+  if (firstPart === "generated" && secondPart) {
+    return `${firstPart}/${secondPart}`;
+  }
+  return firstPart || "other";
+}
+
+function projectGroupLabel(group) {
+  return PROJECT_GROUP_LABELS.get(group) ?? group;
+}
+
+function projectMatchesFileFilter(project, filter) {
+  switch (filter) {
+    case "music":
+      return project.type !== "synth";
+    case "synth":
+      return project.type === "synth";
+    case "generated":
+      return project.path.startsWith("generated/");
+    default:
+      return true;
+  }
+}
+
+function projectSearchText(project) {
+  return [
+    project.title,
+    project.path,
+    typeLabel(project),
+    project.sourceRecipe?.name,
+    project.sourceRecipe?.path,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function groupProjects(projects) {
+  const groups = new Map();
+  for (const project of projects) {
+    const group = projectFileGroup(project);
+    if (!groups.has(group)) {
+      groups.set(group, []);
+    }
+    groups.get(group).push(project);
+  }
+  return [...groups].map(([group, groupProjects]) => ({
+    id: group,
+    label: projectGroupLabel(group),
+    projects: groupProjects,
+  }));
 }
 
 function moduleHexId(value) {
@@ -871,13 +937,45 @@ function graphEdgePoints(from, to, moduleScale) {
 }
 
 function ProjectList({ projects, selectedPath, onSelect, open, onToggle }) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
   const selectedProject = projects.find((project) => project.path === selectedPath);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredProjects = useMemo(
+    () =>
+      projects.filter(
+        (project) =>
+          projectMatchesFileFilter(project, filter) &&
+          (!normalizedQuery || projectSearchText(project).includes(normalizedQuery)),
+      ),
+    [filter, normalizedQuery, projects],
+  );
+  const groupedProjects = useMemo(() => groupProjects(filteredProjects), [filteredProjects]);
+  const filterOptions = useMemo(
+    () =>
+      PROJECT_FILE_FILTERS.map((option) => ({
+        ...option,
+        count: projects.filter((project) => projectMatchesFileFilter(project, option.id)).length,
+      })),
+    [projects],
+  );
+  const selectedHidden = Boolean(
+    selectedProject && !filteredProjects.some((project) => project.path === selectedProject.path),
+  );
+  const hasActiveFilters = filter !== "all" || normalizedQuery;
+
+  function clearFilters() {
+    setQuery("");
+    setFilter("all");
+  }
+
   return (
     <aside className={classNames("sidebar", "files-menu", open && "is-open")} aria-labelledby="project-list-heading">
       <section aria-labelledby="project-list-heading">
         <div className="files-menu-header">
           <div>
             <h2 id="project-list-heading">Files</h2>
+            <div className="files-menu-count">{projects.length} files</div>
             {selectedProject ? <div className="files-menu-current">{selectedProject.path}</div> : null}
           </div>
           <button
@@ -891,22 +989,84 @@ function ProjectList({ projects, selectedPath, onSelect, open, onToggle }) {
           </button>
         </div>
         <div id="project-list" className="project-list" aria-live="polite">
-          {projects.map((project) => (
-            <button
-              key={project.path}
-              type="button"
-              className="project-button"
-              aria-current={project.path === selectedPath ? "true" : "false"}
-              onClick={() => onSelect(project.path)}
-            >
-              <span>
-                <span className="project-title">{project.title}</span>
-                <br />
-                <span className="project-path">{project.path}</span>
-              </span>
-              <span className="badge">{typeLabel(project)}</span>
-            </button>
-          ))}
+          <div className="files-menu-controls">
+            <label className="visually-hidden" htmlFor="project-file-search">
+              Search files
+            </label>
+            <input
+              id="project-file-search"
+              type="search"
+              value={query}
+              placeholder="Search files"
+              autoComplete="off"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <div className="file-filter-tabs" role="group" aria-label="Filter files">
+              {filterOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="file-filter-tab"
+                  aria-pressed={filter === option.id ? "true" : "false"}
+                  onClick={() => setFilter(option.id)}
+                >
+                  <span>{option.label}</span>
+                  <span className="file-filter-count">{option.count}</span>
+                </button>
+              ))}
+            </div>
+            <div className="project-list-meta">
+              Showing {filteredProjects.length} of {projects.length}
+            </div>
+            {selectedHidden ? (
+              <div className="file-filter-note">
+                <span>Selected file is hidden by the current filters.</span>
+                <button type="button" className="text-button" onClick={clearFilters}>
+                  Clear
+                </button>
+              </div>
+            ) : null}
+          </div>
+          {groupedProjects.length ? (
+            groupedProjects.map((group) => {
+              const headingId = `project-group-${svgId(group.id)}`;
+              return (
+                <section key={group.id} className="project-group" aria-labelledby={headingId}>
+                  <div id={headingId} className="project-group-header">
+                    <span>{group.label}</span>
+                    <span>{group.projects.length}</span>
+                  </div>
+                  <div className="project-group-list">
+                    {group.projects.map((project) => (
+                      <button
+                        key={project.path}
+                        type="button"
+                        className="project-button"
+                        title={project.path}
+                        aria-current={project.path === selectedPath ? "true" : "false"}
+                        onClick={() => onSelect(project.path)}
+                      >
+                        <span className="project-button-copy">
+                          <span className="project-title">{project.title}</span>
+                          <span className="project-path">{project.path}</span>
+                        </span>
+                        <span className="badge">{typeLabel(project)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              );
+            })
+          ) : (
+            <div className="empty-state">
+              <p>No files match the current filters.</p>
+              {hasActiveFilters ? (
+                <button type="button" className="text-button" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
+          )}
         </div>
       </section>
     </aside>

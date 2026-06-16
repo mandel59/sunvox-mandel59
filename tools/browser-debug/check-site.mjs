@@ -50,6 +50,16 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       title: document.title,
       h1: document.querySelector('h1')?.textContent ?? null,
       projectButtons: document.querySelectorAll('.project-button').length,
+      fileSearchPlaceholder: document.querySelector('#project-file-search')?.getAttribute('placeholder') ?? null,
+      fileFilterTabs: Array.from(document.querySelectorAll('.file-filter-tab')).map((button) => ({
+        label: button.querySelector('span:first-child')?.textContent?.trim() ?? '',
+        count: Number(button.querySelector('.file-filter-count')?.textContent ?? 'NaN'),
+        active: button.getAttribute('aria-pressed') === 'true',
+      })),
+      projectGroups: Array.from(document.querySelectorAll('.project-group-header')).map((heading) => ({
+        label: heading.querySelector('span:first-child')?.textContent?.trim() ?? '',
+        count: Number(heading.querySelector('span:last-child')?.textContent ?? 'NaN'),
+      })),
       selected: document.querySelector('#project-details h2')?.textContent ?? null,
       detailsHeaderGap: (() => {
         const header = document.querySelector('.details-header')?.getBoundingClientRect();
@@ -103,6 +113,49 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         document.querySelectorAll('[aria-labelledby="properties-heading"] .property-flag'),
       ).map((element) => element.textContent.trim()),
     }));
+    const fileFilterCounts = new Map(initial.fileFilterTabs.map((tab) => [tab.label, tab.count]));
+    const projectGroupCounts = initial.projectGroups.reduce((sum, group) => sum + group.count, 0);
+    if (
+      initial.fileSearchPlaceholder !== 'Search files' ||
+      fileFilterCounts.get('All') !== initial.projectButtons ||
+      fileFilterCounts.get('Music') + fileFilterCounts.get('Synths') !== initial.projectButtons ||
+      fileFilterCounts.get('Generated') >= initial.projectButtons ||
+      initial.fileFilterTabs.filter((tab) => tab.active).map((tab) => tab.label).join(',') !== 'All' ||
+      projectGroupCounts !== initial.projectButtons
+    ) {
+      throw new Error(`Expected file browser controls and derived counts to match project list, got ${JSON.stringify(initial)}`);
+    }
+    await page.fill('#project-file-search', 'wa');
+    const waSearch = await page.evaluate(() => ({
+      projectButtons: document.querySelectorAll('.project-button').length,
+      paths: Array.from(document.querySelectorAll('.project-button .project-path')).map(
+        (pathElement) => pathElement.textContent ?? '',
+      ),
+      meta: document.querySelector('.project-list-meta')?.textContent?.trim() ?? null,
+    }));
+    if (
+      waSearch.projectButtons < 1 ||
+      waSearch.paths.some((projectPath) => !projectPath.toLowerCase().includes('wa')) ||
+      !waSearch.meta?.includes(`Showing ${waSearch.projectButtons} of ${initial.projectButtons}`)
+    ) {
+      throw new Error(`Expected search to narrow file list without hardcoded counts, got ${JSON.stringify(waSearch)}`);
+    }
+    await page.fill('#project-file-search', '');
+    await page.locator('.file-filter-tab', { hasText: 'Music' }).click();
+    const musicFilter = await page.evaluate(() => ({
+      projectButtons: document.querySelectorAll('.project-button').length,
+      badges: Array.from(document.querySelectorAll('.project-button .badge')).map((badge) => badge.textContent?.trim() ?? ''),
+      meta: document.querySelector('.project-list-meta')?.textContent?.trim() ?? null,
+    }));
+    if (
+      musicFilter.projectButtons !== fileFilterCounts.get('Music') ||
+      musicFilter.badges.some((badge) => badge !== 'SunVox') ||
+      !musicFilter.meta?.includes(`Showing ${musicFilter.projectButtons} of ${initial.projectButtons}`)
+    ) {
+      throw new Error(`Expected Music filter to show SunVox projects from derived count, got ${JSON.stringify(musicFilter)}`);
+    }
+    await page.locator('.file-filter-tab', { hasText: 'All' }).click();
+
     if (initial.topbarButtons !== 2) {
       throw new Error(`Expected two topbar playback buttons, got ${initial.topbarButtons}`);
     }
