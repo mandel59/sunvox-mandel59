@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // @ts-check
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { buildContainer, formatValidationIssue, parseContainer, validateContainer } from "../../../tools/sunvox-codec.mjs";
-import { deterministicIconBase64 } from "../../../tools/sunvox-music-recipe-helpers.mjs";
+import { deterministicIconBase64, readSunsynthForMusic } from "../../../tools/sunvox-music-recipe-helpers.mjs";
 import {
   DEFAULT_CHANNELS,
   DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
@@ -66,6 +66,7 @@ const INSTRUMENTS = [
     file: "generated/instruments/Wa Taiko Ensemble.sunsynth",
     color: "#8f3a2f",
     position: { x: 160, y: 832, z: 0 },
+    musicRootVolume: 246,
     volume: 232,
   },
 ];
@@ -390,7 +391,9 @@ function removeInitialPatterns(module, slot) {
 }
 
 async function buildRuntimeProject() {
-  const instrumentBytes = await Promise.all(INSTRUMENTS.map((instrument) => readFile(instrument.file)));
+  const instrumentBytes = await Promise.all(
+    INSTRUMENTS.map((instrument) => readSunsynthForMusic(instrument.file, { rootVolume: instrument.musicRootVolume })),
+  );
   return withSunVoxSlot(
     {
       sampleRate: DEFAULT_SAMPLE_RATE,

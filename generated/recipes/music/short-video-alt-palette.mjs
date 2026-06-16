@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -20,7 +20,7 @@ import {
   withSunVoxSlot,
 } from "../../../tools/sunvox-node.mjs";
 import { SUNVOX_DB, buildContainer, parseContainer } from "../../../tools/sunvox-codec.mjs";
-import { deterministicIconBase64 } from "../../../tools/sunvox-music-recipe-helpers.mjs";
+import { deterministicIconBase64, readSunsynthForMusic } from "../../../tools/sunvox-music-recipe-helpers.mjs";
 
 const OUTPUT_DIR = "generated/music";
 const SUMMARY_DIR = "var/music-recipe";
@@ -86,6 +86,7 @@ const sourceModules = [
     moduleName: "Scratch Analog",
     type: "MetaModule",
     path: "generated/instruments/Scratch Analog.sunsynth",
+    musicRootVolume: 256,
     controllers: { volume: 760 },
   },
   {
@@ -1304,7 +1305,7 @@ async function loadSourceModules(module, slot, sources, layout) {
       loaded[source.id] = moduleIndex;
       continue;
     }
-    const bytes = await readFile(source.path);
+    const bytes = await readSunsynthForMusic(source.path, { rootVolume: source.musicRootVolume });
     const moduleIndex = loadSynthModuleFromBuffer(module, bytes, {
       slot,
       ...position,

@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -20,7 +20,7 @@ import {
   withSunVoxSlot,
 } from "../../../tools/sunvox-node.mjs";
 import { buildContainer, parseContainer } from "../../../tools/sunvox-codec.mjs";
-import { deterministicIconBase64 } from "../../../tools/sunvox-music-recipe-helpers.mjs";
+import { deterministicIconBase64, readSunsynthForMusic } from "../../../tools/sunvox-music-recipe-helpers.mjs";
 
 const OUTPUT_DIR = "generated/music";
 const SUMMARY_DIR = "var/music-recipe";
@@ -38,24 +38,28 @@ const instruments = [
     id: "kick",
     moduleName: "Scratch Kick Snap",
     path: "generated/instruments/Scratch Kick Snap.sunsynth",
+    musicRootVolume: 256,
     volume: 76,
   },
   {
     id: "bass",
     moduleName: "Scratch Acid Bass",
     path: "generated/instruments/Scratch Acid Bass.sunsynth",
+    musicRootVolume: 256,
     volume: 42,
   },
   {
     id: "pad",
     moduleName: "Scratch Layered Pad",
     path: "generated/instruments/Scratch Layered Pad.sunsynth",
+    musicRootVolume: 256,
     volume: 160,
   },
   {
     id: "bell",
     moduleName: "Scratch Glass Bell",
     path: "generated/instruments/Scratch Glass Bell.sunsynth",
+    musicRootVolume: 256,
     volume: 132,
   },
   {
@@ -74,6 +78,7 @@ const instruments = [
     id: "organ",
     moduleName: "Scratch PWM Organ",
     path: "generated/instruments/Scratch PWM Organ.sunsynth",
+    musicRootVolume: 256,
     volume: 230,
   },
 ];
@@ -1162,7 +1167,7 @@ async function buildThemeProject(theme) {
       const nodeLayout = computeNodeLayout();
       const loaded = {};
       for (const instrument of instruments) {
-        const bytes = await readFile(instrument.path);
+        const bytes = await readSunsynthForMusic(instrument.path, { rootVolume: instrument.musicRootVolume });
         const position = nodeLayout.instruments[instrument.id];
         loaded[instrument.id] = loadSynthModuleFromBuffer(module, bytes, {
           slot,
@@ -1241,7 +1246,7 @@ async function generateTheme(theme) {
       const nodeLayout = computeNodeLayout();
       const loaded = {};
       for (const instrument of instruments) {
-        const bytes = await readFile(instrument.path);
+        const bytes = await readSunsynthForMusic(instrument.path, { rootVolume: instrument.musicRootVolume });
         const position = nodeLayout.instruments[instrument.id];
         loaded[instrument.id] = loadSynthModuleFromBuffer(module, bytes, {
           slot,
