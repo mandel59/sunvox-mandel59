@@ -7,9 +7,11 @@ import { deflateSync } from "node:zlib";
 import { analyzeSunsynthFile, parseProbe } from "./sunsynth-characterize.mjs";
 import { buildOutlineFromFile } from "./sunvox-outline.mjs";
 import { loadEditRecipe } from "./sunvox-edit-recipe.mjs";
+import { loadMusicRecipe } from "./sunvox-music-recipe.mjs";
 
 export const DEFAULT_ROOTS = ["music", "instruments", "generated/music", "generated/instruments"];
-const DEFAULT_RECIPE_ROOTS = ["generated/recipes/sunvox-edit"];
+const DEFAULT_EDIT_RECIPE_ROOTS = ["generated/recipes/sunvox-edit"];
+const DEFAULT_MUSIC_RECIPE_ROOTS = ["generated/recipes/music"];
 const DEFAULT_OUTPUT = "site-data/sunvox-projects.json";
 const SUNVOX_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const RECIPE_EXTENSIONS = new Set([".mjs"]);
@@ -88,24 +90,41 @@ async function findRecipeFiles(paths) {
   return files.sort((a, b) => a.localeCompare(b, "en"));
 }
 
-async function collectGeneratedSourceRecipes(paths = DEFAULT_RECIPE_ROOTS) {
-  const recipeFiles = await findRecipeFiles(paths);
+function addRecipeSource(sources, recipePath, outputFile, generatedRoot) {
+  const recipeSource = {
+    path: recipePath,
+    name: basename(recipePath),
+  };
+  const outputPath = outputFile.replaceAll("\\", "/");
+  sources.set(outputPath, recipeSource);
+  sources.set(`${generatedRoot}/${basename(outputFile)}`, recipeSource);
+}
+
+async function collectGeneratedSourceRecipes({
+  editRecipeRoots = DEFAULT_EDIT_RECIPE_ROOTS,
+  musicRecipeRoots = DEFAULT_MUSIC_RECIPE_ROOTS,
+} = {}) {
+  const editRecipeFiles = await findRecipeFiles(editRecipeRoots);
+  const musicRecipeFiles = await findRecipeFiles(musicRecipeRoots);
   const sources = new Map();
-  for (const recipeFile of recipeFiles) {
+  for (const recipeFile of editRecipeFiles) {
     const recipe = await loadEditRecipe(recipeFile, { cacheBust: true });
     const recipePath = relative(process.cwd(), recipeFile).replaceAll("\\", "/");
     for (const output of Object.values(recipe.outputs)) {
       if (output.kind !== "sunsynth" || extname(output.file).toLowerCase() !== ".sunsynth") {
         continue;
       }
-      const recipeSource = {
-        path: recipePath,
-        name: basename(recipePath),
-      };
-      const outputPath = output.file.replaceAll("\\", "/");
-      sources.set(outputPath, recipeSource);
-      const generatedPath = `generated/instruments/${basename(output.file)}`;
-      sources.set(generatedPath, recipeSource);
+      addRecipeSource(sources, recipePath, output.file, "generated/instruments");
+    }
+  }
+  for (const recipeFile of musicRecipeFiles) {
+    const recipe = await loadMusicRecipe(recipeFile, { cacheBust: true });
+    const recipePath = relative(process.cwd(), recipeFile).replaceAll("\\", "/");
+    for (const output of Object.values(recipe.outputs)) {
+      if (extname(output.file).toLowerCase() !== ".sunvox") {
+        continue;
+      }
+      addRecipeSource(sources, recipePath, output.file, "generated/music");
     }
   }
   return sources;
@@ -452,9 +471,9 @@ function documentSummary(outline, path) {
   };
 }
 
-export async function collectSiteData(paths = DEFAULT_ROOTS) {
+export async function collectSiteData(paths = DEFAULT_ROOTS, options = {}) {
   const files = await findSunVoxFiles(paths);
-  const generatedSourceRecipes = await collectGeneratedSourceRecipes();
+  const generatedSourceRecipes = await collectGeneratedSourceRecipes(options);
   const projects = [];
   const catalogEntries = [];
   for (const file of files) {
@@ -462,6 +481,9 @@ export async function collectSiteData(paths = DEFAULT_ROOTS) {
     const path = relative(process.cwd(), file).replaceAll("\\", "/");
     const sourceRecipe = generatedSourceRecipes.get(path);
     const project = documentSummary(outline, path);
+    if (sourceRecipe && project.type === "project") {
+      project.sourceRecipe = sourceRecipe;
+    }
     const catalog = await generatedAssetCatalogEntry({ file, path, project, sourceRecipe, sourceRoots: paths });
     if (catalog) {
       project.catalog = catalog;

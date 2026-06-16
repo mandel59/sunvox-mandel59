@@ -12,6 +12,7 @@ import {
   mergeRootLists,
   parsePreviewRoots,
 } from "../tools/generate-site-data.mjs";
+import { runMusicRecipe } from "../tools/sunvox-music-recipe.mjs";
 
 const SITE_DATA_PATH = "site-data/sunvox-projects.json";
 
@@ -266,6 +267,56 @@ test("site data includes clone patterns and inherits display metadata from the p
       project.patterns[1].moduleReferences.map((module) => [module.index, module.name, module.type, module.color]),
       [[1, "Tone", "Generator", "#44aaff"]],
     );
+  } finally {
+    await rm(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test("site data records source recipes for generated music projects", async () => {
+  const fixtureDir = join("var", "site-data-music-recipe-fixture");
+  const recipeDir = join(fixtureDir, "generated", "recipes", "music");
+  const musicDir = join(fixtureDir, "generated", "music");
+  const recipePath = join(recipeDir, "minimal-music.mjs");
+  const outputPath = join(musicDir, "minimal-music.sunvox").replaceAll("\\", "/");
+  await rm(fixtureDir, { recursive: true, force: true });
+  await mkdir(recipeDir, { recursive: true });
+
+  await writeFile(
+    recipePath,
+    `const recipe = {
+  schemaVersion: 1,
+  outputs: {
+    minimal: {
+      file: ${JSON.stringify(outputPath)},
+      buildDocument() {
+        return {
+          format: "sunvox-structured-text-v1",
+          magic: "SVOX",
+          headerTailHex: "00000000",
+          project: { name: "Generated Music Source Probe", bpm: 110, speed: 6 },
+          patterns: [{ name: "Probe", tracks: 1, lines: 4, events: [] }],
+          modules: [{ flags: { exists: true, output: true }, name: "Output" }],
+          trailingChunks: []
+        };
+      }
+    }
+  }
+};
+
+export default recipe;
+`,
+    "utf8",
+  );
+
+  try {
+    await runMusicRecipe(recipePath);
+    const data = await collectSiteData([musicDir], { musicRecipeRoots: [recipeDir], editRecipeRoots: [] });
+    assert.equal(data.projects.length, 1);
+    assert.equal(data.projects[0].path, outputPath);
+    assert.deepEqual(data.projects[0].sourceRecipe, {
+      path: recipePath.replaceAll("\\", "/"),
+      name: "minimal-music.mjs",
+    });
   } finally {
     await rm(fixtureDir, { recursive: true, force: true });
   }
