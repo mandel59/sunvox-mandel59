@@ -378,9 +378,9 @@ const recipe = {
           color: "#9fcac0",
           position: { x: 456, y: 512, z: 0 },
           controllers: {
-            volume: 212,
-            formantWidth: 96,
-            intensity: 92,
+            volume: 198,
+            formantWidth: 104,
+            intensity: 84,
             formants: 3,
             vowelPosition: 44,
             voiceType: "alto",
@@ -440,10 +440,22 @@ const recipe = {
           color: "#a8d3cb",
           position: { x: 1264, y: 512, z: 0 },
           controllers: {
-            volume: 640,
+            volume: 560,
             balance: 128,
             fineVolume: 32768,
             gain: 1,
+          },
+        });
+        const peakGuard = project.addModule("Compressor", {
+          name: "Peak Guard",
+          position: { x: 1420, y: 512, z: 0 },
+          controllers: {
+            volume: 246,
+            threshold: 220,
+            slope: 88,
+            attack: 1,
+            release: 180,
+            mode: "peak",
           },
         });
         project.connect(noteInput, pipeTone);
@@ -454,7 +466,8 @@ const recipe = {
         project.connect(yuriVibrato, bambooAir);
         project.connect(bambooAir, smallRoom);
         project.connect(smallRoom, outputTrim);
-        project.connect(outputTrim, project.output);
+        project.connect(outputTrim, peakGuard);
+        project.connect(peakGuard, project.output);
         synth.expose("Tone volume", pipeTone, "volume");
         synth.expose("Breath volume", breathNoise, "volume");
         synth.expose("Formant", vowelBore, "vowelPosition");
