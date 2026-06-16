@@ -75,6 +75,9 @@ test("site data summarizes project structure without embedding full event grids"
   const podcastTransition = data.projects.find(
     (candidate) => candidate.path === "generated/music/podcast-section-transition.sunvox",
   );
+  const firstHookLoop = data.projects.find(
+    (candidate) => candidate.path === "generated/music/first-hook-loop.sunvox",
+  );
 
   assert.equal(data.schemaVersion, 2);
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
@@ -84,7 +87,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "instruments/mandel59 shepard.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch Analog.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch FMX Bell.sunsynth"));
-  assert.equal(data.projects.length, 21);
+  assert.equal(data.projects.length, 24);
   assert.ok(project);
   assert.equal(project.type, "project");
   assert.deepEqual(project.project.flags, {});
@@ -226,6 +229,14 @@ test("site data summarizes project structure without embedding full event grids"
     path: "generated/recipes/music/podcast-purpose-pack.mjs",
     name: "podcast-purpose-pack.mjs",
   });
+  assert.ok(firstHookLoop);
+  assert.equal(firstHookLoop.type, "project");
+  assert.deepEqual(firstHookLoop.sourceRecipe, {
+    path: "generated/recipes/music/short-video-bgm.mjs",
+    name: "short-video-bgm.mjs",
+  });
+  assert.equal(firstHookLoop.project.bpm, 128);
+  assert.equal(firstHookLoop.stats.patterns, 1);
 });
 
 test("site data includes clone patterns and inherits display metadata from the parent", async () => {
@@ -378,7 +389,7 @@ test("explicit preview roots include non-deploy synths without changing the defa
     const previewData = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, [fixtureRoot]));
     const projectPath = `${fixtureRoot}/${fixturePath}`;
 
-    assert.equal(defaultData.projects.length, 21);
+    assert.equal(defaultData.projects.length, 24);
     assert.equal(defaultData.sourceRoots.includes(fixtureRoot), false);
     assert.equal(defaultData.projects.some((project) => project.path === projectPath), false);
 
