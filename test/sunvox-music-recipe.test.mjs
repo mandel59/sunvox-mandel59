@@ -79,6 +79,7 @@ test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", 
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-generated-"));
   const recipeFiles = [
     "generated/recipes/music/short-video-bgm.mjs",
+    "generated/recipes/music/short-video-alt-palette.mjs",
     "generated/recipes/music/podcast-bed-loop.mjs",
     "generated/recipes/music/podcast-purpose-pack.mjs",
   ];
@@ -90,6 +91,9 @@ test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", 
   assert.deepEqual(
     outputs.map((output) => output.outputPath.replaceAll("\\", "/").replace(`${tempDir.replaceAll("\\", "/")}/`, "")).sort(),
     [
+      "generated/music/alt-filter-bass-run.sunvox",
+      "generated/music/alt-shepard-chip-bumper.sunvox",
+      "generated/music/alt-soft-formant-bed.sunvox",
       "generated/music/first-hook-loop.sunvox",
       "generated/music/narration-lofi-bed.sunvox",
       "generated/music/podcast-ad-read-bed.sunvox",

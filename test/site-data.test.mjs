@@ -78,6 +78,9 @@ test("site data summarizes project structure without embedding full event grids"
   const firstHookLoop = data.projects.find(
     (candidate) => candidate.path === "generated/music/first-hook-loop.sunvox",
   );
+  const altShepardChipBumper = data.projects.find(
+    (candidate) => candidate.path === "generated/music/alt-shepard-chip-bumper.sunvox",
+  );
 
   assert.equal(data.schemaVersion, 2);
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
@@ -87,7 +90,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "instruments/mandel59 shepard.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch Analog.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch FMX Bell.sunsynth"));
-  assert.equal(data.projects.length, 24);
+  assert.equal(data.projects.length, 27);
   assert.ok(project);
   assert.equal(project.type, "project");
   assert.deepEqual(project.project.flags, {});
@@ -237,6 +240,14 @@ test("site data summarizes project structure without embedding full event grids"
   });
   assert.equal(firstHookLoop.project.bpm, 128);
   assert.equal(firstHookLoop.stats.patterns, 1);
+  assert.ok(altShepardChipBumper);
+  assert.equal(altShepardChipBumper.type, "project");
+  assert.deepEqual(altShepardChipBumper.sourceRecipe, {
+    path: "generated/recipes/music/short-video-alt-palette.mjs",
+    name: "short-video-alt-palette.mjs",
+  });
+  assert.equal(altShepardChipBumper.project.bpm, 132);
+  assert.equal(altShepardChipBumper.stats.patterns, 1);
 });
 
 test("site data includes clone patterns and inherits display metadata from the parent", async () => {
@@ -389,7 +400,7 @@ test("explicit preview roots include non-deploy synths without changing the defa
     const previewData = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, [fixtureRoot]));
     const projectPath = `${fixtureRoot}/${fixturePath}`;
 
-    assert.equal(defaultData.projects.length, 24);
+    assert.equal(defaultData.projects.length, 27);
     assert.equal(defaultData.sourceRoots.includes(fixtureRoot), false);
     assert.equal(defaultData.projects.some((project) => project.path === projectPath), false);
 
