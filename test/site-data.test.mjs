@@ -196,13 +196,15 @@ test("site data summarizes project structure without embedding full event grids"
     name: "scratch-fmx.mjs",
   });
   assert.equal(generatedRootFmxBell.catalog.measurement.spectrum.bodyInharmonicityCents, 74.1);
+  assert.equal(typeof generatedRootFmxBell.catalog.measurement.level.maxShortRms, "number");
+  assert.equal(typeof generatedRootFmxBell.catalog.measurement.level.headroomDb, "number");
   assert.ok(generatedRootFmxBell.catalog.measurement.tags.includes("metallic"));
   assert.ok(generatedRootFmxBass);
   assert.equal(generatedRootFmxBass.synth.type, "FMX");
   assert.equal(generatedRootFmxBass.catalog.measurement.spectrum.bodyCentroidHz, 1408);
   assert.ok(generatedGlassBell);
-  assert.equal(generatedGlassBell.catalog.measurement.level.loudness, "loud");
-  assert.deepEqual(generatedGlassBell.catalog.measurement.tags, ["loud"]);
+  assert.equal(generatedGlassBell.catalog.measurement.level.loudness, "medium");
+  assert.deepEqual(generatedGlassBell.catalog.measurement.tags, ["medium"]);
   assert.ok(generatedPwmOrgan);
   assert.equal(generatedPwmOrgan.catalog.measurement.level.loudness, "medium");
   assert.deepEqual(generatedPwmOrgan.catalog.measurement.tags, ["medium"]);

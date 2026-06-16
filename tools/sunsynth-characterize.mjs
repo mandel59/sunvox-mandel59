@@ -36,6 +36,9 @@ const RENDER_METHOD_ALIASES = new Map([
 const SPECTRUM_SIZE = 4096;
 const PATTERN_LINE_COUNT = 256;
 const SAMPLE_EXTENSIONS = new Set([".sunsynth"]);
+const DB_FLOOR = -120;
+const ACTIVE_GATE_DB = -24;
+const NEAR_CLIP_THRESHOLD = 0.98;
 const NOTE_NAMES = new Map([
   ["C", 0],
   ["C#", 1],
@@ -543,6 +546,109 @@ function frameRms(samples, channels, startFrame, endFrame) {
   return count ? Math.sqrt(sumSquares / count) : 0;
 }
 
+function framePeak(samples, channels, startFrame, endFrame) {
+  let peak = 0;
+  const frameCount = Math.floor(samples.length / channels);
+  for (let frame = Math.max(0, startFrame); frame < Math.min(endFrame, frameCount); frame += 1) {
+    for (let channel = 0; channel < channels; channel += 1) {
+      peak = Math.max(peak, Math.abs(samples[frame * channels + channel]));
+    }
+  }
+  return peak;
+}
+
+function countSamplesAtOrAbove(samples, threshold) {
+  let count = 0;
+  for (const sample of samples) {
+    if (Math.abs(sample) >= threshold) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function amplitudeDb(value) {
+  return value > 0 ? Math.max(DB_FLOOR, 20 * Math.log10(value)) : DB_FLOOR;
+}
+
+function maxWindowRms(samples, channels, sampleRate, startFrame, endFrame, windowMs) {
+  const frameCount = Math.floor(samples.length / channels);
+  const clampedStart = Math.max(0, Math.min(frameCount, Math.round(startFrame)));
+  const clampedEnd = Math.max(clampedStart, Math.min(frameCount, Math.round(endFrame)));
+  if (clampedEnd <= clampedStart) {
+    return 0;
+  }
+  const windowFrames = Math.max(1, Math.round((windowMs / 1000) * sampleRate));
+  if (clampedEnd - clampedStart <= windowFrames) {
+    return frameRms(samples, channels, clampedStart, clampedEnd);
+  }
+  const stepFrames = Math.max(1, Math.round(sampleRate * 0.02));
+  let maxRms = 0;
+  for (let start = clampedStart; start <= clampedEnd - windowFrames; start += stepFrames) {
+    maxRms = Math.max(maxRms, frameRms(samples, channels, start, start + windowFrames));
+  }
+  const finalStart = clampedEnd - windowFrames;
+  if ((finalStart - clampedStart) % stepFrames !== 0) {
+    maxRms = Math.max(maxRms, frameRms(samples, channels, finalStart, clampedEnd));
+  }
+  return maxRms;
+}
+
+function activeRange(windows, noteOnFrame, frameCount, peakRms) {
+  const thresholdRms = Math.max(peakRms * 10 ** (ACTIVE_GATE_DB / 20), 1e-6);
+  const active = windows.filter((window) => window.centerFrame >= noteOnFrame && window.rms >= thresholdRms);
+  if (!active.length) {
+    return {
+      startFrame: noteOnFrame,
+      endFrame: Math.min(frameCount, noteOnFrame + 1),
+      thresholdRms,
+      windowCount: 0,
+    };
+  }
+  return {
+    startFrame: active[0].startFrame,
+    endFrame: active.at(-1).endFrame,
+    thresholdRms,
+    windowCount: active.length,
+  };
+}
+
+function loudnessFeatures(samples, channels, sampleRate, windows, noteOnFrame, noteOffFrame, frameCount, peak, rms, peakRms) {
+  const active = activeRange(windows, noteOnFrame, frameCount, peakRms);
+  const minimumEndFrame = Math.min(frameCount, Math.max(noteOffFrame, noteOnFrame + Math.round(sampleRate * 0.12)));
+  const loudnessEndFrame = Math.max(active.endFrame, minimumEndFrame);
+  const activeRms = frameRms(samples, channels, active.startFrame, loudnessEndFrame);
+  const activePeak = framePeak(samples, channels, active.startFrame, loudnessEndFrame);
+  const maxShortRms = maxWindowRms(samples, channels, sampleRate, noteOnFrame, loudnessEndFrame, 120);
+  const maxMomentaryRms = maxWindowRms(samples, channels, sampleRate, noteOnFrame, loudnessEndFrame, 400);
+  const peakDb = amplitudeDb(peak);
+  const maxShortRmsDb = amplitudeDb(maxShortRms);
+  const fullRmsDb = amplitudeDb(rms);
+  return {
+    activeGateDb: ACTIVE_GATE_DB,
+    activeThresholdRms: active.thresholdRms,
+    activeWindowCount: active.windowCount,
+    activeStartSeconds: active.startFrame / sampleRate,
+    activeDurationSeconds: Math.max(0, (loudnessEndFrame - active.startFrame) / sampleRate),
+    activeRms,
+    activeRmsDb: amplitudeDb(activeRms),
+    activePeak,
+    activePeakDb: amplitudeDb(activePeak),
+    loudestWindowRms: peakRms,
+    loudestWindowRmsDb: amplitudeDb(peakRms),
+    maxShortRms,
+    maxShortRmsDb,
+    maxMomentaryRms,
+    maxMomentaryRmsDb: amplitudeDb(maxMomentaryRms),
+    fullRmsDb,
+    peakDb,
+    headroomDb: -peakDb,
+    nearClipSamples: countSamplesAtOrAbove(samples, NEAR_CLIP_THRESHOLD),
+    clippedSamples: countSamplesAtOrAbove(samples, 1),
+    fullToShortDeltaDb: maxShortRmsDb - fullRmsDb,
+  };
+}
+
 function envelope(samples, channels, sampleRate, windowMs = 20) {
   const windowFrames = Math.max(1, Math.round((windowMs / 1000) * sampleRate));
   const frameCount = Math.floor(samples.length / channels);
@@ -839,6 +945,14 @@ function dominantWindow(windows, startFrame, endFrame) {
 
 function diagnosticNotes(features) {
   const notes = [];
+  if (features.loudness.clippedSamples > 0) {
+    notes.push("sample peak reaches or exceeds full scale");
+  } else if (features.loudness.nearClipSamples > 0 || features.loudness.headroomDb < 1) {
+    notes.push("sample peak is close to full scale");
+  }
+  if (features.loudness.fullToShortDeltaDb > 8) {
+    notes.push("full-render RMS understates the loudest short-window level");
+  }
   if (features.spectrum.transient.highRatio > 0.42) {
     notes.push("high-band energy is strong during the transient");
   }
@@ -861,9 +975,10 @@ function diagnosticNotes(features) {
 
 function tagFeatures(features) {
   const tags = [];
-  if (features.level.rms < 0.06) {
+  const loudnessRms = Math.max(features.loudness.maxShortRms, features.level.transientRms, features.level.bodyRms);
+  if (loudnessRms < 0.06 && features.level.peak < 0.25) {
     tags.push("quiet");
-  } else if (features.level.rms < 0.14) {
+  } else if (loudnessRms < 0.14 && features.level.peak < 0.65) {
     tags.push("medium");
   } else {
     tags.push("loud");
@@ -934,6 +1049,7 @@ export function analyzeRenderedAudio(rendered) {
       tailRms,
       tailToBodyRatio: bodyRms ? tailRms / bodyRms : 0,
     },
+    loudness: loudnessFeatures(samples, channels, sampleRate, windows, noteOnFrame, noteOffFrame, frameCount, peak, rms, peakRms),
     envelope: {
       attackMs: attackMs(windows, noteOnFrame, noteOffFrame, sampleRate),
       decayMs: decayMs(windows, noteOnFrame, noteOffFrame, sampleRate),
@@ -1038,6 +1154,9 @@ function buildComparisons(results) {
       level: {
         peak: compareNumber(pattern.features.level.peak, directEvent.features.level.peak),
         rms: compareNumber(pattern.features.level.rms, directEvent.features.level.rms),
+        activeRms: compareNumber(pattern.features.loudness.activeRms, directEvent.features.loudness.activeRms),
+        maxShortRms: compareNumber(pattern.features.loudness.maxShortRms, directEvent.features.loudness.maxShortRms),
+        headroomDb: compareNumber(pattern.features.loudness.headroomDb, directEvent.features.loudness.headroomDb),
         bodyRms: compareNumber(pattern.features.level.bodyRms, directEvent.features.level.bodyRms),
         tailRms: compareNumber(pattern.features.level.tailRms, directEvent.features.level.tailRms),
       },
@@ -1093,6 +1212,9 @@ function formatTable(results) {
       "Method",
       "Peak",
       "RMS",
+      "Short",
+      "Active",
+      "Headroom",
       "Crest",
       "Centroid",
       "Bandwidth",
@@ -1119,6 +1241,9 @@ function formatTable(results) {
       measurement.renderMethod,
       fixed(features.level.peak),
       fixed(features.level.rms),
+      fixed(features.loudness.maxShortRms),
+      fixed(features.loudness.activeRms),
+      `${fixed(features.loudness.headroomDb, 1)}dB`,
       fixed(features.level.crestFactor, 2),
       `${rounded(features.spectrum.body.centroidHz)}Hz`,
       `${rounded(features.spectrum.body.bandwidthHz)}Hz`,
@@ -1169,7 +1294,7 @@ function formatDetails(results) {
         `  input: note=${measurement.input.noteLabel} noteHz=${fixed(measurement.input.noteHz, 2)} velocity=${measurement.input.velocity} requestedGate=${formatSeconds(measurement.input.requestedGateSeconds)}s requestedDuration=${formatSeconds(measurement.input.requestedDurationSeconds)}s`,
         `  measurement: method=${measurement.renderMethod} sampleRate=${measurement.playback.sampleRate}Hz channels=${measurement.playback.channels} masterVolume=${measurement.playback.masterVolume} track=${measurement.playback.track} actualGate=${formatSeconds(measurement.playback.actualGateSeconds)}s`,
         probeLine,
-        `  level: peak=${fixed(features.level.peak)} rms=${fixed(features.level.rms)} crest=${fixed(features.level.crestFactor, 2)} transient=${fixed(features.level.transientRms)} body=${fixed(features.level.bodyRms)} tail=${fixed(features.level.tailRms)} tail/body=${fixed(features.level.tailToBodyRatio, 2)}`,
+        `  level: peak=${fixed(features.level.peak)} headroom=${fixed(features.loudness.headroomDb, 1)}dB rms=${fixed(features.level.rms)} short120=${fixed(features.loudness.maxShortRms)} active=${fixed(features.loudness.activeRms)} momentary400=${fixed(features.loudness.maxMomentaryRms)} full-to-short=${fixed(features.loudness.fullToShortDeltaDb, 1)}dB crest=${fixed(features.level.crestFactor, 2)} transient=${fixed(features.level.transientRms)} body=${fixed(features.level.bodyRms)} tail=${fixed(features.level.tailRms)} tail/body=${fixed(features.level.tailToBodyRatio, 2)} nearClipSamples=${features.loudness.nearClipSamples} clippedSamples=${features.loudness.clippedSamples}`,
         `  envelope: attack=${features.envelope.attackMs === undefined ? "-" : `${rounded(features.envelope.attackMs)}ms`} decay=${features.envelope.decayMs === undefined ? "-" : `${rounded(features.envelope.decayMs)}ms`} release=${features.envelope.release.status}${features.envelope.release.ms === undefined ? "" : ` ${rounded(features.envelope.release.ms)}ms`} tailDuration=${features.envelope.tailDurationMs === undefined ? "-" : `${rounded(features.envelope.tailDurationMs)}ms`} noteOffDelta=${features.envelope.noteOffSensitivity.deltaDb === undefined ? "-" : `${fixed(features.envelope.noteOffSensitivity.deltaDb, 1)}dB`}`,
         `  ${formatSpectrum("transient spectrum", features.spectrum.transient)}`,
         `  ${formatSpectrum("body spectrum", features.spectrum.body)}`,

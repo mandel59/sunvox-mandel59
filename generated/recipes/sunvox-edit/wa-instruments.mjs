@@ -456,7 +456,7 @@ const recipe = {
       create: {
         module: "MetaModule",
         name: "Wa Taiko Ensemble",
-        volume: 246,
+        volume: 135,
         bpm: 92,
         tpl: 6,
         color: "#8f3a2f",

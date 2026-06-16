@@ -10,7 +10,7 @@ const recipe = {
       create: {
           "module": "MetaModule",
           "name": "Scratch Acid Bass",
-          "volume": 256,
+          "volume": 70,
           "bpm": 124,
           "tpl": 6,
           "color": "#9be13d"
@@ -421,7 +421,7 @@ const recipe = {
       create: {
           "module": "MetaModule",
           "name": "Scratch Kick Snap",
-          "volume": 256,
+          "volume": 160,
           "bpm": 128,
           "tpl": 6,
           "color": "#ff626e"

@@ -158,8 +158,9 @@ function stripUndefinedEntries(value) {
 }
 
 function catalogLoudness(features) {
-  const activeRms = Math.max(features.level.transientRms, features.level.bodyRms);
-  if (activeRms >= 0.16 || features.level.peak >= 0.4) {
+  const activeRms = Math.max(features.loudness?.maxShortRms ?? 0, features.level.transientRms, features.level.bodyRms);
+  const headroomDb = features.loudness?.headroomDb ?? (features.level.peak > 0 ? -20 * Math.log10(features.level.peak) : 120);
+  if (features.loudness?.clippedSamples > 0 || headroomDb < 1 || activeRms >= 0.16 || features.level.peak >= 0.8) {
     return "loud";
   }
   if (activeRms < 0.08 && features.level.peak < 0.25) {
@@ -212,6 +213,9 @@ function compactMeasurement(result, { detailed = false } = {}) {
       ...summary.level,
       rms: finiteRounded(features.level.rms, 2),
       peak: finiteRounded(features.level.peak, 2),
+      activeRms: finiteRounded(features.loudness?.activeRms, 2),
+      maxShortRms: finiteRounded(features.loudness?.maxShortRms, 2),
+      headroomDb: finiteRounded(features.loudness?.headroomDb, 1),
       bodyRms: finiteRounded(features.level.bodyRms, 2),
       tailToBodyRatio: finiteRounded(features.level.tailToBodyRatio, 2),
     }),
