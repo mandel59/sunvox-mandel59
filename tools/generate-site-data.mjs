@@ -50,7 +50,7 @@ export function parsePreviewRoots(value) {
     .filter(Boolean);
 }
 
-async function findSunVoxFiles(paths) {
+export async function findSunVoxFiles(paths) {
   const files = [];
   for (const input of paths) {
     const path = resolve(input);

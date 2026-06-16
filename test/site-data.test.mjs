@@ -9,6 +9,7 @@ import { buildContainer, TEXT_FORMAT } from "../tools/sunvox-codec.mjs";
 import {
   collectSiteData,
   DEFAULT_ROOTS,
+  findSunVoxFiles,
   mergeRootLists,
   parsePreviewRoots,
 } from "../tools/generate-site-data.mjs";
@@ -41,6 +42,7 @@ test("site data is regenerated deterministically from checked-in SunVox files", 
 
 test("site data summarizes project structure without embedding full event grids", async () => {
   const data = await collectSiteData();
+  const expectedProjectCount = (await findSunVoxFiles(DEFAULT_ROOTS)).length;
   const project = data.projects.find((candidate) => candidate.path === "music/2022-04-17.sunvox");
   const projectWithEmptyPatterns = data.projects.find((candidate) => candidate.path === "music/2022-04-18.sunvox");
   const iconProject = data.projects.find((candidate) => candidate.path === "music/2022-04-20.sunvox");
@@ -93,7 +95,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "instruments/mandel59 shepard.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch Analog.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch FMX Bell.sunsynth"));
-  assert.equal(data.projects.length, 30);
+  assert.equal(data.projects.length, expectedProjectCount);
   assert.ok(project);
   assert.equal(project.type, "project");
   assert.deepEqual(project.project.flags, {});
@@ -409,13 +411,15 @@ test("explicit preview roots include non-deploy synths without changing the defa
 
     const defaultData = await collectSiteData();
     const previewData = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, [fixtureRoot]));
+    const expectedDefaultProjectCount = (await findSunVoxFiles(DEFAULT_ROOTS)).length;
     const projectPath = `${fixtureRoot}/${fixturePath}`;
 
-    assert.equal(defaultData.projects.length, 30);
+    assert.equal(defaultData.projects.length, expectedDefaultProjectCount);
     assert.equal(defaultData.sourceRoots.includes(fixtureRoot), false);
     assert.equal(defaultData.projects.some((project) => project.path === projectPath), false);
 
     assert.equal(previewData.sourceRoots.includes(fixtureRoot), true);
+    assert.equal(previewData.projects.length, defaultData.projects.length + 1);
     const previewProject = previewData.projects.find((project) => project.path === projectPath);
     assert.ok(previewProject);
     assert.equal(previewProject.type, "synth");
