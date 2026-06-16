@@ -1,6 +1,8 @@
 /var/*
 !/var/.gitkeep
 
+/site-data/sunvox-projects.json
+
 *.log
 *.tmp
 *.bak

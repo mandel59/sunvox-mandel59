@@ -12,10 +12,9 @@ import {
   findSunVoxFiles,
   mergeRootLists,
   parsePreviewRoots,
+  writeSiteData,
 } from "../tools/generate-site-data.mjs";
 import { runMusicRecipe } from "../tools/sunvox-music-recipe.mjs";
-
-const SITE_DATA_PATH = "site-data/sunvox-projects.json";
 
 function pngRows(dataUrl) {
   const buffer = Buffer.from(dataUrl.split(",")[1], "base64");
@@ -33,10 +32,16 @@ function pngRows(dataUrl) {
   return inflateSync(Buffer.concat(idatChunks));
 }
 
-test("site data is regenerated deterministically from checked-in SunVox files", async () => {
-  const expected = JSON.parse(readFileSync(SITE_DATA_PATH, "utf8"));
+test("site data is generated deterministically from checked-in SunVox files", async () => {
   const actual = await collectSiteData();
+  const fixtureDir = join("var", "site-data-generated-index-fixture");
+  const outputPath = join(fixtureDir, "sunvox-projects.json");
 
+  await rm(fixtureDir, { recursive: true, force: true });
+  const written = await writeSiteData(outputPath);
+  const expected = JSON.parse(readFileSync(outputPath, "utf8"));
+
+  assert.deepEqual(written, actual);
   assert.deepEqual(actual, expected);
 });
 

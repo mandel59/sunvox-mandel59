@@ -13,12 +13,12 @@ const PROJECT_INDEX_PATH = "/site-data/sunvox-projects.json";
 const SITE_DATA_UPDATE_EVENT = "sunvox-site-data:update";
 const LOCAL_SERVER_CONFIG_PATH = "var/local-server.config.json";
 const SITE_DATA_WATCH_PATHS = [
-  "site-data/sunvox-projects.json",
   "music",
   "instruments",
   "generated/music",
   "generated/instruments",
   "generated/recipes/sunvox-edit",
+  "generated/recipes/music",
   "var/synth-lab",
 ];
 
@@ -78,12 +78,12 @@ function readLocalServerConfig() {
 function isSiteDataInput(filePath) {
   const relativePath = relative(process.cwd(), filePath).replaceAll("\\", "/");
   return (
-    relativePath === "site-data/sunvox-projects.json" ||
     relativePath.startsWith("music/") ||
     relativePath.startsWith("instruments/") ||
     relativePath.startsWith("generated/music/") ||
     relativePath.startsWith("generated/instruments/") ||
     relativePath.startsWith("generated/recipes/sunvox-edit/") ||
+    relativePath.startsWith("generated/recipes/music/") ||
     relativePath.startsWith("var/synth-lab/")
   );
 }
@@ -112,10 +112,6 @@ function localPreviewSiteDataPlugin() {
           const requestPreviewRoots = requestUrl.searchParams
             .getAll("roots")
             .flatMap((value) => parsePreviewRoots(value));
-          if (!environmentPreviewRoots.length && !requestPreviewRoots.length) {
-            next();
-            return;
-          }
           const data = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, environmentPreviewRoots, requestPreviewRoots));
           res.setHeader("Content-Type", "application/json; charset=utf-8");
           res.setHeader("Cache-Control", "no-store");

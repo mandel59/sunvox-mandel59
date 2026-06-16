@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { buildGraphLayout, graphNodeSize, shortLabel } from "../src/project-graph.js";
+import { collectSiteData } from "../tools/generate-site-data.mjs";
 
-const siteData = JSON.parse(readFileSync("site-data/sunvox-projects.json", "utf8"));
+const siteData = await collectSiteData();
 
 test("builds graph layout from SunVox module positions and links", () => {
   const project = siteData.projects.find((candidate) => candidate.path === "music/2022-04-17.sunvox");
