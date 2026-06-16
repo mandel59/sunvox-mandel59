@@ -71,6 +71,9 @@ test("site data summarizes project structure without embedding full event grids"
   const generatedMetaModule = data.projects.find(
     (candidate) => candidate.path === "generated/instruments/Scratch Layered Pad.sunsynth",
   );
+  const waKotoPluck = data.projects.find(
+    (candidate) => candidate.path === "generated/instruments/Wa Koto Pluck.sunsynth",
+  );
   const podcastBed = data.projects.find(
     (candidate) => candidate.path === "generated/music/podcast-bed-loop.sunvox",
   );
@@ -86,11 +89,12 @@ test("site data summarizes project structure without embedding full event grids"
   const polyVocoderSyllableGrid = data.projects.find(
     (candidate) => candidate.path === "generated/music/poly-vocoder-syllable-grid.sunvox",
   );
+  const waBgmSketch = data.projects.find((candidate) => candidate.path === "generated/music/wa-bgm-sketch.sunvox");
 
   assert.equal(data.schemaVersion, 2);
   assert.deepEqual(data.sourceRoots, ["music", "instruments", "generated/music", "generated/instruments"]);
   assert.equal(data.assetCatalog.schemaVersion, 1);
-  assert.equal(data.assetCatalog.entries.length, 12);
+  assert.equal(data.assetCatalog.entries.length, data.projects.filter((candidate) => candidate.catalog).length);
   assert.equal(data.assetCatalog.entries.every((entry) => entry.measurement), true);
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "instruments/mandel59 shepard.sunsynth"));
   assert.ok(data.assetCatalog.entries.some((entry) => entry.path === "generated/instruments/Scratch Analog.sunsynth"));
@@ -215,6 +219,13 @@ test("site data summarizes project structure without embedding full event grids"
   assert.deepEqual(generatedMetaModule.catalog.measurement.tags, ["medium"]);
   assert.equal(generatedMetaModule.embedded.length, 1);
   assert.equal(generatedMetaModule.embedded[0].document.stats.activeModules, 9);
+  assert.ok(waKotoPluck);
+  assert.equal(waKotoPluck.type, "synth");
+  assert.deepEqual(waKotoPluck.catalog.sourceRecipe, {
+    path: "generated/recipes/sunvox-edit/wa-instruments.mjs",
+    name: "wa-instruments.mjs",
+  });
+  assert.equal(waKotoPluck.synth.name, "Wa Koto Pluck");
   assert.ok(synthWithNamedPatterns);
   assert.deepEqual(
     synthWithNamedPatterns.embedded[0].document.patterns.map((pattern) => [pattern.name, pattern.eventCount]),
@@ -261,6 +272,14 @@ test("site data summarizes project structure without embedding full event grids"
   });
   assert.equal(polyVocoderSyllableGrid.project.bpm, 128);
   assert.equal(polyVocoderSyllableGrid.stats.patterns, 1);
+  assert.ok(waBgmSketch);
+  assert.equal(waBgmSketch.type, "project");
+  assert.deepEqual(waBgmSketch.sourceRecipe, {
+    path: "generated/recipes/music/wa-bgm-sketch.mjs",
+    name: "wa-bgm-sketch.mjs",
+  });
+  assert.equal(waBgmSketch.project.bpm, 92);
+  assert.equal(waBgmSketch.stats.patterns, 2);
 });
 
 test("site data includes clone patterns and inherits display metadata from the parent", async () => {

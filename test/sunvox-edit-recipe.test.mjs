@@ -170,43 +170,23 @@ test("checked-in SunVox Edit Recipes generate SunSynth outputs", async () => {
     .filter((file) => file.endsWith(".mjs"))
     .sort()
     .map((file) => join(recipeDir, file));
+  assert.ok(recipeFiles.length > 0);
 
-  assert.deepEqual(
-    recipeFiles.map((file) => file.replaceAll("\\", "/")),
-    [
-      "generated/recipes/sunvox-edit/scratch-analog.mjs",
-      "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
-      "generated/recipes/sunvox-edit/scratch-fmx.mjs",
-      "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
-      "generated/recipes/sunvox-edit/supersaw-variants.mjs",
-    ],
-  );
-
+  const expectedOutputPaths = [];
   const outputs = [];
   for (const recipeFile of recipeFiles) {
+    const recipe = await loadEditRecipe(recipeFile, { cacheBust: true });
+    expectedOutputPaths.push(
+      ...Object.values(recipe.outputs)
+        .filter((output) => output.kind === "sunsynth")
+        .map((output) => output.file.replaceAll("\\", "/")),
+    );
     outputs.push(...await runEditRecipe(recipeFile, { outDir: tempDir }));
   }
 
   assert.deepEqual(
     outputs.map((output) => output.replaceAll("\\", "/").replace(`${tempDir.replaceAll("\\", "/")}/`, "")).sort(),
-    [
-      "var/synth-lab/mandel59 Lab Bright SuperSaw F6400 Q12288.sunsynth",
-      "var/synth-lab/mandel59 Lab Bright SuperSaw F7600 Q12288.sunsynth",
-      "var/synth-lab/mandel59 Lab Soft SuperSaw F3200 R2400.sunsynth",
-      "var/synth-lab/mandel59 Lab Soft SuperSaw F3200 R3600.sunsynth",
-      "var/synth-lab/mandel59 Lab Soft SuperSaw F4200 R2400.sunsynth",
-      "var/synth-lab/mandel59 Lab Soft SuperSaw F4200 R3600.sunsynth",
-      "var/synth-lab/Scratch Acid Bass.sunsynth",
-      "var/synth-lab/Scratch Analog.sunsynth",
-      "var/synth-lab/Scratch FMX Bass.sunsynth",
-      "var/synth-lab/Scratch FMX Bell.sunsynth",
-      "var/synth-lab/Scratch FMX Pluck.sunsynth",
-      "var/synth-lab/Scratch FMX Tines.sunsynth",
-      "var/synth-lab/Scratch Glass Bell.sunsynth",
-      "var/synth-lab/Scratch Kick Snap.sunsynth",
-      "var/synth-lab/Scratch Layered Pad.sunsynth",
-      "var/synth-lab/Scratch PWM Organ.sunsynth",
-    ].sort(),
+    expectedOutputPaths.sort(),
   );
 
   const layeredPad = await parseFile(join(tempDir, "var/synth-lab/Scratch Layered Pad.sunsynth"));

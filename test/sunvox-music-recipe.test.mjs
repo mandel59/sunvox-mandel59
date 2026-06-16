@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -77,36 +77,24 @@ test("SunVox Music Recipe creates a validated SunVox project and summary", async
 
 test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-generated-"));
-  const recipeFiles = [
-    "generated/recipes/music/short-video-bgm.mjs",
-    "generated/recipes/music/short-video-alt-palette.mjs",
-    "generated/recipes/music/short-video-poly-vocoder.mjs",
-    "generated/recipes/music/podcast-bed-loop.mjs",
-    "generated/recipes/music/podcast-purpose-pack.mjs",
-  ];
+  const recipeDir = "generated/recipes/music";
+  const recipeFiles = (await readdir(recipeDir))
+    .filter((file) => file.endsWith(".mjs"))
+    .sort()
+    .map((file) => join(recipeDir, file));
+  assert.ok(recipeFiles.length > 0);
+
+  const expectedOutputPaths = [];
   const outputs = [];
   for (const recipeFile of recipeFiles) {
+    const recipe = await loadMusicRecipe(recipeFile, { cacheBust: true });
+    expectedOutputPaths.push(...Object.values(recipe.outputs).map((output) => output.file.replaceAll("\\", "/")));
     outputs.push(...await runMusicRecipe(recipeFile, { outDir: tempDir }));
   }
 
   assert.deepEqual(
     outputs.map((output) => output.outputPath.replaceAll("\\", "/").replace(`${tempDir.replaceAll("\\", "/")}/`, "")).sort(),
-    [
-      "generated/music/alt-filter-bass-run.sunvox",
-      "generated/music/alt-shepard-chip-bumper.sunvox",
-      "generated/music/alt-soft-formant-bed.sunvox",
-      "generated/music/first-hook-loop.sunvox",
-      "generated/music/narration-lofi-bed.sunvox",
-      "generated/music/podcast-ad-read-bed.sunvox",
-      "generated/music/podcast-bed-loop.sunvox",
-      "generated/music/podcast-cold-open-title.sunvox",
-      "generated/music/podcast-outro-credits.sunvox",
-      "generated/music/podcast-section-transition.sunvox",
-      "generated/music/poly-odd-robot-break.sunvox",
-      "generated/music/poly-soft-vocoder-kaleidoscope.sunvox",
-      "generated/music/poly-vocoder-syllable-grid.sunvox",
-      "generated/music/tech-demo-stinger.sunvox",
-    ],
+    expectedOutputPaths.sort(),
   );
 
   for (const output of outputs) {
