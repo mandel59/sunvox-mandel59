@@ -395,20 +395,19 @@ function synthControllerValueMap(controls) {
 
 function TopbarControls({ project, volume, playbackState, onPlay, onStop, onVolumeChange }) {
   const playable = canPlay(project);
-  const isReady = Boolean(playbackState?.ready);
   const isLoadingCurrent =
     Boolean(playbackState?.isLoading) && playbackState?.loadingPath === project?.path;
   return (
     <div className="topbar-controls" aria-label="Playback controls">
       <button
         type="button"
-        disabled={!playable || isLoadingCurrent || !isReady}
+        disabled={!playable || isLoadingCurrent}
         onClick={() => onPlay(project)}
       >
         <span aria-hidden="true">▶</span>
         Play
       </button>
-      <button type="button" disabled={!playbackState?.isPlaying || !isReady} onClick={onStop}>
+      <button type="button" disabled={!playbackState?.isPlaying} onClick={onStop}>
         <span aria-hidden="true">■</span>
         Stop
       </button>
@@ -1600,7 +1599,6 @@ function ProjectActions({ project, playbackState, onPlay, onStop }) {
   const playable = canPlay(project);
   const [copyLabel, setCopyLabel] = useState("Copy link");
   const copyResetTimerRef = useRef(undefined);
-  const isReady = Boolean(playbackState?.ready);
   const isLoadingCurrent = Boolean(playbackState?.isLoading) && playbackState?.loadingPath === project.path;
 
   useEffect(() => {
@@ -1627,7 +1625,7 @@ function ProjectActions({ project, playbackState, onPlay, onStop }) {
         <>
           <button
             type="button"
-            disabled={!isReady || isLoadingCurrent}
+            disabled={isLoadingCurrent}
             onClick={() => onPlay(project)}
           >
             <span aria-hidden="true">▶</span> Play
@@ -2298,14 +2296,22 @@ function App() {
     if (!canPlay(project)) {
       return;
     }
-    if (!playbackState.ready) {
+    const path = project.path;
+    if (!path) {
       return;
     }
-    const path = project.path;
+    if (playbackState.isLoading && playbackState.loadingPath === path) {
+      return;
+    }
+    setError("");
     if (playbackState.isPlaying && playbackState.loadedPath !== path) {
       window.stopPlayback?.();
     }
-    await window.loadAndPlay?.(path);
+    try {
+      await window.loadAndPlay?.(path);
+    } catch (playError) {
+      setError(playError instanceof Error ? playError.message : "Playback failed");
+    }
   }
 
   function handleStopPlayback() {
