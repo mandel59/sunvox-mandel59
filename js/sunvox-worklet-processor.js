@@ -9,6 +9,9 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
     this.maxQueuedFrames = 65536;
     this.sentinelReportFrames = 0;
     this.reportEveryFrames = 256;
+    this.lastLeft = 0;
+    this.lastRight = 0;
+    this.underrunFadeDurationFrames = 64;
 
     this.port.onmessage = (event) => {
       this.handleMessage(event.data);
@@ -85,10 +88,24 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
       this.queuedFrames -= framesToWrite;
     }
 
+    if (written > 0) {
+      this.lastLeft = outputLeft[written - 1];
+      this.lastRight = outputRight[written - 1];
+    }
+
     if (written < frameCount) {
-      for (let i = written; i < frameCount; i += 1) {
-        outputLeft[i] = 0;
-        outputRight[i] = 0;
+      const remaining = frameCount - written;
+      const fadeFrames = Math.min(this.underrunFadeDurationFrames, remaining);
+      for (let i = 0; i < remaining; i += 1) {
+        const frameIndex = written + i;
+        if (i < fadeFrames) {
+          const level = 1 - (i + 1) / (fadeFrames + 1);
+          outputLeft[frameIndex] = this.lastLeft * level;
+          outputRight[frameIndex] = this.lastRight * level;
+        } else {
+          outputLeft[frameIndex] = 0;
+          outputRight[frameIndex] = 0;
+        }
       }
     }
 
