@@ -194,6 +194,15 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
     await projectButton.click();
     await page.waitForTimeout(100);
 
+    const silentSynthReady = await page.evaluate(async (synthPath) => {
+      const preloaded = await window.preloadSynth(synthPath);
+      const muted = await window.setSynthController(synthPath, 0, 0);
+      return { preloaded, muted };
+    }, TARGET_SILENT_SYNTH);
+    if (!silentSynthReady.preloaded || !silentSynthReady.muted) {
+      throw new Error(`Failed to prepare muted synth: ${JSON.stringify(silentSynthReady)}`);
+    }
+
     const playButton = page.locator('#topbar-controls button').first();
     await playButton.waitFor({ state: 'visible' });
     if (await playButton.isDisabled()) {
@@ -223,17 +232,7 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
     );
     await page.waitForTimeout(100);
     const audioSignalAfterSoftStop = await readAudioSignal(page);
-    const audioSignalAfterTailDrain = await waitForAudioSilence(page, PLAYBACK_STOP_TIMEOUT_MS);
 
-    await page.waitForTimeout(900);
-    const silentSynthReady = await page.evaluate(async (synthPath) => {
-      const preloaded = await window.preloadSynth(synthPath);
-      const muted = await window.setSynthController(synthPath, 0, 0);
-      return { preloaded, muted };
-    }, TARGET_SILENT_SYNTH);
-    if (!silentSynthReady.preloaded || !silentSynthReady.muted) {
-      throw new Error(`Failed to prepare muted synth: ${JSON.stringify(silentSynthReady)}`);
-    }
     const silentSynthNoteOn = await page.evaluate(
       ({ synthPath, note }) => window.playSynthNote(synthPath, note, 128),
       { synthPath: TARGET_SILENT_SYNTH, note: TARGET_SYNTH_NOTE },
@@ -248,6 +247,7 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
         `Project tail leaked when muted synth restarted rendering: ${JSON.stringify(audioSignalDuringMutedSynthAfterSoftStop)}`,
       );
     }
+    const audioSignalAfterTailClear = await waitForAudioSilence(page, PLAYBACK_STOP_TIMEOUT_MS);
 
     if (await stopButton.isDisabled()) {
       throw new Error('Topbar stop button is disabled after soft stop');
@@ -263,7 +263,7 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
     status.playbackStopped = playbackStopped;
     status.audioSignal = audioSignal;
     status.audioSignalAfterSoftStop = audioSignalAfterSoftStop;
-    status.audioSignalAfterTailDrain = audioSignalAfterTailDrain;
+    status.audioSignalAfterTailClear = audioSignalAfterTailClear;
     status.silentSynthReady = silentSynthReady;
     status.silentSynthNoteOn = silentSynthNoteOn;
     status.audioSignalDuringMutedSynthAfterSoftStop = audioSignalDuringMutedSynthAfterSoftStop;

@@ -1,7 +1,8 @@
 const DEFAULT_SAMPLE_RATE = 44100;
 const DEFAULT_CHANNELS = 2;
 const DEFAULT_RENDER_FRAMES = 128;
-const DEFAULT_MAX_BUFFERED_FRAMES = 4096;
+const DEFAULT_MAX_BUFFERED_FRAMES = 1024;
+const INTERACTIVE_MAX_BUFFERED_FRAMES = 512;
 const DEFAULT_RENDER_INTERVAL_MS = 2;
 const MAX_RENDER_BATCH = 8;
 
@@ -263,13 +264,20 @@ function sharedAvailableFrames(readIndex, writeIndex) {
   return sharedCapacityFrames - readIndex + writeIndex;
 }
 
-function sharedFreeFrames() {
+function sharedBufferedFrames() {
   if (!sharedControl || !sharedCapacityFrames) {
     return 0;
   }
   const readIndex = Atomics.load(sharedControl, CONTROL_READ_INDEX);
   const writeIndex = Atomics.load(sharedControl, CONTROL_WRITE_INDEX);
-  return sharedCapacityFrames - sharedAvailableFrames(readIndex, writeIndex) - 1;
+  return sharedAvailableFrames(readIndex, writeIndex);
+}
+
+function sharedFreeFrames() {
+  if (!sharedControl || !sharedCapacityFrames) {
+    return 0;
+  }
+  return sharedCapacityFrames - sharedBufferedFrames() - 1;
 }
 
 function writeSharedAudio(floatData) {
@@ -379,11 +387,22 @@ function framesToTicks(frameCount) {
   return Math.floor((frameCount * ticksPerSecond) / audioContextSampleRate);
 }
 
-function outputFreeFrames() {
+function outputBufferedFrames() {
   if (sharedControl) {
-    return sharedFreeFrames();
+    return sharedBufferedFrames();
   }
-  return Math.max(0, maxBufferedFrames - pendingFrames);
+  return pendingFrames;
+}
+
+function targetBufferedFrames() {
+  if (anyActiveSynthNotes()) {
+    return Math.min(maxBufferedFrames, INTERACTIVE_MAX_BUFFERED_FRAMES);
+  }
+  return maxBufferedFrames;
+}
+
+function outputFreeFrames() {
+  return Math.max(0, targetBufferedFrames() - outputBufferedFrames());
 }
 
 function renderOneChunk() {
@@ -541,6 +560,19 @@ function stopProjectPlaybackWithTail() {
 
   postPlayerState();
   return { stopped: true, forced: false, tailDraining: projectTailDraining };
+}
+
+function clearProjectTailForInteractiveStart() {
+  if (!projectTailDraining || projectPlaying) {
+    return false;
+  }
+  if (activeProject.loaded) {
+    stopSlot(activeProject.slot, { reset: true, alreadyStopped: true });
+  }
+  projectTailDraining = false;
+  stopAudioOutput({ flush: true });
+  postPlayerState();
+  return true;
 }
 
 function setAudioPort(port) {
@@ -872,6 +904,7 @@ async function noteOn(payload) {
   if (!url || !Number.isFinite(note)) {
     throw new Error("Missing note data");
   }
+  clearProjectTailForInteractiveStart();
   const slotState = await loadSynthFromUrl(url, payload.resourceUrl || url, true);
   const track = noteTrack(payload.track ?? note);
   const noteValue = normalizedNote(note);
