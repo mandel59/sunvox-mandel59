@@ -116,7 +116,7 @@ function noteFromStep(step) {
 
 function pitchRemapCurve43Edo() {
   return Array.from({ length: 128 }, (_, noteNumber) =>
-    clamp(Math.round((ROOT_NOTE_NUMBER + ((noteNumber - ROOT_NOTE_NUMBER) * 12) / EDO_STEPS) * 256), 0, 65535),
+    clamp(Math.round(16384 + (ROOT_NOTE_NUMBER + ((noteNumber - ROOT_NOTE_NUMBER) * 12) / EDO_STEPS) * 256), 0, 65535),
   );
 }
 
@@ -151,10 +151,10 @@ function analog(overrides = {}) {
 function amplifier(overrides = {}) {
   return {
     volume: 256,
-    panning: 128,
-    dcOffset: 0,
+    balance: 128,
+    dcOffset: 128,
     inverse: "off",
-    width: 256,
+    stereoWidth: 128,
     absolute: "off",
     fineVolume: 32768,
     ...overrides,
@@ -179,7 +179,7 @@ function reverb(overrides = {}) {
 
 function compressor(overrides = {}) {
   return {
-    volume: 190,
+    volume: 210,
     threshold: 304,
     slope: 70,
     attack: 12,
@@ -316,7 +316,7 @@ function modulesForStudy(study) {
         { slot: 2, module: MODULE.lead },
         { slot: 3, module: MODULE.accent },
       ],
-      controllers: amplifier({ volume: 140, width: 178 }),
+      controllers: amplifier({ volume: 190, stereoWidth: 178 }),
     },
     {
       type: "Reverb",
@@ -563,7 +563,7 @@ function buildDocument(study) {
       name: study.name,
       bpm: study.bpm,
       speed: study.speed,
-      globalVolume: 36,
+      globalVolume: 54,
       timeline: {
         grid: 4,
         grid2: 4,
