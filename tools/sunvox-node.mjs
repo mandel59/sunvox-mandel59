@@ -1,10 +1,12 @@
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import vm from "node:vm";
 
-export const DEFAULT_SUNVOX_JS_PATH = "sunvox_lib/sunvox_lib/js/lib/sunvox.js";
+const TOOLING_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+export const DEFAULT_SUNVOX_JS_PATH = resolve(TOOLING_ROOT, "sunvox_lib/sunvox_lib/js/lib/sunvox.js");
 export const DEFAULT_SLOT = 0;
 export const DEFAULT_SAMPLE_RATE = 44100;
 export const DEFAULT_CHANNELS = 2;

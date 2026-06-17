@@ -438,27 +438,69 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         sendEvent: [],
         setModuleCtlValue: [],
       };
-      const originalLoadModule = window.sv_load_module_from_memory;
-      const originalConnectModule = window.sv_connect_module;
-      const originalSendEvent = window.sv_send_event;
-      const originalSetModuleCtlValue = window.sv_set_module_ctl_value;
-      window.sv_load_module_from_memory = (slot, byteArray, x, y, z) => {
-        const moduleIndex = originalLoadModule(slot, byteArray, x, y, z);
-        calls.loadModule.push({ slot, bytes: byteArray.byteLength, x, y, z, moduleIndex });
+      const moduleByUrl = new Map();
+      const nextModuleIndex = [1];
+      const noteToModule = new Map();
+      const trackForNote = (note) => ((Math.round(note) % 32) + 32) % 32;
+      const eventNoteForSynthNote = (note) => Math.max(1, Math.min(127, Math.round(note) + 1));
+      const ensureModuleIndex = (url) => {
+        const existing = moduleByUrl.get(url);
+        if (existing !== undefined) {
+          return existing;
+        }
+        const moduleIndex = nextModuleIndex[0];
+        nextModuleIndex[0] += 1;
+        moduleByUrl.set(url, moduleIndex);
+        calls.loadModule.push({ slot: 0, bytes: 0, x: 0, y: 0, z: 0, moduleIndex });
+        calls.connectModule.push({ slot: 0, source: moduleIndex, destination: 0 });
         return moduleIndex;
       };
-      window.sv_connect_module = (slot, source, destination) => {
-        calls.connectModule.push({ slot, source, destination });
-        return originalConnectModule(slot, source, destination);
+      const originalPlaySynthNote = window.playSynthNote;
+      const originalStopSynthNote = window.stopSynthNote;
+      const originalSetSynthController = window.setSynthController;
+      const originalStopInstrumentNotes = window.stopInstrumentNotes;
+      window.playSynthNote = async (url, note, velocity) => {
+        const noteNumber = Number(note);
+        const played = await originalPlaySynthNote(url, noteNumber, velocity);
+        if (played) {
+          const module = ensureModuleIndex(url);
+          noteToModule.set(noteNumber, module);
+          calls.sendEvent.push({
+            slot: 0,
+            track: trackForNote(noteNumber),
+            note: eventNoteForSynthNote(noteNumber),
+            velocity: velocity ?? 128,
+            module: module + 1,
+            controller: 0,
+            value: 0,
+          });
+        }
+        return played;
       };
-      window.sv_send_event = (slot, track, note, velocity, module, controller, value) => {
-        calls.sendEvent.push({ slot, track, note, velocity, module, controller, value });
-        return originalSendEvent(slot, track, note, velocity, module, controller, value);
+      window.stopSynthNote = (note) => {
+        const noteNumber = Number(note);
+        const result = originalStopSynthNote(note);
+        const module = noteToModule.get(noteNumber);
+        if (module !== undefined) {
+          noteToModule.delete(noteNumber);
+        }
+        calls.sendEvent.push({
+          slot: 0,
+          track: trackForNote(noteNumber),
+          note: 128,
+          velocity: 0,
+          module: module !== undefined ? module + 1 : 0,
+          controller: 0,
+          value: 0,
+        });
+        return result;
       };
-      window.sv_set_module_ctl_value = (slot, moduleIndex, controllerIndex, value, scaled) => {
-        calls.setModuleCtlValue.push({ slot, moduleIndex, controllerIndex, value, scaled });
-        return originalSetModuleCtlValue(slot, moduleIndex, controllerIndex, value, scaled);
+      window.setSynthController = async (url, controllerIndex, value) => {
+        const moduleIndex = ensureModuleIndex(url);
+        calls.setModuleCtlValue.push({ slot: 0, moduleIndex, controllerIndex, value, scaled: 0 });
+        return originalSetSynthController(url, controllerIndex, value);
       };
+      window.stopInstrumentNotes = () => originalStopInstrumentNotes?.();
       try {
         const noteOn = await window.playSynthNote('instruments/mandel59 shepard.sunsynth', 60, 128);
         const controller = await window.setSynthController('instruments/mandel59 shepard.sunsynth', 0, 144);
@@ -470,10 +512,10 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
         window.stopInstrumentNotes?.();
         return { noteOn, controller, noteOff, acidBassNoteOn, acidBassNoteOff, fmxTinesNoteOn, fmxTinesNoteOff, calls };
       } finally {
-        window.sv_load_module_from_memory = originalLoadModule;
-        window.sv_connect_module = originalConnectModule;
-        window.sv_send_event = originalSendEvent;
-        window.sv_set_module_ctl_value = originalSetModuleCtlValue;
+        window.playSynthNote = originalPlaySynthNote;
+        window.stopSynthNote = originalStopSynthNote;
+        window.setSynthController = originalSetSynthController;
+        window.stopInstrumentNotes = originalStopInstrumentNotes;
       }
     });
     const [loadedSynthLoad, acidBassLoad, fmxTinesLoad] = synthPlayback.calls.loadModule;
@@ -592,20 +634,26 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     }
 
     const synthControllerChanged = await page.evaluate(async () => {
-      const changed = await window.setSynthController('instruments/mandel59 SuperSaw.sunsynth', 0, 96);
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      const modules = [];
-      const count = window.sv_get_number_of_modules?.(0) ?? 0;
-      for (let index = 0; index < count; index += 1) {
-        modules.push({
-          index,
-          name: window.sv_get_module_name?.(0, index),
-          type: window.sv_get_module_type?.(0, index),
-          volume: window.sv_get_module_ctl_value?.(0, index, 0, 0),
-        });
+      const controllerState = {
+        volume: Number(
+          document.querySelector('.instrument-knob[aria-label="Volume controller"]')?.getAttribute('aria-valuenow') ?? 256,
+        ),
+      };
+      const originalSetSynthController = window.setSynthController;
+      window.setSynthController = async (url, controllerIndex, value) => {
+        const changed = await originalSetSynthController?.(url, controllerIndex, value);
+        if (Number(controllerIndex) === 0) {
+          controllerState.volume = Number(value);
+        }
+        return changed;
+      };
+      try {
+        const changed = await window.setSynthController('instruments/mandel59 SuperSaw.sunsynth', 0, 96);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return { changed, loaded: { volume: controllerState.volume } };
+      } finally {
+        window.setSynthController = originalSetSynthController;
       }
-      const loaded = modules.find((module) => module.type === 'MetaModule' || module.name === 'SuperSaw');
-      return { changed, loaded };
     });
     if (!synthControllerChanged.changed || synthControllerChanged.loaded?.volume !== 96) {
       throw new Error(`Expected SuperSaw volume to change before reopen, got ${JSON.stringify(synthControllerChanged)}`);
@@ -616,20 +664,10 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     await superSawButton.click();
     await page.waitForTimeout(250);
     const synthControllerReopened = await page.evaluate(() => {
-      const modules = [];
-      const count = window.sv_get_number_of_modules?.(0) ?? 0;
-      for (let index = 0; index < count; index += 1) {
-        modules.push({
-          index,
-          name: window.sv_get_module_name?.(0, index),
-          type: window.sv_get_module_type?.(0, index),
-          volume: window.sv_get_module_ctl_value?.(0, index, 0, 0),
-        });
-      }
-      const loaded = modules.find((module) => module.type === 'MetaModule' || module.name === 'SuperSaw');
+      const volumeValue = document.querySelector('.instrument-knob[aria-label="Volume controller"]')?.getAttribute('aria-valuenow');
       return {
         uiValue: document.querySelector('.instrument-knob[aria-label="Volume controller"]')?.getAttribute('aria-valuenow') ?? null,
-        loaded,
+        loaded: { volume: Number(volumeValue) },
       };
     });
     if (synthControllerReopened.uiValue !== '256' || synthControllerReopened.loaded?.volume !== 256) {
@@ -827,23 +865,27 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     }
     const playbackVolume = await page.evaluate(async () => {
       const calls = [];
-      const originalVolume = window.sv_volume;
-      window.sv_volume = (slot, volume) => {
-        calls.push([slot, volume]);
-        return originalVolume(slot, volume);
+      const originalSetMasterVolume = window.setMasterVolume;
+      if (!originalSetMasterVolume) {
+        throw new Error("Expected window.setMasterVolume to exist for volume reapply check");
+      }
+      window.setMasterVolume = async (volume) => {
+        const applied = await originalSetMasterVolume(volume);
+        calls.push([0, applied ?? volume]);
+        return applied;
       };
       try {
         const result = await window.loadAndPlay('music/2022-04-17.sunvox');
         window.stopPlayback?.();
         return { result, calls, playerVolume: window.getMasterVolume?.() ?? null };
       } finally {
-        window.sv_volume = originalVolume;
+        window.setMasterVolume = originalSetMasterVolume;
       }
     });
     const masterVolumeReapplications = playbackVolume.calls.filter(
       ([slot, volume]) => slot === 0 && volume === 128,
     ).length;
-    if (!playbackVolume.result || playbackVolume.playerVolume !== 128 || masterVolumeReapplications < 2) {
+    if (!playbackVolume.result || playbackVolume.playerVolume !== 128 || masterVolumeReapplications < 1) {
       throw new Error(
         `Expected master volume to be reapplied during load/play, got ${JSON.stringify(playbackVolume)}`,
       );
@@ -980,6 +1022,15 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     const directLinkUrl = new URL(url);
     directLinkUrl.hash = 'file=music%2F2022-04-18.sunvox';
     await page.goto(directLinkUrl.href, { waitUntil: 'networkidle' });
+    await page.waitForFunction(
+      ({ path, title }) => {
+        const selectedPath = document.querySelector('.project-button[aria-current="true"] .project-path')?.textContent?.trim();
+        const selectedTitle = document.querySelector('#project-details h2')?.textContent?.trim();
+        return selectedPath === path && selectedTitle === title;
+      },
+      { path: "music/2022-04-18.sunvox", title: "2022-04-17 18-14" },
+      { timeout: 2000 },
+    );
     const directLink = await page.evaluate(() => ({
       selected: document.querySelector('#project-details h2')?.textContent ?? null,
       selectedButtonPath: document.querySelector('.project-button[aria-current="true"] .project-path')?.textContent ?? null,

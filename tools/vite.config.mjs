@@ -1,7 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { existsSync, readFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   collectSiteData,
   DEFAULT_ROOTS,
@@ -21,6 +22,11 @@ const SITE_DATA_WATCH_PATHS = [
   "generated/recipes/music",
   "var/synth-lab",
 ];
+const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+function resolveWorkspacePath(pathValue) {
+  return resolve(WORKSPACE_ROOT, pathValue);
+}
 
 function assertStringArray(value, name) {
   if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
@@ -30,7 +36,7 @@ function assertStringArray(value, name) {
 }
 
 function readLocalServerConfig() {
-  const resolvedPath = resolve(LOCAL_SERVER_CONFIG_PATH);
+  const resolvedPath = resolveWorkspacePath(LOCAL_SERVER_CONFIG_PATH);
   if (!existsSync(resolvedPath)) {
     return {};
   }
@@ -76,7 +82,7 @@ function readLocalServerConfig() {
 }
 
 function isSiteDataInput(filePath) {
-  const relativePath = relative(process.cwd(), filePath).replaceAll("\\", "/");
+  const relativePath = relative(WORKSPACE_ROOT, filePath).replaceAll("\\", "/");
   return (
     relativePath.startsWith("music/") ||
     relativePath.startsWith("instruments/") ||
@@ -92,7 +98,7 @@ function localPreviewSiteDataPlugin() {
   return {
     name: "local-preview-site-data",
     configureServer(server) {
-      server.watcher.add(SITE_DATA_WATCH_PATHS.map((path) => resolve(path)));
+      server.watcher.add(SITE_DATA_WATCH_PATHS.map(resolveWorkspacePath));
       const notifySiteDataUpdate = (filePath) => {
         if (isSiteDataInput(filePath)) {
           server.ws.send({ type: "custom", event: SITE_DATA_UPDATE_EVENT });

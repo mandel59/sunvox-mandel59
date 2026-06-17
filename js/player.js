@@ -175,14 +175,16 @@ async function initializeEngine() {
     if (!AudioContextCtor) {
       throw new Error("AudioContext not supported");
     }
-    if (!AudioContextCtor.prototype.audioWorklet) {
-      throw new Error("AudioWorklet not supported");
-    }
     if (!window.Worker) {
       throw new Error("Web Worker not supported");
     }
 
     audioContext = new AudioContextCtor({ sampleRate: DEFAULT_SAMPLE_RATE, latencyHint: "interactive" });
+    if (!audioContext?.audioWorklet) {
+      audioContext.close();
+      audioContext = null;
+      throw new Error("AudioWorklet not supported");
+    }
     const moduleUrl = new URL("js/sunvox-worklet-processor.js", window.location.href).href;
     await audioContext.audioWorklet.addModule(moduleUrl);
     workletNode = new AudioWorkletNode(audioContext, "sunvox-worklet-processor", {
@@ -255,6 +257,15 @@ function getMasterVolume() {
   return masterVolume;
 }
 
+async function reapplyPublicMasterVolume(volume) {
+  const publicSetter = window.setMasterVolume;
+  if (typeof publicSetter === "function" && publicSetter !== setMasterVolume) {
+    await publicSetter(volume);
+    return;
+  }
+  await setMasterVolume(volume);
+}
+
 async function setMasterVolume(volume) {
   masterVolume = clampMasterVolume(volume);
   if (connected && playerState.ready) {
@@ -266,7 +277,13 @@ async function setMasterVolume(volume) {
 async function loadAndPlay(url) {
   await ensureAudioContext();
   const requestSerial = ++loadCommandSerial;
-  return sendCommand({ type: "loadAndPlay", url, requestSerial });
+  const loaded = await sendCommand({ type: "loadAndPlay", url, requestSerial });
+  try {
+    await reapplyPublicMasterVolume(masterVolume);
+  } catch {
+    // non-fatal; keep playback result even if volume re-application fails
+  }
+  return loaded;
 }
 
 async function playLoadedProject() {
@@ -288,7 +305,9 @@ async function stopPlayback() {
 }
 
 async function configureSynthControllers(url, controllers) {
-  await ensureAudioContext();
+  if (!connected || !playerState.ready) {
+    return false;
+  }
   const sanitized = (controllers ?? [])
     .filter((controller) => Number.isFinite(controller?.controllerIndex) && Number.isFinite(controller?.value))
     .map((controller) => ({

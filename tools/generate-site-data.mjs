@@ -1,13 +1,29 @@
 #!/usr/bin/env node
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, extname, join, relative, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { deflateSync } from "node:zlib";
 
 import { analyzeSunsynthFile, parseProbe } from "./sunsynth-characterize.mjs";
 import { buildOutlineFromFile } from "./sunvox-outline.mjs";
 import { loadEditRecipe } from "./sunvox-edit-recipe.mjs";
 import { loadMusicRecipe } from "./sunvox-music-recipe.mjs";
+
+const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+function resolveWorkspacePath(pathValue) {
+  if (!pathValue) {
+    return pathValue;
+  }
+  if (isAbsolute(pathValue)) {
+    return pathValue;
+  }
+  return resolve(WORKSPACE_ROOT, pathValue);
+}
+
+function relativeWorkspacePath(filePath) {
+  return relative(WORKSPACE_ROOT, filePath).replaceAll("\\", "/");
+}
 
 export const DEFAULT_ROOTS = ["music", "instruments", "generated/music", "generated/instruments"];
 const DEFAULT_EDIT_RECIPE_ROOTS = ["generated/recipes/sunvox-edit"];
@@ -53,7 +69,7 @@ export function parsePreviewRoots(value) {
 export async function findSunVoxFiles(paths) {
   const files = [];
   for (const input of paths) {
-    const path = resolve(input);
+    const path = resolveWorkspacePath(input);
     let entries;
     try {
       entries = await readdir(path, { withFileTypes: true });
@@ -73,7 +89,7 @@ export async function findSunVoxFiles(paths) {
 async function findRecipeFiles(paths) {
   const files = [];
   for (const input of paths) {
-    const path = resolve(input);
+    const path = resolveWorkspacePath(input);
     let entries;
     try {
       entries = await readdir(path, { withFileTypes: true });
@@ -109,7 +125,7 @@ async function collectGeneratedSourceRecipes({
   const sources = new Map();
   for (const recipeFile of editRecipeFiles) {
     const recipe = await loadEditRecipe(recipeFile, { cacheBust: true });
-    const recipePath = relative(process.cwd(), recipeFile).replaceAll("\\", "/");
+    const recipePath = relativeWorkspacePath(recipeFile);
     for (const output of Object.values(recipe.outputs)) {
       if (output.kind !== "sunsynth" || extname(output.file).toLowerCase() !== ".sunsynth") {
         continue;
@@ -119,7 +135,7 @@ async function collectGeneratedSourceRecipes({
   }
   for (const recipeFile of musicRecipeFiles) {
     const recipe = await loadMusicRecipe(recipeFile, { cacheBust: true });
-    const recipePath = relative(process.cwd(), recipeFile).replaceAll("\\", "/");
+    const recipePath = relativeWorkspacePath(recipeFile);
     for (const output of Object.values(recipe.outputs)) {
       if (extname(output.file).toLowerCase() !== ".sunvox") {
         continue;
@@ -491,7 +507,7 @@ export async function collectSiteData(paths = DEFAULT_ROOTS, options = {}) {
   const catalogEntries = [];
   for (const file of files) {
     const outline = await buildOutlineFromFile(file);
-    const path = relative(process.cwd(), file).replaceAll("\\", "/");
+    const path = relativeWorkspacePath(file);
     const sourceRecipe = generatedSourceRecipes.get(path);
     const project = documentSummary(outline, path);
     if (sourceRecipe && project.type === "project") {

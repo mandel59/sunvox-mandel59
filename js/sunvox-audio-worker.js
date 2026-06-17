@@ -5,9 +5,10 @@ const DEFAULT_MAX_BUFFERED_FRAMES = 65536;
 const DEFAULT_RENDER_INTERVAL_MS = 5;
 const MAX_RENDER_BATCH = 16;
 
-const SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
-const SV_INIT_FLAG_AUDIO_FLOAT32 = 1 << 3;
-const SV_INIT_FLAG_ONE_THREAD = 1 << 4;
+const WORKER_SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
+const WORKER_SV_INIT_FLAG_USER_AUDIO_CALLBACK = 1 << 1;
+const WORKER_SV_INIT_FLAG_AUDIO_FLOAT32 = 1 << 3;
+const WORKER_SV_INIT_FLAG_ONE_THREAD = 1 << 4;
 const NOTE_OFF = 128;
 const ALL_NOTES_OFF = 129;
 const NOTE_TRACK_COUNT = 32;
@@ -37,6 +38,75 @@ let loadedResourceUrl = "";
 let loadedSynthModule = -1;
 let loadedBytes = 0;
 let latestLoadRequestSerial = 0;
+function isSunvoxInitialized() {
+  return typeof sv_init === "function" && typeof sv_load_from_memory === "function";
+}
+
+function isSunvoxRuntimeLoaded() {
+  return typeof SunVoxLib === "function";
+}
+
+function configureSunVoxLibLoader(sunvoxJsUrl) {
+  if (typeof SunVoxLib !== "function") {
+    return;
+  }
+  if (SunVoxLib.__sunvoxWorkerPatched) {
+    return;
+  }
+  const originalFactory = SunVoxLib;
+  const baseUrl = new URL(".", new URL(sunvoxJsUrl, self.location.href).href).href;
+  const patched = (moduleArg = {}) =>
+    originalFactory({
+      ...moduleArg,
+      locateFile: moduleArg.locateFile || ((fileName) => new URL(fileName, baseUrl).href),
+    });
+  patched.__sunvoxWorkerPatched = true;
+  self.SunVoxLib = patched;
+}
+
+async function ensureSunVoxRuntimeReady() {
+  if (typeof svlib === "undefined") {
+    return;
+  }
+  if (typeof svlib.then !== "function") {
+    return;
+  }
+  const module = await svlib;
+  if (!module || typeof module._sv_init !== "function") {
+    throw new Error("SunVox runtime failed to initialize");
+  }
+  svlib = module;
+}
+
+function safeImportScripts(url) {
+  try {
+    importScripts(url);
+    return;
+  } catch (error) {
+    const message = error?.message ?? "";
+    const redeclared = typeof message === "string" && message.includes("already been declared");
+    postLog("warn", `importScripts failed: ${url} message=${message}`);
+    if (!redeclared) {
+      throw error;
+    }
+    if (!isSunvoxInitialized()) {
+      throw error;
+    }
+  }
+}
+
+function ensureSunvoxLibraries(sunvoxJsUrl, sunvoxLoaderJsUrl) {
+  if (!isSunvoxRuntimeLoaded()) {
+    safeImportScripts(sunvoxJsUrl);
+  }
+  if (!isSunvoxInitialized()) {
+    configureSunVoxLibLoader(sunvoxJsUrl);
+    safeImportScripts(sunvoxLoaderJsUrl);
+    if (!isSunvoxInitialized()) {
+      throw new Error("SunVox loader initialization failed");
+    }
+  }
+}
 
 const synthControllerPresets = new Map();
 let commandQueue = Promise.resolve();
@@ -119,7 +189,7 @@ function renderOneChunk() {
     return false;
   }
   postAudioChunk(outBuffer);
-  return result !== 0;
+  return true;
 }
 
 function renderAudioStep() {
@@ -523,10 +593,22 @@ async function initialize(message) {
     throw new Error("Missing SunVox URLs");
   }
 
-  importScripts(sunvoxJsUrl, sunvoxLoaderJsUrl);
+  ensureSunvoxLibraries(sunvoxJsUrl, sunvoxLoaderJsUrl);
+  await ensureSunVoxRuntimeReady();
 
-  const flags = SV_INIT_FLAG_NO_DEBUG_OUTPUT | SV_INIT_FLAG_AUDIO_FLOAT32 | SV_INIT_FLAG_ONE_THREAD;
-  const initResult = sv_init(0, audioContextSampleRate, channels, flags);
+  const initFlags = WORKER_SV_INIT_FLAG_NO_DEBUG_OUTPUT |
+    WORKER_SV_INIT_FLAG_USER_AUDIO_CALLBACK |
+    WORKER_SV_INIT_FLAG_AUDIO_FLOAT32 |
+    WORKER_SV_INIT_FLAG_ONE_THREAD;
+  // NOTE: USER_AUDIO_CALLBACK keeps SunVox in pull-mode so the worker can call sv_audio_callback().
+  // sda_ctx is only used by SunVox internal web-audio callback mode and should remain off in this flow.
+  if (typeof sda_ctx === "undefined") {
+    self.sda_ctx = null;
+  }
+  if (typeof sda_node === "undefined") {
+    self.sda_node = null;
+  }
+  const initResult = sv_init(0, audioContextSampleRate, channels, initFlags);
   if (initResult < 0) {
     throw new Error(`sv_init failed: ${initResult}`);
   }
