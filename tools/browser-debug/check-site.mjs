@@ -72,6 +72,8 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       topLevelMetrics: document.querySelectorAll('#project-details > .metrics').length,
       licenseLinks: document.querySelectorAll('.licenses a').length,
       topbarButtons: document.querySelectorAll('#topbar-controls button').length,
+      topbarStopDisabled: document.querySelector('#topbar-controls button:nth-of-type(2)')?.disabled ?? null,
+      topbarStatusExists: document.querySelector('#status') !== null,
       topbarVolume: document.querySelector('#topbar-controls input[type="range"]')?.value ?? null,
       topbarVolumeOutput: document.querySelector('#topbar-controls output')?.textContent ?? null,
       synthKeyboardKeys: document.querySelectorAll('.virtual-keyboard .piano-key').length,
@@ -158,6 +160,12 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
 
     if (initial.topbarButtons !== 2) {
       throw new Error(`Expected two topbar playback buttons, got ${initial.topbarButtons}`);
+    }
+    if (initial.topbarStatusExists) {
+      throw new Error('Expected no topbar status output');
+    }
+    if (initial.topbarStopDisabled !== false) {
+      throw new Error(`Expected topbar stop to stay enabled, got disabled=${initial.topbarStopDisabled}`);
     }
     if (!(initial.detailsHeaderGap >= 12)) {
       throw new Error(`Expected details header divider to have bottom spacing, got ${initial.detailsHeaderGap}`);
@@ -713,6 +721,8 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       ),
       timelineMuteButtons: document.querySelectorAll('.timeline-mute-control').length,
       topbarPlayDisabled: document.querySelector('#topbar-controls button')?.disabled ?? null,
+      topbarStopDisabled: document.querySelector('#topbar-controls button:nth-of-type(2)')?.disabled ?? null,
+      topbarStatusExists: document.querySelector('#status') !== null,
       topbarVolume: document.querySelector('#topbar-controls input[type="range"]')?.value ?? null,
       topbarVolumeOutput: document.querySelector('#topbar-controls output')?.textContent ?? null,
       playerVolume: window.getMasterVolume?.() ?? null,
@@ -735,6 +745,12 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     }));
     if (afterSelect.topbarPlayDisabled !== false) {
       throw new Error(`Expected selected project to enable topbar play, got disabled=${afterSelect.topbarPlayDisabled}`);
+    }
+    if (afterSelect.topbarStatusExists) {
+      throw new Error('Expected no topbar status output after selecting a project');
+    }
+    if (afterSelect.topbarStopDisabled !== false) {
+      throw new Error(`Expected selected project to keep topbar stop enabled, got disabled=${afterSelect.topbarStopDisabled}`);
     }
     if (!(afterSelect.detailsHeaderGap >= 12)) {
       throw new Error(`Expected details header divider to have bottom spacing, got ${afterSelect.detailsHeaderGap}`);

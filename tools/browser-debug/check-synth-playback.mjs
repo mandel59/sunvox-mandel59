@@ -83,6 +83,19 @@ async function waitForAudioSignal(page, timeoutMs) {
   throw new Error(`Synth audio signal stayed silent after ${timeoutMs}ms; last signal ${JSON.stringify(signal)}`);
 }
 
+async function waitForAudioSilence(page, timeoutMs) {
+  const start = Date.now();
+  let signal = null;
+  while (Date.now() - start < timeoutMs) {
+    signal = await readAudioSignal(page);
+    if (signal.available && signal.peak < AUDIO_SIGNAL_MIN_PEAK) {
+      return signal;
+    }
+    await page.waitForTimeout(WAIT_POLL_MS);
+  }
+  throw new Error(`Synth audio signal stayed active after topbar stop for ${timeoutMs}ms; last signal ${JSON.stringify(signal)}`);
+}
+
 async function launchBrowser() {
   const launchOptions = { headless: !headed };
   try {
@@ -148,16 +161,38 @@ async function checkSynthPlayback({ url = DEFAULT_URL, synthPath = TARGET_SYNTH 
     const audioSignalAfterOff = await readAudioSignal(page);
     const stateAfterOff = await page.evaluate(() => window.getPlayerState?.() ?? null);
 
+    const noteOnForTopbarStop = await page.evaluate(
+      ({ pathValue, note, velocity }) => window.playSynthNote(pathValue, note, velocity),
+      { pathValue: synthPath, note: TARGET_NOTE, velocity: TARGET_VELOCITY },
+    );
+    if (noteOnForTopbarStop === false) {
+      throw new Error(`playSynthNote returned false before topbar stop for ${synthPath}`);
+    }
+    const audioSignalBeforeTopbarStop = await waitForAudioSignal(page, AUDIO_SIGNAL_TIMEOUT_MS);
+    const topbarStopDisabled = await page.evaluate(
+      () => document.querySelector('#topbar-controls button:nth-of-type(2)')?.disabled ?? null,
+    );
+    if (topbarStopDisabled !== false) {
+      throw new Error(`topbar stop button should stay enabled, got disabled=${topbarStopDisabled}`);
+    }
+    await page.locator('#topbar-controls button').nth(1).click();
+    const audioSignalAfterTopbarStop = await waitForAudioSilence(page, AUDIO_SIGNAL_TIMEOUT_MS);
+    const stateAfterTopbarStop = await page.evaluate(() => window.getPlayerState?.() ?? null);
+
     status.ok = true;
     status.errors = errors;
     status.preload = preload;
     status.noteOn = noteOn;
     status.noteOff = noteOff;
+    status.noteOnForTopbarStop = noteOnForTopbarStop;
     status.transport = transport;
     status.audioSignal = audioSignal;
     status.audioSignalAfterOff = audioSignalAfterOff;
+    status.audioSignalBeforeTopbarStop = audioSignalBeforeTopbarStop;
+    status.audioSignalAfterTopbarStop = audioSignalAfterTopbarStop;
     status.stateDuringSynth = stateDuringSynth;
     status.stateAfterOff = stateAfterOff;
+    status.stateAfterTopbarStop = stateAfterTopbarStop;
   } catch (error) {
     status.errors.push(error instanceof Error ? error.message : String(error));
   } finally {

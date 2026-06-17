@@ -781,18 +781,8 @@ function configureSynthControllers(url, controllers) {
 }
 
 function stopPlayback() {
-  if (activeProject.loaded || projectPlaying) {
-    sv_stop(activeProject.slot);
-  }
-  projectPlaying = false;
-  flushAudioOutput();
-  if (anyActiveSynthNotes()) {
-    startAudioOutput({ resetQueue: false });
-  } else {
-    stopAudioOutput({ flush: true });
-  }
+  stopAllAudioInternal();
   postStatus("Stopped");
-  postPlayerState();
   return { stopped: true };
 }
 

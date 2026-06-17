@@ -407,7 +407,7 @@ function TopbarControls({ project, volume, playbackState, onPlay, onStop, onVolu
         <span aria-hidden="true">▶</span>
         Play
       </button>
-      <button type="button" disabled={!playbackState?.isPlaying} onClick={onStop}>
+      <button type="button" onClick={onStop}>
         <span aria-hidden="true">■</span>
         Stop
       </button>
@@ -1636,7 +1636,7 @@ function ProjectActions({ project, playbackState, onPlay, onStop }) {
           >
             <span aria-hidden="true">▶</span> Play
           </button>
-          <button type="button" disabled={!playbackState?.isPlaying} onClick={onStop}>
+          <button type="button" onClick={onStop}>
             <span aria-hidden="true">■</span> Stop
           </button>
         </>

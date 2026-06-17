@@ -150,13 +150,6 @@ input[type="search"]:focus {
   text-align: right;
 }
 
-#status {
-  max-width: 42rem;
-  color: var(--muted);
-  overflow-wrap: anywhere;
-  text-align: right;
-}
-
 .app-shell {
   display: grid;
   grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
@@ -1553,10 +1546,6 @@ button.module-reference-pill {
 
   .topbar {
     display: grid;
-  }
-
-  #status {
-    text-align: left;
   }
 
   .topbar-right {
