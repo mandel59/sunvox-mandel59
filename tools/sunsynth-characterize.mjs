@@ -40,6 +40,14 @@ const DB_FLOOR = -120;
 const ACTIVE_GATE_DB = -24;
 const NEAR_CLIP_THRESHOLD = 0.98;
 const BS1770_OFFSET_LUFS = -0.691;
+const MAX_MOMENTARY_WEIGHT = 0.5;
+const MAX_SHORT_WEIGHT = 0.35;
+const ACTIVE_WEIGHT = 0.15;
+const ATTACK_BOOST_START_MS = 18;
+const ATTACK_BOOST_SCALE = 0.16;
+const CREST_BOOST_START = 3;
+const CREST_BOOST_SCALE = 0.08;
+const MAX_PERCEIVED_BOOST_DB = 1;
 const K_WEIGHT_HIGH_SHELF = Object.freeze({
   frequency: 1681.974450955533,
   q: 0.7071752369554196,
@@ -557,6 +565,57 @@ function frameRms(samples, channels, startFrame, endFrame) {
   return count ? Math.sqrt(sumSquares / count) : 0;
 }
 
+function perceivedLoudnessAdjustment(features) {
+  const crestFactor = features.level?.crestFactor ?? 1;
+  const attackMs = features.envelope?.attackMs ?? 0;
+
+  const crestBoost = Math.max(0, (Math.log2(Math.max(1, crestFactor)) - CREST_BOOST_START) * CREST_BOOST_SCALE);
+  const attackGain =
+    attackMs > 0 ? Math.max(0, Math.log2(ATTACK_BOOST_START_MS / Math.max(1, attackMs)) * ATTACK_BOOST_SCALE) : 0;
+  const totalGain = Math.min(MAX_PERCEIVED_BOOST_DB, crestBoost + attackGain);
+
+  return {
+    crestGain: crestBoost,
+    attackGain,
+    totalGain,
+  };
+}
+
+function blendLoudnessDb(values, totalWeight) {
+  let weightedPower = 0;
+  let weight = 0;
+  for (const value of values) {
+    if (!Number.isFinite(value.levelDb) || value.levelDb <= Number.NEGATIVE_INFINITY) {
+      continue;
+    }
+    weightedPower += value.weight * 10 ** (value.levelDb / 10);
+    weight += value.weight;
+  }
+  if (!weight || !weightedPower || !Number.isFinite(totalWeight) || totalWeight < 0) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  return 10 * Math.log10(weightedPower / totalWeight);
+}
+
+export function computePerceivedLoudness(features) {
+  const maxMomentaryLufs = Number(features?.loudness?.maxMomentaryLufs);
+  const maxShortLufs = Number(features?.loudness?.maxShortLufs);
+  const activeLufs = Number(features?.loudness?.activeLufs);
+  const baseLoudness = blendLoudnessDb(
+    [
+      { levelDb: maxMomentaryLufs, weight: MAX_MOMENTARY_WEIGHT },
+      { levelDb: maxShortLufs, weight: MAX_SHORT_WEIGHT },
+      { levelDb: activeLufs, weight: ACTIVE_WEIGHT },
+    ],
+    MAX_MOMENTARY_WEIGHT + MAX_SHORT_WEIGHT + ACTIVE_WEIGHT,
+  );
+  if (!Number.isFinite(baseLoudness)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  const { totalGain } = perceivedLoudnessAdjustment(features);
+  return baseLoudness + totalGain;
+}
+
 function normalizeBiquad({ b0, b1, b2, a0, a1, a2 }) {
   return {
     b0: b0 / a0,
@@ -778,6 +837,7 @@ function loudnessFeatures(samples, channels, sampleRate, windows, noteOnFrame, n
     loudestWindowRmsDb: amplitudeDb(peakRms),
     maxShortRms,
     maxShortRmsDb,
+    maxShortLufs: lufsFromPower(maxShortRms ** 2),
     maxMomentaryRms,
     maxMomentaryRmsDb: amplitudeDb(maxMomentaryRms),
     activeLufs,
@@ -1183,6 +1243,7 @@ export function analyzeRenderedAudio(rendered) {
   const fundamentalHz = noteFrequency(note ?? DEFAULT_NOTE);
   const rms = samples.length ? Math.sqrt(sumSquares / samples.length) : 0;
   const peakRms = windows.reduce((max, window) => Math.max(max, window.rms), 0);
+  const loudness = loudnessFeatures(samples, channels, sampleRate, windows, noteOnFrame, noteOffFrame, frameCount, peak, rms, peakRms);
   const features = {
     level: {
       peak,
@@ -1193,7 +1254,7 @@ export function analyzeRenderedAudio(rendered) {
       tailRms,
       tailToBodyRatio: bodyRms ? tailRms / bodyRms : 0,
     },
-    loudness: loudnessFeatures(samples, channels, sampleRate, windows, noteOnFrame, noteOffFrame, frameCount, peak, rms, peakRms),
+    loudness,
     envelope: {
       attackMs: attackMs(windows, noteOnFrame, noteOffFrame, sampleRate),
       decayMs: decayMs(windows, noteOnFrame, noteOffFrame, sampleRate),
@@ -1209,6 +1270,10 @@ export function analyzeRenderedAudio(rendered) {
     },
     stereo: stereoFeatures(samples, channels),
   };
+  const perceived = computePerceivedLoudness(features);
+  const correction = perceivedLoudnessAdjustment(features);
+  features.loudness.perceivedMomentaryLufs = perceived;
+  features.loudness.perceivedBoostDb = correction.totalGain;
   return {
     ...features,
     tags: tagFeatures(features),
@@ -1305,6 +1370,10 @@ function buildComparisons(results) {
           pattern.features.loudness.maxMomentaryLufs,
           directEvent.features.loudness.maxMomentaryLufs,
         ),
+        perceivedMomentaryLufs: compareNumber(
+          pattern.features.loudness.perceivedMomentaryLufs,
+          directEvent.features.loudness.perceivedMomentaryLufs,
+        ),
         headroomDb: compareNumber(pattern.features.loudness.headroomDb, directEvent.features.loudness.headroomDb),
         bodyRms: compareNumber(pattern.features.level.bodyRms, directEvent.features.level.bodyRms),
         tailRms: compareNumber(pattern.features.level.tailRms, directEvent.features.level.tailRms),
@@ -1365,6 +1434,7 @@ function formatTable(results) {
       "Active",
       "M LUFS",
       "A LUFS",
+      "P LUFS",
       "Headroom",
       "Crest",
       "Centroid",
@@ -1396,6 +1466,7 @@ function formatTable(results) {
       fixed(features.loudness.activeRms),
       fixed(features.loudness.maxMomentaryLufs, 1),
       fixed(features.loudness.activeLufs, 1),
+      fixed(features.loudness.perceivedMomentaryLufs, 1),
       `${fixed(features.loudness.headroomDb, 1)}dB`,
       fixed(features.level.crestFactor, 2),
       `${rounded(features.spectrum.body.centroidHz)}Hz`,
@@ -1448,6 +1519,7 @@ function formatDetails(results) {
         `  measurement: method=${measurement.renderMethod} sampleRate=${measurement.playback.sampleRate}Hz channels=${measurement.playback.channels} masterVolume=${measurement.playback.masterVolume} track=${measurement.playback.track} actualGate=${formatSeconds(measurement.playback.actualGateSeconds)}s`,
         probeLine,
         `  level: peak=${fixed(features.level.peak)} headroom=${fixed(features.loudness.headroomDb, 1)}dB rms=${fixed(features.level.rms)} short120=${fixed(features.loudness.maxShortRms)} active=${fixed(features.loudness.activeRms)} momentary400=${fixed(features.loudness.maxMomentaryRms)} maxMomentaryLufs=${fixed(features.loudness.maxMomentaryLufs, 1)} activeLufs=${fixed(features.loudness.activeLufs, 1)} fullLufs=${fixed(features.loudness.fullLufs, 1)} full-to-short=${fixed(features.loudness.fullToShortDeltaDb, 1)}dB crest=${fixed(features.level.crestFactor, 2)} transient=${fixed(features.level.transientRms)} body=${fixed(features.level.bodyRms)} tail=${fixed(features.level.tailRms)} tail/body=${fixed(features.level.tailToBodyRatio, 2)} nearClipSamples=${features.loudness.nearClipSamples} clippedSamples=${features.loudness.clippedSamples}`,
+        `  perceived: boostedLUFS=${fixed(features.loudness.perceivedMomentaryLufs, 1)} gain=${fixed(features.loudness.perceivedBoostDb, 2)}dB`,
         `  envelope: attack=${features.envelope.attackMs === undefined ? "-" : `${rounded(features.envelope.attackMs)}ms`} decay=${features.envelope.decayMs === undefined ? "-" : `${rounded(features.envelope.decayMs)}ms`} release=${features.envelope.release.status}${features.envelope.release.ms === undefined ? "" : ` ${rounded(features.envelope.release.ms)}ms`} tailDuration=${features.envelope.tailDurationMs === undefined ? "-" : `${rounded(features.envelope.tailDurationMs)}ms`} noteOffDelta=${features.envelope.noteOffSensitivity.deltaDb === undefined ? "-" : `${fixed(features.envelope.noteOffSensitivity.deltaDb, 1)}dB`}`,
         `  ${formatSpectrum("transient spectrum", features.spectrum.transient)}`,
         `  ${formatSpectrum("body spectrum", features.spectrum.body)}`,

@@ -440,7 +440,7 @@ const recipe = {
           color: "#a8d3cb",
           position: { x: 1264, y: 512, z: 0 },
           controllers: {
-            volume: 560,
+            volume: 320,
             balance: 128,
             fineVolume: 32768,
             gain: 1,
@@ -451,8 +451,8 @@ const recipe = {
           position: { x: 1420, y: 512, z: 0 },
           controllers: {
             volume: 246,
-            threshold: 220,
-            slope: 88,
+            threshold: 200,
+            slope: 90,
             attack: 1,
             release: 180,
             mode: "peak",

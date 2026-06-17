@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { analyzeRenderedAudio, parseNote, parseProbe } from "../tools/sunsynth-characterize.mjs";
+import { analyzeRenderedAudio, computePerceivedLoudness, parseNote, parseProbe } from "../tools/sunsynth-characterize.mjs";
 import { SunSynthLab } from "../tools/sunsynth-lab.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -89,6 +89,16 @@ test("extracts spectral and stereo features from rendered audio", () => {
   assert.ok(features.stereo.sideToMidRatio < 0.001);
   assert.ok(features.tags.includes("loud"));
   assert.ok(features.tags.includes("narrow"));
+});
+
+test("keeps perceived loudness close to measured loudness for stable source tones", () => {
+  const features = analyzeRenderedAudio(stereoSine({ frequency: 261.63, seconds: 1.2 }));
+  const perceived = computePerceivedLoudness(features);
+  const momentary = features.loudness.maxMomentaryLufs;
+
+  assert.ok(Number.isFinite(perceived));
+  assert.ok(perceived <= momentary + 0.8);
+  assert.ok(perceived >= momentary - 4);
 });
 
 test("reports side energy for anti-phase stereo material", () => {

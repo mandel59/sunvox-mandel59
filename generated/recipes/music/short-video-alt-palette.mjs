@@ -20,7 +20,11 @@ import {
   withSunVoxSlot,
 } from "../../../tools/sunvox-node.mjs";
 import { SUNVOX_DB, buildContainer, parseContainer } from "../../../tools/sunvox-codec.mjs";
-import { deterministicIconBase64, readSunsynthForMusic } from "../../../tools/sunvox-music-recipe-helpers.mjs";
+import {
+  deterministicIconBase64,
+  readSunsynthForMusic,
+  summarizeMomentaryLufs,
+} from "../../../tools/sunvox-music-recipe-helpers.mjs";
 
 const OUTPUT_DIR = "generated/music";
 const SUMMARY_DIR = "var/music-recipe";
@@ -79,7 +83,7 @@ const sourceModules = [
     moduleName: "Scratch FMX Bass",
     type: "FMX",
     path: "generated/instruments/Scratch FMX Bass.sunsynth",
-    controllers: { volume: 30000, panning: 128 },
+    controllers: { volume: 24000, panning: 128 },
   },
   {
     id: "analog",
@@ -87,14 +91,14 @@ const sourceModules = [
     type: "MetaModule",
     path: "generated/instruments/Scratch Analog.sunsynth",
     musicRootVolume: 256,
-    controllers: { volume: 760 },
+    controllers: { volume: 540 },
   },
   {
     id: "bell",
     moduleName: "Scratch FMX Bell",
     type: "FMX",
     path: "generated/instruments/Scratch FMX Bell.sunsynth",
-    controllers: { volume: 24000, panning: 166 },
+    controllers: { volume: 17200, panning: 166 },
   },
   {
     id: "supersaw",
@@ -391,9 +395,9 @@ const themes = Object.freeze([
     sourceControllers: {
       subKick: { volume: 32 },
       drums: { volume: 210 },
-      bass: { volume: 32768 },
-      analog: { volume: 860 },
-      bell: { volume: 26000 },
+      bass: { volume: 26000 },
+      analog: { volume: 560 },
+      bell: { volume: 19000 },
       supersaw: { volume: 500 },
       shepard: { volume: 220 },
       noise: { volume: 70 },
@@ -427,11 +431,11 @@ const themes = Object.freeze([
     sourceControllers: {
       subKick: { volume: 18 },
       drums: { volume: 130 },
-      bass: { volume: 22000 },
-      analog: { volume: 620 },
-      bell: { volume: 18000 },
+      bass: { volume: 19000 },
+      analog: { volume: 440 },
+      bell: { volume: 14000 },
       supersaw: { volume: 900 },
-      shepard: { volume: 460 },
+      shepard: { volume: 420 },
       noise: { volume: 50 },
     },
     effectControllers: {
@@ -1174,7 +1178,7 @@ function addMixGraph(module, slot, loadedSources, effects, layout) {
   };
 }
 
-function summarizeAudio(samples, channels) {
+function summarizeAudio(samples, channels, sampleRate = SAMPLE_RATE) {
   let peak = 0;
   let sumSquares = 0;
   let clippedSamples = 0;
@@ -1191,12 +1195,24 @@ function summarizeAudio(samples, channels) {
     }
   }
   const rms = Math.sqrt(sumSquares / samples.length);
+  const loudness = summarizeMomentaryLufs(samples, channels, sampleRate);
   const stereo = summarizeStereo(samples, channels);
   return {
     channels,
     frames: samples.length / channels,
     peak,
     rms,
+    momentaryLufs: loudness.momentaryLufs,
+    momentaryPower: loudness.momentaryPower,
+    shortLufs: loudness.shortLufs,
+    shortPower: loudness.shortPower,
+    activeLufs: loudness.activeLufs,
+    activePower: loudness.activePower,
+    activeTopLufs: loudness.activeTopLufs,
+    activeTopPower: loudness.activeTopPower,
+    activeWindowCount: loudness.activeWindowCount,
+    activeTopWindowCount: loudness.activeTopWindowCount,
+    activeThreshold: loudness.activeThreshold,
     clippedSamples,
     activeRatio: activeSamples / samples.length,
     ...(stereo ? { stereo } : {}),
@@ -1268,16 +1284,31 @@ function renderProjectPass(
     blockFrames: DEFAULT_BLOCK_FRAMES,
   });
   assertSunVoxOk(module._sv_stop(slot), "sv_stop");
-  return summarizeAudio(rendered.samples, channels);
+  return summarizeAudio(rendered.samples, channels, sampleRate);
 }
 
 function analyzePartBalance(mix, partSummaries) {
-  const maxRms = Math.max(...partSummaries.map((part) => part.audio.rms));
+  const partLevel = (part) => {
+    const audio = part.audio ?? part;
+    const active = audio.activePower || 0;
+    const activeTop = audio.activeTopPower || 0;
+    const short = audio.shortPower || 0;
+    return active * 0.55 + activeTop * 0.25 + short * 0.2;
+  };
+  const maxPartLevel = Math.max(...partSummaries.map((part) => partLevel(part)), 0);
+  const mixLevel = partLevel(mix);
   return {
-    maxPartRms: maxRms,
+    maxPartRms: maxPartLevel,
+    maxPartLevel,
+    mixActiveLufs: mix.activeLufs,
+    maxPartMomentaryLufs: partSummaries.reduce(
+      (max, part) => Math.max(max, part.audio.momentaryLufs),
+      Number.NEGATIVE_INFINITY,
+    ),
     parts: partSummaries.map((part) => {
-      const rmsRelativeToMaxPart = maxRms > 0 ? part.audio.rms / maxRms : 0;
-      const rmsRelativeToMix = mix.rms > 0 ? part.audio.rms / mix.rms : 0;
+      const level = partLevel(part);
+      const rmsRelativeToMaxPart = maxPartLevel > 0 ? level / maxPartLevel : 0;
+      const rmsRelativeToMix = mixLevel > 0 ? level / mixLevel : 0;
       const status =
         rmsRelativeToMaxPart < 0.28 ? "quiet" : rmsRelativeToMaxPart > 0.9 ? "dominant" : "present";
       return {
@@ -1287,6 +1318,10 @@ function analyzePartBalance(mix, partSummaries) {
         rmsRelativeToMix,
         peak: part.audio.peak,
         rms: part.audio.rms,
+        activeLufs: part.audio.activeLufs,
+        activeTopLufs: part.audio.activeTopLufs,
+        momentaryLufs: part.audio.momentaryLufs,
+        shortLufs: part.audio.shortLufs,
       };
     }),
   };
@@ -1514,6 +1549,9 @@ async function main() {
       nonEmptyEvents: summary.pattern.nonEmptyEvents,
       peak: summary.audio.peak,
       rms: summary.audio.rms,
+      momentaryLufs: summary.audio.momentaryLufs,
+      shortLufs: summary.audio.shortLufs,
+      activeLufs: summary.audio.activeLufs,
       clippedSamples: summary.audio.clippedSamples,
       sideToMidRms: summary.audio.stereo?.sideToMidRms,
       correlation: summary.audio.stereo?.correlation,
