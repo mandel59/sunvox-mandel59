@@ -1,8 +1,10 @@
 const DEFAULT_MASTER_VOLUME = 256;
-const DEFAULT_NOTE_VELOCITY = 128;
-const INSTRUMENT_OUTPUT_MODULE = 0;
-const NOTE_OFF = 128;
-const ALL_NOTES_OFF = 129;
+const DEFAULT_SAMPLE_RATE = 44100;
+const DEFAULT_CHANNELS = 2;
+const DEFAULT_RENDER_FRAMES = 128;
+const DEFAULT_MAX_BUFFERED_FRAMES = 8192;
+const DEFAULT_RENDER_INTERVAL_MS = 5;
+const NOTE_TRACK_MASK = 31;
 
 const playerState = {
   ready: false,
@@ -12,41 +14,26 @@ const playerState = {
   loadingPath: "",
 };
 
+let worker = null;
+let audioContext = null;
+let workletNode = null;
+let initializePromise = null;
+let commandId = 0;
+let loadCommandSerial = 0;
+let connected = false;
 let masterVolume = DEFAULT_MASTER_VOLUME;
-let loadedResourceUrl = "";
-let loadedSynthModule = -1;
-let fileSize = 0;
-const synthControllerPresets = new Map();
 
-let playbackSerial = 0;
-let playbackAbortController = null;
-let playbackQueue = Promise.resolve();
+const pendingCommands = new Map();
 
-svlib.then(async function (Module) {
-  // SunVox Library was successfully loaded.
-  // Here we can perform some initialization:
-  svlib = Module;
-  if (sv_init(0, 44100, 2, 0) < 0) {
-    updateStatus("sv_init error");
-    return;
+function rejectPendingCommands(reason) {
+  for (const command of pendingCommands.values()) {
+    command.reject(reason);
   }
-  if (sv_open_slot(0) < 0) {
-    updateStatus("sv_open_slot error");
-    return;
-  }
-  playerState.ready = true;
-  applyMasterVolume();
-  emitPlayerState();
-  updateStatus("Select a music file");
-  window.dispatchEvent(new Event("sunvox-player-api-ready"));
-});
+  pendingCommands.clear();
+}
 
 function emitPlayerState() {
-  window.dispatchEvent(
-    new CustomEvent("sunvox-player-state", {
-      detail: { ...playerState },
-    }),
-  );
+  window.dispatchEvent(new CustomEvent("sunvox-player-state", { detail: { ...playerState } }));
 }
 
 function setPlayerState(nextState) {
@@ -54,361 +41,315 @@ function setPlayerState(nextState) {
   emitPlayerState();
 }
 
-function updateStatus(s) {
+function updateStatus(message) {
   const statusElement = document.getElementById("status");
   if (statusElement) {
-    statusElement.innerHTML = s;
+    statusElement.innerHTML = message;
   }
-  console.log(s);
-}
-
-function isCommandUsable(signal) {
-  return playerState.ready && !signal?.aborted;
-}
-
-function nextPlaybackSerial() {
-  return ++playbackSerial;
-}
-
-function queuePlaybackCommand(label, command) {
-  const serial = nextPlaybackSerial();
-  const abortController = new AbortController();
-  playbackAbortController?.abort();
-  playbackAbortController = abortController;
-
-  const scheduled = playbackQueue.then(() =>
-    runPlaybackCommand(label, serial, abortController, command).catch((error) => {
-      if (error?.name === "AbortError") {
-        return false;
-      }
-      console.error(`[SunVox] ${label} command failed`, error);
-      return false;
-    }),
-  );
-  playbackQueue = scheduled.catch(() => {});
-  return scheduled;
-}
-
-async function runPlaybackCommand(label, serial, abortController, command) {
-  if (!isCommandUsable(abortController.signal) || serial !== playbackSerial) {
-    return false;
+  if (message) {
+    console.log(message);
   }
-  try {
-    const result = await command(abortController.signal);
-    if (!isCommandUsable(abortController.signal) || serial !== playbackSerial) {
-      return false;
+}
+
+function clampMasterVolume(volume) {
+  if (!Number.isFinite(volume)) {
+    return DEFAULT_MASTER_VOLUME;
+  }
+  return Math.max(0, Math.min(DEFAULT_MASTER_VOLUME, Math.round(volume)));
+}
+
+function clampTrack(value) {
+  const track = Math.round(value);
+  if (!Number.isFinite(track)) {
+    return 0;
+  }
+  return track & NOTE_TRACK_MASK;
+}
+
+function clampNote(note) {
+  const normalized = Math.round(note);
+  return Number.isFinite(normalized) ? normalized : 0;
+}
+
+function clampVelocity(velocity) {
+  const normalized = Math.round(velocity);
+  return Number.isFinite(normalized) ? Math.max(1, Math.min(129, normalized)) : 128;
+}
+
+function nextCommandId() {
+  return ++commandId;
+}
+
+function sendCommand(payload, transferables = []) {
+  const id = nextCommandId();
+  return new Promise((resolve, reject) => {
+    if (!worker) {
+      reject(new Error("SunVox worker is not initialized"));
+      return;
     }
-    return result;
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      return false;
+    pendingCommands.set(id, { resolve, reject });
+    try {
+      worker.postMessage({ type: "command", id, payload }, transferables);
+    } catch (error) {
+      pendingCommands.delete(id);
+      reject(error);
     }
-    updateStatus(`${label} failed: ${error?.message ?? String(error)}`);
-    return false;
-  } finally {
-    if (playbackAbortController === abortController && serial === playbackSerial) {
-      playbackAbortController = null;
+  });
+}
+
+function handleWorkerMessage(event) {
+  const message = event.data || {};
+  if (message.type === "command-result") {
+    const command = pendingCommands.get(message.id);
+    if (!command) {
+      return;
     }
-  }
-}
-
-function markLoading(url) {
-  setPlayerState({
-    isLoading: true,
-    loadingPath: url,
-    isPlaying: false,
-  });
-}
-
-function markLoaded(url, byteLength) {
-  loadedResourceUrl = url;
-  loadedSynthModule = -1;
-  fileSize = byteLength;
-  setPlayerState({
-    loadedPath: url,
-    loadingPath: "",
-    isLoading: false,
-  });
-}
-
-function markPlaybackStarted() {
-  setPlayerState({
-    loadedPath: loadedResourceUrl,
-    isPlaying: true,
-    isLoading: false,
-    loadingPath: "",
-  });
-}
-
-function markPlaybackStopped() {
-  setPlayerState({
-    isPlaying: false,
-    isLoading: false,
-    loadingPath: "",
-  });
-}
-
-function resumeAudioContext() {
-  if (typeof sda_ctx !== "undefined" && sda_ctx && sda_ctx.state === "suspended") {
-    sda_ctx.resume();
-  }
-}
-
-function applyMasterVolume() {
-  if (!playerState.ready) {
+    pendingCommands.delete(message.id);
+    if (message.ok) {
+      command.resolve(message.payload);
+      return;
+    }
+    command.reject(new Error(message.error ?? "Command failed"));
     return;
   }
-  sv_volume(0, masterVolume);
+
+  if (message.type === "player-state") {
+    setPlayerState(message.payload || {});
+    return;
+  }
+
+  if (message.type === "status") {
+    updateStatus(message.text);
+    return;
+  }
+
+  if (message.type === "log") {
+    const level = message.level === "warn" ? "warn" : "log";
+    console[level](`[SunVox worker] ${message.message}`);
+    return;
+  }
+
+  if (message.type === "ready-state") {
+    const ready = Boolean(message.ready);
+    if (ready !== playerState.ready) {
+      setPlayerState({ ready });
+    }
+    return;
+  }
 }
 
-function setMasterVolume(volume) {
-  const nextVolume = Number.isFinite(volume) ? volume : DEFAULT_MASTER_VOLUME;
-  masterVolume = Math.max(0, Math.min(DEFAULT_MASTER_VOLUME, Math.round(nextVolume)));
-  applyMasterVolume();
-  return masterVolume;
+function terminateEngine() {
+  if (worker) {
+    worker.onmessage = null;
+    worker.terminate();
+    worker = null;
+  }
+  if (workletNode) {
+    try {
+      workletNode.disconnect();
+    } catch {
+      // no-op
+    }
+    workletNode = null;
+  }
+  if (audioContext) {
+    try {
+      audioContext.close();
+    } catch {
+      // no-op
+    }
+    audioContext = null;
+  }
+  connected = false;
+  initializePromise = null;
+  rejectPendingCommands(new Error("SunVox engine terminated"));
 }
 
-function getMasterVolume() {
-  return masterVolume;
+async function initializeEngine() {
+  if (initializePromise) {
+    return initializePromise;
+  }
+
+  initializePromise = (async () => {
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) {
+      throw new Error("AudioContext not supported");
+    }
+    if (!AudioContextCtor.prototype.audioWorklet) {
+      throw new Error("AudioWorklet not supported");
+    }
+    if (!window.Worker) {
+      throw new Error("Web Worker not supported");
+    }
+
+    audioContext = new AudioContextCtor({ sampleRate: DEFAULT_SAMPLE_RATE, latencyHint: "interactive" });
+    const moduleUrl = new URL("js/sunvox-worklet-processor.js", window.location.href).href;
+    await audioContext.audioWorklet.addModule(moduleUrl);
+    workletNode = new AudioWorkletNode(audioContext, "sunvox-worklet-processor", {
+      outputChannelCount: [2],
+    });
+    workletNode.connect(audioContext.destination);
+
+    worker = new Worker(new URL("js/sunvox-audio-worker.js", window.location.href).href, {
+      type: "classic",
+    });
+    worker.onmessage = handleWorkerMessage;
+
+    await sendCommand(
+      {
+        type: "setAudioPort",
+        port: workletNode.port,
+      },
+      [workletNode.port],
+    );
+    const sunvoxJsUrl = new URL("sunvox_lib/sunvox_lib/js/lib/sunvox.js", window.location.href).href;
+    const sunvoxLoaderJsUrl = new URL("sunvox_lib/sunvox_lib/js/lib/sunvox_lib_loader.js", window.location.href).href;
+    await sendCommand({
+      type: "initialize",
+      sampleRate: audioContext.sampleRate,
+      channels: DEFAULT_CHANNELS,
+      renderFrames: DEFAULT_RENDER_FRAMES,
+      maxBufferedFrames: DEFAULT_MAX_BUFFERED_FRAMES,
+      renderIntervalMs: DEFAULT_RENDER_INTERVAL_MS,
+      sunvoxJsUrl,
+      sunvoxLoaderJsUrl,
+    });
+
+    connected = true;
+    setPlayerState({
+      ready: true,
+    });
+    window.dispatchEvent(new Event("sunvox-player-api-ready"));
+    sendCommand({ type: "setMasterVolume", volume: masterVolume }).catch(() => {
+      // best effort only
+    });
+  })().catch((error) => {
+    terminateEngine();
+    setPlayerState({ ready: false });
+    throw error;
+  });
+  return initializePromise;
+}
+
+async function ensureAudioContext() {
+  if (!connected || !playerState.ready) {
+    await initializeEngine();
+  }
+  if (!audioContext) {
+    return;
+  }
+  if (audioContext.state !== "running") {
+    try {
+      await audioContext.resume();
+    } catch {
+      // some environments block resume until user action; we still continue
+    }
+  }
 }
 
 function getPlayerState() {
   return { ...playerState };
 }
 
-async function load(url, signal) {
-  if (!isCommandUsable(signal)) {
-    return false;
-  }
-
-  updateStatus("Loading the file...");
-  sv_stop(0);
-  setPlayerState({ isPlaying: false });
-  markLoading(url);
-
-  const response = await fetch(url, { signal });
-  if (!response.ok) {
-    setPlayerState({ isLoading: false, loadingPath: "" });
-    updateStatus(`Music file ${url} not found`);
-    return false;
-  }
-  if (!isCommandUsable(signal)) {
-    return false;
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-  if (!isCommandUsable(signal)) {
-    return false;
-  }
-  const byteArray = new Uint8Array(arrayBuffer);
-  if (!isCommandUsable(signal)) {
-    return false;
-  }
-  if (sv_load_from_memory(0, byteArray) < 0) {
-    setPlayerState({ isLoading: false, loadingPath: "" });
-    updateStatus(`Failed to load the music file ${url}`);
-    return false;
-  }
-  if (!isCommandUsable(signal)) {
-    return false;
-  }
-
-  applyMasterVolume();
-  markLoaded(url, byteArray.byteLength);
-  updateStatus(`${url}`);
-  return true;
+function getMasterVolume() {
+  return masterVolume;
 }
 
-function playLoadedProject() {
-  resumeAudioContext();
-  sv_play_from_beginning(0);
-  applyMasterVolume();
-  markPlaybackStarted();
-}
-
-function stopPlayback() {
-  playbackSerial += 1;
-  playbackAbortController?.abort();
-  playbackAbortController = null;
-  if (!playerState.ready) {
-    return false;
+async function setMasterVolume(volume) {
+  masterVolume = clampMasterVolume(volume);
+  if (connected && playerState.ready) {
+    await sendCommand({ type: "setMasterVolume", volume: masterVolume });
   }
-  sv_stop(0);
-  markPlaybackStopped();
-  return true;
-}
-
-function reopenSlot() {
-  if (!playerState.ready) {
-    return false;
-  }
-  sv_stop(0);
-  sv_close_slot(0);
-  if (sv_open_slot(0) < 0) {
-    playerState.ready = false;
-    loadedResourceUrl = "";
-    loadedSynthModule = -1;
-    markPlaybackStopped();
-    updateStatus("sv_open_slot error");
-    return false;
-  }
-  loadedResourceUrl = "";
-  loadedSynthModule = -1;
-  applyMasterVolume();
-  return true;
-}
-
-function connectSynthModule(moduleIndex) {
-  sv_lock_slot(0);
-  try {
-    return sv_connect_module(0, moduleIndex, INSTRUMENT_OUTPUT_MODULE);
-  } finally {
-    sv_unlock_slot(0);
-  }
-}
-
-function normalizedControllerIndex(controllerIndex) {
-  return Math.max(0, Math.min(126, Math.round(controllerIndex)));
-}
-
-function normalizedControllerValue(value) {
-  return Math.max(0, Math.min(32768, Math.round(value)));
-}
-
-function setLoadedSynthController(moduleIndex, controllerIndex, value) {
-  const controllerNumber = normalizedControllerIndex(controllerIndex);
-  const controllerValue = normalizedControllerValue(value);
-  if (typeof sv_set_module_ctl_value === "function") {
-    return sv_set_module_ctl_value(0, moduleIndex, controllerNumber, controllerValue, 0) >= 0;
-  }
-  sv_send_event(0, 0, 0, 0, moduleIndex + 1, (controllerNumber + 1) << 8, controllerValue);
-  return true;
-}
-
-function applySynthControllerPreset(url, moduleIndex) {
-  const preset = synthControllerPresets.get(url);
-  if (!preset) {
-    return true;
-  }
-  let applied = true;
-  for (const [controllerIndex, value] of preset) {
-    applied = setLoadedSynthController(moduleIndex, controllerIndex, value) && applied;
-  }
-  return applied;
-}
-
-function configureSynthControllers(url, controllers) {
-  const preset = new Map();
-  for (const controller of controllers) {
-    if (!Number.isFinite(controller?.controllerIndex) || !Number.isFinite(controller?.value)) {
-      continue;
-    }
-    preset.set(normalizedControllerIndex(controller.controllerIndex), normalizedControllerValue(controller.value));
-  }
-  synthControllerPresets.set(url, preset);
-  if (loadedResourceUrl === url && loadedSynthModule >= 0) {
-    return applySynthControllerPreset(url, loadedSynthModule);
-  }
-  return true;
-}
-
-async function loadSynthForKeyboard(url) {
-  if (loadedResourceUrl === url && loadedSynthModule >= 0) {
-    applySynthControllerPreset(url, loadedSynthModule);
-    return loadedSynthModule;
-  }
-  updateStatus("Loading the instrument...");
-  const req = await fetch(url);
-  if (!req.ok) {
-    updateStatus(`Instrument file ${url} not found`);
-    return -1;
-  }
-  const arrayBuffer = await req.arrayBuffer();
-  const byteArray = new Uint8Array(arrayBuffer);
-  if (!reopenSlot()) {
-    return -1;
-  }
-  const moduleIndex = sv_load_module_from_memory(0, byteArray, 256, 256, 0);
-  if (moduleIndex < 0) {
-    updateStatus(`Failed to load the instrument ${url}`);
-    return -1;
-  }
-  connectSynthModule(moduleIndex);
-  sv_play(0);
-  applyMasterVolume();
-  loadedResourceUrl = url;
-  loadedSynthModule = moduleIndex;
-  applySynthControllerPreset(url, moduleIndex);
-  updateStatus(`${url}`);
-  return moduleIndex;
-}
-
-function noteTrack(note) {
-  return Math.max(0, Math.min(31, note % 32));
-}
-
-function normalizedNoteVelocity(velocity) {
-  return Math.max(1, Math.min(129, Math.round(velocity)));
-}
-
-async function playSynthNote(url, note, velocity = DEFAULT_NOTE_VELOCITY) {
-  resumeAudioContext();
-  const moduleIndex = await loadSynthForKeyboard(url);
-  if (moduleIndex < 0) {
-    return false;
-  }
-  const noteValue = Math.max(1, Math.min(127, Math.round(note) + 1));
-  const noteVelocity = normalizedNoteVelocity(velocity);
-  sv_send_event(0, noteTrack(note), noteValue, noteVelocity, moduleIndex + 1, 0, 0);
-  return true;
-}
-
-function stopSynthNote(note) {
-  if (!playerState.ready || loadedSynthModule < 0) {
-    return false;
-  }
-  sv_send_event(0, noteTrack(note), NOTE_OFF, 0, loadedSynthModule + 1, 0, 0);
-  return true;
-}
-
-function stopInstrumentNotes() {
-  if (!playerState.ready || loadedSynthModule < 0) {
-    return false;
-  }
-  sv_send_event(0, 0, ALL_NOTES_OFF, 0, 0, 0, 0);
-  return true;
-}
-
-async function setSynthController(url, controllerIndex, value) {
-  resumeAudioContext();
-  const moduleIndex = await loadSynthForKeyboard(url);
-  if (moduleIndex < 0) {
-    return false;
-  }
-  const controllerNumber = normalizedControllerIndex(controllerIndex);
-  const controllerValue = normalizedControllerValue(value);
-  const preset = synthControllerPresets.get(url) ?? new Map();
-  preset.set(controllerNumber, controllerValue);
-  synthControllerPresets.set(url, preset);
-  return setLoadedSynthController(moduleIndex, controllerNumber, controllerValue);
+  return masterVolume;
 }
 
 async function loadAndPlay(url) {
-  const execute = async (signal) => {
-    if (!isCommandUsable(signal) || !playerState.ready) {
-      return false;
-    }
-    const loaded = await load(url, signal);
-    if (!loaded) {
-      return false;
-    }
-    if (!isCommandUsable(signal) || !playerState.ready) {
-      return false;
-    }
-    playLoadedProject();
+  await ensureAudioContext();
+  const requestSerial = ++loadCommandSerial;
+  return sendCommand({ type: "loadAndPlay", url, requestSerial });
+}
+
+async function playLoadedProject() {
+  await ensureAudioContext();
+  return sendCommand({ type: "play" });
+}
+
+async function stopPlayback() {
+  if (!connected) {
+    return false;
+  }
+  try {
+    await sendCommand({ type: "stop" });
     return true;
-  };
-  return queuePlaybackCommand(`loadAndPlay(${url})`, execute);
+  } catch (error) {
+    updateStatus(`stop failed: ${error.message}`);
+    return false;
+  }
+}
+
+async function configureSynthControllers(url, controllers) {
+  await ensureAudioContext();
+  const sanitized = (controllers ?? [])
+    .filter((controller) => Number.isFinite(controller?.controllerIndex) && Number.isFinite(controller?.value))
+    .map((controller) => ({
+      controllerIndex: controller.controllerIndex,
+      value: controller.value,
+    }));
+  try {
+    await sendCommand({ type: "configureSynthControllers", url, controllers: sanitized });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function playSynthNote(url, note, velocity = 128, track) {
+  await ensureAudioContext();
+  const resolvedTrack = Number.isFinite(track) ? track : note;
+  return sendCommand({
+    type: "noteOn",
+    url,
+    track: clampTrack(resolvedTrack),
+    note: clampNote(note),
+    velocity: clampVelocity(velocity),
+  })
+    .then(() => true)
+    .catch(() => false);
+}
+
+async function stopSynthNote(note, track) {
+  if (!connected) {
+    return false;
+  }
+  const resolvedTrack = Number.isFinite(track) ? track : note;
+  return sendCommand({
+    type: "noteOff",
+    track: clampTrack(resolvedTrack),
+    note: clampNote(note),
+  })
+    .then(() => true)
+    .catch(() => false);
+}
+
+async function stopInstrumentNotes() {
+  if (!connected) {
+    return false;
+  }
+  return sendCommand({ type: "stopAllSynthNotes" })
+    .then(() => true)
+    .catch(() => false);
+}
+
+async function setSynthController(url, controllerIndex, value) {
+  await ensureAudioContext();
+  return sendCommand({
+    type: "setController",
+    url,
+    controllerIndex: Math.round(controllerIndex),
+    value: Math.round(value),
+  })
+    .then(() => true)
+    .catch(() => false);
 }
 
 window.playLoadedProject = playLoadedProject;
@@ -422,3 +363,13 @@ window.setSynthController = setSynthController;
 window.configureSynthControllers = configureSynthControllers;
 window.loadAndPlay = loadAndPlay;
 window.getPlayerState = getPlayerState;
+
+window.addEventListener("beforeunload", terminateEngine);
+
+setPlayerState({
+  isPlaying: false,
+  isLoading: false,
+  loadingPath: "",
+  loadedPath: "",
+});
+updateStatus("Ready");

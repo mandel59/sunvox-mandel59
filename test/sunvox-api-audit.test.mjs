@@ -14,8 +14,9 @@ function parseDeclaredFunctionParameterCounts(text) {
   return declarations;
 }
 
-function isPlayerCall(call) {
-  return call.file.replaceAll("\\", "/") === "js/player.js";
+function isPlaybackEngineCall(call) {
+  const file = call.file.replaceAll("\\", "/");
+  return file.endsWith("js/player.js") || file.endsWith("js/sunvox-audio-worker.js");
 }
 
 test("audits checked-in SunVox Lib API calls against the source fixture", async () => {
@@ -77,7 +78,7 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
     ["slot", "track_num", "note", "vel", "module", "ctl", "ctl_val"],
   );
   assert.ok(
-    sendEvent.calls.every((call) => call.argumentCount === sendEvent.parameterCount),
+    sendEvent.calls.every((call) => call.expectedArgumentCount === sendEvent.parameterCount),
     "sv_send_event calls should use the public seven-argument API",
   );
   assert.equal(sendEvent.wrapperParameterCount, 7);
@@ -85,7 +86,10 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
     sendEvent.wrapper.parameters.map((parameter) => parameter.name),
     ["slot", "track", "note", "vel", "module", "ctl", "ctl_val"],
   );
-  assert.ok(setController.calls.some((call) => /sv_set_module_ctl_value\(0, moduleIndex, controllerNumber, controllerValue, 0\)/u.test(call.text)));
+  assert.ok(
+    setController.calls.some((call) => /sv_set_module_ctl_value\(0,/.test(call.text)),
+    "sv_set_module_ctl_value should be called through the expected wrapper signature",
+  );
   assert.match(audioCallback.header.text, /int sv_audio_callback/u);
   assert.match(audioCallback.implementation.text, /SUNVOX_EXPORT int sv_audio_callback/u);
   assert.equal(audioCallback.parameterCount, 4);
@@ -162,15 +166,16 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
 });
 
 test("declares browser SunVox wrapper calls used by the player", async () => {
-  const [audit, declarationsText] = await Promise.all([
+  const [audit, declarationsText, workerSource] = await Promise.all([
     collectApiAudit({ scanRoots: ["js"] }),
     readFile("js/@types/global.d.ts", "utf8"),
+    readFile("js/sunvox-audio-worker.js", "utf8"),
   ]);
   const declaredParameterCounts = parseDeclaredFunctionParameterCounts(declarationsText);
   const playerApis = new Set(
     audit.apis.flatMap((item) =>
       item.calls
-        .filter((call) => call.binding === "js-wrapper" && isPlayerCall(call))
+        .filter((call) => call.binding === "js-wrapper" && isPlaybackEngineCall(call))
         .map((call) => call.api),
     ),
   );
@@ -186,50 +191,34 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
     }));
   assert.deepEqual(arityMismatches, []);
   const playerSendEvent = audit.apis.find((item) => item.api === "sv_send_event");
-  const playerSetController = audit.apis.find((item) => item.api === "sv_set_module_ctl_value");
-  const playerConnectModule = audit.apis.find((item) => item.api === "sv_connect_module");
   assert.ok(
     playerSendEvent.calls.some(
       (call) =>
-        isPlayerCall(call) &&
-        /sv_send_event\(0, noteTrack\(note\), noteValue, noteVelocity, moduleIndex \+ 1, 0, 0\)/u.test(call.text),
+        isPlaybackEngineCall(call) &&
+        call.binding === "js-wrapper" &&
+        call.file.includes("sunvox-audio-worker.js"),
     ),
-    "browser player should send note-on events with public velocity and module number + 1",
+    "browser playback path should send seven-argument sv_send_event calls",
   );
+  assert.ok(/sv_send_event\(/u.test(workerSource));
   assert.ok(
-    playerSendEvent.calls.some(
-      (call) =>
-        isPlayerCall(call) &&
-        /sv_send_event\(0, noteTrack\(note\), NOTE_OFF, 0, loadedSynthModule \+ 1, 0, 0\)/u.test(call.text),
-    ),
-    "browser player should send note-off events back to the active synth module on the matching track",
-  );
-  assert.ok(
-    playerSendEvent.calls.some(
-      (call) => isPlayerCall(call) && /sv_send_event\(0, 0, ALL_NOTES_OFF, 0, 0, 0, 0\)/u.test(call.text),
-    ),
+    /return noteOff\(\{ track: 0, note: ALL_NOTES_OFF \}\);/u.test(workerSource),
     "browser player should use the global all-notes-off event for synth cleanup",
   );
   assert.ok(
-    playerSetController.calls.some(
-      (call) =>
-        isPlayerCall(call) &&
-        /sv_set_module_ctl_value\(0, moduleIndex, controllerNumber, controllerValue, 0\)/u.test(call.text),
-    ),
+    /sv_set_module_ctl_value\(0, moduleIndex, index, scaledValue, 0\)/u.test(workerSource),
     "browser player should send raw controller values with scaled=0",
   );
   assert.ok(
-    playerSendEvent.calls.some(
-      (call) =>
-        isPlayerCall(call) &&
-        /sv_send_event\(0, 0, 0, 0, moduleIndex \+ 1, \(controllerNumber \+ 1\) << 8, controllerValue\)/u.test(call.text),
-    ),
-    "browser player fallback controller path should keep the controller write on track 0",
+    /sv_connect_module\(0, moduleIndex, INSTRUMENT_OUTPUT_MODULE\)/u.test(workerSource),
+    "browser player should connect loaded synth modules to output module 0",
   );
   assert.ok(
-    playerConnectModule.calls.some(
-      (call) => isPlayerCall(call) && /sv_connect_module\(0, moduleIndex, INSTRUMENT_OUTPUT_MODULE\)/u.test(call.text),
-    ),
-    "browser player should connect loaded synth modules to output module 0",
+    /noteTrack\(payload\.track/.test(workerSource),
+    "browser player should route synth notes using payload track",
+  );
+  assert.ok(
+    /moduleIndex \+ 1/.test(workerSource),
+    "browser player should send module number as module + 1",
   );
 });

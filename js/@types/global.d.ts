@@ -7,6 +7,13 @@ declare function sv_open_slot(slot: number): number;
 declare function sv_close_slot(slot: number): number;
 declare function sv_lock_slot(slot: number): number;
 declare function sv_unlock_slot(slot: number): number;
+declare function sv_get_ticks_per_second(): number;
+declare function sv_audio_callback(
+  audio_data: Float32Array,
+  frames: number,
+  latency: number,
+  out_time: number,
+): number;
 declare function sv_load_from_memory(slot: number, byte_array: Uint8Array): number;
 declare function sv_play(slot: number): number;
 declare function sv_play_from_beginning(slot: number): number;
