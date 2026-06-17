@@ -897,6 +897,32 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       throw new Error(`Expected one supertrack project button, found ${supertrackButtonCount}`);
     }
 
+    const playbackContinuesOnProjectSelection = await page.evaluate(async () => {
+      await window.loadAndPlay?.("music/2022-04-17.sunvox");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      return window.getPlayerState?.() ?? {};
+    });
+    if (!playbackContinuesOnProjectSelection.isPlaying) {
+      throw new Error(`Expected loadAndPlay to start playback, got ${JSON.stringify(playbackContinuesOnProjectSelection)}`);
+    }
+
+    await supertrackButton.click();
+    await page.waitForTimeout(250);
+    const playbackAfterSelection = await page.evaluate(() => window.getPlayerState?.() ?? {});
+    if (!playbackAfterSelection.isPlaying) {
+      throw new Error(
+        `Expected playback to remain running while switching project selection, got ${JSON.stringify(playbackAfterSelection)}`,
+      );
+    }
+    if (playbackAfterSelection.loadedPath !== playbackContinuesOnProjectSelection.loadedPath) {
+      throw new Error(
+        `Expected loadedPath to remain unchanged while switching selection, got before=${playbackContinuesOnProjectSelection.loadedPath}, after=${playbackAfterSelection.loadedPath}`,
+      );
+    }
+    await page.evaluate(() => {
+      window.stopPlayback?.();
+    });
+
     await page.evaluate(() => {
       window.__browserCheckStopInstrumentNotesCalls = 0;
       window.__browserCheckOriginalStopInstrumentNotes = window.stopInstrumentNotes;
