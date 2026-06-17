@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 
@@ -2239,6 +2239,7 @@ function App() {
     () => projects.find((project) => project.path === selectedPath),
     [projects, selectedPath],
   );
+  const displayedProject = useDeferredValue(selectedProject);
 
   useEffect(() => {
     if (!projects.length) {
@@ -2336,7 +2337,7 @@ function App() {
           onToggle={() => setFileMenuOpen((current) => !current)}
         />
         <ProjectDetails
-          project={selectedProject}
+          project={displayedProject}
           error={error}
           playbackState={playbackState}
           onPlay={handlePlayProject}
