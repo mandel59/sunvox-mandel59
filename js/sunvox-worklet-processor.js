@@ -6,7 +6,7 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
     this.queuedChunks = [];
     this.queuedFrames = 0;
     this.readOffset = 0;
-    this.maxQueuedFrames = 32768;
+    this.maxQueuedFrames = 65536;
     this.sentinelReportFrames = 0;
     this.reportEveryFrames = 256;
 
