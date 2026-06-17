@@ -54,6 +54,7 @@ let idleOutputFrames = 0;
 let renderScheduled = false;
 let rendering = false;
 let projectPlaying = false;
+let projectTailDraining = false;
 let frameCursor = 0;
 let pendingFrames = 0;
 let isLoading = false;
@@ -365,6 +366,7 @@ function updateIdleOutputState(floatData) {
     return true;
   }
 
+  projectTailDraining = false;
   stopAudioOutput({ flush: true });
   postPlayerState();
   return false;
@@ -477,19 +479,68 @@ function scheduleIdleRenderStop() {
   resetIdleOutputState();
 }
 
-function stopAllAudioInternal() {
-  if (activeProject.loaded) {
-    sv_stop(activeProject.slot);
-  }
-  for (const slot of synthSlots) {
-    if (slot.loaded) {
-      sv_stop(slot.slot);
-      slot.activeNotes.clear();
+function stopSlot(slot, { reset = false, alreadyStopped = false } = {}) {
+  if (!alreadyStopped) {
+    const stopResult = sv_stop(slot);
+    if (stopResult < 0) {
+      throw new Error(`sv_stop(${slot}) failed: ${stopResult}`);
     }
   }
+  if (reset) {
+    const resetResult = sv_stop(slot);
+    if (resetResult < 0) {
+      throw new Error(`sv_stop(${slot}) reset failed: ${resetResult}`);
+    }
+  }
+}
+
+function stopSynthSlots({ reset = false } = {}) {
+  let stopped = false;
+  for (const slot of synthSlots) {
+    if (!slot.loaded) {
+      continue;
+    }
+    stopSlot(slot.slot, { reset });
+    slot.activeNotes.clear();
+    stopped = true;
+  }
+  return stopped;
+}
+
+function stopAllAudioInternal() {
+  const projectAlreadyStopped = projectTailDraining && !projectPlaying;
+  if (activeProject.loaded) {
+    stopSlot(activeProject.slot, { reset: true, alreadyStopped: projectAlreadyStopped });
+  }
+  stopSynthSlots({ reset: true });
   projectPlaying = false;
+  projectTailDraining = false;
   stopAudioOutput({ flush: true });
   postPlayerState();
+}
+
+function stopProjectPlaybackWithTail() {
+  if (!activeProject.loaded && !projectPlaying) {
+    stopAllAudioInternal();
+    return { stopped: true, forced: true, tailDraining: false };
+  }
+
+  if (projectPlaying) {
+    stopSlot(activeProject.slot);
+  }
+  projectPlaying = false;
+  projectTailDraining = activeProject.loaded;
+  stopSynthSlots({ reset: true });
+  flushAudioOutput();
+
+  if (projectTailDraining) {
+    startAudioOutput({ resetQueue: false, resetClock: false });
+  } else {
+    stopAudioOutput({ flush: true });
+  }
+
+  postPlayerState();
+  return { stopped: true, forced: false, tailDraining: projectTailDraining };
 }
 
 function setAudioPort(port) {
@@ -627,9 +678,14 @@ async function loadProjectIntoSlot(slotState, url, resourceUrl, requestSerial) {
     if (!isCurrentLoadRequest(requestSerial)) {
       return { cancelled: true };
     }
-    if (slotState === activeProject && projectPlaying) {
-      sv_stop(activeProject.slot);
+    if (slotState === activeProject && (projectPlaying || projectTailDraining)) {
+      const projectAlreadyStopped = projectTailDraining && !projectPlaying;
+      stopSlot(activeProject.slot, {
+        reset: projectAlreadyStopped,
+        alreadyStopped: projectAlreadyStopped,
+      });
       projectPlaying = false;
+      projectTailDraining = false;
       flushAudioOutput();
     }
     reopenSlot(slotState);
@@ -675,6 +731,7 @@ function startProjectPlayback({ fromBeginning = false } = {}) {
   if (!activeProject.loaded) {
     throw new Error("No project loaded");
   }
+  projectTailDraining = false;
   flushAudioOutput();
   const playResult = fromBeginning ? sv_play_from_beginning(activeProject.slot) : sv_play(activeProject.slot);
   if (playResult < 0) {
@@ -722,7 +779,7 @@ async function loadSynthFromUrl(url, resourceUrl, reuseExisting = true) {
     const bytes = await fetchBytes(resourceUrl || url, SUNSYNTH_MODULE_MAGIC, url);
     const slotState = chooseSynthSlot(url);
     if (slotState.loaded) {
-      sv_stop(slotState.slot);
+      stopSlot(slotState.slot, { reset: true });
     }
     reopenSlot(slotState);
     const moduleIndex = withSlotLock(slotState.slot, () => {
@@ -781,9 +838,19 @@ function configureSynthControllers(url, controllers) {
 }
 
 function stopPlayback() {
+  if (projectTailDraining && !projectPlaying) {
+    stopAllAudioInternal();
+    postStatus("Stopped");
+    return { stopped: true, forced: true, tailDraining: false };
+  }
+  if (projectPlaying) {
+    const result = stopProjectPlaybackWithTail();
+    postStatus(result.tailDraining ? "Stopping..." : "Stopped");
+    return result;
+  }
   stopAllAudioInternal();
   postStatus("Stopped");
-  return { stopped: true };
+  return { stopped: true, forced: true, tailDraining: false };
 }
 
 function applyVolume(volume) {

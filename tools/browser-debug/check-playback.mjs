@@ -6,6 +6,8 @@ import { createServer } from 'vite';
 
 const DEFAULT_URL = 'http://127.0.0.1:5173/';
 const TARGET_MUSIC_PROJECT = 'music/2022-04-17.sunvox';
+const TARGET_SILENT_SYNTH = 'instruments/mandel59 shepard.sunsynth';
+const TARGET_SYNTH_NOTE = 60;
 const PLAYBACK_START_TIMEOUT_MS = 5000;
 const PLAYBACK_STOP_TIMEOUT_MS = 2000;
 const AUDIO_SIGNAL_TIMEOUT_MS = 3000;
@@ -170,9 +172,17 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
     const available = await page.evaluate(() => ({
       hasGetPlayerState: typeof window.getPlayerState === 'function',
       hasLoadAndPlay: typeof window.loadAndPlay === 'function',
+      hasPreloadSynth: typeof window.preloadSynth === 'function',
+      hasPlaySynthNote: typeof window.playSynthNote === 'function',
+      hasSetSynthController: typeof window.setSynthController === 'function',
     }));
     if (!available.hasGetPlayerState || !available.hasLoadAndPlay) {
       throw new Error(`Playback API missing: getPlayerState=${available.hasGetPlayerState}, loadAndPlay=${available.hasLoadAndPlay}`);
+    }
+    if (!available.hasPreloadSynth || !available.hasPlaySynthNote || !available.hasSetSynthController) {
+      throw new Error(
+        `Synth API missing: preloadSynth=${available.hasPreloadSynth}, playSynthNote=${available.hasPlaySynthNote}, setSynthController=${available.hasSetSynthController}`,
+      );
     }
 
     await page.waitForSelector('.project-button');
@@ -211,7 +221,39 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
       (state) => !state.isLoading && !state.isPlaying,
       PLAYBACK_STOP_TIMEOUT_MS,
     );
-    const audioSignalAfterStop = await waitForAudioSilence(page, PLAYBACK_STOP_TIMEOUT_MS);
+    await page.waitForTimeout(100);
+    const audioSignalAfterSoftStop = await readAudioSignal(page);
+    const audioSignalAfterTailDrain = await waitForAudioSilence(page, PLAYBACK_STOP_TIMEOUT_MS);
+
+    await page.waitForTimeout(900);
+    const silentSynthReady = await page.evaluate(async (synthPath) => {
+      const preloaded = await window.preloadSynth(synthPath);
+      const muted = await window.setSynthController(synthPath, 0, 0);
+      return { preloaded, muted };
+    }, TARGET_SILENT_SYNTH);
+    if (!silentSynthReady.preloaded || !silentSynthReady.muted) {
+      throw new Error(`Failed to prepare muted synth: ${JSON.stringify(silentSynthReady)}`);
+    }
+    const silentSynthNoteOn = await page.evaluate(
+      ({ synthPath, note }) => window.playSynthNote(synthPath, note, 128),
+      { synthPath: TARGET_SILENT_SYNTH, note: TARGET_SYNTH_NOTE },
+    );
+    if (silentSynthNoteOn === false) {
+      throw new Error('Muted synth note did not start');
+    }
+    await page.waitForTimeout(300);
+    const audioSignalDuringMutedSynthAfterSoftStop = await readAudioSignal(page);
+    if (audioSignalDuringMutedSynthAfterSoftStop.peak > AUDIO_SILENCE_MAX_PEAK) {
+      throw new Error(
+        `Project tail leaked when muted synth restarted rendering: ${JSON.stringify(audioSignalDuringMutedSynthAfterSoftStop)}`,
+      );
+    }
+
+    if (await stopButton.isDisabled()) {
+      throw new Error('Topbar stop button is disabled after soft stop');
+    }
+    await stopButton.click();
+    const audioSignalAfterForcedStop = await waitForAudioSilence(page, PLAYBACK_STOP_TIMEOUT_MS);
 
     await mkdir(path.dirname(screenshotPath), { recursive: true });
     await page.screenshot({ path: screenshotPath, fullPage: false });
@@ -220,7 +262,12 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
     status.playbackStarted = playbackStarted;
     status.playbackStopped = playbackStopped;
     status.audioSignal = audioSignal;
-    status.audioSignalAfterStop = audioSignalAfterStop;
+    status.audioSignalAfterSoftStop = audioSignalAfterSoftStop;
+    status.audioSignalAfterTailDrain = audioSignalAfterTailDrain;
+    status.silentSynthReady = silentSynthReady;
+    status.silentSynthNoteOn = silentSynthNoteOn;
+    status.audioSignalDuringMutedSynthAfterSoftStop = audioSignalDuringMutedSynthAfterSoftStop;
+    status.audioSignalAfterForcedStop = audioSignalAfterForcedStop;
     status.screenshot = path.relative(repoRoot, screenshotPath).replaceAll('\\', '/');
   } catch (error) {
     status.errors.push(error instanceof Error ? error.message : String(error));
