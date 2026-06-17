@@ -21,17 +21,22 @@ function parseArgs() {
 }
 
 function openInBrowser(url) {
-  const target = url.replace(/&/g, '^&');
   let program = 'xdg-open';
-  let args = [target];
+  let args = [url];
   if (process.platform === 'win32') {
+    const target = url.replace(/&/g, '^&');
     program = 'cmd';
     args = ['/c', 'start', '""', `"${target}"`];
   } else if (process.platform === 'darwin') {
     program = 'open';
-    args = [target];
+    args = [url];
   }
-  spawn(program, args, { detached: true, stdio: 'ignore' }).unref();
+  const opener = spawn(program, args, { detached: true, stdio: 'ignore' });
+  opener.on('error', (error) => {
+    console.warn(`Could not open browser with ${program}: ${error.message}`);
+    console.warn(`Open manually: ${url}`);
+  });
+  opener.unref();
 }
 
 async function main() {

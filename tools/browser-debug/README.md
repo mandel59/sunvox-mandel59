@@ -21,7 +21,7 @@ npm run browser:check:headed
 npm run browser:check:playback
 npm run browser:check:playback:headed
 npm run browser:playback:manual
-npm --prefix tools/browser-debug run playback:manual -- no-open   # keep server only
+npm run browser:playback:manual -- --no-open   # keep server only
 npm run browser:check:dev
 ```
 

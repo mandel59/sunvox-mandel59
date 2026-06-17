@@ -600,7 +600,7 @@ async function initialize(message) {
     WORKER_SV_INIT_FLAG_USER_AUDIO_CALLBACK |
     WORKER_SV_INIT_FLAG_AUDIO_FLOAT32 |
     WORKER_SV_INIT_FLAG_ONE_THREAD;
-  // NOTE: USER_AUDIO_CALLBACK keeps SunVox in pull-mode so the worker can call sv_audio_callback().
+  // NOTE: USER_AUDIO_CALLBACK keeps SunVox in pull-mode so the worker can call sv_audio_callback.
   // sda_ctx is only used by SunVox internal web-audio callback mode and should remain off in this flow.
   if (typeof sda_ctx === "undefined") {
     self.sda_ctx = null;
