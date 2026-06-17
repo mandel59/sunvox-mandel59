@@ -1,4 +1,4 @@
-import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 
@@ -2196,8 +2196,10 @@ function App() {
     loadedPath: "",
     loadingPath: "",
   });
+  const [inspectedPath, setInspectedPath] = useState("");
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const topbarControlsRoot = useMemo(() => document.getElementById("topbar-controls"), []);
+  const [, startInspectTransition] = useTransition();
 
   useEffect(() => {
     let alive = true;
@@ -2239,7 +2241,10 @@ function App() {
     () => projects.find((project) => project.path === selectedPath),
     [projects, selectedPath],
   );
-  const displayedProject = useDeferredValue(selectedProject);
+  const displayedProject = useMemo(
+    () => projects.find((project) => project.path === inspectedPath),
+    [inspectedPath, projects],
+  );
 
   useEffect(() => {
     if (!projects.length) {
@@ -2258,9 +2263,23 @@ function App() {
     };
   }, [projects]);
 
+  useEffect(() => {
+    if (!selectedPath || selectedPath === inspectedPath) {
+      return;
+    }
+    startInspectTransition(() => {
+      setInspectedPath(selectedPath);
+    });
+  }, [inspectedPath, selectedPath]);
+
   function selectProjectPath(path) {
     setSelectedPath(path);
     setFileMenuOpen(false);
+    if (path !== inspectedPath) {
+      startInspectTransition(() => {
+        setInspectedPath(path);
+      });
+    }
     const nextHash = projectPermalinkHash(path);
     if (window.location.hash !== nextHash) {
       window.history.pushState(null, "", nextHash);
