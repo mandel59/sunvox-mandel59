@@ -262,16 +262,6 @@ function canPlay(project) {
   return project?.type === "project";
 }
 
-function playProject(project) {
-  if (canPlay(project)) {
-    window.loadAndPlay?.(project.path);
-  }
-}
-
-function stopPlayer() {
-  window.stopPlayback?.();
-}
-
 function volumePercent(volume) {
   return Math.round((volume / MASTER_VOLUME_MAX) * 100);
 }
@@ -403,15 +393,15 @@ function synthControllerValueMap(controls) {
   return Object.fromEntries(controls.map((control) => [control.key, control.value]));
 }
 
-function TopbarControls({ project, volume, onVolumeChange }) {
+function TopbarControls({ project, volume, isPlaying, onPlay, onStop, onVolumeChange }) {
   const playable = canPlay(project);
   return (
     <div className="topbar-controls" aria-label="Playback controls">
-      <button type="button" disabled={!playable} onClick={() => playProject(project)}>
+      <button type="button" disabled={!playable} onClick={() => onPlay(project)}>
         <span aria-hidden="true">▶</span>
         Play
       </button>
-      <button type="button" onClick={stopPlayer}>
+      <button type="button" disabled={!isPlaying} onClick={onStop}>
         <span aria-hidden="true">■</span>
         Stop
       </button>
@@ -561,9 +551,6 @@ function SynthKeyboardSection({ project }) {
     }
     return () => {
       stopAllInputNotes();
-      if (project.type === "synth") {
-        window.stopInstrumentNotes?.();
-      }
     };
   }, [instrumentControls, project.path]);
 
@@ -1602,7 +1589,7 @@ function ModuleGraphSection({ project, focusRequest, onSelectModuleTarget }) {
   );
 }
 
-function ProjectActions({ project }) {
+function ProjectActions({ project, onPlay, onStop }) {
   const playable = canPlay(project);
   const [copyLabel, setCopyLabel] = useState("Copy link");
   const copyResetTimerRef = useRef(undefined);
@@ -1629,10 +1616,10 @@ function ProjectActions({ project }) {
     <div className="project-actions">
       {playable ? (
         <>
-          <button type="button" onClick={() => playProject(project)}>
+          <button type="button" onClick={() => onPlay(project)}>
             <span aria-hidden="true">▶</span> Play
           </button>
-          <button type="button" onClick={stopPlayer}>
+          <button type="button" onClick={onStop}>
             <span aria-hidden="true">■</span> Stop
           </button>
         </>
@@ -2112,7 +2099,7 @@ function EmbeddedProject({ embedded, parentGraphId = MAIN_MODULE_GRAPH_ID, hostT
   );
 }
 
-function ProjectDetails({ project, error }) {
+function ProjectDetails({ project, error, onPlay, onStop }) {
   const [graphFocusRequest, setGraphFocusRequest] = useState(undefined);
 
   useEffect(() => {
@@ -2155,7 +2142,7 @@ function ProjectDetails({ project, error }) {
           <h2>{project.title}</h2>
           <div className="project-path">{project.path}</div>
         </div>
-        <ProjectActions project={project} />
+        <ProjectActions project={project} onPlay={onPlay} onStop={onStop} />
       </div>
 
       <div className="section-grid">
@@ -2189,8 +2176,10 @@ function App() {
   const [selectedPath, setSelectedPath] = useState("");
   const [error, setError] = useState("");
   const [masterVolume, setMasterVolume] = useState(DEFAULT_MASTER_VOLUME);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const topbarControlsRoot = useMemo(() => document.getElementById("topbar-controls"), []);
+  const activePlaybackPathRef = useRef("");
 
   useEffect(() => {
     let alive = true;
@@ -2259,6 +2248,26 @@ function App() {
     }
   }
 
+  async function handlePlayProject(project) {
+    if (!canPlay(project)) {
+      return;
+    }
+    const path = project.path;
+    activePlaybackPathRef.current = path;
+    setIsPlaying(true);
+    const played = await window.loadAndPlay?.(path);
+    if (played === false && activePlaybackPathRef.current === path) {
+      activePlaybackPathRef.current = "";
+      setIsPlaying(false);
+    }
+  }
+
+  function handleStopPlayback() {
+    window.stopPlayback?.();
+    activePlaybackPathRef.current = "";
+    setIsPlaying(false);
+  }
+
   useEffect(() => {
     function applyVolume() {
       window.setMasterVolume?.(masterVolume);
@@ -2274,7 +2283,14 @@ function App() {
     <>
       {topbarControlsRoot
         ? createPortal(
-            <TopbarControls project={selectedProject} volume={masterVolume} onVolumeChange={setMasterVolume} />,
+            <TopbarControls
+              project={selectedProject}
+              isPlaying={isPlaying}
+              volume={masterVolume}
+              onPlay={handlePlayProject}
+              onStop={handleStopPlayback}
+              onVolumeChange={setMasterVolume}
+            />,
             topbarControlsRoot,
           )
         : null}
@@ -2286,7 +2302,12 @@ function App() {
           open={fileMenuOpen}
           onToggle={() => setFileMenuOpen((current) => !current)}
         />
-        <ProjectDetails project={selectedProject} error={error} />
+        <ProjectDetails
+          project={selectedProject}
+          error={error}
+          onPlay={handlePlayProject}
+          onStop={handleStopPlayback}
+        />
       </main>
     </>
   );
