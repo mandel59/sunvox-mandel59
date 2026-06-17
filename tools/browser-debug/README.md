@@ -20,8 +20,6 @@ npm run browser:check
 npm run browser:check:headed
 npm run browser:check:playback
 npm run browser:check:playback:headed
-npm run browser:playback:manual
-npm run browser:playback:manual -- --no-open   # keep server only
 npm run browser:check:dev
 ```
 
@@ -50,7 +48,3 @@ can still inspect localhost pages.
 
 `check:playback` can take an optional project path argument. Omitting it defaults to
 `music/2022-04-17.sunvox`.
-
-`playback:manual` also opens a normal browser window (not Playwright) so you can
-interact with the app directly. It keeps the dev server running until you stop it.
-Pass an optional project path argument to open that file on startup.
