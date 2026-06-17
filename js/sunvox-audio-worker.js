@@ -21,7 +21,8 @@ const PROJECT_SLOT = 0;
 const STAGING_PROJECT_SLOT = 1;
 const SYNTH_SLOT_START = 2;
 const SYNTH_SLOT_COUNT = 4;
-const SYNTH_RELEASE_TAIL_MS = 500;
+const IDLE_OUTPUT_PEAK_THRESHOLD = 0.00003;
+const IDLE_OUTPUT_SETTLE_SECONDS = 0.75;
 const SUNVOX_PROJECT_MAGIC = "SVOX";
 const SUNSYNTH_MODULE_MAGIC = "SSYN";
 
@@ -49,7 +50,7 @@ let sharedControl = null;
 let sharedAudio = null;
 let sharedCapacityFrames = 0;
 let renderTimer = null;
-let idleRenderTimer = null;
+let idleOutputFrames = 0;
 let renderScheduled = false;
 let rendering = false;
 let projectPlaying = false;
@@ -336,6 +337,39 @@ function postAudioChunk(floatData) {
   return true;
 }
 
+function outputPeak(floatData) {
+  let peak = 0;
+  for (let index = 0; index < floatData.length; index += 1) {
+    const sample = Math.abs(floatData[index]);
+    if (sample > peak) {
+      peak = sample;
+    }
+  }
+  return peak;
+}
+
+function updateIdleOutputState(floatData) {
+  if (projectPlaying || anyActiveSynthNotes()) {
+    idleOutputFrames = 0;
+    return true;
+  }
+
+  if (outputPeak(floatData) > IDLE_OUTPUT_PEAK_THRESHOLD) {
+    idleOutputFrames = 0;
+    return true;
+  }
+
+  idleOutputFrames += floatData.length / channels;
+  const settleFrames = Math.round(audioContextSampleRate * IDLE_OUTPUT_SETTLE_SECONDS);
+  if (idleOutputFrames < settleFrames) {
+    return true;
+  }
+
+  stopAudioOutput({ flush: true });
+  postPlayerState();
+  return false;
+}
+
 function framesToTicks(frameCount) {
   if (!ticksPerSecond || !audioContextSampleRate) {
     return 0;
@@ -359,6 +393,10 @@ function renderOneChunk() {
   frameCursor += renderFrames;
   if (result < 0) {
     return false;
+  }
+  const keepRendering = updateIdleOutputState(outBuffer);
+  if (!keepRendering) {
+    return true;
   }
   postAudioChunk(outBuffer);
   return true;
@@ -404,11 +442,8 @@ function stopRenderLoop() {
   renderTimer = null;
 }
 
-function clearIdleRenderTimer() {
-  if (idleRenderTimer) {
-    clearTimeout(idleRenderTimer);
-    idleRenderTimer = null;
-  }
+function resetIdleOutputState() {
+  idleOutputFrames = 0;
 }
 
 function anyActiveSynthNotes() {
@@ -416,7 +451,7 @@ function anyActiveSynthNotes() {
 }
 
 function startAudioOutput({ resetQueue = false, resetClock = false } = {}) {
-  clearIdleRenderTimer();
+  resetIdleOutputState();
   if (resetClock) {
     frameCursor = 0;
   }
@@ -429,7 +464,7 @@ function startAudioOutput({ resetQueue = false, resetClock = false } = {}) {
 }
 
 function stopAudioOutput({ flush = true } = {}) {
-  clearIdleRenderTimer();
+  resetIdleOutputState();
   rendering = false;
   setOutputRunning(false);
   if (flush) {
@@ -439,17 +474,7 @@ function stopAudioOutput({ flush = true } = {}) {
 }
 
 function scheduleIdleRenderStop() {
-  clearIdleRenderTimer();
-  if (projectPlaying || anyActiveSynthNotes()) {
-    return;
-  }
-  idleRenderTimer = setTimeout(() => {
-    idleRenderTimer = null;
-    if (!projectPlaying && !anyActiveSynthNotes()) {
-      stopAudioOutput({ flush: true });
-      postPlayerState();
-    }
-  }, SYNTH_RELEASE_TAIL_MS);
+  resetIdleOutputState();
 }
 
 function stopAllAudioInternal() {
