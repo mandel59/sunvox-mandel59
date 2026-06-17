@@ -2253,7 +2253,9 @@ function App() {
     function applyHashSelection() {
       const hashPath = selectedPathFromLocation();
       const nextProject = projects.find((project) => project.path === hashPath) ?? projects[0];
-      setSelectedPath(nextProject?.path ?? "");
+      startInspectTransition(() => {
+        setSelectedPath(nextProject?.path ?? "");
+      });
     }
     window.addEventListener("hashchange", applyHashSelection);
     window.addEventListener("popstate", applyHashSelection);
@@ -2273,13 +2275,16 @@ function App() {
   }, [inspectedPath, selectedPath]);
 
   function selectProjectPath(path) {
-    setSelectedPath(path);
-    setFileMenuOpen(false);
-    if (path !== inspectedPath) {
-      startInspectTransition(() => {
-        setInspectedPath(path);
-      });
+    if (path === selectedPath && !fileMenuOpen) {
+      return;
     }
+    startInspectTransition(() => {
+      setSelectedPath(path);
+      setFileMenuOpen(false);
+      if (path !== inspectedPath) {
+        setInspectedPath(path);
+      }
+    });
     const nextHash = projectPermalinkHash(path);
     if (window.location.hash !== nextHash) {
       window.history.pushState(null, "", nextHash);
@@ -2347,7 +2352,7 @@ function App() {
             topbarControlsRoot,
           )
         : null}
-      <main className="app-shell">
+          <main className="app-shell">
         <ProjectList
           projects={projects}
           selectedPath={selectedPath}
