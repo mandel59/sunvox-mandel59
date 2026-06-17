@@ -16,6 +16,8 @@ const INSTRUMENT_OUTPUT_MODULE = 0;
 const DEFAULT_SYNTH_X = 256;
 const DEFAULT_SYNTH_Y = 256;
 const DEFAULT_SYNTH_Z = 0;
+const SUNVOX_PROJECT_MAGIC = "SVOX";
+const SUNSYNTH_MODULE_MAGIC = "SSYN";
 
 let initialized = false;
 let ready = false;
@@ -361,20 +363,43 @@ function isCurrentLoadRequest(requestSerial) {
   return requestSerial === latestLoadRequestSerial;
 }
 
-async function fetchBytes(url) {
-  const response = await fetch(url);
+function resourceUrlFor(url) {
+  return new URL(url, `${self.location.origin}/`).href;
+}
+
+function fileMagic(bytes) {
+  if (!(bytes instanceof Uint8Array) || bytes.length < 4) {
+    return "";
+  }
+  return String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+}
+
+function assertFileMagic(bytes, expectedMagic, label) {
+  if (!expectedMagic) {
+    return;
+  }
+  const magic = fileMagic(bytes);
+  if (magic !== expectedMagic) {
+    throw new Error(`Unexpected file content for ${label}: expected ${expectedMagic}, got ${JSON.stringify(magic)}`);
+  }
+}
+
+async function fetchBytes(url, expectedMagic, label = url) {
+  const resourceUrl = resourceUrlFor(url);
+  const response = await fetch(resourceUrl);
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}`);
+    throw new Error(`Failed to fetch ${resourceUrl}`);
   }
   const buffer = await response.arrayBuffer();
   const bytes = new Uint8Array(buffer);
   if (!bytes.length) {
-    throw new Error(`Empty file: ${url}`);
+    throw new Error(`Empty file: ${resourceUrl}`);
   }
+  assertFileMagic(bytes, expectedMagic, label);
   return bytes;
 }
 
-async function loadSongFromUrl(url, requestSerial) {
+async function loadSongFromUrl(url, resourceUrl, requestSerial) {
   ensureReadyState();
   if (!isCurrentLoadRequest(requestSerial)) {
     return { cancelled: true };
@@ -389,7 +414,7 @@ async function loadSongFromUrl(url, requestSerial) {
   postPlayerState();
 
   try {
-    const bytes = await fetchBytes(url);
+    const bytes = await fetchBytes(resourceUrl || url, SUNVOX_PROJECT_MAGIC, url);
     if (!isCurrentLoadRequest(requestSerial)) {
       return { cancelled: true };
     }
@@ -410,8 +435,8 @@ async function loadSongFromUrl(url, requestSerial) {
   }
 }
 
-async function playProject(url, requestSerial) {
-  const loaded = await loadSongFromUrl(url, requestSerial);
+async function playProject(url, resourceUrl, requestSerial) {
+  const loaded = await loadSongFromUrl(url, resourceUrl, requestSerial);
   if (loaded.cancelled || !isCurrentLoadRequest(requestSerial)) {
     return { cancelled: true };
   }
@@ -419,7 +444,7 @@ async function playProject(url, requestSerial) {
   return { loadedPath: url };
 }
 
-async function loadSynthFromUrl(url, reuseExisting = true) {
+async function loadSynthFromUrl(url, resourceUrl, reuseExisting = true) {
   ensureReadyState();
   if (reuseExisting && loadedResourceUrl === url && loadedSynthModule >= 0) {
     return loadedSynthModule;
@@ -434,7 +459,7 @@ async function loadSynthFromUrl(url, reuseExisting = true) {
   postPlayerState();
 
   try {
-    const bytes = await fetchBytes(url);
+    const bytes = await fetchBytes(resourceUrl || url, SUNSYNTH_MODULE_MAGIC, url);
     reopenSlot();
     const moduleIndex = sv_load_module_from_memory(0, bytes, DEFAULT_SYNTH_X, DEFAULT_SYNTH_Y, DEFAULT_SYNTH_Z);
     if (moduleIndex < 0) {
@@ -516,7 +541,7 @@ async function noteOn(payload) {
   if (!url || !Number.isFinite(note)) {
     throw new Error("Missing note data");
   }
-  const moduleIndex = await loadSynthFromUrl(url, true);
+  const moduleIndex = await loadSynthFromUrl(url, payload.resourceUrl || url, true);
   const result = sv_send_event(
     0,
     noteTrack(payload.track ?? note),
@@ -638,7 +663,7 @@ function runCommand(message) {
       setAudioPort(payload.port);
       return { audioPortAttached: !!audioPort };
     case "loadAndPlay":
-      return playProject(payload.url, payload.requestSerial);
+      return playProject(payload.url, payload.resourceUrl || payload.url, payload.requestSerial);
     case "play":
       return startPlayback();
     case "stop":

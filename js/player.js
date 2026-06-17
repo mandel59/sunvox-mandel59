@@ -51,6 +51,10 @@ function updateStatus(message) {
   }
 }
 
+function resolveResourceUrl(path) {
+  return new URL(path, window.location.href).href;
+}
+
 function clampMasterVolume(volume) {
   if (!Number.isFinite(volume)) {
     return DEFAULT_MASTER_VOLUME;
@@ -277,7 +281,7 @@ async function setMasterVolume(volume) {
 async function loadAndPlay(url) {
   await ensureAudioContext();
   const requestSerial = ++loadCommandSerial;
-  const loaded = await sendCommand({ type: "loadAndPlay", url, requestSerial });
+  const loaded = await sendCommand({ type: "loadAndPlay", url, resourceUrl: resolveResourceUrl(url), requestSerial });
   try {
     await reapplyPublicMasterVolume(masterVolume);
   } catch {
@@ -328,6 +332,7 @@ async function playSynthNote(url, note, velocity = 128, track) {
   return sendCommand({
     type: "noteOn",
     url,
+    resourceUrl: resolveResourceUrl(url),
     track: clampTrack(resolvedTrack),
     note: clampNote(note),
     velocity: clampVelocity(velocity),
@@ -364,6 +369,7 @@ async function setSynthController(url, controllerIndex, value) {
   return sendCommand({
     type: "setController",
     url,
+    resourceUrl: resolveResourceUrl(url),
     controllerIndex: Math.round(controllerIndex),
     value: Math.round(value),
   })

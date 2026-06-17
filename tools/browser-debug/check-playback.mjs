@@ -8,6 +8,8 @@ const DEFAULT_URL = 'http://127.0.0.1:5173/';
 const TARGET_MUSIC_PROJECT = 'music/2022-04-17.sunvox';
 const PLAYBACK_START_TIMEOUT_MS = 5000;
 const PLAYBACK_STOP_TIMEOUT_MS = 2000;
+const AUDIO_SIGNAL_TIMEOUT_MS = 3000;
+const AUDIO_SIGNAL_MIN_PEAK = 0.00001;
 const WAIT_POLL_MS = 50;
 const FAVICON_PATTERN = /favicon\.ico/i;
 
@@ -49,6 +51,69 @@ async function waitForPlaybackState(page, predicate, timeoutMs) {
   throw toTimeoutError('Playback state condition was not met', state, timeoutMs, Date.now() - start);
 }
 
+function installAudioProbe() {
+  if (AudioNode.prototype.__sunvoxPlaybackProbeInstalled) {
+    return;
+  }
+  const originalConnect = AudioNode.prototype.connect;
+  AudioNode.prototype.__sunvoxPlaybackProbeInstalled = true;
+  AudioNode.prototype.connect = function connectWithPlaybackProbe(destination, ...args) {
+    if (this.constructor?.name === 'AudioWorkletNode' && !window.__sunvoxPlaybackAnalyser && destination instanceof AudioNode) {
+      try {
+        const analyser = this.context.createAnalyser();
+        analyser.fftSize = 2048;
+        originalConnect.call(this, analyser);
+        originalConnect.call(analyser, destination);
+        window.__sunvoxPlaybackAnalyser = analyser;
+        window.__sunvoxPlaybackAudioContext = this.context;
+        return destination;
+      } catch (error) {
+        window.__sunvoxPlaybackAnalyserError = error instanceof Error ? error.message : String(error);
+      }
+    }
+    return originalConnect.call(this, destination, ...args);
+  };
+}
+
+async function readAudioSignal(page) {
+  return await page.evaluate(() => {
+    const analyser = window.__sunvoxPlaybackAnalyser;
+    if (!analyser) {
+      return {
+        available: false,
+        error: window.__sunvoxPlaybackAnalyserError || 'AudioWorklet analyser was not attached',
+      };
+    }
+    const samples = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(samples);
+    let sum = 0;
+    let peak = 0;
+    for (const sample of samples) {
+      sum += sample * sample;
+      peak = Math.max(peak, Math.abs(sample));
+    }
+    return {
+      available: true,
+      rms: Math.sqrt(sum / samples.length),
+      peak,
+      audioContextState: window.__sunvoxPlaybackAudioContext?.state ?? null,
+    };
+  });
+}
+
+async function waitForAudioSignal(page, timeoutMs) {
+  const start = Date.now();
+  let signal = null;
+  while (Date.now() - start < timeoutMs) {
+    signal = await readAudioSignal(page);
+    if (signal.available && signal.peak >= AUDIO_SIGNAL_MIN_PEAK) {
+      return signal;
+    }
+    await page.waitForTimeout(WAIT_POLL_MS);
+  }
+  throw new Error(`Playback audio signal stayed silent after ${timeoutMs}ms; last signal ${JSON.stringify(signal)}`);
+}
+
 async function launchBrowser() {
   const launchOptions = { headless: !headed };
   try {
@@ -69,6 +134,7 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
 
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.addInitScript(installAudioProbe);
     page.on('pageerror', (error) => {
       errors.push(`pageerror: ${error.message}`);
     });
@@ -117,7 +183,9 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
       PLAYBACK_START_TIMEOUT_MS,
     );
 
-    await page.waitForTimeout(500);
+    const audioSignal = await waitForAudioSignal(page, AUDIO_SIGNAL_TIMEOUT_MS);
+
+    await page.waitForTimeout(100);
 
     const stopButton = page.locator('#topbar-controls button').nth(1);
     if (await stopButton.isDisabled()) {
@@ -136,6 +204,7 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
     status.errors = errors;
     status.playbackStarted = playbackStarted;
     status.playbackStopped = playbackStopped;
+    status.audioSignal = audioSignal;
     status.screenshot = path.relative(repoRoot, screenshotPath).replaceAll('\\', '/');
   } catch (error) {
     status.errors.push(error instanceof Error ? error.message : String(error));
