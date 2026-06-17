@@ -393,15 +393,22 @@ function synthControllerValueMap(controls) {
   return Object.fromEntries(controls.map((control) => [control.key, control.value]));
 }
 
-function TopbarControls({ project, volume, isPlaying, onPlay, onStop, onVolumeChange }) {
+function TopbarControls({ project, volume, playbackState, onPlay, onStop, onVolumeChange }) {
   const playable = canPlay(project);
+  const isReady = Boolean(playbackState?.ready);
+  const isLoadingCurrent =
+    Boolean(playbackState?.isLoading) && playbackState?.loadingPath === project?.path;
   return (
     <div className="topbar-controls" aria-label="Playback controls">
-      <button type="button" disabled={!playable} onClick={() => onPlay(project)}>
+      <button
+        type="button"
+        disabled={!playable || isLoadingCurrent || !isReady}
+        onClick={() => onPlay(project)}
+      >
         <span aria-hidden="true">▶</span>
         Play
       </button>
-      <button type="button" disabled={!isPlaying} onClick={onStop}>
+      <button type="button" disabled={!playbackState?.isPlaying || !isReady} onClick={onStop}>
         <span aria-hidden="true">■</span>
         Stop
       </button>
@@ -1589,10 +1596,12 @@ function ModuleGraphSection({ project, focusRequest, onSelectModuleTarget }) {
   );
 }
 
-function ProjectActions({ project, onPlay, onStop }) {
+function ProjectActions({ project, playbackState, onPlay, onStop }) {
   const playable = canPlay(project);
   const [copyLabel, setCopyLabel] = useState("Copy link");
   const copyResetTimerRef = useRef(undefined);
+  const isReady = Boolean(playbackState?.ready);
+  const isLoadingCurrent = Boolean(playbackState?.isLoading) && playbackState?.loadingPath === project.path;
 
   useEffect(() => {
     setCopyLabel("Copy link");
@@ -1616,10 +1625,14 @@ function ProjectActions({ project, onPlay, onStop }) {
     <div className="project-actions">
       {playable ? (
         <>
-          <button type="button" onClick={() => onPlay(project)}>
+          <button
+            type="button"
+            disabled={!isReady || isLoadingCurrent}
+            onClick={() => onPlay(project)}
+          >
             <span aria-hidden="true">▶</span> Play
           </button>
-          <button type="button" onClick={onStop}>
+          <button type="button" disabled={!playbackState?.isPlaying} onClick={onStop}>
             <span aria-hidden="true">■</span> Stop
           </button>
         </>
@@ -2099,7 +2112,7 @@ function EmbeddedProject({ embedded, parentGraphId = MAIN_MODULE_GRAPH_ID, hostT
   );
 }
 
-function ProjectDetails({ project, error, onPlay, onStop }) {
+function ProjectDetails({ project, error, playbackState, onPlay, onStop }) {
   const [graphFocusRequest, setGraphFocusRequest] = useState(undefined);
 
   useEffect(() => {
@@ -2142,7 +2155,7 @@ function ProjectDetails({ project, error, onPlay, onStop }) {
           <h2>{project.title}</h2>
           <div className="project-path">{project.path}</div>
         </div>
-        <ProjectActions project={project} onPlay={onPlay} onStop={onStop} />
+        <ProjectActions project={project} playbackState={playbackState} onPlay={onPlay} onStop={onStop} />
       </div>
 
       <div className="section-grid">
@@ -2176,10 +2189,15 @@ function App() {
   const [selectedPath, setSelectedPath] = useState("");
   const [error, setError] = useState("");
   const [masterVolume, setMasterVolume] = useState(DEFAULT_MASTER_VOLUME);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackState, setPlaybackState] = useState({
+    ready: false,
+    isPlaying: false,
+    isLoading: false,
+    loadedPath: "",
+    loadingPath: "",
+  });
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const topbarControlsRoot = useMemo(() => document.getElementById("topbar-controls"), []);
-  const activePlaybackPathRef = useRef("");
 
   useEffect(() => {
     let alive = true;
@@ -2252,20 +2270,18 @@ function App() {
     if (!canPlay(project)) {
       return;
     }
-    const path = project.path;
-    activePlaybackPathRef.current = path;
-    setIsPlaying(true);
-    const played = await window.loadAndPlay?.(path);
-    if (played === false && activePlaybackPathRef.current === path) {
-      activePlaybackPathRef.current = "";
-      setIsPlaying(false);
+    if (!playbackState.ready) {
+      return;
     }
+    const path = project.path;
+    if (playbackState.isPlaying && playbackState.loadedPath !== path) {
+      window.stopPlayback?.();
+    }
+    await window.loadAndPlay?.(path);
   }
 
   function handleStopPlayback() {
     window.stopPlayback?.();
-    activePlaybackPathRef.current = "";
-    setIsPlaying(false);
   }
 
   useEffect(() => {
@@ -2279,18 +2295,35 @@ function App() {
     };
   }, [masterVolume]);
 
+  useEffect(() => {
+    const applyPlaybackState = (event) => {
+      const nextState = event.detail;
+      if (nextState) {
+        setPlaybackState(nextState);
+      }
+    };
+    const initialState = window.getPlayerState?.();
+    if (initialState) {
+      setPlaybackState(initialState);
+    }
+    window.addEventListener("sunvox-player-state", applyPlaybackState);
+    return () => {
+      window.removeEventListener("sunvox-player-state", applyPlaybackState);
+    };
+  }, []);
+
   return (
     <>
       {topbarControlsRoot
         ? createPortal(
-            <TopbarControls
-              project={selectedProject}
-              isPlaying={isPlaying}
-              volume={masterVolume}
-              onPlay={handlePlayProject}
-              onStop={handleStopPlayback}
-              onVolumeChange={setMasterVolume}
-            />,
+              <TopbarControls
+                project={selectedProject}
+                playbackState={playbackState}
+                volume={masterVolume}
+                onPlay={handlePlayProject}
+                onStop={handleStopPlayback}
+                onVolumeChange={setMasterVolume}
+                />,
             topbarControlsRoot,
           )
         : null}
@@ -2305,6 +2338,7 @@ function App() {
         <ProjectDetails
           project={selectedProject}
           error={error}
+          playbackState={playbackState}
           onPlay={handlePlayProject}
           onStop={handleStopPlayback}
         />
