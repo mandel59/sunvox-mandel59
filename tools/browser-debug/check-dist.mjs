@@ -38,6 +38,8 @@ const server = http.createServer(async (request, response) => {
     const data = await readFile(filePath);
     response.writeHead(200, {
       'content-type': mimeTypes.get(path.extname(filePath)) ?? 'application/octet-stream',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
     });
     response.end(data);
   } catch {

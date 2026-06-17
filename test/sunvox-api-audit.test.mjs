@@ -87,7 +87,9 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
     ["slot", "track", "note", "vel", "module", "ctl", "ctl_val"],
   );
   assert.ok(
-    setController.calls.some((call) => /sv_set_module_ctl_value\(0,/.test(call.text)),
+    setController.calls.some((call) =>
+      /sv_set_module_ctl_value\(slotState\.slot, slotState\.moduleIndex, index, scaledValue, 0\)/.test(call.text),
+    ),
     "sv_set_module_ctl_value should be called through the expected wrapper signature",
   );
   assert.match(audioCallback.header.text, /int sv_audio_callback/u);
@@ -206,11 +208,11 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
     "browser player should use the global all-notes-off event for synth cleanup",
   );
   assert.ok(
-    /sv_set_module_ctl_value\(0, moduleIndex, index, scaledValue, 0\)/u.test(workerSource),
+    /sv_set_module_ctl_value\(slotState\.slot, slotState\.moduleIndex, index, scaledValue, 0\)/u.test(workerSource),
     "browser player should send raw controller values with scaled=0",
   );
   assert.ok(
-    /sv_connect_module\(0, moduleIndex, INSTRUMENT_OUTPUT_MODULE\)/u.test(workerSource),
+    /sv_connect_module\(slotState\.slot, loadedModule, INSTRUMENT_OUTPUT_MODULE\)/u.test(workerSource),
     "browser player should connect loaded synth modules to output module 0",
   );
   assert.ok(
@@ -218,7 +220,7 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
     "browser player should route synth notes using payload track",
   );
   assert.ok(
-    /moduleIndex \+ 1/.test(workerSource),
+    /slotState\.moduleIndex \+ 1/.test(workerSource),
     "browser player should send module number as module + 1",
   );
 });

@@ -6,8 +6,10 @@
     "check": "node check-site.mjs",
     "check:local": "node check-local.mjs",
     "check:playback": "node check-playback.mjs",
+    "check:synth": "node check-synth-playback.mjs",
     "check:local:headed": "node check-local.mjs --headed",
     "check:playback:headed": "node check-playback.mjs --headed",
+    "check:synth:headed": "node check-synth-playback.mjs --headed",
     "check:dist": "node check-dist.mjs",
     "check:dist:headed": "node check-dist.mjs --headed",
     "check:headed": "node check-site.mjs --headed"

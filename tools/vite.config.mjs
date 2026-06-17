@@ -130,10 +130,21 @@ function localPreviewSiteDataPlugin() {
   };
 }
 
+const CROSS_ORIGIN_ISOLATION_HEADERS = {
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Embedder-Policy": "require-corp",
+};
+
 export default defineConfig({
   base: process.env.PAGES_BASE_PATH || "./",
   plugins: [react(), localPreviewSiteDataPlugin()],
-  server: readLocalServerConfig(),
+  server: {
+    ...readLocalServerConfig(),
+    headers: CROSS_ORIGIN_ISOLATION_HEADERS,
+  },
+  preview: {
+    headers: CROSS_ORIGIN_ISOLATION_HEADERS,
+  },
   build: {
     outDir: "dist",
     emptyOutDir: true,

@@ -10,6 +10,7 @@ const PLAYBACK_START_TIMEOUT_MS = 5000;
 const PLAYBACK_STOP_TIMEOUT_MS = 2000;
 const AUDIO_SIGNAL_TIMEOUT_MS = 3000;
 const AUDIO_SIGNAL_MIN_PEAK = 0.00001;
+const AUDIO_SILENCE_MAX_PEAK = 0.00001;
 const WAIT_POLL_MS = 50;
 const FAVICON_PATTERN = /favicon\.ico/i;
 
@@ -114,6 +115,19 @@ async function waitForAudioSignal(page, timeoutMs) {
   throw new Error(`Playback audio signal stayed silent after ${timeoutMs}ms; last signal ${JSON.stringify(signal)}`);
 }
 
+async function waitForAudioSilence(page, timeoutMs) {
+  const start = Date.now();
+  let signal = null;
+  while (Date.now() - start < timeoutMs) {
+    signal = await readAudioSignal(page);
+    if (signal.available && signal.peak <= AUDIO_SILENCE_MAX_PEAK) {
+      return signal;
+    }
+    await page.waitForTimeout(WAIT_POLL_MS);
+  }
+  throw new Error(`Playback audio signal stayed audible after ${timeoutMs}ms; last signal ${JSON.stringify(signal)}`);
+}
+
 async function launchBrowser() {
   const launchOptions = { headless: !headed };
   try {
@@ -197,6 +211,7 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
       (state) => !state.isLoading && !state.isPlaying,
       PLAYBACK_STOP_TIMEOUT_MS,
     );
+    const audioSignalAfterStop = await waitForAudioSilence(page, PLAYBACK_STOP_TIMEOUT_MS);
 
     await mkdir(path.dirname(screenshotPath), { recursive: true });
     await page.screenshot({ path: screenshotPath, fullPage: false });
@@ -205,6 +220,7 @@ async function checkPlayback({ url = DEFAULT_URL, projectPath = TARGET_MUSIC_PRO
     status.playbackStarted = playbackStarted;
     status.playbackStopped = playbackStopped;
     status.audioSignal = audioSignal;
+    status.audioSignalAfterStop = audioSignalAfterStop;
     status.screenshot = path.relative(repoRoot, screenshotPath).replaceAll('\\', '/');
   } catch (error) {
     status.errors.push(error instanceof Error ? error.message : String(error));

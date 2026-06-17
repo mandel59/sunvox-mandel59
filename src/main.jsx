@@ -550,10 +550,16 @@ function SynthKeyboardSection({ project }) {
     setKeyboardStartNote(SYNTH_KEYBOARD_BASE_START_NOTE);
     setControllerValues(synthControllerValueMap(instrumentControls));
     if (project.type === "synth") {
-      window.configureSynthControllers?.(
-        project.path,
-        instrumentControls.map((control) => ({ controllerIndex: control.controllerIndex, value: control.value })),
-      );
+      const controllers = instrumentControls.map((control) => ({
+        controllerIndex: control.controllerIndex,
+        value: control.value,
+      }));
+      window.configureSynthControllers?.(project.path, controllers);
+      window.preloadSynth?.(project.path).then((loaded) => {
+        if (loaded === false) {
+          setKeyboardStatus("Unavailable");
+        }
+      });
     }
     return () => {
       stopAllInputNotes();

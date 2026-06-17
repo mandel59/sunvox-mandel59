@@ -1,10 +1,15 @@
 const DEFAULT_MASTER_VOLUME = 256;
 const DEFAULT_SAMPLE_RATE = 44100;
 const DEFAULT_CHANNELS = 2;
-const DEFAULT_RENDER_FRAMES = 256;
-const DEFAULT_MAX_BUFFERED_FRAMES = 65536;
-const DEFAULT_RENDER_INTERVAL_MS = 5;
+const DEFAULT_RENDER_FRAMES = 128;
+const DEFAULT_MAX_BUFFERED_FRAMES = 4096;
+const DEFAULT_RENDER_INTERVAL_MS = 2;
+const SHARED_BUFFER_FRAMES = 16384;
+const SHARED_CONTROL_INTS = 16;
 const NOTE_TRACK_MASK = 31;
+
+const CONTROL_CAPACITY_FRAMES = 2;
+const CONTROL_CHANNELS = 3;
 
 const playerState = {
   ready: false,
@@ -18,10 +23,12 @@ let worker = null;
 let audioContext = null;
 let workletNode = null;
 let initializePromise = null;
+let sharedAudioState = null;
 let commandId = 0;
 let loadCommandSerial = 0;
 let connected = false;
 let masterVolume = DEFAULT_MASTER_VOLUME;
+let transportMode = "message-port";
 
 const pendingCommands = new Map();
 
@@ -60,6 +67,10 @@ function clampMasterVolume(volume) {
     return DEFAULT_MASTER_VOLUME;
   }
   return Math.max(0, Math.min(DEFAULT_MASTER_VOLUME, Math.round(volume)));
+}
+
+function masterGain(volume = masterVolume) {
+  return clampMasterVolume(volume) / DEFAULT_MASTER_VOLUME;
 }
 
 function clampTrack(value) {
@@ -142,6 +153,40 @@ function handleWorkerMessage(event) {
   }
 }
 
+function canUseSharedAudio() {
+  return typeof SharedArrayBuffer === "function" && window.crossOriginIsolated === true;
+}
+
+function createSharedAudioState() {
+  if (!canUseSharedAudio()) {
+    return null;
+  }
+  const controlBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * SHARED_CONTROL_INTS);
+  const audioBuffer = new SharedArrayBuffer(
+    Float32Array.BYTES_PER_ELEMENT * SHARED_BUFFER_FRAMES * DEFAULT_CHANNELS,
+  );
+  const control = new Int32Array(controlBuffer);
+  control[CONTROL_CAPACITY_FRAMES] = SHARED_BUFFER_FRAMES;
+  control[CONTROL_CHANNELS] = DEFAULT_CHANNELS;
+  return {
+    controlBuffer,
+    audioBuffer,
+    capacityFrames: SHARED_BUFFER_FRAMES,
+    channels: DEFAULT_CHANNELS,
+  };
+}
+
+function postOutputVolumeDirect() {
+  if (!workletNode) {
+    return;
+  }
+  workletNode.port.postMessage({
+    type: "sunvox-master-volume",
+    volume: masterVolume,
+    gain: masterGain(),
+  });
+}
+
 function terminateEngine() {
   if (worker) {
     worker.onmessage = null;
@@ -166,6 +211,8 @@ function terminateEngine() {
   }
   connected = false;
   initializePromise = null;
+  sharedAudioState = null;
+  transportMode = "message-port";
   rejectPendingCommands(new Error("SunVox engine terminated"));
 }
 
@@ -194,6 +241,19 @@ async function initializeEngine() {
     workletNode = new AudioWorkletNode(audioContext, "sunvox-worklet-processor", {
       outputChannelCount: [2],
     });
+
+    sharedAudioState = createSharedAudioState();
+    if (sharedAudioState) {
+      transportMode = "shared-array-buffer";
+      workletNode.port.postMessage({
+        type: "sunvox-shared-buffer",
+        controlBuffer: sharedAudioState.controlBuffer,
+        audioBuffer: sharedAudioState.audioBuffer,
+      });
+    } else {
+      transportMode = "message-port";
+    }
+    postOutputVolumeDirect();
     workletNode.connect(audioContext.destination);
 
     worker = new Worker(new URL("js/sunvox-audio-worker.js", window.location.href).href, {
@@ -217,18 +277,23 @@ async function initializeEngine() {
       renderFrames: DEFAULT_RENDER_FRAMES,
       maxBufferedFrames: DEFAULT_MAX_BUFFERED_FRAMES,
       renderIntervalMs: DEFAULT_RENDER_INTERVAL_MS,
+      sharedAudio: sharedAudioState
+        ? {
+            controlBuffer: sharedAudioState.controlBuffer,
+            audioBuffer: sharedAudioState.audioBuffer,
+          }
+        : null,
       sunvoxJsUrl,
       sunvoxLoaderJsUrl,
     });
+
+    await sendCommand({ type: "setMasterVolume", volume: masterVolume });
 
     connected = true;
     setPlayerState({
       ready: true,
     });
     window.dispatchEvent(new Event("sunvox-player-api-ready"));
-    sendCommand({ type: "setMasterVolume", volume: masterVolume }).catch(() => {
-      // best effort only
-    });
   })().catch((error) => {
     terminateEngine();
     setPlayerState({ ready: false });
@@ -261,6 +326,14 @@ function getMasterVolume() {
   return masterVolume;
 }
 
+function getAudioTransportState() {
+  return {
+    mode: transportMode,
+    shared: transportMode === "shared-array-buffer",
+    crossOriginIsolated: window.crossOriginIsolated === true,
+  };
+}
+
 async function reapplyPublicMasterVolume(volume) {
   const publicSetter = window.setMasterVolume;
   if (typeof publicSetter === "function" && publicSetter !== setMasterVolume) {
@@ -274,6 +347,8 @@ async function setMasterVolume(volume) {
   masterVolume = clampMasterVolume(volume);
   if (connected && playerState.ready) {
     await sendCommand({ type: "setMasterVolume", volume: masterVolume });
+  } else {
+    postOutputVolumeDirect();
   }
   return masterVolume;
 }
@@ -288,6 +363,13 @@ async function loadAndPlay(url) {
     // non-fatal; keep playback result even if volume re-application fails
   }
   return loaded;
+}
+
+async function preloadProject(url) {
+  await ensureAudioContext();
+  return sendCommand({ type: "preloadProject", url, resourceUrl: resolveResourceUrl(url) })
+    .then(() => true)
+    .catch(() => false);
 }
 
 async function playLoadedProject() {
@@ -324,6 +406,13 @@ async function configureSynthControllers(url, controllers) {
   } catch {
     return false;
   }
+}
+
+async function preloadSynth(url) {
+  await ensureAudioContext();
+  return sendCommand({ type: "preloadSynth", url, resourceUrl: resolveResourceUrl(url) })
+    .then(() => true)
+    .catch(() => false);
 }
 
 async function playSynthNote(url, note, velocity = 128, track) {
@@ -381,6 +470,9 @@ window.playLoadedProject = playLoadedProject;
 window.stopPlayback = stopPlayback;
 window.setMasterVolume = setMasterVolume;
 window.getMasterVolume = getMasterVolume;
+window.getAudioTransportState = getAudioTransportState;
+window.preloadProject = preloadProject;
+window.preloadSynth = preloadSynth;
 window.playSynthNote = playSynthNote;
 window.stopSynthNote = stopSynthNote;
 window.stopInstrumentNotes = stopInstrumentNotes;
