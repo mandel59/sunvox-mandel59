@@ -2351,7 +2351,7 @@ function App() {
       {topbarControlsRoot
         ? createPortal(
               <TopbarControls
-                project={selectedProject}
+                project={displayedProject ?? selectedProject}
                 playbackState={playbackState}
                 volume={masterVolume}
                 onPlay={handlePlayProject}
