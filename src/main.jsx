@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 
@@ -2112,7 +2112,7 @@ function EmbeddedProject({ embedded, parentGraphId = MAIN_MODULE_GRAPH_ID, hostT
   );
 }
 
-function ProjectDetails({ project, error, playbackState, onPlay, onStop }) {
+function ProjectDetails({ project, inspectedPending, error, playbackState, onPlay, onStop }) {
   const [graphFocusRequest, setGraphFocusRequest] = useState(undefined);
 
   useEffect(() => {
@@ -2157,6 +2157,7 @@ function ProjectDetails({ project, error, playbackState, onPlay, onStop }) {
         </div>
         <ProjectActions project={project} playbackState={playbackState} onPlay={onPlay} onStop={onStop} />
       </div>
+      {inspectedPending ? <p className="section-meta">Updating project details…</p> : null}
 
       <div className="section-grid">
         <CatalogSection catalog={project.catalog} />
@@ -2200,6 +2201,8 @@ function App() {
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const topbarControlsRoot = useMemo(() => document.getElementById("topbar-controls"), []);
   const [, startInspectTransition] = useTransition();
+  const deferredInspectedPath = useDeferredValue(inspectedPath);
+  const isInspectPending = inspectedPath !== deferredInspectedPath;
 
   useEffect(() => {
     let alive = true;
@@ -2242,8 +2245,8 @@ function App() {
     [projects, selectedPath],
   );
   const displayedProject = useMemo(
-    () => projects.find((project) => project.path === inspectedPath),
-    [inspectedPath, projects],
+    () => projects.find((project) => project.path === deferredInspectedPath),
+    [deferredInspectedPath, projects],
   );
 
   useEffect(() => {
@@ -2362,6 +2365,7 @@ function App() {
         />
         <ProjectDetails
           project={displayedProject}
+          inspectedPending={isInspectPending}
           error={error}
           playbackState={playbackState}
           onPlay={handlePlayProject}
