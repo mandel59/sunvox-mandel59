@@ -85,10 +85,14 @@ test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", 
   assert.ok(recipeFiles.length > 0);
 
   const expectedOutputPaths = [];
+  const expectedIssueByOutputPath = new Map();
   const outputs = [];
   for (const recipeFile of recipeFiles) {
     const recipe = await loadMusicRecipe(recipeFile, { cacheBust: true });
     expectedOutputPaths.push(...Object.values(recipe.outputs).map((output) => output.file.replaceAll("\\", "/")));
+    for (const output of Object.values(recipe.outputs)) {
+      expectedIssueByOutputPath.set(output.file.replaceAll("\\", "/"), recipe.issue);
+    }
     outputs.push(...await runMusicRecipe(recipeFile, { outDir: tempDir }));
   }
 
@@ -104,7 +108,7 @@ test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", 
     assert.deepEqual(await readFile(output.outputPath), await readFile(relativeOutput), relativeOutput);
     assert.ok(output.summaryPath, `${relativeOutput} writes a summary`);
     const summary = JSON.parse(await readFile(output.summaryPath, "utf8"));
-    assert.equal(summary.recipe.issue, 38);
+    assert.equal(summary.recipe.issue, expectedIssueByOutputPath.get(relativeOutput));
     assert.equal(summary.validation.ok, true);
     assert.ok(summary.project.events > 0);
   }
