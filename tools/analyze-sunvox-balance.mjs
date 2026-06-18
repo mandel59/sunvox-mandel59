@@ -191,6 +191,9 @@ async function analyzeFile(filePath, { sampleRate, channels, durationSeconds }) 
     name: parsed.project?.name ?? basename(filePath),
     bpm: parsed.project?.bpm,
     speed: parsed.project?.speed,
+    globalVolume: parsed.project?.globalVolume,
+    globalVolumePercent:
+      parsed.project?.globalVolume === undefined ? undefined : (parsed.project.globalVolume / 256) * 100,
     patternCount: parsed.patterns?.length ?? 0,
   };
 
@@ -202,7 +205,6 @@ async function analyzeFile(filePath, { sampleRate, channels, durationSeconds }) 
     },
     async ({ module, slot }) => {
       loadProjectFromBuffer(module, bytes, { slot });
-      assertSunVoxOk(module._sv_volume(slot, 256), "sv_volume");
       assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
       const output = renderSlotAudio(module, {
         slot,
@@ -254,6 +256,8 @@ function renderTsv(results) {
       "name",
       "bpm",
       "speed",
+      "globalVolume",
+      "globalVolumePercent",
       "shortLufs",
       "momentaryLufs",
       "activeLufs",
@@ -276,6 +280,8 @@ function renderTsv(results) {
       result.name,
       String(result.bpm ?? ""),
       String(result.speed ?? ""),
+      String(result.globalVolume ?? ""),
+      formatNumber(result.globalVolumePercent, 1),
       formatNumber(m.shortLufs, 2),
       formatNumber(m.momentaryLufs, 2),
       formatNumber(m.activeLufs, 2),
@@ -295,13 +301,15 @@ function renderTsv(results) {
 
 function renderText(results) {
   const lines = [
-    "file\tshortLufs\tmomentaryLufs\tactiveLufs\tpeak\trms\tactiveRatio\tclipped\tdurationSeconds\tsampleRate\tchannels\tpatterns\terror\tname",
+    "file\tglobalVolume\tglobalVolumePercent\tshortLufs\tmomentaryLufs\tactiveLufs\tpeak\trms\tactiveRatio\tclipped\tdurationSeconds\tsampleRate\tchannels\tpatterns\terror\tname",
   ];
   for (const result of results) {
     if (result.error) {
       lines.push(
         [
           result.file,
+          String(result.globalVolume ?? ""),
+          formatNumber(result.globalVolumePercent, 1),
           "",
           "",
           "",
@@ -323,6 +331,8 @@ function renderText(results) {
     lines.push(
       [
         result.file,
+        String(result.globalVolume ?? ""),
+        formatNumber(result.globalVolumePercent, 1),
         formatNumber(m.shortLufs, 2),
         formatNumber(m.momentaryLufs, 2),
         formatNumber(m.activeLufs, 2),

@@ -242,3 +242,14 @@ test("browser project playback preserves loaded project global volume", async ()
     "synth slots should still initialize their slot output volume",
   );
 });
+
+test("SunVox balance analyzer preserves loaded project global volume", async () => {
+  const source = await readFile("tools/analyze-sunvox-balance.mjs", "utf8");
+  const analyzeStart = source.indexOf("async function analyzeFile");
+  const analyzeEnd = source.indexOf("function formatNumber");
+  assert.ok(analyzeStart >= 0 && analyzeEnd > analyzeStart);
+
+  const analyzeSource = source.slice(analyzeStart, analyzeEnd);
+  assert.ok(!/sv_volume\(/u.test(analyzeSource), "balance analysis should not override .sunvox project global volume");
+  assert.ok(/globalVolumePercent/u.test(source), "balance output should expose project global volume percentage");
+});
