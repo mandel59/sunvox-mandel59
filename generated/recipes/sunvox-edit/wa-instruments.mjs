@@ -192,7 +192,7 @@ const recipe = {
       create: {
         module: "MetaModule",
         name: "Wa Shamisen Twang",
-        volume: 224,
+        volume: 448,
         bpm: 92,
         tpl: 6,
         color: "#b86c45",
@@ -365,10 +365,31 @@ const recipe = {
             mix: 14200,
           },
         });
+        const pluckGate = project.addModule("ADSR", {
+          name: "Pluck Gate",
+          color: "#a45f40",
+          position: { x: 820, y: 512, z: 0 },
+          controllers: {
+            volume: 32768,
+            attack: 0,
+            decay: 420,
+            sustainLevel: 0,
+            release: 20,
+            attackCurve: "negExp1",
+            decayCurve: "exp2",
+            releaseCurve: "exp2",
+            sustain: "off",
+            sustainPedal: "off",
+            onNoteOn: "start",
+            onNoteOff: "doNothing",
+            mode: "ampModulatorStereo",
+            smoothTransitions: "restartSmootherVolumeChange",
+          },
+        });
         const shortBodyTail = project.addModule("Echo", {
           name: "Short Body Tail",
           color: "#b77354",
-          position: { x: 888, y: 512, z: 0 },
+          position: { x: 1016, y: 512, z: 0 },
           controllers: {
             dry: 256,
             wet: 4,
@@ -383,7 +404,7 @@ const recipe = {
         });
         const dcBlock = project.addModule("DC Blocker", {
           name: "DC Block",
-          position: { x: 1104, y: 512, z: 0 },
+          position: { x: 1232, y: 512, z: 0 },
           controllers: {
             channels: "stereo",
           },
@@ -391,7 +412,7 @@ const recipe = {
         const pluckTrim = project.addModule("Compressor", {
           name: "Pluck Trim",
           color: "#c7855f",
-          position: { x: 1320, y: 512, z: 0 },
+          position: { x: 1448, y: 512, z: 0 },
           controllers: {
             volume: 330,
             threshold: 308,
@@ -407,8 +428,10 @@ const recipe = {
         project.connect(sawariBuzz, sawariBite);
         project.connect(bachiClick, sawariBite);
         project.connect(stringCore, douColor);
-        project.connect(douColor, shortBodyTail);
-        project.connect(sawariBite, shortBodyTail);
+        project.connect(noteInput, pluckGate);
+        project.connect(douColor, pluckGate);
+        project.connect(sawariBite, pluckGate);
+        project.connect(pluckGate, shortBodyTail);
         project.connect(shortBodyTail, dcBlock);
         project.connect(dcBlock, pluckTrim);
         project.connect(pluckTrim, project.output);
@@ -416,6 +439,7 @@ const recipe = {
         synth.expose("Sawari volume", sawariBuzz, "volume");
         synth.expose("Click volume", bachiClick, "volume");
         synth.expose("Body freq", douColor, "freq");
+        synth.expose("Pluck decay", pluckGate, "decay");
         synth.expose("Tail wet", shortBodyTail, "wet");
       },
     },
