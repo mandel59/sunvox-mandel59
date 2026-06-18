@@ -224,3 +224,21 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
     "browser player should send module number as module + 1",
   );
 });
+
+test("browser project playback preserves loaded project global volume", async () => {
+  const workerSource = await readFile("js/sunvox-audio-worker.js", "utf8");
+  const projectLoaderStart = workerSource.indexOf("async function loadProjectIntoSlot");
+  const projectLoaderEnd = workerSource.indexOf("async function preloadProject");
+  const synthLoaderStart = workerSource.indexOf("async function loadSynthFromUrl");
+  const synthLoaderEnd = workerSource.indexOf("async function preloadSynth");
+  assert.ok(projectLoaderStart >= 0 && projectLoaderEnd > projectLoaderStart);
+  assert.ok(synthLoaderStart >= 0 && synthLoaderEnd > synthLoaderStart);
+
+  const projectLoaderSource = workerSource.slice(projectLoaderStart, projectLoaderEnd);
+  const synthLoaderSource = workerSource.slice(synthLoaderStart, synthLoaderEnd);
+  assert.ok(!/sv_volume\(/u.test(projectLoaderSource), "project playback should preserve the loaded .sunvox global volume");
+  assert.ok(
+    /sv_volume\(slotState\.slot, DEFAULT_SLOT_VOLUME\)/u.test(synthLoaderSource),
+    "synth slots should still initialize their slot output volume",
+  );
+});

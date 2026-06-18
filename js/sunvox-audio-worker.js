@@ -727,7 +727,6 @@ async function loadProjectIntoSlot(slotState, url, resourceUrl, requestSerial) {
         throw new Error(`sv_load_from_memory failed: ${loadResult}`);
       }
     });
-    sv_volume(slotState.slot, DEFAULT_SLOT_VOLUME);
     slotState.url = url;
     slotState.resourceUrl = resourceUrl || url;
     slotState.loaded = true;
