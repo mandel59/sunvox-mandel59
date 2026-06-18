@@ -2,7 +2,8 @@ const DEFAULT_SAMPLE_RATE = 44100;
 const DEFAULT_CHANNELS = 2;
 const DEFAULT_RENDER_FRAMES = 128;
 const DEFAULT_MAX_BUFFERED_FRAMES = 1024;
-const INTERACTIVE_MAX_BUFFERED_FRAMES = 512;
+const SHARED_INTERACTIVE_MAX_BUFFERED_FRAMES = 512;
+const FALLBACK_INTERACTIVE_MAX_BUFFERED_FRAMES = 2048;
 const DEFAULT_RENDER_INTERVAL_MS = 2;
 const MAX_RENDER_BATCH = 8;
 
@@ -396,7 +397,10 @@ function outputBufferedFrames() {
 
 function targetBufferedFrames() {
   if (anyActiveSynthNotes()) {
-    return Math.min(maxBufferedFrames, INTERACTIVE_MAX_BUFFERED_FRAMES);
+    const interactiveLimit = sharedControl
+      ? SHARED_INTERACTIVE_MAX_BUFFERED_FRAMES
+      : FALLBACK_INTERACTIVE_MAX_BUFFERED_FRAMES;
+    return Math.min(maxBufferedFrames, interactiveLimit);
   }
   return maxBufferedFrames;
 }
@@ -480,6 +484,7 @@ function startAudioOutput({ resetQueue = false, resetClock = false } = {}) {
     flushAudioOutput();
   }
   rendering = true;
+  renderAudioStep();
   setOutputRunning(true);
   startRenderLoop();
 }

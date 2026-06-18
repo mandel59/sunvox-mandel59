@@ -3,6 +3,7 @@ const DEFAULT_SAMPLE_RATE = 44100;
 const DEFAULT_CHANNELS = 2;
 const DEFAULT_RENDER_FRAMES = 128;
 const DEFAULT_MAX_BUFFERED_FRAMES = 1024;
+const FALLBACK_MAX_BUFFERED_FRAMES = 4096;
 const DEFAULT_RENDER_INTERVAL_MS = 2;
 const SHARED_BUFFER_FRAMES = 16384;
 const SHARED_CONTROL_INTS = 16;
@@ -275,7 +276,7 @@ async function initializeEngine() {
       sampleRate: audioContext.sampleRate,
       channels: DEFAULT_CHANNELS,
       renderFrames: DEFAULT_RENDER_FRAMES,
-      maxBufferedFrames: DEFAULT_MAX_BUFFERED_FRAMES,
+      maxBufferedFrames: sharedAudioState ? DEFAULT_MAX_BUFFERED_FRAMES : FALLBACK_MAX_BUFFERED_FRAMES,
       renderIntervalMs: DEFAULT_RENDER_INTERVAL_MS,
       sharedAudio: sharedAudioState
         ? {

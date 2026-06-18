@@ -19,6 +19,7 @@ const mimeTypes = new Map([
 
 const args = new Set(process.argv.slice(2));
 const headed = args.has('--headed');
+const isolate = !args.has('--no-isolation');
 
 await stat(path.join(distRoot, 'index.html'));
 
@@ -36,11 +37,14 @@ const server = http.createServer(async (request, response) => {
     }
 
     const data = await readFile(filePath);
-    response.writeHead(200, {
+    const headers = {
       'content-type': mimeTypes.get(path.extname(filePath)) ?? 'application/octet-stream',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    });
+    };
+    if (isolate) {
+      headers['Cross-Origin-Opener-Policy'] = 'same-origin';
+      headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
+    }
+    response.writeHead(200, headers);
     response.end(data);
   } catch {
     response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });

@@ -10,6 +10,8 @@ const CONTROL_CONSUMED_FRAMES = 7;
 const OUTPUT_STOPPED = 0;
 const OUTPUT_RUNNING = 1;
 const DEFAULT_MASTER_GAIN = 1;
+const UNDERRUN_RAMP_IN_FRAMES = 64;
+const AUDIBLE_SAMPLE_THRESHOLD = 0.000001;
 
 function clampGain(value) {
   if (!Number.isFinite(value)) {
@@ -31,6 +33,8 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
     this.lastLeft = 0;
     this.lastRight = 0;
     this.underrunFadeDurationFrames = 64;
+    this.rampInFramesTotal = UNDERRUN_RAMP_IN_FRAMES;
+    this.rampInFramesRemaining = 0;
     this.masterGain = DEFAULT_MASTER_GAIN;
     this.sharedControl = null;
     this.sharedAudio = null;
@@ -54,7 +58,7 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
       this.sharedCapacityFrames = Atomics.load(this.sharedControl, CONTROL_CAPACITY_FRAMES);
       this.sharedChannels = Atomics.load(this.sharedControl, CONTROL_CHANNELS) || this.channels;
       this.resetQueue();
-      this.resetLastSample();
+      this.resetOutputContinuity();
       return;
     }
 
@@ -65,7 +69,7 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
 
     if (message.type === "sunvox-clear") {
       this.resetQueue();
-      this.resetLastSample();
+      this.resetOutputContinuity();
       return;
     }
 
@@ -94,6 +98,26 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
     this.lastRight = 0;
   }
 
+  resetOutputContinuity() {
+    this.resetLastSample();
+    this.rampInFramesRemaining = 0;
+  }
+
+  scheduleRampInAfterUnderrun(wasAudible) {
+    if (wasAudible) {
+      this.rampInFramesRemaining = this.rampInFramesTotal;
+    }
+  }
+
+  consumeRampInGain() {
+    if (this.rampInFramesRemaining <= 0) {
+      return 1;
+    }
+    const elapsedFrames = this.rampInFramesTotal - this.rampInFramesRemaining + 1;
+    this.rampInFramesRemaining -= 1;
+    return elapsedFrames / (this.rampInFramesTotal + 1);
+  }
+
   emitConsumed(frames) {
     this.sentinelReportFrames += frames;
     if (this.sentinelReportFrames >= this.reportEveryFrames) {
@@ -117,32 +141,38 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
       return;
     }
     const remaining = frameCount - written;
+    const fadeStartLeft = this.lastLeft;
+    const fadeStartRight = this.lastRight;
+    const wasAudible =
+      written > 0 ||
+      Math.max(Math.abs(fadeStartLeft), Math.abs(fadeStartRight)) > AUDIBLE_SAMPLE_THRESHOLD;
     const fadeFrames = Math.min(this.underrunFadeDurationFrames, remaining);
     for (let i = 0; i < remaining; i += 1) {
       const frameIndex = written + i;
       if (i < fadeFrames) {
         const level = 1 - (i + 1) / (fadeFrames + 1);
-        outputLeft[frameIndex] = this.lastLeft * level;
-        outputRight[frameIndex] = this.lastRight * level;
+        outputLeft[frameIndex] = fadeStartLeft * level;
+        outputRight[frameIndex] = fadeStartRight * level;
       } else {
         outputLeft[frameIndex] = 0;
         outputRight[frameIndex] = 0;
       }
     }
     this.resetLastSample();
+    this.scheduleRampInAfterUnderrun(wasAudible);
   }
 
   processShared(outputLeft, outputRight, frameCount) {
     const generation = Atomics.load(this.sharedControl, CONTROL_GENERATION);
     if (generation !== this.sharedGeneration) {
       this.sharedGeneration = generation;
-      this.resetLastSample();
+      this.resetOutputContinuity();
     }
 
     if (Atomics.load(this.sharedControl, CONTROL_STATE) !== OUTPUT_RUNNING) {
       outputLeft.fill(0);
       outputRight.fill(0);
-      this.resetLastSample();
+      this.resetOutputContinuity();
       return;
     }
 
@@ -155,8 +185,9 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
       const framesToWrite = Math.min(frameCount - written, availableFrames, this.sharedCapacityFrames - readIndex);
       let source = readIndex * this.sharedChannels;
       for (let i = 0; i < framesToWrite; i += 1) {
-        outputLeft[written + i] = this.sharedAudio[source] * this.masterGain;
-        outputRight[written + i] = (this.sharedAudio[source + 1] ?? 0) * this.masterGain;
+        const gain = this.masterGain * this.consumeRampInGain();
+        outputLeft[written + i] = this.sharedAudio[source] * gain;
+        outputRight[written + i] = (this.sharedAudio[source + 1] ?? 0) * gain;
         source += this.sharedChannels;
       }
 
@@ -193,8 +224,9 @@ class SunVoxWorkletProcessor extends AudioWorkletProcessor {
       const framesToWrite = Math.min(frameCount - written, availableChunkFrames);
       let readPos = this.readOffset;
       for (let i = 0; i < framesToWrite; i += 1) {
-        outputLeft[written + i] = chunk[readPos] * this.masterGain;
-        outputRight[written + i] = (chunk[readPos + 1] ?? 0) * this.masterGain;
+        const gain = this.masterGain * this.consumeRampInGain();
+        outputLeft[written + i] = chunk[readPos] * gain;
+        outputRight[written + i] = (chunk[readPos + 1] ?? 0) * gain;
         readPos += this.channels;
       }
 
