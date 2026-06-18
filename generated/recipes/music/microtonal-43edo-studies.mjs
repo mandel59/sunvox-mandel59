@@ -70,10 +70,10 @@ const STUDIES = [
     comment: "The scale joins two 43EDO tetrachords with neutral seconds and thirds: 0, 5, 12, 18 and 25, 30, 37, 43.",
     buildEvents: buildNeutralTetrachordEvents,
     sound: {
-      bass: { waveform: "triangle", volume: 66, release: 46, osc2Pitch: 503, osc2Volume: 4800 },
-      pad: { waveform: "sin", volume: 38, attack: 54, release: 210, osc2Pitch: 1000, osc2Volume: 9000 },
-      lead: { waveform: "triangle", volume: 54, release: 60, dutyCycle: 408, osc2Pitch: 1205, osc2Volume: 8200 },
-      accent: { waveform: "square", volume: 30, release: 24, dutyCycle: 218, osc2Pitch: 702, osc2Volume: 3600 },
+      bass: { waveform: "triangle", volume: 132, release: 72, osc2Pitch: 503, osc2Volume: 8600 },
+      pad: { waveform: "sin", volume: 14, attack: 30, release: 120, osc2Pitch: 1000, osc2Volume: 3200 },
+      lead: { waveform: "triangle", volume: 120, release: 86, dutyCycle: 408, osc2Pitch: 1205, osc2Volume: 11200 },
+      accent: { waveform: "square", volume: 128, release: 48, dutyCycle: 218, osc2Pitch: 702, osc2Volume: 9000 },
       reverb: { wet: 58, feedback: 184, damp: 198, roomSize: 24, randomSeed: 57 },
     },
   },
@@ -426,7 +426,7 @@ function buildNeutralTetrachordEvents(lines) {
       steps: [0, 12, 25, 37].map((step) => root + 43 + step),
       module: MODULE.padMap,
       velocity: 72,
-      gate: 16,
+      gate: 15,
     });
     for (let beat = 0; beat < 4; beat += 1) {
       note(events, lines, {
@@ -435,7 +435,7 @@ function buildNeutralTetrachordEvents(lines) {
         step: root + (beat === 3 ? 25 : 0),
         module: MODULE.bassMap,
         velocity: beat === 0 ? 122 : 88,
-        gate: 4,
+        gate: 3,
       });
     }
     melody.forEach((degree, index) => {
@@ -456,8 +456,8 @@ function buildNeutralTetrachordEvents(lines) {
           track: TRACK.accent + index,
           step: root + 43 + degree,
           module: MODULE.accentMap,
-          velocity: 58,
-          gate: 1,
+          velocity: 86,
+          gate: 2,
         });
       }
     });
