@@ -201,111 +201,222 @@ const recipe = {
         const project = synth.embeddedProject();
         project.setOutput({
           name: "Output",
-          position: { x: 1040, y: 512, z: 0 },
+          position: { x: 1536, y: 512, z: 0 },
         });
         const noteInput = project.addModule("MultiSynth", {
           name: "Input",
           position: { x: 0, y: 512, z: 0 },
         });
         synth.setInputModule(noteInput);
-        const skinString = project.addModule("Analog generator", {
-          name: "Skin String",
+        const stringCore = project.addModule("FMX", {
+          name: "String Body Core",
           color: "#c9794e",
           position: { x: 224, y: 448, z: 0 },
           controllers: {
-            waveform: "square",
-            volume: 104,
-            panning: 116,
-            attack: 0,
-            release: 46,
-            sustain: "off",
-            expEnvelope: "on",
-            dutyCycle: 348,
-            osc2Pitch: 1502,
-            osc2Volume: 8600,
-            osc2Mode: "add",
-            filter: "bp12db",
-            filterFreq: 7800,
-            filterResonance: 680,
-            filterExpFreq: "on",
-            filterAttack: 0,
-            filterRelease: 48,
-            filterEnvelope: "sustainOff",
-            polyphony: 6,
-            mode: "hq",
-            noise: 7,
+            volume: 20600,
+            panning: 124,
+            sampleRate: "native",
+            polyphony: 8,
+            channels: "stereo",
+            adsrSmoothTransitions: "restartSmootherVolumeChange",
+            noiseFilter: 32768,
+            envelopeGain: 1180,
+            operators: [
+              {
+                volume: 32768,
+                attack: 1,
+                decay: 14,
+                sustainLevel: 0,
+                release: 52,
+                attackCurve: "negExp1",
+                decayCurve: "exp2",
+                releaseCurve: "exp1",
+                sustain: "off",
+                waveform: "sin",
+                freqMul: 1000,
+                volumeScaling: 128,
+                velocitySensitivity: 218,
+                outputMode: 0,
+              },
+              {
+                volume: 15000,
+                attack: 1,
+                decay: 180,
+                sustainLevel: 0,
+                release: 60,
+                attackCurve: "negExp1",
+                decayCurve: "exp2",
+                releaseCurve: "linear",
+                sustain: "off",
+                waveform: "sin",
+                noise: 24,
+                freqMul: 3000,
+                envScaling: 116,
+                volumeScaling: 190,
+                velocitySensitivity: 224,
+                outputMode: 8,
+              },
+              {
+                volume: 10500,
+                attack: 1,
+                decay: 360,
+                sustainLevel: 0,
+                release: 80,
+                attackCurve: "negExp1",
+                decayCurve: "exp2",
+                releaseCurve: "exp1",
+                sustain: "off",
+                waveform: "sin",
+                noise: 36,
+                freqMul: 2000,
+                selfMod: 220,
+                outputMode: 1,
+              },
+              {
+                volume: 7200,
+                attack: 1,
+                decay: 500,
+                sustainLevel: 0,
+                release: 86,
+                attackCurve: "negExp1",
+                decayCurve: "exp2",
+                releaseCurve: "exp1",
+                sustain: "off",
+                waveform: "sin",
+                freqMul: 3003,
+                selfMod: 180,
+                outputMode: 1,
+              },
+            ],
           },
         });
-        const sympatheticString = project.addModule("Analog generator", {
-          name: "Saw Resonator",
+        const sawariBuzz = project.addModule("Analog generator", {
+          name: "Sawari Buzz",
           color: "#d88a5e",
           relativeNote: 12,
-          position: { x: 224, y: 624, z: 0 },
+          position: { x: 224, y: 640, z: 0 },
           controllers: {
             waveform: "saw",
-            volume: 48,
-            panning: 154,
+            volume: 42,
+            panning: 148,
             attack: 0,
-            release: 82,
+            release: 68,
             sustain: "off",
             expEnvelope: "on",
             osc2Pitch: 997,
-            osc2Volume: 4200,
-            filter: "bp24db",
-            filterFreq: 5400,
-            filterResonance: 520,
+            osc2Volume: 3000,
+            osc2Mode: "add",
+            filter: "bp12db",
+            filterFreq: 2400,
+            filterResonance: 340,
             filterExpFreq: "on",
-            filterRelease: 80,
+            filterRelease: 54,
             filterEnvelope: "sustainOff",
-            polyphony: 6,
+            polyphony: 8,
             mode: "hq",
-            noise: 4,
+            noise: 2,
           },
         });
-        const bachiDrive = project.addModule("Distortion", {
-          name: "Bachi Drive",
-          color: "#9d5435",
-          position: { x: 456, y: 512, z: 0 },
+        const bachiClick = project.addModule("Analog generator", {
+          name: "Bachi Click",
+          color: "#8d4b31",
+          position: { x: 224, y: 768, z: 0 },
           controllers: {
-            volume: 136,
+            waveform: "violetNoise",
+            volume: 28,
+            panning: 132,
+            attack: 0,
+            release: 10,
+            sustain: "off",
+            expEnvelope: "on",
+            filter: "bp12db",
+            filterFreq: 9800,
+            filterResonance: 520,
+            filterExpFreq: "on",
+            filterRelease: 14,
+            filterEnvelope: "sustainOff",
+            polyphony: 8,
+            mode: "hq",
+          },
+        });
+        const sawariBite = project.addModule("Distortion", {
+          name: "Sawari Bite",
+          color: "#9d5435",
+          position: { x: 456, y: 704, z: 0 },
+          controllers: {
+            volume: 138,
             type: "saturation3",
-            power: 18,
+            power: 6,
             bitDepth: 15,
             freq: 44100,
           },
         });
-        const nasalBand = project.addModule("Filter Pro", {
-          name: "Nasal Body",
+        const douColor = project.addModule("Filter Pro", {
+          name: "Dou Color",
           color: "#d39b78",
           position: { x: 672, y: 512, z: 0 },
           controllers: {
             type: "bpConstSkirtGain",
-            freq: 3600,
-            q: 17600,
+            freq: 1850,
+            q: 5200,
             rolloff: "db24",
             mode: "monoSmoothing",
-            response: 96,
-            mix: 31200,
+            response: 88,
+            mix: 14200,
+          },
+        });
+        const shortBodyTail = project.addModule("Echo", {
+          name: "Short Body Tail",
+          color: "#b77354",
+          position: { x: 888, y: 512, z: 0 },
+          controllers: {
+            dry: 256,
+            wet: 4,
+            feedback: 12,
+            delay: 28,
+            delayUnit: "ms",
+            rightChannelOffset: "on",
+            rightChannelOffsetValue: 18000,
+            filter: "lp6db",
+            filterFreq: 2600,
           },
         });
         const dcBlock = project.addModule("DC Blocker", {
           name: "DC Block",
-          position: { x: 856, y: 512, z: 0 },
+          position: { x: 1104, y: 512, z: 0 },
           controllers: {
             channels: "stereo",
           },
         });
-        project.connect(noteInput, skinString);
-        project.connect(noteInput, sympatheticString);
-        project.connect(skinString, bachiDrive);
-        project.connect(sympatheticString, bachiDrive);
-        project.connect(bachiDrive, nasalBand);
-        project.connect(nasalBand, dcBlock);
-        project.connect(dcBlock, project.output);
-        synth.expose("String volume", skinString, "volume");
-        synth.expose("Resonator volume", sympatheticString, "volume");
-        synth.expose("Drive", bachiDrive, "power");
-        synth.expose("Body freq", nasalBand, "freq");
+        const pluckTrim = project.addModule("Compressor", {
+          name: "Pluck Trim",
+          color: "#c7855f",
+          position: { x: 1320, y: 512, z: 0 },
+          controllers: {
+            volume: 330,
+            threshold: 308,
+            slope: 86,
+            attack: 1,
+            release: 88,
+            mode: "peak",
+          },
+        });
+        project.connect(noteInput, stringCore);
+        project.connect(noteInput, sawariBuzz);
+        project.connect(noteInput, bachiClick);
+        project.connect(sawariBuzz, sawariBite);
+        project.connect(bachiClick, sawariBite);
+        project.connect(stringCore, douColor);
+        project.connect(douColor, shortBodyTail);
+        project.connect(sawariBite, shortBodyTail);
+        project.connect(shortBodyTail, dcBlock);
+        project.connect(dcBlock, pluckTrim);
+        project.connect(pluckTrim, project.output);
+        synth.expose("String volume", stringCore, "volume");
+        synth.expose("Sawari volume", sawariBuzz, "volume");
+        synth.expose("Click volume", bachiClick, "volume");
+        synth.expose("Body freq", douColor, "freq");
+        synth.expose("Tail wet", shortBodyTail, "wet");
       },
     },
     waShakuhachiBreath: {
