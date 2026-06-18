@@ -7,7 +7,7 @@ import { buildContainer, formatValidationIssue, parseContainer, validateContaine
 
 function usage() {
   console.error(`Usage:
-  node tools/sunvox-music-recipe.mjs [--out <directory>] <recipe.mjs>
+  node tools/sunvox-music-recipe.mjs [--out <directory>] <recipe.mjs> [recipe.mjs ...]
 
 SunVox Music Recipe files export plain JavaScript objects annotated with
 tools/sunvox-music-recipe.d.ts. The runner writes structured .sunvox outputs.`);
@@ -146,8 +146,19 @@ export async function runMusicRecipe(recipePath, options = {}) {
   return outputs;
 }
 
+export async function runMusicRecipes(recipePaths, options = {}) {
+  if (!Array.isArray(recipePaths) || !recipePaths.length) {
+    throw new Error("runMusicRecipes() requires at least one recipe path");
+  }
+  const outputs = [];
+  for (const recipePath of recipePaths) {
+    outputs.push(...await runMusicRecipe(recipePath, options));
+  }
+  return outputs;
+}
+
 function parseArgs(argv) {
-  const options = { outDir: undefined, recipePath: undefined };
+  const options = { outDir: undefined, recipePaths: [] };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--out") {
@@ -160,10 +171,8 @@ function parseArgs(argv) {
       return { help: true };
     } else if (arg.startsWith("-")) {
       throw new Error(`Unknown option: ${arg}`);
-    } else if (!options.recipePath) {
-      options.recipePath = arg;
     } else {
-      throw new Error(`Unexpected argument: ${arg}`);
+      options.recipePaths.push(arg);
     }
   }
   return options;
@@ -183,14 +192,14 @@ async function main(argv) {
     usage();
     return;
   }
-  if (!options.recipePath) {
+  if (!options.recipePaths.length) {
     usage();
     process.exitCode = 1;
     return;
   }
 
   try {
-    const outputs = await runMusicRecipe(options.recipePath, options);
+    const outputs = await runMusicRecipes(options.recipePaths, options);
     for (const output of outputs) {
       console.log(relative(process.cwd(), output.outputPath).replaceAll("\\", "/") || basename(output.outputPath));
     }

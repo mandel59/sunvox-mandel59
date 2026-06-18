@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 
 import { parseContainer } from "../tools/sunvox-codec.mjs";
-import { loadMusicRecipe, runMusicRecipe } from "../tools/sunvox-music-recipe.mjs";
+import { loadMusicRecipe, runMusicRecipe, runMusicRecipes } from "../tools/sunvox-music-recipe.mjs";
+
+const execFileAsync = promisify(execFile);
 
 function recipeSource(outputPath, summaryPath) {
   return `// @ts-check
@@ -75,6 +79,29 @@ test("SunVox Music Recipe creates a validated SunVox project and summary", async
   assert.deepEqual(summary.validation, { ok: true, issues: [] });
 });
 
+test("SunVox Music Recipe CLI accepts multiple recipe files", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-cli-"));
+  const outputA = join(tempDir, "music-recipe-cli-a.sunvox");
+  const outputB = join(tempDir, "music-recipe-cli-b.sunvox");
+  const recipeA = join(tempDir, "recipe-a.mjs");
+  const recipeB = join(tempDir, "recipe-b.mjs");
+  await writeFile(recipeA, recipeSource(outputA, join(tempDir, "music-recipe-cli-a.summary.json")), "utf8");
+  await writeFile(recipeB, recipeSource(outputB, join(tempDir, "music-recipe-cli-b.summary.json")), "utf8");
+
+  const { stdout } = await execFileAsync(process.execPath, [
+    resolve("tools/sunvox-music-recipe.mjs"),
+    recipeA,
+    recipeB,
+  ]);
+
+  assert.deepEqual(
+    stdout.trim().split(/\r?\n/).sort(),
+    [outputA, outputB].map((outputPath) => relative(process.cwd(), outputPath).replaceAll("\\", "/")).sort(),
+  );
+  assert.equal(parseContainer(await readFile(outputA)).project.name, "Music Recipe Probe");
+  assert.equal(parseContainer(await readFile(outputB)).project.name, "Music Recipe Probe");
+});
+
 test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-generated-"));
   const recipeDir = "generated/recipes/music";
@@ -86,15 +113,14 @@ test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", 
 
   const expectedOutputPaths = [];
   const expectedIssueByOutputPath = new Map();
-  const outputs = [];
   for (const recipeFile of recipeFiles) {
     const recipe = await loadMusicRecipe(recipeFile, { cacheBust: true });
     expectedOutputPaths.push(...Object.values(recipe.outputs).map((output) => output.file.replaceAll("\\", "/")));
     for (const output of Object.values(recipe.outputs)) {
       expectedIssueByOutputPath.set(output.file.replaceAll("\\", "/"), recipe.issue);
     }
-    outputs.push(...await runMusicRecipe(recipeFile, { outDir: tempDir }));
   }
+  const outputs = await runMusicRecipes(recipeFiles, { outDir: tempDir, cacheBust: true });
 
   assert.deepEqual(
     outputs.map((output) => output.outputPath.replaceAll("\\", "/").replace(`${tempDir.replaceAll("\\", "/")}/`, "")).sort(),
