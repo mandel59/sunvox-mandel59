@@ -407,7 +407,7 @@ const effectModules = [
     id: "masterGlue",
     type: "Compressor",
     name: "Poly Master Glue",
-    controllers: { volume: 214, threshold: 322, slope: 94, attack: 5, release: 260, mode: 1, sideChainInput: 0 },
+    controllers: { volume: 420, threshold: 322, slope: 94, attack: 5, release: 260, mode: 1, sideChainInput: 0 },
   },
 ];
 
@@ -532,7 +532,7 @@ const themes = Object.freeze([
       robotPitch: { volume: 120, pitch: 540, feedback: 8 },
       shepardFilter: { mix: 18000, lfoAmp: 2200 },
       musicEcho: { wet: 42, feedback: 78, delay: 8 },
-      masterGlue: { volume: 204, threshold: 348, slope: 112 },
+      masterGlue: { volume: 512, threshold: 348, slope: 112 },
     },
     buildArrangement: addSoftKaleidoscope,
   },
@@ -1453,6 +1453,7 @@ async function buildThemeProject(theme) {
 
       const document = parseContainer(saveSlotToMemory(module, slot));
       document.project.bpm = theme.bpm;
+      document.project.globalVolume = theme.globalVolume ?? 256;
       applyDeterministicPatternIcons(document, theme);
       applySavedLayout(document, nodeLayout, sources, effects);
       applySavedControllers(document, sources, effects);
@@ -1513,6 +1514,7 @@ async function generateTheme(theme) {
 
       const document = parseContainer(saveSlotToMemory(module, slot));
       document.project.bpm = theme.bpm;
+      document.project.globalVolume = theme.globalVolume ?? 256;
       applyDeterministicPatternIcons(document, theme);
       applySavedLayout(document, nodeLayout, sources, effects);
       applySavedControllers(document, sources, effects);

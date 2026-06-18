@@ -250,13 +250,13 @@ const themes = Object.freeze([
       "organ chords reinforce section changes softly",
     ],
     instrumentVolumes: {
-      kick: 58,
-      bass: 36,
-      pad: 172,
-      bell: 108,
-      pluck: 16000,
-      tines: 16500,
-      organ: 215,
+      kick: 72,
+      bass: 48,
+      pad: 220,
+      bell: 145,
+      pluck: 20500,
+      tines: 21000,
+      organ: 270,
     },
     buildArrangement: addNarrationLofiArrangement,
   },
@@ -1224,6 +1224,7 @@ async function buildThemeProject(theme) {
 
       const document = parseContainer(saveSlotToMemory(module, slot));
       document.project.bpm = theme.bpm;
+      document.project.globalVolume = theme.globalVolume ?? 256;
       applyDeterministicPatternIcons(document, theme);
       applySavedLayout(document, nodeLayout);
       for (const instrument of instruments) {
@@ -1303,6 +1304,7 @@ async function generateTheme(theme) {
 
       const document = parseContainer(saveSlotToMemory(module, slot));
       document.project.bpm = theme.bpm;
+      document.project.globalVolume = theme.globalVolume ?? 256;
       applyDeterministicPatternIcons(document, theme);
       applySavedLayout(document, nodeLayout);
       for (const instrument of instruments) {

@@ -55,6 +55,7 @@ const STUDIES = [
       lead: { waveform: "hsin", volume: 48, release: 92, dutyCycle: 512, osc2Pitch: 1207, osc2Volume: 7600 },
       accent: { waveform: "triangle", volume: 42, release: 36, dutyCycle: 374, osc2Pitch: 701 },
       reverb: { wet: 70, feedback: 206, damp: 178, roomSize: 29, randomSeed: 43 },
+      voiceMix: { volume: 320 },
     },
   },
   {
@@ -70,11 +71,13 @@ const STUDIES = [
     comment: "The scale joins two 43EDO tetrachords with neutral seconds and thirds: 0, 5, 12, 18 and 25, 30, 37, 43.",
     buildEvents: buildNeutralTetrachordEvents,
     sound: {
-      bass: { waveform: "triangle", volume: 132, release: 72, osc2Pitch: 503, osc2Volume: 8600 },
-      pad: { waveform: "sin", volume: 14, attack: 30, release: 120, osc2Pitch: 1000, osc2Volume: 3200 },
-      lead: { waveform: "triangle", volume: 120, release: 86, dutyCycle: 408, osc2Pitch: 1205, osc2Volume: 11200 },
-      accent: { waveform: "square", volume: 128, release: 48, dutyCycle: 218, osc2Pitch: 702, osc2Volume: 9000 },
+      bass: { waveform: "triangle", volume: 160, release: 72, osc2Pitch: 503, osc2Volume: 8600 },
+      pad: { waveform: "sin", volume: 34, attack: 30, release: 120, osc2Pitch: 1000, osc2Volume: 3200 },
+      lead: { waveform: "triangle", volume: 68, release: 86, dutyCycle: 408, osc2Pitch: 1205, osc2Volume: 11200 },
+      accent: { waveform: "square", volume: 68, release: 48, dutyCycle: 218, osc2Pitch: 702, osc2Volume: 9000 },
       reverb: { wet: 58, feedback: 184, damp: 198, roomSize: 24, randomSeed: 57 },
+      voiceMix: { volume: 300 },
+      compressor: { threshold: 270, slope: 46 },
     },
   },
   {
@@ -104,6 +107,7 @@ const STUDIES = [
       lead: { waveform: "asin", volume: 128, release: 82, dutyCycle: 462, osc2Pitch: 1198, osc2Volume: 11200 },
       accent: { waveform: "hsin", volume: 128, release: 42, osc2Pitch: 1405, osc2Volume: 9200 },
       reverb: { wet: 50, feedback: 172, damp: 172, roomSize: 22, randomSeed: 71 },
+      voiceMix: { volume: 300 },
     },
   },
 ];
@@ -188,7 +192,7 @@ function reverb(overrides = {}) {
 
 function compressor(overrides = {}) {
   return {
-    volume: 210,
+    volume: 300,
     threshold: 304,
     slope: 70,
     attack: 12,
@@ -325,7 +329,7 @@ function modulesForStudy(study) {
         { slot: 2, module: MODULE.lead },
         { slot: 3, module: MODULE.accent },
       ],
-      controllers: amplifier({ volume: 190, stereoWidth: 178 }),
+      controllers: amplifier({ volume: 260, stereoWidth: 178, ...study.sound.voiceMix }),
     },
     {
       type: "Reverb",
@@ -341,7 +345,7 @@ function modulesForStudy(study) {
       color: "#eeeeee",
       position: { x: 992, y: 544, z: 0 },
       inputs: [{ slot: 0, module: MODULE.tail }],
-      controllers: compressor(),
+      controllers: compressor(study.sound.compressor),
     },
   ];
 }
@@ -572,7 +576,7 @@ function buildDocument(study) {
       name: study.name,
       bpm: study.bpm,
       speed: study.speed,
-      globalVolume: 112,
+      globalVolume: 256,
       timeline: {
         grid: 4,
         grid2: 4,

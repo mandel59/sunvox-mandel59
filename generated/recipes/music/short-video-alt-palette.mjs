@@ -328,7 +328,7 @@ const effectModules = [
     id: "masterGlue",
     type: "Compressor",
     name: "Alt Master Fast Glue",
-    controllers: { volume: 232, threshold: 318, slope: 92, attack: 4, release: 250, mode: 0, sideChainInput: 0 },
+    controllers: { volume: 360, threshold: 318, slope: 92, attack: 4, release: 250, mode: 0, sideChainInput: 0 },
   },
 ];
 
@@ -446,7 +446,7 @@ const themes = Object.freeze([
       padFilter: { freq: 6400, lfoAmp: 1200 },
       formantBus: { intensity: 32, formantWidth: 120, vowelPosition: 148, volume: 200 },
       musicEcho: { wet: 54, feedback: 96 },
-      masterGlue: { volume: 226, threshold: 336, slope: 104 },
+      masterGlue: { volume: 512, threshold: 336, slope: 104 },
     },
     buildArrangement: addSoftFormantBed,
   },
@@ -1383,6 +1383,7 @@ async function buildThemeProject(theme) {
 
       const document = parseContainer(saveSlotToMemory(module, slot));
       document.project.bpm = theme.bpm;
+      document.project.globalVolume = theme.globalVolume ?? 256;
       applyDeterministicPatternIcons(document, theme);
       applySavedLayout(document, nodeLayout, sources, effects);
       applySavedControllers(document, sources, effects);
@@ -1449,6 +1450,7 @@ async function generateTheme(theme) {
 
       const document = parseContainer(saveSlotToMemory(module, slot));
       document.project.bpm = theme.bpm;
+      document.project.globalVolume = theme.globalVolume ?? 256;
       applyDeterministicPatternIcons(document, theme);
       applySavedLayout(document, nodeLayout, sources, effects);
       applySavedControllers(document, sources, effects);

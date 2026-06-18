@@ -522,7 +522,7 @@ function modules() {
         { slot: 3, module: MODULE.airReverb },
       ],
       controllers: amplifier({
-        volume: 312,
+        volume: 430,
         stereoWidth: 170,
         fineVolume: 32768,
       }),
@@ -534,7 +534,7 @@ function modules() {
       position: { x: 1040, y: 832, z: 0 },
       inputs: [{ slot: 0, module: MODULE.masterMix }],
       controllers: {
-        volume: 300,
+        volume: 430,
         threshold: 276,
         slope: 62,
         attack: 14,
@@ -566,7 +566,7 @@ export function buildPodcastBedLoopDocument() {
       name: "Podcast Bed Loop",
       bpm: 96,
       speed: 6,
-      globalVolume: 72,
+      globalVolume: 256,
       timeline: {
         grid: 4,
         grid2: 4,
