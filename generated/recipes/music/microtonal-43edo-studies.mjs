@@ -572,7 +572,7 @@ function buildDocument(study) {
       name: study.name,
       bpm: study.bpm,
       speed: study.speed,
-      globalVolume: 54,
+      globalVolume: 112,
       timeline: {
         grid: 4,
         grid2: 4,
