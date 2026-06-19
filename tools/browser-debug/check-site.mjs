@@ -177,11 +177,11 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       throw new Error(`Expected initial master volume 100%, got ${initial.topbarVolume}/${initial.topbarVolumeOutput}`);
     }
     if (
-      initial.synthKeyboardKeys !== 25 ||
-      initial.synthKeyboardWhiteKeys !== 15 ||
-      initial.synthKeyboardBlackKeys !== 10 ||
+      initial.synthKeyboardKeys !== 32 ||
+      initial.synthKeyboardWhiteKeys !== 19 ||
+      initial.synthKeyboardBlackKeys !== 13 ||
       initial.synthOctaveButtons !== 2 ||
-      initial.synthKeyboardRange !== 'C4-C6' ||
+      initial.synthKeyboardRange !== 'A3-E6' ||
       !(initial.synthScrollLaneHeight >= 18) ||
       !initial.synthControlsBeforeKeyboard ||
       initial.synthControllerKnobs < 1 ||
@@ -189,7 +189,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       !initial.synthControllerLabels.includes('Volume')
     ) {
       throw new Error(
-        `Expected a two-octave synth keyboard with octave and controller controls, got ${JSON.stringify(initial)}`,
+        `Expected an extended synth keyboard with octave and controller controls, got ${JSON.stringify(initial)}`,
       );
     }
     if (
@@ -286,11 +286,11 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       return { initialRange, shiftedUp, shiftedBack };
     });
     if (
-      synthOctaveUi.initialRange.range !== 'C4-C6' ||
-      synthOctaveUi.shiftedUp.range !== 'C5-C7' ||
-      synthOctaveUi.shiftedUp.firstKey !== 'C5' ||
-      synthOctaveUi.shiftedUp.lastKey !== 'C7' ||
-      synthOctaveUi.shiftedBack.range !== 'C4-C6'
+      synthOctaveUi.initialRange.range !== 'A3-E6' ||
+      synthOctaveUi.shiftedUp.range !== 'A4-E7' ||
+      synthOctaveUi.shiftedUp.firstKey !== 'A4' ||
+      synthOctaveUi.shiftedUp.lastKey !== 'E7' ||
+      synthOctaveUi.shiftedBack.range !== 'A3-E6'
     ) {
       throw new Error(`Expected octave controls to shift the synth keyboard, got ${JSON.stringify(synthOctaveUi)}`);
     }
@@ -406,6 +406,102 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     }
     if (synthGlissandoUi.noteOff.join(',') !== '60,62,64') {
       throw new Error(`Expected synth drag to stop prior/current notes, got ${JSON.stringify(synthGlissandoUi)}`);
+    }
+
+    const synthComputerKeyboardUi = await page.evaluate(async () => {
+      const calls = {
+        noteOn: [],
+        noteOff: [],
+      };
+      const originalPlaySynthNote = window.playSynthNote;
+      const originalStopSynthNote = window.stopSynthNote;
+      const originalStopInstrumentNotes = window.stopInstrumentNotes;
+      const pause = () => new Promise((resolve) => setTimeout(resolve, 0));
+      const dispatchKey = (type, code) => {
+        window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true, cancelable: true }));
+      };
+      window.playSynthNote = async (url, note, velocity) => {
+        calls.noteOn.push({ url, note, velocity });
+        return true;
+      };
+      window.stopSynthNote = (note) => {
+        calls.noteOff.push(note);
+        return true;
+      };
+      window.stopInstrumentNotes = () => true;
+      try {
+        for (const code of [
+          'KeyZ',
+          'KeyS',
+          'KeyX',
+          'KeyC',
+          'KeyF',
+          'KeyV',
+          'KeyG',
+          'KeyB',
+          'KeyN',
+          'KeyJ',
+          'KeyM',
+          'KeyK',
+          'Comma',
+          'KeyL',
+          'Period',
+          'KeyQ',
+          'Digit2',
+          'KeyW',
+          'Digit3',
+          'KeyE',
+          'KeyR',
+          'Digit5',
+          'KeyT',
+          'Digit6',
+          'KeyY',
+          'Digit7',
+          'KeyU',
+          'KeyI',
+          'Digit9',
+          'KeyO',
+          'Digit0',
+          'KeyP',
+        ]) {
+          dispatchKey('keydown', code);
+          await pause();
+          dispatchKey('keyup', code);
+          await pause();
+        }
+        const mappedNoteOn = calls.noteOn.map(({ note }) => note);
+        const mappedNoteOff = [...calls.noteOff];
+        for (const code of ['KeyD', 'KeyH']) {
+          dispatchKey('keydown', code);
+          await pause();
+          dispatchKey('keyup', code);
+          await pause();
+        }
+        return {
+          noteOn: mappedNoteOn,
+          noteOff: mappedNoteOff,
+          ignoredNoteOn: calls.noteOn.slice(mappedNoteOn.length).map(({ note }) => note),
+          ignoredNoteOff: calls.noteOff.slice(mappedNoteOff.length),
+        };
+      } finally {
+        window.playSynthNote = originalPlaySynthNote;
+        window.stopSynthNote = originalStopSynthNote;
+        window.stopInstrumentNotes = originalStopInstrumentNotes;
+      }
+    });
+    const expectedComputerKeyboardNotes = [
+      45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
+      68, 69, 70, 71, 72, 73, 74, 75, 76,
+    ];
+    if (
+      synthComputerKeyboardUi.noteOn.join(',') !== expectedComputerKeyboardNotes.join(',') ||
+      synthComputerKeyboardUi.noteOff.join(',') !== expectedComputerKeyboardNotes.join(',') ||
+      synthComputerKeyboardUi.ignoredNoteOn.length !== 0 ||
+      synthComputerKeyboardUi.ignoredNoteOff.length !== 0
+    ) {
+      throw new Error(
+        `Expected computer keyboard notes to map from A3 through E6, got ${JSON.stringify(synthComputerKeyboardUi)}`,
+      );
     }
 
     const synthControllerUi = await page.evaluate(async () => {

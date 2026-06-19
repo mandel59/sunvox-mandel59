@@ -16,9 +16,10 @@ const TIMELINE_Y_PADDING = 16;
 const MASTER_VOLUME_MAX = 256;
 const DEFAULT_MASTER_VOLUME = 256;
 const SYNTH_KEYBOARD_BASE_START_NOTE = 48;
-const SYNTH_KEYBOARD_NOTE_SPAN = 24;
+const SYNTH_KEYBOARD_LOWEST_NOTE_OFFSET = -3;
+const SYNTH_KEYBOARD_HIGHEST_NOTE_OFFSET = 28;
 const SYNTH_KEYBOARD_OCTAVE_STEP = 12;
-const SYNTH_KEYBOARD_MIN_START_NOTE = 0;
+const SYNTH_KEYBOARD_MIN_START_NOTE = 12;
 const SYNTH_KEYBOARD_MAX_START_NOTE = 96;
 const SYNTH_KEYBOARD_VELOCITY = 128;
 const DEFAULT_SYNTH_VOLUME_CONTROLLER_MAX = 1024;
@@ -30,18 +31,21 @@ const KNOB_DRAG_PIXELS = 180;
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const BLACK_KEY_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
 const KEYBOARD_NOTE_OFFSETS = new Map([
-  ["KeyZ", 0],
-  ["KeyS", 1],
-  ["KeyX", 2],
-  ["KeyD", 3],
-  ["KeyC", 4],
-  ["KeyV", 5],
-  ["KeyG", 6],
-  ["KeyB", 7],
-  ["KeyH", 8],
-  ["KeyN", 9],
-  ["KeyJ", 10],
-  ["KeyM", 11],
+  ["KeyZ", -3],
+  ["KeyS", -2],
+  ["KeyX", -1],
+  ["KeyC", 0],
+  ["KeyF", 1],
+  ["KeyV", 2],
+  ["KeyG", 3],
+  ["KeyB", 4],
+  ["KeyN", 5],
+  ["KeyJ", 6],
+  ["KeyM", 7],
+  ["KeyK", 8],
+  ["Comma", 9],
+  ["KeyL", 10],
+  ["Period", 11],
   ["KeyQ", 12],
   ["Digit2", 13],
   ["KeyW", 14],
@@ -55,6 +59,10 @@ const KEYBOARD_NOTE_OFFSETS = new Map([
   ["Digit7", 22],
   ["KeyU", 23],
   ["KeyI", 24],
+  ["Digit9", 25],
+  ["KeyO", 26],
+  ["Digit0", 27],
+  ["KeyP", 28],
 ]);
 const FILE_HASH_PREFIX = "#file=";
 const PREVIEW_ROOTS_PARAM = "previewRoots";
@@ -284,7 +292,9 @@ function keyboardNoteLabel(notes) {
 function keyboardNotes(startNote) {
   const notes = [];
   let whiteIndex = -1;
-  for (let note = startNote; note <= startNote + SYNTH_KEYBOARD_NOTE_SPAN; note += 1) {
+  const firstNote = startNote + SYNTH_KEYBOARD_LOWEST_NOTE_OFFSET;
+  const lastNote = startNote + SYNTH_KEYBOARD_HIGHEST_NOTE_OFFSET;
+  for (let note = firstNote; note <= lastNote; note += 1) {
     const pitchClass = note % 12;
     const black = BLACK_KEY_PITCH_CLASSES.has(pitchClass);
     if (!black) {
@@ -764,7 +774,9 @@ function SynthKeyboardSection({ project }) {
             </button>
           </div>
           <output className="instrument-control-value octave-range" aria-label="Keyboard range">
-            {noteName(keyboardStartNote)}-{noteName(keyboardStartNote + SYNTH_KEYBOARD_NOTE_SPAN)}
+            {`${noteName(keyboardStartNote + SYNTH_KEYBOARD_LOWEST_NOTE_OFFSET)}-${noteName(
+              keyboardStartNote + SYNTH_KEYBOARD_HIGHEST_NOTE_OFFSET,
+            )}`}
           </output>
         </div>
         {instrumentControls.map((control) => {
