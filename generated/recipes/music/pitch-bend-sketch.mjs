@@ -75,7 +75,7 @@ function modules() {
       color: "#d6d8d8",
       position: { x: 416, y: 416, z: 0 },
       inputs: [{ slot: 0, module: MODULE.kick }, { slot: 1, module: MODULE.bass }, { slot: 2, module: MODULE.lead }],
-      controllers: { volume: 248, balance: 128, dcOffset: 128, inverse: "off", stereoWidth: 164, absolute: "off", fineVolume: 32768, gain: 0, bipolarDcOffset: 0 },
+      controllers: { volume: 248, balance: 128, dcOffset: 128, inverse: "off", stereoWidth: 164, absolute: "off", fineVolume: 32768, gain: 1, bipolarDcOffset: 16384 },
     },
     {
       type: "Delay",
