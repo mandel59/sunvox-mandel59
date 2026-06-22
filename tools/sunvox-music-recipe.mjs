@@ -3,7 +3,13 @@ import { mkdir, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { buildContainer, formatValidationIssue, parseContainer, validateContainer } from "./sunvox-codec.mjs";
+import {
+  buildContainer,
+  formatValidationIssue,
+  parseContainer,
+  SUNVOX_LIB_PATTERN_DEFAULTS,
+  validateContainer,
+} from "./sunvox-codec.mjs";
 
 function usage() {
   console.error(`Usage:
@@ -55,16 +61,43 @@ function validateOutputSpec(outputId, output) {
 
 async function buildOutputDocument(recipe, context) {
   const { outputId, output } = context;
+  let document;
   if (output.document !== undefined) {
-    return output.document;
+    document = output.document;
+  } else if (typeof output.buildDocument === "function") {
+    document = await output.buildDocument(context);
+  } else if (typeof recipe.buildDocument === "function") {
+    document = await recipe.buildDocument(context);
+  } else {
+    throw new Error(`Music recipe output ${outputId} must define document or buildDocument()`);
   }
-  if (typeof output.buildDocument === "function") {
-    return output.buildDocument(context);
+  applySunVoxLibMusicDefaults(document);
+  return document;
+}
+
+function shouldApplyPatternDefaults(pattern) {
+  return (
+    !pattern?.infoFlags?.clone &&
+    (pattern?.tracks !== undefined || pattern?.lines !== undefined || Array.isArray(pattern?.events))
+  );
+}
+
+export function applySunVoxLibMusicDefaults(document) {
+  if (!isPlainObject(document) || document.magic !== "SVOX" || !Array.isArray(document.patterns)) {
+    return document;
   }
-  if (typeof recipe.buildDocument === "function") {
-    return recipe.buildDocument(context);
+  for (const pattern of document.patterns) {
+    if (!isPlainObject(pattern) || !shouldApplyPatternDefaults(pattern)) {
+      continue;
+    }
+    pattern.ySize ??= SUNVOX_LIB_PATTERN_DEFAULTS.ySize;
+    pattern.flags ??= {};
+    pattern.iconBase64 ??= SUNVOX_LIB_PATTERN_DEFAULTS.iconBase64;
+    pattern.foreground ??= SUNVOX_LIB_PATTERN_DEFAULTS.foreground;
+    pattern.background ??= SUNVOX_LIB_PATTERN_DEFAULTS.background;
+    pattern.infoFlags ??= {};
   }
-  throw new Error(`Music recipe output ${outputId} must define document or buildDocument()`);
+  return document;
 }
 
 function countEvents(document) {

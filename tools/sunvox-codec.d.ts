@@ -2,6 +2,14 @@ export const TEXT_FORMAT: "sunvox-structured-text-v1";
 export const EDITABLE_TEXT_FORMAT: "sunvox-editable-text-v1";
 export const VERBOSE_TEXT_FORMAT: "sunvox-container-text-v1";
 export const SUPPORTED_MAGICS: Set<SunVoxMagic>;
+export const SUNVOX_LIB_PATTERN_DEFAULTS: Readonly<{
+  ySize: 32;
+  flags: Readonly<Record<string, never>>;
+  iconBase64: "PDykJe23ul037HWuZabqV2pWbbaMMZPJTnJ37kvS8A8=";
+  foreground: "#000000";
+  background: "#ffffff";
+  infoFlags: Readonly<Record<string, never>>;
+}>;
 
 export type SunVoxMagic = "SVOX" | "SSYN";
 export type SunVoxJumpAddressMode =

@@ -1518,7 +1518,7 @@ const CHUNK_VALUE_KINDS = new Set([
 const RUNTIME_CONSTRAINT_SCOPES = new Set(["project", "module", "moduleLink", "patternEffectParameter"]);
 const RUNTIME_CONSTRAINT_KINDS = new Set(["integerRange", "maxUtf8Bytes"]);
 const RUNTIME_CONSTRAINT_SEVERITIES = new Set(["warning", "error"]);
-const GRAMMAR_EMIT_DEFAULT_KINDS = new Set(["bitflags", "zeroBytes"]);
+const GRAMMAR_EMIT_DEFAULT_KINDS = new Set(["bitflags", "literal", "zeroBytes"]);
 const GRAMMAR_EMIT_DEFAULT_CONDITIONS = new Set(["ownModuleData", "ownPatternData"]);
 const TEXT_LAYOUT_FIELD_ENCODINGS = new Set([
   "packedPatternControllerEffect",
@@ -1773,6 +1773,44 @@ function checkGrammarEmitDefault(errors, scopeName, field, chunk) {
     }
     if (chunk && chunk.type !== "bytes") {
       errors.push(`${subject} zeroBytes requires a bytes chunk`);
+    }
+  }
+  if (rule.kind === "literal") {
+    if (!Object.hasOwn(rule, "value")) {
+      errors.push(`${subject} literal is missing value`);
+    } else if (field.field === "value") {
+      if (!Number.isInteger(rule.value)) {
+        errors.push(`${subject} literal value requires an integer`);
+      }
+      if (chunk && !["uint32", "int32"].includes(chunk.type)) {
+        errors.push(`${subject} literal value requires an integer chunk`);
+      }
+    } else if (field.field === "rgb") {
+      if (typeof rule.value !== "string" || !/^#[0-9a-fA-F]{6}$/u.test(rule.value)) {
+        errors.push(`${subject} literal rgb requires #rrggbb value`);
+      }
+      if (chunk && chunk.type !== "rgb24") {
+        errors.push(`${subject} literal rgb requires an rgb24 chunk`);
+      }
+    } else if (field.field === "base64") {
+      if (
+        typeof rule.value !== "string" ||
+        !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(rule.value)
+      ) {
+        errors.push(`${subject} literal base64 requires a base64 value`);
+      }
+      if (chunk && chunk.type !== "bytes") {
+        errors.push(`${subject} literal base64 requires a bytes chunk`);
+      }
+    } else if (field.field === "text") {
+      if (typeof rule.value !== "string") {
+        errors.push(`${subject} literal text requires a string value`);
+      }
+      if (chunk && chunk.type !== "string") {
+        errors.push(`${subject} literal text requires a string chunk`);
+      }
+    } else {
+      errors.push(`${subject} literal is not supported for ${field.field} grammar fields`);
     }
   }
   if (rule.kind === "bitflags") {

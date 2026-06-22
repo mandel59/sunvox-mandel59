@@ -13,6 +13,7 @@ import {
   parseVerboseContainer,
   sha256,
   SUNVOX_DB,
+  SUNVOX_LIB_PATTERN_DEFAULTS,
   TEXT_FORMAT,
   validateContainer,
 } from "../tools/sunvox-codec.mjs";
@@ -191,21 +192,33 @@ test("reports DB-driven pattern event encoding errors", () => {
       {
         tracks: 1,
         lines: 1,
+        ySize: 32,
+        flags: {},
+        infoFlags: {},
         events: [{ line: 2, track: 0, note: "C4" }],
       },
       {
         tracks: 1,
         lines: 1,
+        ySize: 32,
+        flags: {},
+        infoFlags: {},
         events: [{ line: 0, track: 0, note: "H9" }],
       },
       {
         tracks: 1,
         lines: 1,
+        ySize: 32,
+        flags: {},
+        infoFlags: {},
         events: [{ line: 0, track: 0, velocity: 300 }],
       },
       {
         tracks: 1,
         lines: 1,
+        ySize: 32,
+        flags: {},
+        infoFlags: {},
         events: [{ line: 0, track: 0, module: 3 }],
       },
     ],
@@ -227,6 +240,67 @@ test("reports DB-driven pattern event encoding errors", () => {
   assert.deepEqual(result.issues.map((issue) => issue.trackingIssue), [1, 1, 1, 1]);
 });
 
+test("reports missing or nonpositive pattern display ySize", () => {
+  const missing = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [],
+    patterns: [
+      {
+        tracks: 1,
+        lines: 4,
+        events: [],
+      },
+    ],
+  });
+
+  assert.equal(missing.ok, false);
+  assert.deepEqual(
+    missing.issues.map((issue) => issue.rule),
+    ["pattern.ySize.required", "pattern.flags.defaultMissing", "pattern.infoFlags.defaultMissing"],
+  );
+  assert.deepEqual(
+    missing.issues.map((issue) => issue.severity),
+    ["error", "warning", "warning"],
+  );
+  assert.equal(missing.issues[0].trackingIssue, 33);
+
+  const zero = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [],
+    patterns: [
+      {
+        tracks: 1,
+        lines: 4,
+        ySize: 0,
+        flags: {},
+        infoFlags: {},
+        events: [],
+      },
+    ],
+  });
+
+  assert.equal(zero.ok, false);
+  assert.deepEqual(zero.issues.map((issue) => issue.rule), ["pattern.ySize.positive"]);
+  assert.match(zero.issues[0].message, /expected > 0/u);
+
+  const clone = validateContainer({
+    magic: "SVOX",
+    project: { bpm: 125, speed: 6 },
+    modules: [],
+    patterns: [
+      {
+        parent: 0,
+        infoFlags: { clone: true },
+      },
+    ],
+  });
+
+  assert.equal(clone.ok, true);
+  assert.deepEqual(clone.issues, []);
+});
+
 test("warns about ignored parameterless pattern effect values", () => {
   const result = validateContainer({
     magic: "SVOX",
@@ -236,6 +310,9 @@ test("warns about ignored parameterless pattern effect values", () => {
       {
         tracks: 1,
         lines: 2,
+        ySize: 32,
+        flags: {},
+        infoFlags: {},
         events: [
           { line: 0, track: 0, effect: "stop", value: 7 },
           { line: 1, track: 0, effect: "slotSync", value: 9 },
@@ -244,6 +321,9 @@ test("warns about ignored parameterless pattern effect values", () => {
       {
         tracks: 1,
         lines: 1,
+        ySize: 32,
+        flags: {},
+        infoFlags: {},
         events: [[0, 0, 0, 48, 5]],
       },
     ],
@@ -280,6 +360,9 @@ test("warns about runtime-clamped pattern effect parameters", () => {
       {
         tracks: 1,
         lines: 6,
+        ySize: 32,
+        flags: {},
+        infoFlags: {},
         events: [
           { line: 0, track: 0, effect: "setSpeedOrBpm", parameter: { speed: 0 } },
           { line: 1, track: 0, effect: "setSpeedOrBpm", parameter: { timelineGrid: 1 } },
@@ -292,6 +375,9 @@ test("warns about runtime-clamped pattern effect parameters", () => {
       {
         tracks: 1,
         lines: 1,
+        ySize: 32,
+        flags: {},
+        infoFlags: {},
         events: [[0, 0, 0, 15, 0]],
       },
     ],
@@ -746,11 +832,17 @@ test("decodes pattern note data", async () => {
   assert.equal(sha256(buildContainer(document)), sha256(buffer));
 });
 
-test("emits DB default pattern icons for new own-data patterns", () => {
+test("emits DB default pattern display metadata for new own-data patterns", () => {
+  const ySizeField = SUNVOX_DB.grammar.scopes.pattern.fields.find((field) => field.chunk === "PYSZ");
+  assert.equal(ySizeField.emitDefault.when, "ownPatternData");
+  assert.equal(ySizeField.emitDefault.kind, "literal");
+  assert.equal(ySizeField.emitDefault.value, SUNVOX_LIB_PATTERN_DEFAULTS.ySize);
+  assert.equal(ySizeField.emitDefault.trackingIssue, 33);
+
   const picoField = SUNVOX_DB.grammar.scopes.pattern.fields.find((field) => field.chunk === "PICO");
   assert.equal(picoField.emitDefault.when, "ownPatternData");
-  assert.equal(picoField.emitDefault.kind, "zeroBytes");
-  assert.equal(picoField.emitDefault.byteLength, 32);
+  assert.equal(picoField.emitDefault.kind, "literal");
+  assert.equal(picoField.emitDefault.value, SUNVOX_LIB_PATTERN_DEFAULTS.iconBase64);
   assert.equal(picoField.emitDefault.trackingIssue, 33);
 
   const buffer = buildContainer({
@@ -768,10 +860,17 @@ test("emits DB default pattern icons for new own-data patterns", () => {
     ],
     modules: [],
   });
-  const pico = parseVerboseContainer(buffer).chunks.find((chunk) => chunk.id === "PICO");
+  const parsed = parseContainer(buffer);
+  const verboseChunks = parseVerboseContainer(buffer).chunks;
+  const pico = verboseChunks.find((chunk) => chunk.id === "PICO");
 
   assert.equal(pico.size, 32);
-  assert.equal(pico.dataBase64, Buffer.alloc(32).toString("base64"));
+  assert.equal(pico.dataBase64, SUNVOX_LIB_PATTERN_DEFAULTS.iconBase64);
+  assert.equal(parsed.patterns[0].ySize, SUNVOX_LIB_PATTERN_DEFAULTS.ySize);
+  assert.deepEqual(parsed.patterns[0].flags, SUNVOX_LIB_PATTERN_DEFAULTS.flags);
+  assert.equal(parsed.patterns[0].foreground, SUNVOX_LIB_PATTERN_DEFAULTS.foreground);
+  assert.equal(parsed.patterns[0].background, SUNVOX_LIB_PATTERN_DEFAULTS.background);
+  assert.deepEqual(parsed.patterns[0].infoFlags, SUNVOX_LIB_PATTERN_DEFAULTS.infoFlags);
 });
 
 test("emits DB default module exists flags for new own-data modules", () => {

@@ -70,6 +70,11 @@ test("SunVox Music Recipe creates a validated SunVox project and summary", async
   assert.equal(document.project.name, "Music Recipe Probe");
   assert.equal(document.project.bpm, 100);
   assert.equal(document.modules[1].name, "Tone");
+  assert.equal(document.patterns[0].ySize, 32);
+  assert.deepEqual(document.patterns[0].flags, {});
+  assert.equal(document.patterns[0].foreground, "#000000");
+  assert.equal(document.patterns[0].background, "#ffffff");
+  assert.deepEqual(document.patterns[0].infoFlags, {});
   assert.equal(document.patterns[0].events.length, 1);
 
   const summary = JSON.parse(await readFile(summaryPath, "utf8"));

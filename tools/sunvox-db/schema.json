@@ -367,9 +367,9 @@
                       "type": "object",
                       "required": ["kind", "when", "source", "trackingIssue", "description"],
                       "properties": {
-                        "kind": { "enum": ["bitflags", "zeroBytes"] },
+                        "kind": { "enum": ["bitflags", "literal", "zeroBytes"] },
                         "byteLength": { "type": "integer", "minimum": 0 },
-                        "value": { "type": "object" },
+                        "value": {},
                         "when": { "enum": ["ownModuleData", "ownPatternData"] },
                         "source": { "type": "string" },
                         "trackingIssue": { "type": "integer", "minimum": 1 },

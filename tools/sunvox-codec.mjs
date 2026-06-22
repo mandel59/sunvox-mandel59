@@ -8,6 +8,14 @@ export const TEXT_FORMAT = "sunvox-structured-text-v1";
 export const EDITABLE_TEXT_FORMAT = "sunvox-editable-text-v1";
 export const VERBOSE_TEXT_FORMAT = "sunvox-container-text-v1";
 export const SUPPORTED_MAGICS = new Set(["SVOX", "SSYN"]);
+export const SUNVOX_LIB_PATTERN_DEFAULTS = Object.freeze({
+  ySize: 32,
+  flags: Object.freeze({}),
+  iconBase64: "PDykJe23ul037HWuZabqV2pWbbaMMZPJTnJ37kvS8A8=",
+  foreground: "#000000",
+  background: "#ffffff",
+  infoFlags: Object.freeze({}),
+});
 
 export const SUNVOX_DB = JSON.parse(
   readFileSync(new URL("./sunvox-db/database.json", import.meta.url), "utf8"),
@@ -1211,6 +1219,8 @@ function emitDefaultRuleMatches(scopeName, object, field) {
 
 function emitDefaultValue(field) {
   switch (field.emitDefault?.kind) {
+    case "literal":
+      return cloneJson(field.emitDefault.value);
     case "bitflags":
       return cloneJson(field.emitDefault.value ?? {});
     case "zeroBytes":
@@ -1608,6 +1618,10 @@ function documentPatternEntries(document, basePath = "") {
   }));
 }
 
+function hasOwnNonClonePatternData(pattern) {
+  return !pattern?.infoFlags?.clone && hasOwnPatternData(pattern);
+}
+
 function patternValidationIssue(rule, path, value, message) {
   return {
     severity: "error",
@@ -1623,6 +1637,25 @@ function patternValidationIssue(rule, path, value, message) {
 function patternWarningIssue(rule, path, value, message) {
   return {
     ...patternValidationIssue(rule, path, value, message),
+    severity: "warning",
+  };
+}
+
+function patternDisplayValidationIssue(rule, path, value, message) {
+  return {
+    severity: "error",
+    rule,
+    path,
+    value,
+    message,
+    source: "sv_new_pattern",
+    trackingIssue: 33,
+  };
+}
+
+function patternDisplayWarningIssue(rule, path, value, message) {
+  return {
+    ...patternDisplayValidationIssue(rule, path, value, message),
     severity: "warning",
   };
 }
@@ -1853,6 +1886,64 @@ function validatePatternEvents(document, basePath = "") {
   });
 }
 
+function validatePatternDisplayMetadata(document, basePath = "") {
+  return documentPatternEntries(document, basePath).flatMap(({ pattern, path }) => {
+    if (!hasOwnNonClonePatternData(pattern)) {
+      return [];
+    }
+    const issues = [];
+    if (pattern.ySize === undefined) {
+      issues.push(
+        patternDisplayValidationIssue(
+          "pattern.ySize.required",
+          `${path}.ySize`,
+          pattern.ySize,
+          `${path}.ySize is required for non-clone pattern data; sv_new_pattern defaults to ${SUNVOX_LIB_PATTERN_DEFAULTS.ySize}`,
+        ),
+      );
+    } else if (!Number.isInteger(pattern.ySize)) {
+      issues.push(
+        patternDisplayValidationIssue(
+          "pattern.ySize.positive",
+          `${path}.ySize`,
+          pattern.ySize,
+          `${path}.ySize must be an integer`,
+        ),
+      );
+    } else if (pattern.ySize <= 0) {
+      issues.push(
+        patternDisplayValidationIssue(
+          "pattern.ySize.positive",
+          `${path}.ySize`,
+          pattern.ySize,
+          `${path}.ySize is ${pattern.ySize}; expected > 0 for SunVox pattern display`,
+        ),
+      );
+    }
+    if (pattern.flags === undefined) {
+      issues.push(
+        patternDisplayWarningIssue(
+          "pattern.flags.defaultMissing",
+          `${path}.flags`,
+          pattern.flags,
+          `${path}.flags is missing; sv_new_pattern defaults to an empty flag set`,
+        ),
+      );
+    }
+    if (pattern.infoFlags === undefined) {
+      issues.push(
+        patternDisplayWarningIssue(
+          "pattern.infoFlags.defaultMissing",
+          `${path}.infoFlags`,
+          pattern.infoFlags,
+          `${path}.infoFlags is missing; sv_new_pattern defaults to an empty flag set`,
+        ),
+      );
+    }
+    return issues;
+  });
+}
+
 function nestedContainerEntries(document, basePath = "") {
   return documentModuleEntries(document, basePath).flatMap((entry) =>
     (entry.module?.dataChunks ?? [])
@@ -1872,6 +1963,7 @@ function validateContainerAtPath(document, basePath = "", seen = new Set()) {
   return [
     ...(SUNVOX_DB.runtimeConstraints ?? []).flatMap((rule) => validateRuntimeConstraint(document, rule, basePath)),
     ...validateModuleControllers(document, basePath),
+    ...validatePatternDisplayMetadata(document, basePath),
     ...validatePatternEvents(document, basePath),
     ...nestedContainerEntries(document, basePath).flatMap((entry) =>
       validateContainerAtPath(entry.container, entry.path, seen),
