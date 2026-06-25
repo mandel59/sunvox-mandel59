@@ -21,7 +21,6 @@ const SYNTH_KEYBOARD_OCTAVE_STEP = 12;
 const SYNTH_KEYBOARD_MIN_START_NOTE = 0;
 const SYNTH_KEYBOARD_MAX_START_NOTE = 96;
 const SYNTH_KEYBOARD_VELOCITY = 128;
-const SYNTH_POINTER_MIN_GATE_MS = 120;
 const DEFAULT_SYNTH_VOLUME_CONTROLLER_MAX = 1024;
 const SYNTH_USER_CONTROLLER_MAX = 32768;
 const METAMODULE_USER_CONTROLLER_BASE_INDEX = 5;
@@ -537,8 +536,6 @@ function SynthKeyboardSection({ project }) {
   const activeInputNotesRef = useRef(new Map());
   const noteHoldCountsRef = useRef(new Map());
   const activeNotesRef = useRef(new Set());
-  const noteGateStartRef = useRef(new Map());
-  const noteGenerationRef = useRef(new Map());
   const synthKeyboardNotes = useMemo(() => keyboardNotes(keyboardStartNote), [keyboardStartNote]);
   const synthKeyboardWhiteKeys = useMemo(
     () => synthKeyboardNotes.filter((keyboardNote) => !keyboardNote.black).length,
@@ -639,32 +636,6 @@ function SynthKeyboardSection({ project }) {
     }
     noteHoldCountsRef.current.delete(note);
     activeNotesRef.current.delete(note);
-    noteGateStartRef.current.delete(note);
-  }
-
-  function nextNoteGeneration(note) {
-    const generation = (noteGenerationRef.current.get(note) ?? 0) + 1;
-    noteGenerationRef.current.set(note, generation);
-    return generation;
-  }
-
-  function stopPlayedNote(sourceId, note, generation = noteGenerationRef.current.get(note)) {
-    const minGateMs = sourceId.startsWith("pointer:") ? SYNTH_POINTER_MIN_GATE_MS : 0;
-    const startedAt = noteGateStartRef.current.get(note) ?? performance.now();
-    const elapsedMs = performance.now() - startedAt;
-    const delayMs = Math.max(0, minGateMs - elapsedMs);
-    const stop = () => {
-      if (noteGenerationRef.current.get(note) !== generation) {
-        return;
-      }
-      noteGateStartRef.current.delete(note);
-      window.stopSynthNote?.(note);
-    };
-    if (delayMs > 0) {
-      window.setTimeout(stop, delayMs);
-      return;
-    }
-    stop();
   }
 
   async function startInputNote(sourceId, note) {
@@ -683,7 +654,6 @@ function SynthKeyboardSection({ project }) {
     }
 
     activeNotesRef.current.add(note);
-    const generation = nextNoteGeneration(note);
     setActiveNotes(new Set(activeNotesRef.current));
     setKeyboardStatus("Loading");
 
@@ -691,7 +661,7 @@ function SynthKeyboardSection({ project }) {
 
     if (!hasHeldNote(note)) {
       if (played !== false) {
-        stopPlayedNote(sourceId, note, generation);
+        window.stopSynthNote?.(note);
       }
       return;
     }
@@ -703,7 +673,6 @@ function SynthKeyboardSection({ project }) {
       return;
     }
 
-    noteGateStartRef.current.set(note, performance.now());
     publishActiveNotes();
   }
 
@@ -722,19 +691,17 @@ function SynthKeyboardSection({ project }) {
 
     noteHoldCountsRef.current.delete(note);
     activeNotesRef.current.delete(note);
-    stopPlayedNote(sourceId, note);
+    window.stopSynthNote?.(note);
     publishActiveNotes();
   }
 
   function stopAllInputNotes() {
     for (const note of activeNotesRef.current) {
-      nextNoteGeneration(note);
       window.stopSynthNote?.(note);
     }
     activeInputNotesRef.current.clear();
     noteHoldCountsRef.current.clear();
     activeNotesRef.current.clear();
-    noteGateStartRef.current.clear();
     setActiveNotes(new Set());
     setKeyboardStatus("Ready");
   }
