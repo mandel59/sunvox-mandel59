@@ -18,6 +18,8 @@
     "browser:check:playback:headed": "npm --prefix tools/browser-debug run check:playback:headed --",
     "browser:check:synth": "npm --prefix tools/browser-debug run check:synth --",
     "browser:check:synth:headed": "npm --prefix tools/browser-debug run check:synth:headed --",
+    "browser:check:synth:mobile": "npm --prefix tools/browser-debug run check:synth:mobile --",
+    "browser:check:synth:mobile:headed": "npm --prefix tools/browser-debug run check:synth:mobile:headed --",
     "browser:check:headed": "npm --prefix tools/browser-debug run check:dist:headed",
     "site:data:generate": "node tools/generate-site-data.mjs",
     "sunvox:encode": "node tools/sunvox-codec.mjs encode",

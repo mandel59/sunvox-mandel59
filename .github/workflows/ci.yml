@@ -44,6 +44,17 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Install browser debug dependencies
+        run: npm ci
+        working-directory: tools/browser-debug
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: tools/browser-debug
+
+      - name: Check mobile synth tap
+        run: npm run browser:check:synth:mobile
+
       - name: Check SunVox DB
         run: npm run sunvox:inspect -- check
 

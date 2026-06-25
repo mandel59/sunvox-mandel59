@@ -22,6 +22,8 @@ npm run browser:check:playback
 npm run browser:check:playback:headed
 npm run browser:check:synth
 npm run browser:check:synth:headed
+npm run browser:check:synth:mobile
+npm run browser:check:synth:mobile:headed
 npm run browser:check:dev
 ```
 
@@ -51,4 +53,6 @@ can still inspect localhost pages.
 `check:playback` can take an optional project path argument. Omitting it defaults to
 `music/2022-04-17.sunvox`. `check:synth` can take an optional `.sunsynth` path
 and verifies that `preloadSynth()` + `playSynthNote()` produce non-zero
-AudioWorklet output.
+AudioWorklet output. `check:synth:mobile` opens the app with an iPhone viewport,
+selects a synth through the permalink hash, taps the on-screen keyboard, and
+verifies both the `playSynthNote()` call and non-zero AudioWorklet output.
