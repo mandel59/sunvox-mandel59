@@ -57,6 +57,7 @@ let renderScheduled = false;
 let rendering = false;
 let projectPlaying = false;
 let projectTailDraining = false;
+let renderBaseTicks = 0;
 let frameCursor = 0;
 let pendingFrames = 0;
 let isLoading = false;
@@ -383,9 +384,9 @@ function updateIdleOutputState(floatData) {
 
 function framesToTicks(frameCount) {
   if (!ticksPerSecond || !audioContextSampleRate) {
-    return 0;
+    return renderBaseTicks;
   }
-  return Math.floor((frameCount * ticksPerSecond) / audioContextSampleRate);
+  return renderBaseTicks + Math.floor((frameCount * ticksPerSecond) / audioContextSampleRate);
 }
 
 function outputBufferedFrames() {
@@ -479,6 +480,7 @@ function startAudioOutput({ resetQueue = false, resetClock = false } = {}) {
   resetIdleOutputState();
   if (resetClock) {
     frameCursor = 0;
+    renderBaseTicks = sv_get_ticks();
   }
   if (resetQueue) {
     flushAudioOutput();
@@ -912,6 +914,16 @@ async function noteOn(payload) {
   const slotState = await loadSynthFromUrl(url, payload.resourceUrl || url, true);
   const track = noteTrack(payload.track ?? note);
   const noteValue = normalizedNote(note);
+  const resetSynthClock = !projectPlaying && !rendering;
+  if (resetSynthClock) {
+    frameCursor = 0;
+    renderBaseTicks = sv_get_ticks();
+  }
+  const eventTicks = framesToTicks(frameCursor);
+  const setEventTimeResult = sv_set_event_t(slotState.slot, 1, eventTicks);
+  if (setEventTimeResult < 0) {
+    throw new Error(`sv_set_event_t (note on) failed: ${setEventTimeResult}`);
+  }
   const result = sv_send_event(
     slotState.slot,
     track,
@@ -921,13 +933,14 @@ async function noteOn(payload) {
     0,
     0,
   );
+  sv_set_event_t(slotState.slot, 0, 0);
   if (result < 0) {
     throw new Error(`sv_send_event (note on) failed: ${result}`);
   }
   slotState.activeNotes.add(noteKey(track, note));
   slotState.lastUsed = Date.now();
   lastTouchedSynthSlot = slotState;
-  startAudioOutput({ resetQueue: !projectPlaying && !rendering, resetClock: !rendering });
+  startAudioOutput({ resetQueue: resetSynthClock, resetClock: false });
   postPlayerState();
   return true;
 }
@@ -958,10 +971,15 @@ function noteOff(payload) {
   const track = noteTrack(payload.track ?? note);
   const noteValue = note === ALL_NOTES_OFF ? ALL_NOTES_OFF : NOTE_OFF;
   const targets = lastTouchedSynthSlot ? [lastTouchedSynthSlot] : synthSlots;
+  const eventTicks = framesToTicks(frameCursor);
   let sent = false;
   for (const slotState of targets) {
     if (!slotState.loaded || slotState.moduleIndex < 0) {
       continue;
+    }
+    const setEventTimeResult = sv_set_event_t(slotState.slot, 1, eventTicks);
+    if (setEventTimeResult < 0) {
+      throw new Error(`sv_set_event_t (note off) failed: ${setEventTimeResult}`);
     }
     const result = sv_send_event(
       slotState.slot,
@@ -972,6 +990,7 @@ function noteOff(payload) {
       0,
       0,
     );
+    sv_set_event_t(slotState.slot, 0, 0);
     if (result < 0) {
       throw new Error(`sv_send_event (note off) failed: ${result}`);
     }
