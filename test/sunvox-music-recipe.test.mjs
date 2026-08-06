@@ -11,7 +11,7 @@ import { loadMusicRecipe, runMusicRecipe, runMusicRecipes } from "../tools/sunvo
 
 const execFileAsync = promisify(execFile);
 
-function recipeSource(outputPath, summaryPath) {
+function recipeSource(outputPath, summaryPath, verification) {
   return `// @ts-check
 
 /** @satisfies {import("${resolve("tools/sunvox-music-recipe.d.ts").replaceAll("\\", "/")}").SunVoxMusicRecipe} */
@@ -23,6 +23,7 @@ const recipe = {
     minimal: {
       file: ${JSON.stringify(outputPath)},
       summaryFile: ${JSON.stringify(summaryPath)},
+      ${verification === undefined ? "" : `verification: ${JSON.stringify(verification)},`}
       buildDocument() {
         return {
           format: "sunvox-structured-text-v1",
@@ -82,6 +83,84 @@ test("SunVox Music Recipe creates a validated SunVox project and summary", async
   assert.deepEqual(summary.recipe.tags, ["research:test-music"]);
   assert.equal(summary.project.events, 1);
   assert.deepEqual(summary.validation, { ok: true, issues: [] });
+});
+
+test("records rendered verification statistics in the summary", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-render-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    recipeSource("rendered.sunvox", "rendered.summary.json", {
+      durationSeconds: 0.5,
+      requireAudio: true,
+      maxClippedSamples: 0,
+      maxLeadingSilenceSeconds: 0.25,
+    }),
+    "utf8",
+  );
+
+  const [result] = await runMusicRecipe(recipePath, { outDir: tempDir });
+  assert.ok(result.summary.render.peak > 0);
+  assert.ok(result.summary.render.rms > 0);
+  assert.ok(result.summary.render.nonZeroFrames > 0);
+  assert.equal(result.summary.render.clippedSamples, 0);
+  assert.ok(result.summary.render.leadingSilenceSeconds <= 0.25);
+  assert.deepEqual(result.summary.render, JSON.parse(await readFile(result.summaryPath, "utf8")).render);
+});
+
+test("required-audio render verification rejects silent projects before writing", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-silent-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  const source = recipeSource("silent.sunvox", "silent.summary.json", {
+    durationSeconds: 0.1,
+    requireAudio: true,
+  }).replace(
+    'events: [{ line: 0, track: 0, note: "C4", module: 1, velocity: 112 }]',
+    "events: []",
+  );
+  await writeFile(recipePath, source, "utf8");
+
+  await assert.rejects(runMusicRecipe(recipePath, { outDir: tempDir }), /required audio is silent/u);
+  await assert.rejects(access(join(tempDir, "silent.sunvox")), { code: "ENOENT" });
+});
+
+test("render verification rejects configured clipping and can be disabled", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-clipping-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    recipeSource("clipped.sunvox", "clipped.summary.json", {
+      durationSeconds: 0.2,
+      clippingThreshold: 0.000001,
+      maxClippedSamples: 0,
+    }),
+    "utf8",
+  );
+  await assert.rejects(runMusicRecipe(recipePath, { outDir: tempDir }), /clipped samples exceeds 0/u);
+
+  const disabledPath = join(tempDir, "disabled.mjs");
+  await writeFile(
+    disabledPath,
+    recipeSource("disabled.sunvox", "disabled.summary.json", false).replace(
+      'events: [{ line: 0, track: 0, note: "C4", module: 1, velocity: 112 }]',
+      "events: []",
+    ),
+    "utf8",
+  );
+  const [disabled] = await runMusicRecipe(disabledPath, { outDir: tempDir });
+  assert.equal(disabled.summary.render, undefined);
+});
+
+test("validates render verification settings before building", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-render-settings-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(
+    recipePath,
+    recipeSource("invalid.sunvox", "invalid.summary.json", { durationSeconds: 0 }),
+    "utf8",
+  );
+  await assert.rejects(runMusicRecipe(recipePath, { outDir: tempDir }), /durationSeconds must be positive/u);
+  await assert.rejects(access(join(tempDir, "invalid.sunvox")), { code: "ENOENT" });
 });
 
 test("SunVox Music Recipe CLI accepts multiple recipe files", async () => {
