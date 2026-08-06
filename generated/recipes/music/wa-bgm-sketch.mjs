@@ -543,7 +543,7 @@ export async function buildWaBgmDocument() {
 export const recipe = {
   schemaVersion: 1,
   tags: ["research:japanese-bgm", "research:generated-music"],
-  issue: 38,
+  issue: 32,
   outputs: {
     waBgmSketch: {
       file: PROJECT_PATH,

@@ -106,14 +106,19 @@ async function findRecipeFiles(paths) {
   return files.sort((a, b) => a.localeCompare(b, "en"));
 }
 
-function addRecipeSource(sources, recipePath, outputFile, generatedRoot) {
+function addRecipeSource(sources, recipePath, outputPath, issue) {
   const recipeSource = {
     path: recipePath,
     name: basename(recipePath),
+    ...(issue !== undefined ? { issue } : {}),
   };
-  const outputPath = outputFile.replaceAll("\\", "/");
+  const previous = sources.get(outputPath);
+  if (previous) {
+    throw new Error(
+      `Duplicate generated output declaration ${outputPath}: ${previous.path} and ${recipePath}`,
+    );
+  }
   sources.set(outputPath, recipeSource);
-  sources.set(`${generatedRoot}/${basename(outputFile)}`, recipeSource);
 }
 
 async function collectGeneratedSourceRecipes({
@@ -130,7 +135,7 @@ async function collectGeneratedSourceRecipes({
       if (output.kind !== "sunsynth" || extname(output.file).toLowerCase() !== ".sunsynth") {
         continue;
       }
-      addRecipeSource(sources, recipePath, output.file, "generated/instruments");
+      addRecipeSource(sources, recipePath, `generated/instruments/${basename(output.file)}`);
     }
   }
   for (const recipeFile of musicRecipeFiles) {
@@ -140,7 +145,8 @@ async function collectGeneratedSourceRecipes({
       if (extname(output.file).toLowerCase() !== ".sunvox") {
         continue;
       }
-      addRecipeSource(sources, recipePath, output.file, "generated/music");
+      const outputPath = relativeWorkspacePath(resolveWorkspacePath(output.file));
+      addRecipeSource(sources, recipePath, outputPath, recipe.issue);
     }
   }
   return sources;

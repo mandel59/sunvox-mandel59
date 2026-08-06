@@ -247,6 +247,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.deepEqual(podcastBed.sourceRecipe, {
     path: "generated/recipes/music/podcast-bed-loop.mjs",
     name: "podcast-bed-loop.mjs",
+    issue: 38,
   });
   assert.equal(podcastBed.project.bpm, 96);
   assert.equal(podcastBed.stats.patterns, 1);
@@ -254,12 +255,14 @@ test("site data summarizes project structure without embedding full event grids"
   assert.deepEqual(podcastTransition.sourceRecipe, {
     path: "generated/recipes/music/podcast-purpose-pack.mjs",
     name: "podcast-purpose-pack.mjs",
+    issue: 38,
   });
   assert.ok(firstHookLoop);
   assert.equal(firstHookLoop.type, "project");
   assert.deepEqual(firstHookLoop.sourceRecipe, {
     path: "generated/recipes/music/short-video-bgm.mjs",
     name: "short-video-bgm.mjs",
+    issue: 30,
   });
   assert.equal(firstHookLoop.project.bpm, 128);
   assert.equal(firstHookLoop.stats.patterns, 1);
@@ -268,6 +271,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.deepEqual(altShepardChipBumper.sourceRecipe, {
     path: "generated/recipes/music/short-video-alt-palette.mjs",
     name: "short-video-alt-palette.mjs",
+    issue: 30,
   });
   assert.equal(altShepardChipBumper.project.bpm, 132);
   assert.equal(altShepardChipBumper.stats.patterns, 1);
@@ -276,6 +280,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.deepEqual(polyVocoderSyllableGrid.sourceRecipe, {
     path: "generated/recipes/music/short-video-poly-vocoder.mjs",
     name: "short-video-poly-vocoder.mjs",
+    issue: 30,
   });
   assert.equal(polyVocoderSyllableGrid.project.bpm, 128);
   assert.equal(polyVocoderSyllableGrid.stats.patterns, 1);
@@ -284,6 +289,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.deepEqual(waBgmSketch.sourceRecipe, {
     path: "generated/recipes/music/wa-bgm-sketch.mjs",
     name: "wa-bgm-sketch.mjs",
+    issue: 32,
   });
   assert.equal(waBgmSketch.project.bpm, 92);
   assert.equal(waBgmSketch.stats.patterns, 2);
@@ -365,6 +371,7 @@ test("site data records source recipes for generated music projects", async () =
     recipePath,
     `const recipe = {
   schemaVersion: 1,
+  issue: 77,
   outputs: {
     minimal: {
       file: ${JSON.stringify(outputPath)},
@@ -396,7 +403,74 @@ export default recipe;
     assert.deepEqual(data.projects[0].sourceRecipe, {
       path: recipePath.replaceAll("\\", "/"),
       name: "minimal-music.mjs",
+      issue: 77,
     });
+  } finally {
+    await rm(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test("site data rejects duplicate normalized recipe output declarations", async () => {
+  const fixtureDir = join("var", "site-data-duplicate-recipe-fixture");
+  const recipeDir = join(fixtureDir, "recipes");
+  const musicDir = join(fixtureDir, "generated", "music");
+  const outputPath = join(musicDir, "duplicate.sunvox").replaceAll("\\", "/");
+  await rm(fixtureDir, { recursive: true, force: true });
+  await mkdir(recipeDir, { recursive: true });
+
+  const recipeSource = (file) => `export default {
+  schemaVersion: 1,
+  issue: 48,
+  outputs: { only: { file: ${JSON.stringify(file)}, document: {} } }
+};
+`;
+  await writeFile(join(recipeDir, "first.mjs"), recipeSource(outputPath), "utf8");
+  await writeFile(join(recipeDir, "second.mjs"), recipeSource(join(musicDir, "nested", "..", "duplicate.sunvox")), "utf8");
+
+  try {
+    await assert.rejects(
+      collectSiteData([musicDir], { musicRecipeRoots: [recipeDir], editRecipeRoots: [] }),
+      /Duplicate generated output declaration .*first\.mjs and .*second\.mjs/u,
+    );
+  } finally {
+    await rm(fixtureDir, { recursive: true, force: true });
+  }
+});
+
+test("site data does not infer music recipe provenance from a basename", async () => {
+  const fixtureDir = join("var", "site-data-recipe-basename-fixture");
+  const recipeDir = join(fixtureDir, "recipes");
+  const musicDir = join(fixtureDir, "generated", "music");
+  await rm(fixtureDir, { recursive: true, force: true });
+  await mkdir(recipeDir, { recursive: true });
+  await mkdir(musicDir, { recursive: true });
+  await writeFile(
+    join(recipeDir, "source.mjs"),
+    `export default {
+  schemaVersion: 1,
+  issue: 48,
+  outputs: { only: { file: "var/elsewhere/same-name.sunvox", document: {} } }
+};
+`,
+    "utf8",
+  );
+  await writeFile(
+    join(musicDir, "same-name.sunvox"),
+    buildContainer({
+      format: TEXT_FORMAT,
+      magic: "SVOX",
+      headerTailHex: "00000000",
+      project: { name: "No Basename Provenance" },
+      patterns: [],
+      modules: [{ flags: { exists: true, output: true }, name: "Output" }],
+      trailingChunks: [],
+    }),
+  );
+
+  try {
+    const data = await collectSiteData([musicDir], { musicRecipeRoots: [recipeDir], editRecipeRoots: [] });
+    assert.equal(data.projects.length, 1);
+    assert.equal(Object.hasOwn(data.projects[0], "sourceRecipe"), false);
   } finally {
     await rm(fixtureDir, { recursive: true, force: true });
   }

@@ -1254,7 +1254,7 @@ async function buildThemeDocument(theme) {
 export const recipe = {
   schemaVersion: 1,
   tags: ["research:short-video-bgm", "research:generated-music"],
-  issue: 38,
+  issue: 30,
   outputs: Object.fromEntries(
     themes.map((theme) => [
       theme.id,
