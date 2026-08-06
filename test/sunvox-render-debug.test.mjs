@@ -50,6 +50,7 @@ test("summarizes rendered audio level and leading silence", () => {
   assert.equal(stats.rms, 0.25);
   assert.equal(stats.nonZeroSamples, 4);
   assert.equal(stats.nonZeroFrames, 2);
+  assert.equal(stats.clippedSamples, 0);
   assert.equal(stats.firstNonZeroFrame, 2);
   assert.equal(stats.lastNonZeroFrame, 3);
   assert.equal(stats.leadingSilenceFrames, 2);
@@ -62,9 +63,16 @@ test("summarizes silent rendered audio", () => {
   assert.equal(stats.rms, 0);
   assert.equal(stats.nonZeroSamples, 0);
   assert.equal(stats.nonZeroFrames, 0);
+  assert.equal(stats.clippedSamples, 0);
   assert.equal(stats.firstNonZeroFrame, undefined);
   assert.equal(stats.lastNonZeroFrame, undefined);
   assert.equal(stats.leadingSilenceFrames, 4);
+});
+
+test("counts samples at or beyond the clipping threshold", () => {
+  const stats = summarizeAudio(new Float32Array([0.5, -1, 1.25, 0]), 2);
+  assert.equal(stats.peak, 1.25);
+  assert.equal(stats.clippedSamples, 2);
 });
 
 test("matches event and pattern probes for a simple line-aligned Generator synth", async () => {

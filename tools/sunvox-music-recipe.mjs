@@ -10,6 +10,17 @@ import {
   SUNVOX_LIB_PATTERN_DEFAULTS,
   validateContainer,
 } from "./sunvox-codec.mjs";
+import { summarizeAudio } from "./sunvox-audio-stats.mjs";
+import {
+  DEFAULT_BLOCK_FRAMES,
+  DEFAULT_CHANNELS,
+  DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
+  DEFAULT_SAMPLE_RATE,
+  assertSunVoxOk,
+  loadProjectFromBuffer,
+  renderSlotAudio,
+  withSunVoxSlot,
+} from "./sunvox-node.mjs";
 
 function usage() {
   console.error(`Usage:
@@ -59,6 +70,36 @@ function validateOutputSpec(outputId, output) {
   }
   if (output.summaryFile !== undefined && (typeof output.summaryFile !== "string" || !output.summaryFile.trim())) {
     throw new Error(`Music recipe output ${outputId} summaryFile must be a non-empty string`);
+  }
+  validateVerificationSpec(outputId, output.verification);
+}
+
+function validateVerificationSpec(outputId, verification) {
+  if (verification === undefined || verification === false) {
+    return;
+  }
+  if (!isPlainObject(verification)) {
+    throw new Error(`Music recipe output ${outputId} verification must be an object or false`);
+  }
+  if (!Number.isFinite(verification.durationSeconds) || verification.durationSeconds <= 0) {
+    throw new Error(`Music recipe output ${outputId} verification.durationSeconds must be positive`);
+  }
+  for (const field of ["silenceEpsilon", "maxLeadingSilenceSeconds"]) {
+    if (verification[field] !== undefined && (!Number.isFinite(verification[field]) || verification[field] < 0)) {
+      throw new Error(`Music recipe output ${outputId} verification.${field} must be non-negative`);
+    }
+  }
+  if (
+    verification.clippingThreshold !== undefined &&
+    (!Number.isFinite(verification.clippingThreshold) || verification.clippingThreshold <= 0)
+  ) {
+    throw new Error(`Music recipe output ${outputId} verification.clippingThreshold must be positive`);
+  }
+  if (
+    verification.maxClippedSamples !== undefined &&
+    (!Number.isInteger(verification.maxClippedSamples) || verification.maxClippedSamples < 0)
+  ) {
+    throw new Error(`Music recipe output ${outputId} verification.maxClippedSamples must be a non-negative integer`);
   }
 }
 
@@ -119,7 +160,18 @@ function countEvents(document) {
   return (document.patterns ?? []).reduce((total, pattern) => total + (pattern.events?.length ?? 0), 0);
 }
 
-function outputSummary({ recipePath, outputId, outputFile, summaryFile, recipe, output, document, bytes, validation }) {
+function outputSummary({
+  recipePath,
+  outputId,
+  outputFile,
+  summaryFile,
+  recipe,
+  output,
+  document,
+  bytes,
+  validation,
+  render,
+}) {
   return {
     schemaVersion: 1,
     recipe: {
@@ -145,7 +197,71 @@ function outputSummary({ recipePath, outputId, outputFile, summaryFile, recipe, 
       ok: validation.ok,
       issues: validation.issues.map(formatValidationIssue),
     },
+    ...(render ? { render } : {}),
   };
+}
+
+async function verifyRenderedOutput(outputId, bytes, verification) {
+  if (!verification || verification === false) {
+    return undefined;
+  }
+  const durationSeconds = verification.durationSeconds;
+  const rendered = await withSunVoxSlot(
+    {
+      sampleRate: DEFAULT_SAMPLE_RATE,
+      channels: DEFAULT_CHANNELS,
+      flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
+    },
+    async ({ module, slot, sampleRate, channels }) => {
+      loadProjectFromBuffer(module, bytes, { slot });
+      assertSunVoxOk(module._sv_volume(slot, 256), "sv_volume");
+      assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
+      const audio = renderSlotAudio(module, {
+        slot,
+        sampleRate,
+        channels,
+        durationSeconds,
+        blockFrames: DEFAULT_BLOCK_FRAMES,
+      });
+      assertSunVoxOk(module._sv_stop(slot), "sv_stop");
+      return audio;
+    },
+  );
+  const stats = summarizeAudio(rendered.samples, rendered.channels, {
+    silenceEpsilon: verification.silenceEpsilon,
+    clippingThreshold: verification.clippingThreshold,
+  });
+  const result = {
+    durationSeconds,
+    sampleRate: rendered.sampleRate,
+    channels: rendered.channels,
+    peak: stats.peak,
+    rms: stats.rms,
+    nonZeroFrames: stats.nonZeroFrames,
+    clippedSamples: stats.clippedSamples,
+    leadingSilenceFrames: stats.leadingSilenceFrames,
+    leadingSilenceSeconds: stats.leadingSilenceFrames / rendered.sampleRate,
+  };
+  if (verification.requireAudio && stats.nonZeroFrames === 0) {
+    throw new Error(`Music recipe output ${outputId} render verification failed: required audio is silent`);
+  }
+  if (
+    verification.maxClippedSamples !== undefined &&
+    stats.clippedSamples > verification.maxClippedSamples
+  ) {
+    throw new Error(
+      `Music recipe output ${outputId} render verification failed: ${stats.clippedSamples} clipped samples exceeds ${verification.maxClippedSamples}`,
+    );
+  }
+  if (
+    verification.maxLeadingSilenceSeconds !== undefined &&
+    result.leadingSilenceSeconds > verification.maxLeadingSilenceSeconds
+  ) {
+    throw new Error(
+      `Music recipe output ${outputId} render verification failed: ${result.leadingSilenceSeconds} seconds leading silence exceeds ${verification.maxLeadingSilenceSeconds}`,
+    );
+  }
+  return result;
 }
 
 async function buildMusicOutput(outputId, output, context, outputRoot) {
@@ -161,6 +277,7 @@ async function buildMusicOutput(outputId, output, context, outputRoot) {
   if (!validation.ok) {
     throw new Error(validation.issues.map(formatValidationIssue).join("\n"));
   }
+  const render = await verifyRenderedOutput(outputId, bytes, output.verification);
 
   const summary = outputSummary({
     recipePath: context.recipePath,
@@ -172,6 +289,7 @@ async function buildMusicOutput(outputId, output, context, outputRoot) {
     document: parsed,
     bytes: bytes.length,
     validation,
+    render,
   });
   return { outputPath, summaryPath, summary, bytes };
 }

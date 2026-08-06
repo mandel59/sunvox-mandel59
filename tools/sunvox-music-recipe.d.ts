@@ -14,9 +14,19 @@ export interface SunVoxMusicRecipeOutput {
   file: string;
   title?: string;
   summaryFile?: string;
+  verification?: false | SunVoxMusicRecipeVerification;
   params?: Record<string, JsonValue>;
   document?: JsonValue;
   buildDocument?: (context: SunVoxMusicRecipeContext) => MaybePromise<JsonValue>;
+}
+
+export interface SunVoxMusicRecipeVerification {
+  durationSeconds: number;
+  requireAudio?: boolean;
+  silenceEpsilon?: number;
+  clippingThreshold?: number;
+  maxClippedSamples?: number;
+  maxLeadingSilenceSeconds?: number;
 }
 
 export interface SunVoxMusicRecipe {

@@ -4,6 +4,8 @@ import { basename, extname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { parseNote } from "./sunsynth-characterize.mjs";
+import { summarizeAudio } from "./sunvox-audio-stats.mjs";
+export { summarizeAudio } from "./sunvox-audio-stats.mjs";
 import {
   DEFAULT_BLOCK_FRAMES,
   DEFAULT_CHANNELS,
@@ -28,7 +30,6 @@ const DEFAULT_NOTE = 60;
 const DEFAULT_VELOCITY = 112;
 const DEFAULT_EVENT_TRACK = 0;
 const DEFAULT_PASSES = 2;
-const SILENCE_EPSILON = 1e-7;
 const SUPPORTED_EXTENSIONS = new Set([".sunvox", ".sunsynth"]);
 const SYNTH_RENDER_MODES = new Set(["event", "pattern", "both"]);
 const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -175,37 +176,6 @@ function inspectLoadedModules(module, slot = SLOT) {
     });
   }
   return modules;
-}
-
-export function summarizeAudio(samples, channels, epsilon = SILENCE_EPSILON) {
-  let peak = 0;
-  let sumSquares = 0;
-  let nonZeroSamples = 0;
-  let firstNonZeroFrame;
-  let lastNonZeroFrame;
-  const frameCount = Math.floor(samples.length / channels);
-  for (let sampleIndex = 0; sampleIndex < samples.length; sampleIndex += 1) {
-    const value = samples[sampleIndex];
-    const absolute = Math.abs(value);
-    peak = Math.max(peak, absolute);
-    sumSquares += value * value;
-    if (absolute > epsilon) {
-      nonZeroSamples += 1;
-      const frame = Math.floor(sampleIndex / channels);
-      firstNonZeroFrame ??= frame;
-      lastNonZeroFrame = frame;
-    }
-  }
-  return {
-    peak,
-    rms: samples.length ? Math.sqrt(sumSquares / samples.length) : 0,
-    nonZeroSamples,
-    nonZeroFrames:
-      firstNonZeroFrame === undefined || lastNonZeroFrame === undefined ? 0 : lastNonZeroFrame - firstNonZeroFrame + 1,
-    firstNonZeroFrame,
-    lastNonZeroFrame,
-    leadingSilenceFrames: firstNonZeroFrame ?? frameCount,
-  };
 }
 
 function relativeDifference(left, right) {
