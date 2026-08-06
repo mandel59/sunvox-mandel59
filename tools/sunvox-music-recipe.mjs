@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { mkdir, stat, writeFile } from "node:fs/promises";
-import { basename, dirname, extname, relative, resolve } from "node:path";
+import { mkdir, mkdtemp, rename, rm, stat, writeFile } from "node:fs/promises";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -57,6 +57,21 @@ function validateOutputSpec(outputId, output) {
   if (extname(output.file).toLowerCase() !== ".sunvox") {
     throw new Error(`Music recipe output ${outputId} must write a .sunvox file`);
   }
+  if (output.summaryFile !== undefined && (typeof output.summaryFile !== "string" || !output.summaryFile.trim())) {
+    throw new Error(`Music recipe output ${outputId} summaryFile must be a non-empty string`);
+  }
+}
+
+function resolveOutputPath(outputRoot, declaredPath, description) {
+  if (isAbsolute(declaredPath)) {
+    throw new Error(`${description} must be relative to the output root: ${declaredPath}`);
+  }
+  const destination = resolve(outputRoot, declaredPath);
+  const relativePath = relative(outputRoot, destination);
+  if (relativePath === ".." || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath)) {
+    throw new Error(`${description} escapes the output root: ${declaredPath}`);
+  }
+  return destination;
 }
 
 async function buildOutputDocument(recipe, context) {
@@ -133,8 +148,12 @@ function outputSummary({ recipePath, outputId, outputFile, summaryFile, recipe, 
   };
 }
 
-async function runMusicOutput(outputId, output, context, options) {
+async function buildMusicOutput(outputId, output, context, outputRoot) {
   validateOutputSpec(outputId, output);
+  const outputPath = resolveOutputPath(outputRoot, output.file, `Music recipe output ${outputId} file`);
+  const summaryPath = output.summaryFile
+    ? resolveOutputPath(outputRoot, output.summaryFile, `Music recipe output ${outputId} summaryFile`)
+    : undefined;
   const document = await buildOutputDocument(context.recipe, { ...context, outputId, output });
   const bytes = buildContainer(document);
   const parsed = parseContainer(bytes);
@@ -143,11 +162,6 @@ async function runMusicOutput(outputId, output, context, options) {
     throw new Error(validation.issues.map(formatValidationIssue).join("\n"));
   }
 
-  const outputPath = resolve(options.outDir ?? ".", output.file);
-  await mkdir(dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, bytes);
-
-  const summaryPath = output.summaryFile ? resolve(options.outDir ?? ".", output.summaryFile) : undefined;
   const summary = outputSummary({
     recipePath: context.recipePath,
     outputId,
@@ -159,35 +173,82 @@ async function runMusicOutput(outputId, output, context, options) {
     bytes: bytes.length,
     validation,
   });
-  if (summaryPath) {
-    await mkdir(dirname(summaryPath), { recursive: true });
-    await writeFile(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
-  }
+  return { outputPath, summaryPath, summary, bytes };
+}
 
-  return { outputPath, summaryPath, summary };
+function claimDestination(destinations, destination, description) {
+  const previous = destinations.get(destination);
+  if (previous) {
+    throw new Error(`Duplicate music recipe destination ${destination}: ${previous} and ${description}`);
+  }
+  destinations.set(destination, description);
+}
+
+async function planMusicRecipes(recipePaths, options) {
+  const outputRoot = resolve(options.outDir ?? ".");
+  const destinations = new Map();
+  const plans = [];
+  for (const recipePath of recipePaths) {
+    const absoluteRecipePath = resolve(recipePath);
+    const recipe = await loadMusicRecipe(absoluteRecipePath, options);
+    const context = { recipePath: absoluteRecipePath, recipeDir: dirname(absoluteRecipePath), recipe };
+    for (const [outputId, output] of Object.entries(recipe.outputs)) {
+      validateOutputSpec(outputId, output);
+      const outputPath = resolveOutputPath(outputRoot, output.file, `Music recipe output ${outputId} file`);
+      claimDestination(destinations, outputPath, `${recipePath} output ${outputId}`);
+      if (output.summaryFile) {
+        const summaryPath = resolveOutputPath(
+          outputRoot,
+          output.summaryFile,
+          `Music recipe output ${outputId} summaryFile`,
+        );
+        claimDestination(destinations, summaryPath, `${recipePath} output ${outputId} summary`);
+      }
+      plans.push({ outputId, output, context });
+    }
+  }
+  return { outputRoot, plans };
+}
+
+async function commitMusicOutputs(outputs, outputRoot) {
+  await mkdir(outputRoot, { recursive: true });
+  const stagingDir = await mkdtemp(join(outputRoot, ".sunvox-music-recipe-"));
+  try {
+    const stagedFiles = [];
+    for (const [index, output] of outputs.entries()) {
+      const stagedOutput = join(stagingDir, `${index}.sunvox`);
+      await writeFile(stagedOutput, output.bytes);
+      stagedFiles.push({ stagedPath: stagedOutput, destination: output.outputPath });
+      if (output.summaryPath) {
+        const stagedSummary = join(stagingDir, `${index}.summary.json`);
+        await writeFile(stagedSummary, `${JSON.stringify(output.summary, null, 2)}\n`, "utf8");
+        stagedFiles.push({ stagedPath: stagedSummary, destination: output.summaryPath });
+      }
+    }
+    for (const { stagedPath, destination } of stagedFiles) {
+      await mkdir(dirname(destination), { recursive: true });
+      await rename(stagedPath, destination);
+    }
+  } finally {
+    await rm(stagingDir, { recursive: true, force: true });
+  }
 }
 
 export async function runMusicRecipe(recipePath, options = {}) {
-  const absoluteRecipePath = resolve(recipePath);
-  const recipeDir = dirname(absoluteRecipePath);
-  const recipe = await loadMusicRecipe(absoluteRecipePath);
-  const context = { recipePath: absoluteRecipePath, recipeDir, recipe };
-  const outputs = [];
-  for (const [outputId, output] of Object.entries(recipe.outputs)) {
-    outputs.push(await runMusicOutput(outputId, output, context, options));
-  }
-  return outputs;
+  return runMusicRecipes([recipePath], options);
 }
 
 export async function runMusicRecipes(recipePaths, options = {}) {
   if (!Array.isArray(recipePaths) || !recipePaths.length) {
     throw new Error("runMusicRecipes() requires at least one recipe path");
   }
+  const { outputRoot, plans } = await planMusicRecipes(recipePaths, options);
   const outputs = [];
-  for (const recipePath of recipePaths) {
-    outputs.push(...await runMusicRecipe(recipePath, options));
+  for (const { outputId, output, context } of plans) {
+    outputs.push(await buildMusicOutput(outputId, output, context, outputRoot));
   }
-  return outputs;
+  await commitMusicOutputs(outputs, outputRoot);
+  return outputs.map(({ bytes: _bytes, ...output }) => output);
 }
 
 function parseArgs(argv) {
