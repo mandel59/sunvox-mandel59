@@ -9,6 +9,7 @@ import {
   mergeRootLists,
   parsePreviewRoots,
 } from "./generate-site-data.mjs";
+import { createAsyncRootsCache } from "./async-roots-cache.mjs";
 
 const PROJECT_INDEX_PATH = "/site-data/sunvox-projects.json";
 const SITE_DATA_UPDATE_EVENT = "sunvox-site-data:update";
@@ -94,13 +95,32 @@ function isSiteDataInput(filePath) {
   );
 }
 
+function normalizeSiteDataRoots(roots) {
+  return mergeRootLists(
+    roots.map((root) => relative(WORKSPACE_ROOT, resolveWorkspacePath(root)).replaceAll("\\", "/")),
+  );
+}
+
+function siteDataPathAffectsRoots(filePath, roots) {
+  const relativePath = relative(WORKSPACE_ROOT, filePath).replaceAll("\\", "/");
+  if (
+    relativePath.startsWith("generated/recipes/sunvox-edit/") ||
+    relativePath.startsWith("generated/recipes/music/")
+  ) {
+    return true;
+  }
+  return roots.some((root) => relativePath === root || relativePath.startsWith(`${root}/`));
+}
+
 function localPreviewSiteDataPlugin() {
   return {
     name: "local-preview-site-data",
     configureServer(server) {
+      const siteDataCache = createAsyncRootsCache(collectSiteData, { pathAffectsRoots: siteDataPathAffectsRoots });
       server.watcher.add(SITE_DATA_WATCH_PATHS.map(resolveWorkspacePath));
       const notifySiteDataUpdate = (filePath) => {
         if (isSiteDataInput(filePath)) {
+          siteDataCache.invalidatePath(filePath);
           server.ws.send({ type: "custom", event: SITE_DATA_UPDATE_EVENT });
         }
       };
@@ -118,7 +138,10 @@ function localPreviewSiteDataPlugin() {
           const requestPreviewRoots = requestUrl.searchParams
             .getAll("roots")
             .flatMap((value) => parsePreviewRoots(value));
-          const data = await collectSiteData(mergeRootLists(DEFAULT_ROOTS, environmentPreviewRoots, requestPreviewRoots));
+          const roots = normalizeSiteDataRoots(
+            mergeRootLists(DEFAULT_ROOTS, environmentPreviewRoots, requestPreviewRoots),
+          );
+          const data = await siteDataCache.get(roots);
           res.setHeader("Content-Type", "application/json; charset=utf-8");
           res.setHeader("Cache-Control", "no-store");
           res.end(`${JSON.stringify(data, null, 2)}\n`);
