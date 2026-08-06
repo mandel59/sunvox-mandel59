@@ -16,6 +16,13 @@ recipes.
 Use `var/` for temporary drafts, local experiments, and throwaway tool output.
 Use `recipes/` for human-authored generation recipes.
 
+Generated music promotion is governed by
+[PROMOTION.md](PROMOTION.md). Research recipes belong under
+`recipes/research/<issue>/`, and their outputs belong under `var/<issue>/`.
+Neither location is part of the default deployment roots. Moving a recipe and
+its output into `generated/recipes/music/` and `generated/music/` is a reviewed
+promotion step, not part of ordinary research generation.
+
 Generated files should remain reproducible from checked-in recipes or tools
 where practical. Generated instruments should map back to
 `generated/recipes/sunvox-edit/`; generated music should map back to
