@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 
@@ -58,11 +58,11 @@ test("SunVox Music Recipe creates a validated SunVox project and summary", async
   const outputPath = join(tempDir, "music-recipe-probe.sunvox");
   const summaryPath = join(tempDir, "music-recipe-probe.summary.json");
   const recipePath = join(tempDir, "recipe.mjs");
-  await writeFile(recipePath, recipeSource(outputPath, summaryPath), "utf8");
+  await writeFile(recipePath, recipeSource("music-recipe-probe.sunvox", "music-recipe-probe.summary.json"), "utf8");
 
   assert.deepEqual(Object.keys((await loadMusicRecipe(recipePath)).outputs), ["minimal"]);
 
-  const outputs = await runMusicRecipe(recipePath);
+  const outputs = await runMusicRecipe(recipePath, { outDir: tempDir });
   assert.deepEqual(outputs.map((output) => output.outputPath), [outputPath]);
   assert.deepEqual(outputs.map((output) => output.summaryPath), [summaryPath]);
 
@@ -90,21 +90,70 @@ test("SunVox Music Recipe CLI accepts multiple recipe files", async () => {
   const outputB = join(tempDir, "music-recipe-cli-b.sunvox");
   const recipeA = join(tempDir, "recipe-a.mjs");
   const recipeB = join(tempDir, "recipe-b.mjs");
-  await writeFile(recipeA, recipeSource(outputA, join(tempDir, "music-recipe-cli-a.summary.json")), "utf8");
-  await writeFile(recipeB, recipeSource(outputB, join(tempDir, "music-recipe-cli-b.summary.json")), "utf8");
+  await writeFile(recipeA, recipeSource("music-recipe-cli-a.sunvox", "music-recipe-cli-a.summary.json"), "utf8");
+  await writeFile(recipeB, recipeSource("music-recipe-cli-b.sunvox", "music-recipe-cli-b.summary.json"), "utf8");
 
-  const { stdout } = await execFileAsync(process.execPath, [
-    resolve("tools/sunvox-music-recipe.mjs"),
-    recipeA,
-    recipeB,
-  ]);
-
-  assert.deepEqual(
-    stdout.trim().split(/\r?\n/).sort(),
-    [outputA, outputB].map((outputPath) => relative(process.cwd(), outputPath).replaceAll("\\", "/")).sort(),
+  await execFileAsync(
+    process.execPath,
+    [resolve("tools/sunvox-music-recipe.mjs"), "--out", tempDir, recipeA, recipeB],
+    { cwd: process.cwd(), encoding: "utf8" },
   );
   assert.equal(parseContainer(await readFile(outputA)).project.name, "Music Recipe Probe");
   assert.equal(parseContainer(await readFile(outputB)).project.name, "Music Recipe Probe");
+});
+
+test("rejects absolute and escaping paths outside the output root", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-boundary-"));
+  const recipePath = join(tempDir, "recipe.mjs");
+  await writeFile(recipePath, recipeSource(join(tempDir, "absolute.sunvox"), "summary.json"), "utf8");
+  await assert.rejects(
+    runMusicRecipe(recipePath, { outDir: join(tempDir, "out") }),
+    /must be relative to the output root/u,
+  );
+
+  await writeFile(recipePath, recipeSource("../escape.sunvox", "summary.json"), "utf8");
+  await assert.rejects(
+    runMusicRecipe(recipePath, { outDir: join(tempDir, "out"), cacheBust: true }),
+    /escapes the output root/u,
+  );
+});
+
+test("rejects normalized duplicate destinations before writing", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-duplicate-"));
+  const outDir = join(tempDir, "out");
+  const recipeA = join(tempDir, "recipe-a.mjs");
+  const recipeB = join(tempDir, "recipe-b.mjs");
+  await writeFile(recipeA, recipeSource("nested/../duplicate.sunvox", "a.summary.json"), "utf8");
+  await writeFile(recipeB, recipeSource("duplicate.sunvox", "b.summary.json"), "utf8");
+
+  await assert.rejects(
+    runMusicRecipes([recipeA, recipeB], { outDir }),
+    /Duplicate music recipe destination/u,
+  );
+  await assert.rejects(access(join(outDir, "duplicate.sunvox")), { code: "ENOENT" });
+});
+
+test("a later build failure leaves earlier outputs unwritten", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-transaction-"));
+  const outDir = join(tempDir, "out");
+  const validRecipe = join(tempDir, "valid.mjs");
+  const failingRecipe = join(tempDir, "failing.mjs");
+  await writeFile(validRecipe, recipeSource("valid.sunvox", "valid.summary.json"), "utf8");
+  await writeFile(
+    failingRecipe,
+    recipeSource("failing.sunvox", "failing.summary.json").replace(
+      "buildDocument() {",
+      'buildDocument() { throw new Error("intentional later failure");',
+    ),
+    "utf8",
+  );
+
+  await assert.rejects(
+    runMusicRecipes([validRecipe, failingRecipe], { outDir }),
+    /intentional later failure/u,
+  );
+  await assert.rejects(access(join(outDir, "valid.sunvox")), { code: "ENOENT" });
+  await assert.rejects(access(join(outDir, "valid.summary.json")), { code: "ENOENT" });
 });
 
 test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", async () => {
