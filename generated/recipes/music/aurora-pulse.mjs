@@ -95,7 +95,7 @@ function modules() {
       name: "Aurora Kick",
       color: "#ff496c",
       position: { x: 80, y: 140, z: 0 },
-      controllers: { volume: 36, waveform: "sin", panning: 128, attack: 0, release: 30, boost: 286, acceleration: 344, polyphony: 1, noClick: "off" },
+      controllers: { volume: 104, waveform: "sin", panning: 128, attack: 0, release: 30, boost: 286, acceleration: 344, polyphony: 1, noClick: "off" },
     },
     {
       type: "DrumSynth",
@@ -103,9 +103,9 @@ function modules() {
       color: "#76d7ff",
       position: { x: 80, y: 270, z: 0 },
       controllers: {
-        volume: 176, panning: 128, polyphony: 8,
-        bassVolume: 0, bassPower: 80, bassTone: 64, bassLength: 24,
-        hihatVolume: 250, hihatLength: 22, snareVolume: 206, snareTone: 166, snareLength: 42,
+        volume: 260, panning: 128, polyphony: 8,
+        bassVolume: 90, bassPower: 80, bassTone: 64, bassLength: 24,
+        hihatVolume: 330, hihatLength: 22, snareVolume: 280, snareTone: 166, snareLength: 42,
         bassPan: 128, hihatPan: 170, snarePan: 112,
       },
     },
@@ -114,7 +114,7 @@ function modules() {
       name: "Sidechain Bass",
       color: "#5dff89",
       position: { x: 80, y: 430, z: 0 },
-      controllers: analog({ volume: 118, waveform: "saw", release: 42, polyphony: 1, mode: "hqMono", dutyCycle: 430, osc2Pitch: 497, osc2Volume: 6800, filterFreq: 4200, filterResonance: 330 }),
+      controllers: analog({ volume: 68, waveform: "saw", release: 42, polyphony: 1, mode: "hqMono", dutyCycle: 430, osc2Pitch: 497, osc2Volume: 6800, filterFreq: 4200, filterResonance: 330 }),
     },
     {
       type: "Analog generator",
@@ -128,21 +128,21 @@ function modules() {
       name: "Crystal Arp",
       color: "#64ffe1",
       position: { x: 80, y: 750, z: 0 },
-      controllers: analog({ volume: 74, waveform: "triangle", panning: 92, release: 38, sustain: "off", polyphony: 4, osc2Pitch: 1200, osc2Volume: 8200, osc2Mode: "mul", filter: "bp12db", filterFreq: 11200, filterResonance: 190 }),
+      controllers: analog({ volume: 120, waveform: "triangle", panning: 92, release: 38, sustain: "off", polyphony: 4, osc2Pitch: 1200, osc2Volume: 8200, osc2Mode: "add", filter: "lp12db", filterFreq: 12000, filterResonance: 190 }),
     },
     {
       type: "Analog generator",
       name: "Aurora Supersaw Lead",
       color: "#c678ff",
       position: { x: 80, y: 910, z: 0 },
-      controllers: analog({ volume: 76, waveform: "saw", panning: 152, attack: 0, release: 72, polyphony: 3, dutyCycle: 576, osc2Pitch: 1005, osc2Volume: 10800, filter: "lp12db", filterFreq: 9800, filterResonance: 170 }),
+      controllers: analog({ volume: 68, waveform: "saw", panning: 152, attack: 0, release: 72, polyphony: 3, dutyCycle: 576, osc2Pitch: 1005, osc2Volume: 10800, filter: "lp12db", filterFreq: 9800, filterResonance: 170 }),
     },
     {
       type: "Analog generator",
       name: "White Lift",
       color: "#f4f6ff",
       position: { x: 80, y: 1070, z: 0 },
-      controllers: analog({ volume: 42, waveform: "whiteNoise", panning: 128, release: 46, sustain: "off", polyphony: 2, filter: "hp12db", filterFreq: 8400, filterResonance: 220, noise: 180, osc2Volume: 0 }),
+      controllers: analog({ volume: 110, waveform: "whiteNoise", panning: 128, release: 46, sustain: "off", polyphony: 2, filter: "hp12db", filterFreq: 8400, filterResonance: 220, noise: 180, osc2Volume: 0 }),
     },
     {
       type: "Amplifier",
@@ -292,7 +292,8 @@ function addLead(events, used) {
   for (const startBar of [8, 12, 24, 28]) {
     const start = startBar * 16;
     for (const [offset, noteName, gate] of leadPhrase) {
-      note(events, used, { line: start + offset, track: TRACK.leadA + (offset % 2), note: noteName, module: MODULE.lead, velocity: startBar >= 24 ? 112 : 102, gate: Math.min(gate, 1) });
+      if (startBar === 28 && offset >= 32) continue;
+      note(events, used, { line: start + offset, track: TRACK.leadA + (offset % 2), note: noteName, module: MODULE.lead, velocity: startBar >= 24 ? 112 : 102, gate: Math.max(1, Math.min(gate, 1)) });
     }
   }
 }
@@ -302,7 +303,7 @@ function addTransitions(events, used) {
     const line = bar * 16;
     for (const offset of [0, 4, 8, 12]) note(events, used, { line: line + offset, track: TRACK.noise, note: "C5", module: MODULE.noise, velocity: 42 + offset * 4, gate: 2 });
   }
-  for (const [line, parameter] of [[0, 3200], [64, 5600], [112, 9200], [128, 11800], [256, 2600], [320, 6400], [368, 12200], [384, 11800], [480, 5200]]) {
+  for (const [line, parameter] of [[0, 5000], [64, 5600], [112, 9200], [128, 11800], [256, 2600], [320, 6400], [368, 12200], [384, 11800], [480, 5200]]) {
     control(events, used, { line, track: TRACK.autoA, module: MODULE.chord, controller: "filterFreq", parameter });
   }
   for (const [line, parameter] of [[0, 124], [96, 178], [128, 236], [256, 150], [368, 246], [480, 176]]) {
