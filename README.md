@@ -38,6 +38,7 @@ npm run sunsynth:characterize -- instruments/mandel59\ SuperSaw.sunsynth
 npm run sunvox:render-debug -- --mode both generated/instruments/Scratch\ FMX\ Tines.sunsynth
 npm run sunvox:edit-recipe -- --out var/synth-lab generated/recipes/sunvox-edit/scratch-analog.mjs
 npm run sunvox:music-recipe -- --help
+npm run sunvox:analyze-balance -- --parts --duration 60 --format text generated/music/aurora-pulse.sunvox
 npm run sunvox:api-audit
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
@@ -80,6 +81,16 @@ the output focuses on round-trip-relevant edits. Text output groups changes by
 project, named module/controller/link sections, and named pattern events; use
 `--json` for machine-readable change records or `--include-aux` when helper
 text should be included.
+
+`sunvox:analyze-balance` keeps whole-project LUFS, peak, RMS, and clipping
+metrics for headroom checks. Add `--parts` for musical balance evaluation: the
+analyzer finds source modules, renders each one through the project's existing
+effect and master routing, divides the result into four-bar windows, excludes
+reverb-only windows more than 18 dB below that part's active level, and compares
+each active window with the median of the other audible parts. Role-aware target
+ranges keep foreground parts such as kick, bass, chords, and lead separate from
+background parts such as arpeggios, pads, and transitions. Use `--window-bars`
+to change the musical window length and `--format json` for per-window details.
 
 Example diff excerpt:
 

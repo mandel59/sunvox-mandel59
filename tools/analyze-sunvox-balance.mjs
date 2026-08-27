@@ -3,7 +3,7 @@ import { readFile, writeFile, readdir, stat } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { parseContainer } from "./sunvox-codec.mjs";
+import { buildContainer, parseContainer } from "./sunvox-codec.mjs";
 import { summarizeMomentaryLufs } from "./sunvox-music-recipe-helpers.mjs";
 import {
   DEFAULT_BLOCK_FRAMES,
@@ -18,15 +18,18 @@ import {
 
 const DEFAULT_DURATION_SECONDS = 16;
 const DEFAULT_OUTPUT_FORMAT = "tsv";
+const DEFAULT_WINDOW_BARS = 4;
+const PART_ACTIVE_WINDOW_GATE_DB = -18;
 const SUNVOX_EXTENSION = ".sunvox";
 
 function usage() {
   console.error(`Usage:
-  node tools/analyze-sunvox-balance.mjs [--format tsv|json|text] [--duration <seconds>] [--out <file>] [--sample-rate <hz>] [--channels <1..2>] [--dir <path> ...] [--recursive] [--no-recursive] [--help] <file-or-dir...>
+  node tools/analyze-sunvox-balance.mjs [--format tsv|json|text] [--duration <seconds>] [--parts] [--window-bars <bars>] [--out <file>] [--sample-rate <hz>] [--channels <1..2>] [--dir <path> ...] [--recursive] [--no-recursive] [--help] <file-or-dir...>
 
 Examples:
   node tools/analyze-sunvox-balance.mjs
   node tools/analyze-sunvox-balance.mjs generated/music
+  node tools/analyze-sunvox-balance.mjs --parts --duration 60 --format text generated/music/aurora-pulse.sunvox
   node tools/analyze-sunvox-balance.mjs --format json --out var/sunvox-balance.json generated/music generated/instruments`);
 }
 
@@ -39,6 +42,8 @@ function parseArgs(argv) {
     channels: DEFAULT_CHANNELS,
     outPath: undefined,
     recursive: true,
+    parts: false,
+    windowBars: DEFAULT_WINDOW_BARS,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -81,6 +86,18 @@ function parseArgs(argv) {
       options.channels = Number(argv[index]);
       if (!Number.isInteger(options.channels) || options.channels < 1 || options.channels > 2) {
         throw new Error("--channels must be 1 or 2");
+      }
+      continue;
+    }
+    if (arg === "--parts") {
+      options.parts = true;
+      continue;
+    }
+    if (arg === "--window-bars") {
+      index += 1;
+      options.windowBars = Number(argv[index]);
+      if (!Number.isFinite(options.windowBars) || options.windowBars <= 0) {
+        throw new Error("--window-bars must be a positive number");
       }
       continue;
     }
@@ -182,27 +199,109 @@ function summarizeSamples(samples, channels) {
   };
 };
 
-async function analyzeFile(filePath, { sampleRate, channels, durationSeconds }) {
-  const absolutePath = resolve(filePath);
-  const bytes = await readFile(absolutePath);
-  const parsed = parseContainer(bytes);
+function median(values) {
+  const finite = values.filter(Number.isFinite).sort((left, right) => left - right);
+  if (!finite.length) {
+    return Number.NaN;
+  }
+  const middle = Math.floor(finite.length / 2);
+  return finite.length % 2 ? finite[middle] : (finite[middle - 1] + finite[middle]) / 2;
+}
 
-  const documentSummary = {
-    name: parsed.project?.name ?? basename(filePath),
-    bpm: parsed.project?.bpm,
-    speed: parsed.project?.speed,
-    globalVolume: parsed.project?.globalVolume,
-    globalVolumePercent:
-      parsed.project?.globalVolume === undefined ? undefined : (parsed.project.globalVolume / 256) * 100,
-    patternCount: parsed.patterns?.length ?? 0,
-  };
+export function classifyPartRole(name, type = "") {
+  const text = `${name} ${type}`.toLowerCase();
+  if (/kick/u.test(text)) return "kick";
+  if (/bass|sub/u.test(text)) return "bass";
+  if (/drum|hat|clap|snare|perc/u.test(text)) return "drums";
+  if (/chord|stab/u.test(text)) return "chords";
+  if (/lead|supersaw/u.test(text)) return "lead";
+  if (/arp|pluck|sequence/u.test(text)) return "arp";
+  if (/pad|string/u.test(text)) return "pad";
+  if (/riser|lift|noise|sweep/u.test(text)) return "transition";
+  return "other";
+}
 
-  const rendered = await withSunVoxSlot(
-    {
-      sampleRate,
-      channels,
-      flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
-    },
+const ROLE_TARGETS = Object.freeze({
+  kick: [-3, 3],
+  bass: [-3, 3],
+  drums: [-6, 1],
+  chords: [-4, 2],
+  lead: [-4, 2],
+  arp: [-12, -4],
+  pad: [-10, -2],
+  transition: [-14, -4],
+  other: [-8, 2],
+});
+
+function assessRelativeLevel(role, relativeDb) {
+  if (!Number.isFinite(relativeDb)) return "silent";
+  const [minimum, maximum] = ROLE_TARGETS[role] ?? ROLE_TARGETS.other;
+  if (relativeDb < minimum) return "low";
+  if (relativeDb > maximum) return "high";
+  return "balanced";
+}
+
+export function assessPartWindows(parts) {
+  for (const part of parts) {
+    const maximumActiveLufs = Math.max(
+      Number.NEGATIVE_INFINITY,
+      ...part.windows.map((window) => window.activeLufs).filter(Number.isFinite),
+    );
+    for (const window of part.windows) {
+      window.includedInBalance =
+        Number.isFinite(window.activeLufs) && window.activeLufs >= maximumActiveLufs + PART_ACTIVE_WINDOW_GATE_DB;
+    }
+  }
+  const windowCount = Math.max(0, ...parts.map((part) => part.windows?.length ?? 0));
+  for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
+    const peerMedian = median(parts.map((part) => {
+      const window = part.windows?.[windowIndex];
+      return window?.includedInBalance ? window.activeLufs : Number.NaN;
+    }));
+    for (const part of parts) {
+      const window = part.windows?.[windowIndex];
+      if (!window) continue;
+      window.peerMedianLufs = peerMedian;
+      window.relativeToPeerMedianDb =
+        window.includedInBalance && Number.isFinite(peerMedian) ? window.activeLufs - peerMedian : Number.NaN;
+    }
+  }
+  for (const part of parts) {
+    const relativeWindows = part.windows
+      .map((window) => window.relativeToPeerMedianDb)
+      .filter(Number.isFinite);
+    part.balance = {
+      activeWindowCount: relativeWindows.length,
+      activeWindowGateDb: PART_ACTIVE_WINDOW_GATE_DB,
+      targetRelativeToPeerDb: ROLE_TARGETS[part.role] ?? ROLE_TARGETS.other,
+      medianRelativeToPeerDb: median(relativeWindows),
+      minimumRelativeToPeerDb: relativeWindows.length ? Math.min(...relativeWindows) : Number.NaN,
+      maximumRelativeToPeerDb: relativeWindows.length ? Math.max(...relativeWindows) : Number.NaN,
+    };
+    part.balance.assessment = assessRelativeLevel(part.role, part.balance.medianRelativeToPeerDb);
+  }
+  return parts;
+}
+
+function sourceModules(document) {
+  return (document.modules ?? [])
+    .map((module, moduleIndex) => ({ module, moduleIndex }))
+    .filter(({ module }) =>
+      !module.flags?.output &&
+      !(module.inputs?.length > 0) &&
+      Number.isFinite(module.controllers?.volume),
+    );
+}
+
+function sliceSeconds(samples, channels, sampleRate, startSeconds, endSeconds) {
+  const start = Math.max(0, Math.floor(startSeconds * sampleRate) * channels);
+  const end = Math.min(samples.length, Math.floor(endSeconds * sampleRate) * channels);
+  return samples.slice(start, end);
+}
+
+async function renderProject(bytes, { sampleRate, channels, durationSeconds }) {
+  return withSunVoxSlot(
+    { sampleRate, channels, flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS },
     async ({ module, slot }) => {
       loadProjectFromBuffer(module, bytes, { slot });
       assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
@@ -217,11 +316,95 @@ async function analyzeFile(filePath, { sampleRate, channels, durationSeconds }) 
       return output;
     },
   );
+}
+
+async function analyzeParts(document, fullSamples, options) {
+  const candidates = sourceModules(document);
+  const bpm = Number(document.project?.bpm);
+  const windowSeconds = Number.isFinite(bpm) && bpm > 0
+    ? (60 / bpm) * 4 * options.windowBars
+    : Math.min(8, options.durationSeconds);
+  const parts = [];
+  for (const candidate of candidates) {
+    const soloDocument = structuredClone(document);
+    for (const other of candidates) {
+      if (other.moduleIndex !== candidate.moduleIndex) {
+        soloDocument.modules[other.moduleIndex].controllers.volume = 0;
+      }
+    }
+    const rendered = await renderProject(buildContainer(soloDocument), options);
+    const level = summarizeSamples(rendered.samples, options.channels);
+    const loudness = summarizeMomentaryLufs(rendered.samples, options.channels, options.sampleRate);
+    const windows = [];
+    for (let startSeconds = 0, index = 0; startSeconds < options.durationSeconds; startSeconds += windowSeconds, index += 1) {
+      const endSeconds = Math.min(options.durationSeconds, startSeconds + windowSeconds);
+      const partSlice = sliceSeconds(rendered.samples, options.channels, options.sampleRate, startSeconds, endSeconds);
+      const mixSlice = sliceSeconds(fullSamples, options.channels, options.sampleRate, startSeconds, endSeconds);
+      const partLevel = summarizeSamples(partSlice, options.channels);
+      const partLoudness = summarizeMomentaryLufs(partSlice, options.channels, options.sampleRate);
+      const mixLoudness = summarizeMomentaryLufs(mixSlice, options.channels, options.sampleRate);
+      const activeLufs = partLevel.activeRatio > 0 ? partLoudness.activeLufs : Number.NEGATIVE_INFINITY;
+      windows.push({
+        index,
+        startBar: index * options.windowBars,
+        endBar: (index + 1) * options.windowBars,
+        startSeconds,
+        endSeconds,
+        activeLufs,
+        mixActiveLufs: mixLoudness.activeLufs,
+        relativeToMixDb:
+          Number.isFinite(activeLufs) && Number.isFinite(mixLoudness.activeLufs)
+            ? activeLufs - mixLoudness.activeLufs
+            : Number.NaN,
+        peak: partLevel.peak,
+        rms: partLevel.rms,
+        activeRatio: partLevel.activeRatio,
+      });
+    }
+    parts.push({
+      moduleIndex: candidate.moduleIndex,
+      name: candidate.module.name ?? `Module ${candidate.moduleIndex}`,
+      type: candidate.module.type,
+      role: classifyPartRole(candidate.module.name, candidate.module.type),
+      metrics: {
+        activeLufs: loudness.activeLufs,
+        activeTopLufs: loudness.activeTopLufs,
+        peak: level.peak,
+        rms: level.rms,
+        activeRatio: level.activeRatio,
+      },
+      windows,
+    });
+  }
+  return {
+    method: "solo-through-project-routing, four-bar windows, role-aware peer-median comparison",
+    windowBars: options.windowBars,
+    windowSeconds,
+    parts: assessPartWindows(parts),
+  };
+}
+
+async function analyzeFile(filePath, { sampleRate, channels, durationSeconds, parts, windowBars }) {
+  const absolutePath = resolve(filePath);
+  const bytes = await readFile(absolutePath);
+  const parsed = parseContainer(bytes);
+
+  const documentSummary = {
+    name: parsed.project?.name ?? basename(filePath),
+    bpm: parsed.project?.bpm,
+    speed: parsed.project?.speed,
+    globalVolume: parsed.project?.globalVolume,
+    globalVolumePercent:
+      parsed.project?.globalVolume === undefined ? undefined : (parsed.project.globalVolume / 256) * 100,
+    patternCount: parsed.patterns?.length ?? 0,
+  };
+
+  const rendered = await renderProject(bytes, { sampleRate, channels, durationSeconds });
 
   const frameStats = summarizeSamples(rendered.samples, channels);
   const loudness = summarizeMomentaryLufs(rendered.samples, channels, sampleRate);
 
-  return {
+  const result = {
     file: absolutePath.replace(/\\/gu, "/"),
     ...documentSummary,
     options: {
@@ -240,6 +423,15 @@ async function analyzeFile(filePath, { sampleRate, channels, durationSeconds }) 
       frames: frameStats.frames,
     },
   };
+  if (parts) {
+    result.partBalance = await analyzeParts(parsed, rendered.samples, {
+      sampleRate,
+      channels,
+      durationSeconds,
+      windowBars,
+    });
+  }
+  return result;
 }
 
 function formatNumber(value, digits) {
@@ -349,6 +541,30 @@ function renderText(results) {
       ].join("\t"),
     );
   }
+  const withParts = results.filter((result) => result.partBalance?.parts?.length);
+  if (withParts.length) {
+    lines.push("");
+    lines.push("Part balance uses active four-bar windows and compares each role with the median of audible peers.");
+    lines.push("file\tmodule\trole\tactiveLufs\tpeak\tactiveWindows\trelativeToPeerMedianDb\tminDb\tmaxDb\ttargetDb\tassessment");
+    for (const result of withParts) {
+      for (const part of result.partBalance.parts) {
+        const balance = part.balance;
+        lines.push([
+          result.file,
+          `${part.moduleIndex}:${part.name}`,
+          part.role,
+          formatNumber(part.metrics.activeLufs, 2),
+          formatNumber(part.metrics.peak, 3),
+          String(balance.activeWindowCount),
+          formatNumber(balance.medianRelativeToPeerDb, 2),
+          formatNumber(balance.minimumRelativeToPeerDb, 2),
+          formatNumber(balance.maximumRelativeToPeerDb, 2),
+          balance.targetRelativeToPeerDb.join(".."),
+          balance.assessment,
+        ].join("\t"));
+      }
+    }
+  }
   return lines.join("\n");
 }
 
@@ -398,6 +614,8 @@ async function main(argv) {
         sampleRate: options.sampleRate,
         channels: options.channels,
         durationSeconds: options.durationSeconds,
+        parts: options.parts,
+        windowBars: options.windowBars,
       });
       results.push(normalizeResult(result, path));
     } catch (error) {
@@ -415,6 +633,8 @@ async function main(argv) {
       durationSeconds: options.durationSeconds,
       recursive: options.recursive,
       format: options.format,
+      parts: options.parts,
+      windowBars: options.windowBars,
       sources: options.files,
     },
     results,
