@@ -5,6 +5,7 @@ import {
   assessPartWindows,
   assessPerceptualRelativeLevel,
   classifyPartRole,
+  disconnectSourceModules,
 } from "../tools/analyze-sunvox-balance.mjs";
 import {
   AUDITORY_BALANCE_MODEL,
@@ -162,4 +163,19 @@ test("role assessment uses masking-adjusted mix-relative level instead of beta s
   assert.equal(assessPerceptualRelativeLevel("chords", -8.01), "low");
   assert.equal(assessPerceptualRelativeLevel("chords", -5), "balanced");
   assert.equal(assessPerceptualRelativeLevel("bass", -5.88), "balanced");
+});
+
+test("disconnects automated sources from every downstream route for analysis muting", () => {
+  const document = {
+    modules: [
+      { name: "Output", inputs: [{ slot: 0, module: 3 }] },
+      { name: "Automated source", inputs: [] },
+      { name: "Other source", inputs: [] },
+      { name: "Bus", inputs: [{ slot: 0, module: 1 }, { slot: 1, module: 2 }] },
+    ],
+  };
+
+  disconnectSourceModules(document, [1]);
+  assert.deepEqual(document.modules[3].inputs, [{ slot: 1, module: 2 }]);
+  assert.deepEqual(document.modules[0].inputs, [{ slot: 0, module: 3 }]);
 });

@@ -331,6 +331,15 @@ function sourceModules(document) {
     );
 }
 
+export function disconnectSourceModules(document, moduleIndices) {
+  const disconnected = new Set(moduleIndices);
+  for (const module of document.modules ?? []) {
+    if (!Array.isArray(module.inputs)) continue;
+    module.inputs = module.inputs.filter((input) => !disconnected.has(input?.module));
+  }
+  return document;
+}
+
 function sliceSeconds(samples, channels, sampleRate, startSeconds, endSeconds) {
   const start = Math.max(0, Math.floor(startSeconds * sampleRate) * channels);
   const end = Math.min(samples.length, Math.floor(endSeconds * sampleRate) * channels);
@@ -429,18 +438,17 @@ async function analyzeParts(document, fullSamples, options) {
   const parts = [];
   for (const candidate of candidates) {
     const soloDocument = structuredClone(document);
-    for (const other of candidates) {
-      if (other.moduleIndex !== candidate.moduleIndex) {
-        soloDocument.modules[other.moduleIndex].controllers.volume = 0;
-      }
-    }
+    disconnectSourceModules(
+      soloDocument,
+      candidates.filter((other) => other.moduleIndex !== candidate.moduleIndex).map((other) => other.moduleIndex),
+    );
     const rendered = await renderProject(buildContainer(soloDocument), options);
     const level = summarizeSamples(rendered.samples, options.channels);
     const loudness = summarizeMomentaryLufs(rendered.samples, options.channels, options.sampleRate);
     let partialFrames;
     if (options.perceptual) {
       const maskerDocument = structuredClone(document);
-      maskerDocument.modules[candidate.moduleIndex].controllers.volume = 0;
+      disconnectSourceModules(maskerDocument, [candidate.moduleIndex]);
       const masker = await renderProject(buildContainer(maskerDocument), options);
       const sharedAuditoryOptions = { ...auditoryOptions, filterbank: fullAuditory.filterbank };
       partialFrames = computePartialLoudnessFrames(
