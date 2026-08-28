@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { assessPartWindows, classifyPartRole } from "../tools/analyze-sunvox-balance.mjs";
+import {
+  assessPartWindows,
+  assessPerceptualRelativeLevel,
+  classifyPartRole,
+} from "../tools/analyze-sunvox-balance.mjs";
 import {
   AUDITORY_BALANCE_MODEL,
   analyzeAuditoryFrames,
@@ -152,4 +156,10 @@ test("perceptual output identifies proxy calibration and preserves pairwise orde
   assert.equal(relations[0].leftName, "Lead");
   assert.equal(relations[0].rightName, "Pad");
   assert.equal(relations[0].deltaDb, 6);
+});
+
+test("role assessment uses masking-adjusted mix-relative level instead of beta sign", () => {
+  assert.equal(assessPerceptualRelativeLevel("chords", -8.01), "low");
+  assert.equal(assessPerceptualRelativeLevel("chords", -5), "balanced");
+  assert.equal(assessPerceptualRelativeLevel("bass", -5.88), "balanced");
 });

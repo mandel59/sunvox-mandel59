@@ -248,9 +248,32 @@ const ROLE_TARGETS = Object.freeze({
   other: [-8, 2],
 });
 
+// Heuristic EDM mix targets for the masking-adjusted solo-to-mix level. These
+// are deliberately separate from ROLE_TARGETS, whose coordinate is the peer
+// median of solo LUFS values rather than the whole mix.
+export const PERCEPTUAL_ROLE_TARGETS = Object.freeze({
+  kick: [-8, -2],
+  bass: [-8, -2],
+  drums: [-16, -8],
+  chords: [-7, -2],
+  lead: [-8, -2],
+  arp: [-22, -10],
+  pad: [-18, -8],
+  transition: [-20, -8],
+  other: [-16, -4],
+});
+
 function assessRelativeLevel(role, relativeDb) {
   if (!Number.isFinite(relativeDb)) return "silent";
   const [minimum, maximum] = ROLE_TARGETS[role] ?? ROLE_TARGETS.other;
+  if (relativeDb < minimum) return "low";
+  if (relativeDb > maximum) return "high";
+  return "balanced";
+}
+
+export function assessPerceptualRelativeLevel(role, relativeDb) {
+  if (!Number.isFinite(relativeDb)) return "silent";
+  const [minimum, maximum] = PERCEPTUAL_ROLE_TARGETS[role] ?? PERCEPTUAL_ROLE_TARGETS.other;
   if (relativeDb < minimum) return "low";
   if (relativeDb > maximum) return "high";
   return "balanced";
@@ -337,11 +360,26 @@ function attachPerceptualBalance(parts, windowBars) {
   const relationWindows = [];
   const windowCount = Math.max(0, ...parts.map((part) => part.windows.length));
   for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
-    const items = parts.map((part) => ({
-      moduleIndex: part.moduleIndex,
-      name: part.name,
-      ...(part.windows[windowIndex]?.perceptual ?? { activeFrameCount: 0, partialLevelDb: Number.NaN }),
-    }));
+    const items = parts.map((part) => {
+      const window = part.windows[windowIndex];
+      const perceptual = window?.perceptual;
+      if (perceptual) {
+        perceptual.perceivedRelativeToMixDb =
+          Number.isFinite(window.relativeToMixDb) && Number.isFinite(perceptual.maskingLossDb)
+            ? window.relativeToMixDb - Math.max(0, perceptual.maskingLossDb)
+            : Number.NaN;
+        perceptual.targetRelativeToMixDb = PERCEPTUAL_ROLE_TARGETS[part.role] ?? PERCEPTUAL_ROLE_TARGETS.other;
+        perceptual.assessment = assessPerceptualRelativeLevel(part.role, perceptual.perceivedRelativeToMixDb);
+      }
+      return {
+        moduleIndex: part.moduleIndex,
+        name: part.name,
+        activeFrameCount: window?.includedInBalance ? perceptual?.activeFrameCount ?? 0 : 0,
+        // Center the masking-adjusted mix-relative coordinate. The raw partial
+        // level remains available as a diagnostic but is not a balance verdict.
+        partialLevelDb: perceptual?.perceivedRelativeToMixDb ?? Number.NaN,
+      };
+    });
     const centered = centerBalanceLevels(items);
     for (const item of centered) {
       const part = parts.find((candidate) => candidate.moduleIndex === item.moduleIndex);
@@ -359,15 +397,20 @@ function attachPerceptualBalance(parts, windowBars) {
 
   for (const part of parts) {
     const active = part.windows
+      .filter((window) => window.includedInBalance)
       .map((window) => window.perceptual)
-      .filter((metrics) => metrics?.activeFrameCount > 0);
+      .filter((metrics) => metrics?.activeFrameCount > 0 && Number.isFinite(metrics.perceivedRelativeToMixDb));
+    const perceivedRelativeToMixDb = quantile(active.map((metrics) => metrics.perceivedRelativeToMixDb), 0.5);
     part.perceptual = {
       activeWindowCount: active.length,
       partialLoudnessProxy: quantile(active.map((metrics) => metrics.partialLoudnessProxy), 0.5),
       partialLevelDb: quantile(active.map((metrics) => metrics.partialLevelDb), 0.5),
       maskingLossDb: quantile(active.map((metrics) => metrics.maskingLossDb), 0.5),
       audibilityFraction: quantile(active.map((metrics) => metrics.audibilityFraction), 0.5),
+      perceivedRelativeToMixDb,
       balanceBetaDb: quantile(active.map((metrics) => metrics.balanceBetaDb), 0.5),
+      targetRelativeToMixDb: PERCEPTUAL_ROLE_TARGETS[part.role] ?? PERCEPTUAL_ROLE_TARGETS.other,
+      assessment: assessPerceptualRelativeLevel(part.role, perceivedRelativeToMixDb),
     };
   }
   return relationWindows;
@@ -451,14 +494,15 @@ async function analyzeParts(document, fullSamples, options) {
       windows,
     });
   }
+  const assessedParts = assessPartWindows(parts);
   const relationWindows = options.perceptual
-    ? attachPerceptualBalance(parts, options.windowBars)
+    ? attachPerceptualBalance(assessedParts, options.windowBars)
     : undefined;
   return {
     method: "solo-through-project-routing, four-bar windows, role-aware peer-median comparison",
     windowBars: options.windowBars,
     windowSeconds,
-    parts: assessPartWindows(parts),
+    parts: assessedParts,
     ...(options.perceptual ? {
       perceptual: {
         model: AUDITORY_BALANCE_MODEL,
@@ -638,7 +682,7 @@ function renderText(results) {
   if (withParts.length) {
     lines.push("");
     lines.push("Part balance uses active four-bar windows and compares each role with the median of audible peers.");
-    lines.push("file\tmodule\trole\tactiveLufs\tpeak\tactiveWindows\trelativeToPeerMedianDb\tminDb\tmaxDb\ttargetDb\tassessment\tpartialLevelDb\tmaskingLossDb\taudibility\tbalanceBetaDb");
+    lines.push("file\tmodule\trole\tactiveLufs\tpeak\tactiveWindows\trelativeToPeerMedianDb\tminDb\tmaxDb\ttargetDb\tassessment\tpartialLevelDb\tmaskingLossDb\taudibility\tperceivedRelativeToMixDb\tperceptualTargetDb\tperceptualAssessment\tbalanceBetaDb");
     for (const result of withParts) {
       for (const part of result.partBalance.parts) {
         const balance = part.balance;
@@ -657,6 +701,9 @@ function renderText(results) {
           formatNumber(part.perceptual?.partialLevelDb, 2),
           formatNumber(part.perceptual?.maskingLossDb, 2),
           formatNumber(part.perceptual?.audibilityFraction, 3),
+          formatNumber(part.perceptual?.perceivedRelativeToMixDb, 2),
+          part.perceptual?.targetRelativeToMixDb?.join("..") ?? "",
+          part.perceptual?.assessment ?? "",
           formatNumber(part.perceptual?.balanceBetaDb, 2),
         ].join("\t"));
       }

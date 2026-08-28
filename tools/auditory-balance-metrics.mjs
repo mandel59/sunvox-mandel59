@@ -18,6 +18,11 @@ export const AUDITORY_BALANCE_MODEL = Object.freeze({
   },
   auditoryBands: "triangular ERB-rate filterbank",
   partialMethod: "positive specific-loudness difference between full and leave-one-out excitation",
+  interpretation: {
+    partialLevelDb: "uncalibrated diagnostic; broadband sources can accumulate more energy across bands",
+    balanceBetaDb: "centered relation coordinate; not an adequate-level or role-balance verdict",
+    perceivedRelativeToMixDb: "solo relative-to-mix level minus masking loss; used for role-target assessment",
+  },
   loudnessExponent: LOUDNESS_EXPONENT,
   activeGateDb: ACTIVE_GATE_DB,
   audibilityRatioThreshold: AUDIBILITY_RATIO_THRESHOLD,

@@ -97,7 +97,12 @@ For every source part, the analyzer renders the full project, a leave-one-out
 mix with that source muted, and a solo reference through the existing SunVox
 routing. A 32-band ERB-rate frontend produces a relative
 `partial-loudness-proxy`, `maskingLossDb`, `audibilityFraction`, centered
-`balanceBetaDb`, and pairwise relations for each musical window. The JSON
+`balanceBetaDb`, and pairwise relations for each musical window. The raw
+partial level and beta are diagnostic coordinates, not a verdict that a part
+is loud enough: broad-band sources accumulate energy across more auditory
+bands. The role-balance verdict instead uses `perceivedRelativeToMixDb`, the
+solo LUFS relative to the full mix minus the masking loss, and compares that
+value with an explicit role-specific EDM target. The JSON
 output records `erb-partial-loudness-proxy-v1` and an explicit uncalibrated
 `relative-digital` status. These values are useful for comparisons within the
 same project, but they are not ISO 532 loudness, standardized sones, or a claim
