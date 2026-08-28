@@ -259,7 +259,7 @@ function addHarmony(events, used) {
         track: TRACK.chordA + index,
         note: noteName,
         module: MODULE.chord,
-        velocity: section.startsWith("drop") ? 76 : 56,
+        velocity: section === "intro" ? 88 : section.startsWith("drop") ? 76 : 56,
         gate,
       }));
     }
