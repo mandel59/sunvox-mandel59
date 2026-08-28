@@ -6,6 +6,15 @@ import { pathToFileURL } from "node:url";
 import { buildContainer, parseContainer } from "./sunvox-codec.mjs";
 import { summarizeMomentaryLufs } from "./sunvox-music-recipe-helpers.mjs";
 import {
+  AUDITORY_BALANCE_MODEL,
+  analyzeAuditoryFrames,
+  buildPairwiseRelations,
+  centerBalanceLevels,
+  computePartialLoudnessFrames,
+  quantile,
+  summarizePartialLoudnessWindow,
+} from "./auditory-balance-metrics.mjs";
+import {
   DEFAULT_BLOCK_FRAMES,
   DEFAULT_CHANNELS,
   DEFAULT_FLOAT_OFFLINE_INIT_FLAGS,
@@ -24,12 +33,12 @@ const SUNVOX_EXTENSION = ".sunvox";
 
 function usage() {
   console.error(`Usage:
-  node tools/analyze-sunvox-balance.mjs [--format tsv|json|text] [--duration <seconds>] [--parts] [--window-bars <bars>] [--out <file>] [--sample-rate <hz>] [--channels <1..2>] [--dir <path> ...] [--recursive] [--no-recursive] [--help] <file-or-dir...>
+  node tools/analyze-sunvox-balance.mjs [--format tsv|json|text] [--duration <seconds>] [--parts] [--perceptual] [--window-bars <bars>] [--out <file>] [--sample-rate <hz>] [--channels <1..2>] [--dir <path> ...] [--recursive] [--no-recursive] [--help] <file-or-dir...>
 
 Examples:
   node tools/analyze-sunvox-balance.mjs
   node tools/analyze-sunvox-balance.mjs generated/music
-  node tools/analyze-sunvox-balance.mjs --parts --duration 60 --format text generated/music/aurora-pulse.sunvox
+  node tools/analyze-sunvox-balance.mjs --parts --perceptual --duration 60 --format text generated/music/aurora-pulse.sunvox
   node tools/analyze-sunvox-balance.mjs --format json --out var/sunvox-balance.json generated/music generated/instruments`);
 }
 
@@ -43,6 +52,7 @@ function parseArgs(argv) {
     outPath: undefined,
     recursive: true,
     parts: false,
+    perceptual: false,
     windowBars: DEFAULT_WINDOW_BARS,
   };
 
@@ -91,6 +101,11 @@ function parseArgs(argv) {
     }
     if (arg === "--parts") {
       options.parts = true;
+      continue;
+    }
+    if (arg === "--perceptual") {
+      options.parts = true;
+      options.perceptual = true;
       continue;
     }
     if (arg === "--window-bars") {
@@ -318,12 +333,56 @@ async function renderProject(bytes, { sampleRate, channels, durationSeconds }) {
   );
 }
 
+function attachPerceptualBalance(parts, windowBars) {
+  const relationWindows = [];
+  const windowCount = Math.max(0, ...parts.map((part) => part.windows.length));
+  for (let windowIndex = 0; windowIndex < windowCount; windowIndex += 1) {
+    const items = parts.map((part) => ({
+      moduleIndex: part.moduleIndex,
+      name: part.name,
+      ...(part.windows[windowIndex]?.perceptual ?? { activeFrameCount: 0, partialLevelDb: Number.NaN }),
+    }));
+    const centered = centerBalanceLevels(items);
+    for (const item of centered) {
+      const part = parts.find((candidate) => candidate.moduleIndex === item.moduleIndex);
+      if (part?.windows[windowIndex]?.perceptual) {
+        part.windows[windowIndex].perceptual.balanceBetaDb = item.balanceBetaDb;
+      }
+    }
+    relationWindows.push({
+      index: windowIndex,
+      startBar: windowIndex * windowBars,
+      endBar: (windowIndex + 1) * windowBars,
+      relations: buildPairwiseRelations(centered),
+    });
+  }
+
+  for (const part of parts) {
+    const active = part.windows
+      .map((window) => window.perceptual)
+      .filter((metrics) => metrics?.activeFrameCount > 0);
+    part.perceptual = {
+      activeWindowCount: active.length,
+      partialLoudnessProxy: quantile(active.map((metrics) => metrics.partialLoudnessProxy), 0.5),
+      partialLevelDb: quantile(active.map((metrics) => metrics.partialLevelDb), 0.5),
+      maskingLossDb: quantile(active.map((metrics) => metrics.maskingLossDb), 0.5),
+      audibilityFraction: quantile(active.map((metrics) => metrics.audibilityFraction), 0.5),
+      balanceBetaDb: quantile(active.map((metrics) => metrics.balanceBetaDb), 0.5),
+    };
+  }
+  return relationWindows;
+}
+
 async function analyzeParts(document, fullSamples, options) {
   const candidates = sourceModules(document);
   const bpm = Number(document.project?.bpm);
   const windowSeconds = Number.isFinite(bpm) && bpm > 0
     ? (60 / bpm) * 4 * options.windowBars
     : Math.min(8, options.durationSeconds);
+  const auditoryOptions = { fftSize: 2048, hopSize: 1024, bandCount: 32 };
+  const fullAuditory = options.perceptual
+    ? analyzeAuditoryFrames(fullSamples, options.channels, options.sampleRate, auditoryOptions)
+    : undefined;
   const parts = [];
   for (const candidate of candidates) {
     const soloDocument = structuredClone(document);
@@ -335,6 +394,18 @@ async function analyzeParts(document, fullSamples, options) {
     const rendered = await renderProject(buildContainer(soloDocument), options);
     const level = summarizeSamples(rendered.samples, options.channels);
     const loudness = summarizeMomentaryLufs(rendered.samples, options.channels, options.sampleRate);
+    let partialFrames;
+    if (options.perceptual) {
+      const maskerDocument = structuredClone(document);
+      maskerDocument.modules[candidate.moduleIndex].controllers.volume = 0;
+      const masker = await renderProject(buildContainer(maskerDocument), options);
+      const sharedAuditoryOptions = { ...auditoryOptions, filterbank: fullAuditory.filterbank };
+      partialFrames = computePartialLoudnessFrames(
+        fullAuditory,
+        analyzeAuditoryFrames(masker.samples, options.channels, options.sampleRate, sharedAuditoryOptions),
+        analyzeAuditoryFrames(rendered.samples, options.channels, options.sampleRate, sharedAuditoryOptions),
+      );
+    }
     const windows = [];
     for (let startSeconds = 0, index = 0; startSeconds < options.durationSeconds; startSeconds += windowSeconds, index += 1) {
       const endSeconds = Math.min(options.durationSeconds, startSeconds + windowSeconds);
@@ -344,7 +415,7 @@ async function analyzeParts(document, fullSamples, options) {
       const partLoudness = summarizeMomentaryLufs(partSlice, options.channels, options.sampleRate);
       const mixLoudness = summarizeMomentaryLufs(mixSlice, options.channels, options.sampleRate);
       const activeLufs = partLevel.activeRatio > 0 ? partLoudness.activeLufs : Number.NEGATIVE_INFINITY;
-      windows.push({
+      const window = {
         index,
         startBar: index * options.windowBars,
         endBar: (index + 1) * options.windowBars,
@@ -359,7 +430,11 @@ async function analyzeParts(document, fullSamples, options) {
         peak: partLevel.peak,
         rms: partLevel.rms,
         activeRatio: partLevel.activeRatio,
-      });
+      };
+      if (partialFrames) {
+        window.perceptual = summarizePartialLoudnessWindow(partialFrames, startSeconds, endSeconds);
+      }
+      windows.push(window);
     }
     parts.push({
       moduleIndex: candidate.moduleIndex,
@@ -376,15 +451,32 @@ async function analyzeParts(document, fullSamples, options) {
       windows,
     });
   }
+  const relationWindows = options.perceptual
+    ? attachPerceptualBalance(parts, options.windowBars)
+    : undefined;
   return {
     method: "solo-through-project-routing, four-bar windows, role-aware peer-median comparison",
     windowBars: options.windowBars,
     windowSeconds,
     parts: assessPartWindows(parts),
+    ...(options.perceptual ? {
+      perceptual: {
+        model: AUDITORY_BALANCE_MODEL,
+        analysis: {
+          sampleRate: options.sampleRate,
+          channels: options.channels,
+          fftSize: auditoryOptions.fftSize,
+          hopSize: auditoryOptions.hopSize,
+          auditoryBands: auditoryOptions.bandCount,
+        },
+        renderMethod: "full mix + leave-one-out masker + solo reference",
+        relationWindows,
+      },
+    } : {}),
   };
 }
 
-async function analyzeFile(filePath, { sampleRate, channels, durationSeconds, parts, windowBars }) {
+async function analyzeFile(filePath, { sampleRate, channels, durationSeconds, parts, perceptual, windowBars }) {
   const absolutePath = resolve(filePath);
   const bytes = await readFile(absolutePath);
   const parsed = parseContainer(bytes);
@@ -429,6 +521,7 @@ async function analyzeFile(filePath, { sampleRate, channels, durationSeconds, pa
       channels,
       durationSeconds,
       windowBars,
+      perceptual,
     });
   }
   return result;
@@ -545,7 +638,7 @@ function renderText(results) {
   if (withParts.length) {
     lines.push("");
     lines.push("Part balance uses active four-bar windows and compares each role with the median of audible peers.");
-    lines.push("file\tmodule\trole\tactiveLufs\tpeak\tactiveWindows\trelativeToPeerMedianDb\tminDb\tmaxDb\ttargetDb\tassessment");
+    lines.push("file\tmodule\trole\tactiveLufs\tpeak\tactiveWindows\trelativeToPeerMedianDb\tminDb\tmaxDb\ttargetDb\tassessment\tpartialLevelDb\tmaskingLossDb\taudibility\tbalanceBetaDb");
     for (const result of withParts) {
       for (const part of result.partBalance.parts) {
         const balance = part.balance;
@@ -561,6 +654,10 @@ function renderText(results) {
           formatNumber(balance.maximumRelativeToPeerDb, 2),
           balance.targetRelativeToPeerDb.join(".."),
           balance.assessment,
+          formatNumber(part.perceptual?.partialLevelDb, 2),
+          formatNumber(part.perceptual?.maskingLossDb, 2),
+          formatNumber(part.perceptual?.audibilityFraction, 3),
+          formatNumber(part.perceptual?.balanceBetaDb, 2),
         ].join("\t"));
       }
     }
@@ -615,6 +712,7 @@ async function main(argv) {
         channels: options.channels,
         durationSeconds: options.durationSeconds,
         parts: options.parts,
+        perceptual: options.perceptual,
         windowBars: options.windowBars,
       });
       results.push(normalizeResult(result, path));
@@ -634,6 +732,7 @@ async function main(argv) {
       recursive: options.recursive,
       format: options.format,
       parts: options.parts,
+      perceptual: options.perceptual,
       windowBars: options.windowBars,
       sources: options.files,
     },

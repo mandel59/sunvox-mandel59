@@ -38,7 +38,7 @@ npm run sunsynth:characterize -- instruments/mandel59\ SuperSaw.sunsynth
 npm run sunvox:render-debug -- --mode both generated/instruments/Scratch\ FMX\ Tines.sunsynth
 npm run sunvox:edit-recipe -- --out var/synth-lab generated/recipes/sunvox-edit/scratch-analog.mjs
 npm run sunvox:music-recipe -- --help
-npm run sunvox:analyze-balance -- --parts --duration 60 --format text generated/music/aurora-pulse.sunvox
+npm run sunvox:analyze-balance -- --parts --perceptual --duration 60 --format text generated/music/aurora-pulse.sunvox
 npm run sunvox:api-audit
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
@@ -91,6 +91,18 @@ each active window with the median of the other audible parts. Role-aware target
 ranges keep foreground parts such as kick, bass, chords, and lead separate from
 background parts such as arpeggios, pads, and transitions. Use `--window-bars`
 to change the musical window length and `--format json` for per-window details.
+
+Add `--perceptual` for the masking-aware research metric tracked by issue #64.
+For every source part, the analyzer renders the full project, a leave-one-out
+mix with that source muted, and a solo reference through the existing SunVox
+routing. A 32-band ERB-rate frontend produces a relative
+`partial-loudness-proxy`, `maskingLossDb`, `audibilityFraction`, centered
+`balanceBetaDb`, and pairwise relations for each musical window. The JSON
+output records `erb-partial-loudness-proxy-v1` and an explicit uncalibrated
+`relative-digital` status. These values are useful for comparisons within the
+same project, but they are not ISO 532 loudness, standardized sones, or a claim
+of Moore-Glasberg model conformance. Whole-project LUFS and clipping remain the
+separate headroom metrics.
 
 Example diff excerpt:
 
