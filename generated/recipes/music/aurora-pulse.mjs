@@ -260,7 +260,7 @@ function addHarmony(events, used) {
         track: TRACK.chordA + index,
         note: noteName,
         module: MODULE.chord,
-        velocity: section === "intro" ? 88 : section.startsWith("drop") ? 76 : 56,
+        velocity: section === "intro" || section === "build1" ? 88 : section === "build2" ? 72 : section.startsWith("drop") ? 76 : 56,
         gate,
       }));
     }
@@ -304,12 +304,13 @@ function addTransitions(events, used) {
     const line = bar * 16;
     for (const offset of [0, 4, 8, 12]) note(events, used, { line: line + offset, track: TRACK.noise, note: "C5", module: MODULE.noise, velocity: 42 + offset * 4, gate: 2 });
   }
-  for (const [line, parameter] of [[0, 7000], [64, 5600], [112, 9200], [128, 11800], [256, 2600], [320, 6400], [368, 12200], [384, 11800], [480, 5200]]) {
+  for (const [line, parameter] of [[0, 7000], [48, 7000], [64, 7000], [80, 7600], [96, 8400], [112, 9200], [128, 11800], [256, 2600], [320, 6400], [368, 12200], [384, 11800], [480, 5200]]) {
     control(events, used, { line, track: TRACK.autoA, module: MODULE.chord, controller: "filterFreq", parameter });
   }
   // Pattern controller parameters use SunVox's normalized 0000..8000 range:
-  // 0x2C00 maps to module volume 88, and 0x2000 restores the base value 64.
-  for (const [line, parameter] of [[0, 0x2C00], [64, 0x2000]]) {
+  // Compensate briefly when the rhythm section enters at bar 4, then lower
+  // gain as the filter opens so build 1 grows without burying the chords.
+  for (const [line, parameter] of [[0, 0x2C00], [48, 0x2C00], [64, 0x3C00], [80, 0x2C00], [96, 0x2600], [112, 0x2000], [128, 0x2000]]) {
     control(events, used, { line, track: TRACK.chordGain, module: MODULE.chord, controller: "volume", parameter });
   }
   for (const [line, parameter] of [[0, 124], [96, 178], [128, 236], [256, 150], [368, 246], [480, 176]]) {
