@@ -97,12 +97,16 @@ for (const entry of KEY_LAYOUT) {
 refreshKeys();
 window.addEventListener("keydown", (event) => {
   const entry = codeMap.get(event.code);
-  if (!entry || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey ||
+  if (!entry || event.isComposing || event.ctrlKey || event.metaKey || event.altKey ||
       event.target.matches("input, select, textarea, [contenteditable]")) return;
   event.preventDefault();
-  noteOn(event.code, entry);
+  if (!event.repeat) noteOn(event.code, entry);
 });
-window.addEventListener("keyup", (event) => noteOff(event.code));
+window.addEventListener("keyup", (event) => {
+  if (codeMap.has(event.code) && !event.ctrlKey && !event.metaKey && !event.altKey &&
+      !event.isComposing && !event.target.matches("input, select, textarea, [contenteditable]")) event.preventDefault();
+  noteOff(event.code);
+});
 window.addEventListener("blur", panic);
 document.addEventListener("visibilitychange", () => { if (document.hidden) panic(); });
 $("#octave").addEventListener("change", panic);

@@ -193,6 +193,7 @@ canvas {
 }
 #keyboard { display:flex; flex-direction:column; gap:8px; min-width:760px; touch-action:pan-x; }
 .key-row { display:flex; gap:7px; }
+.key-row[data-row="-1"] { margin-left:32px; }
 .key-row[data-row="1"] { margin-left:22px; }
 .key-row[data-row="2"] { margin-left:36px; }
 .key-row[data-row="3"] { margin-left:62px; }

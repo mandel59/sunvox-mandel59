@@ -4,7 +4,7 @@ import {KEY_LAYOUT, EDO, toneForStep, formatStep, wrapStep} from '../src/tuning.
 
 test('41 EDO grid preserves alternating +24/-17 horizontal steps and exact +13 diagonals', () => {
   assert.equal(new Set(KEY_LAYOUT.map(k => k.code)).size, KEY_LAYOUT.length);
-  assert.equal(new Set(KEY_LAYOUT.map(k => ((k.step % EDO) + EDO) % EDO)).size, 37);
+  assert.equal(new Set(KEY_LAYOUT.map(k => ((k.step % EDO) + EDO) % EDO)).size, 41);
   for (const key of KEY_LAYOUT) {
     const right = KEY_LAYOUT.find(k => k.row === key.row && k.column === key.column + 1);
     const above = KEY_LAYOUT.find(k => k.row === key.row - 1 && k.column === key.column);
@@ -19,10 +19,16 @@ test('41 EDO grid preserves alternating +24/-17 horizontal steps and exact +13 d
     if (diagonal) assert.equal(diagonal.step - key.step, 13);
 
   }
+  assert.equal(KEY_LAYOUT.length, 55);
   assert.equal(KEY_LAYOUT.find(k => k.code === 'KeyX').step, 0);
   const steps = codes => codes.map(code => KEY_LAYOUT.find(k => k.code === code).step);
   assert.deepEqual(steps(['KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash']), [17,0,24,7,31,14,38,21,45,28]);
-  assert.deepEqual(steps(['KeyX','KeyD','KeyR','Digit5']), [0,13,26,39]);
+  assert.deepEqual(steps(['KeyX','KeyD','KeyR','Digit5','F5']), [0,13,26,39,52]);
+  assert.deepEqual(steps(Array.from({length:10}, (_, i) => 'F' + (i + 1))), [38,62,45,69,52,76,59,83,66,90]);
+  const one = KEY_LAYOUT.find(k => k.code === 'Digit1'), f1 = KEY_LAYOUT.find(k => k.code === 'F1');
+  assert.equal(f1.row, one.row - 1);
+  assert.equal(f1.column, one.column + 1);
+  assert.equal(f1.step - one.step, 13);
   assert.equal(formatStep(-9), '-9');
   for (const key of KEY_LAYOUT) for (const octave of [2, 6]) assert.ok(toneForStep(key.step, octave).frequency > 0);
 });

@@ -58,7 +58,7 @@ try {
     };
   });
   console.log("browser launched"); await page.goto("http://127.0.0.1:" + server.address().port + "/synth/");
-  assert.equal(await page.locator(".key").count(), 45);
+  assert.equal(await page.locator(".key").count(), 55);
   await page.click("#start"); console.log("starting");
   await page.waitForFunction(() => document.querySelector("#start").textContent === "音声 ON");
   console.log("ready"); assert.equal(await page.evaluate(() => crossOriginIsolated), isolated);
@@ -118,6 +118,22 @@ try {
   const periodHz = 440 * 2 ** (1 - 9 / 12 + 45 / 41); // C5 root, +45 EDO steps
   assert.equal(periodEvent[6], Math.round(30720 - Math.log2(periodHz / 16.333984375) * 3072));
   await page.keyboard.up("Period");
+  const oneBox = await page.locator('.key[data-code="Digit1"]').boundingBox();
+  const f1Box = await page.locator('.key[data-code="F1"]').boundingBox();
+  const twoBox = await page.locator('.key[data-code="Digit2"]').boundingBox();
+  assert.ok(f1Box.y < oneBox.y && f1Box.x > oneBox.x && f1Box.x < twoBox.x);
+  await page.locator("#octave").evaluate(el => el.blur());
+  for (const [index, step] of [38,62,45,69,52,76,59,83,66,90].entries()) {
+    const code = 'F' + (index + 1);
+    await page.keyboard.down(code);
+    await page.keyboard.down(code); // Auto-repeat must also suppress browser shortcuts.
+    await page.waitForFunction(() => document.querySelectorAll('.key.active').length === 1);
+    const event = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).at(-1).command.args);
+    const hz = 440 * 2 ** (1 - 9 / 12 + step / 41);
+    assert.equal(event[6], Math.round(30720 - Math.log2(hz / 16.333984375) * 3072));
+    await page.keyboard.up(code);
+    assert.equal(await page.locator('.key.active').count(), 0);
+  }
   const range = page.locator("#controls input").first();
   await range.fill("16384");
   await range.dispatchEvent("input");
