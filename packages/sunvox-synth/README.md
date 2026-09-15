@@ -99,6 +99,13 @@ node tools/browser-debug/check-synth-app.mjs --isolation
 
 ## ライセンス
 
+アプリのコードは [MIT License](LICENSE) で配布します。
+Copyright (c) 2026 Ryusei Yamaguchi (@mandel59)。
+ビルド成果物にも `LICENSE.txt` を同梱し、画面からリンクしています。
+同梱音色 `assets/scratch-fmx-tines.sunsynth` は生成音色データとして
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) のままです。
+SunVox ランタイムと第三者コンポーネントには、それぞれのライセンスが適用されます。
+
 Powered by SunVox (modular synth & tracker)
 Copyright (c) 2008 - 2026, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.ru
 

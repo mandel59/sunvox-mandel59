@@ -223,11 +223,13 @@ The independent `sunvox-synth` app continues using Engine directly.
 
 ## Licensing and distribution
 
-This extraction does not grant a new license to existing glue code; the package
-is marked `UNLICENSED` pending an explicit distribution license. SunVox and its
-third-party components have separate licenses. Retain required runtime notices
-and license files when deploying, as the example site does. Packing and workspace
-installation do not publish to npm.
+This package's code is distributed under the [MIT License](LICENSE).
+Copyright (c) 2026 Ryusei Yamaguchi (@mandel59).
+
+The separately supplied SunVox runtime and its third-party components retain
+their own licenses. Retain their required notices and license files when
+deploying, as the example site does. Packing and workspace installation do not
+publish to npm.
 
 ## Verify
 

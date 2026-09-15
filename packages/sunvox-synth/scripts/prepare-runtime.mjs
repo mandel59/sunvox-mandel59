@@ -21,4 +21,5 @@ for (const file of ["sunvox.js", "sunvox_lib_loader.js", "sunvox.wasm"]) {
   await cp(join(source, "js", "lib", file), join(destination, file));
 }
 await cp(join(source, "docs", "license"), join(destination, "license"), { recursive: true });
-console.log("Prepared SunVox runtime and license notices.");
+await cp(join(output, "LICENSE"), join(output, "public", "LICENSE.txt"));
+console.log("Prepared SunVox runtime, app license and runtime notices.");

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Asynchronous low-level SunVox API and browser audio transport",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mandel59/sunvox-mandel59.git",
@@ -20,7 +20,8 @@
   },
   "files": [
     "src",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "node --test test/*.test.mjs"

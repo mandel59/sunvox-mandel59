@@ -288,6 +288,13 @@ always regenerated from the verified archive.
 
 ## Licenses
 
+### Web packages
+
+The code in [sunvox-web](packages/sunvox-web/LICENSE) and
+[sunvox-synth](packages/sunvox-synth/LICENSE) is distributed under the MIT License.
+Copyright (c) 2026 Ryusei Yamaguchi (@mandel59).
+SunVox runtime and instrument data retain the separate licenses described below.
+
 ### Human-authored instruments under [instruments/](instruments/)
 
 Created by Ryusei Yamaguchi (@mandel59). Distributed under
