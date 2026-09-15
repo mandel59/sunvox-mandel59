@@ -4,6 +4,8 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { FMX_TINES } from "../../packages/sunvox-synth/test/fmx-tines.fixture.js";
+import { withSunVoxSlot, loadProjectFromBuffer, loadSynthModuleFromBuffer } from "../sunvox-node.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const dist = path.join(root, "packages/sunvox-synth/dist");
@@ -61,7 +63,10 @@ try {
   await page.waitForFunction(() => document.querySelector("#start").textContent === "音声 ON");
   console.log("ready"); assert.equal(await page.evaluate(() => crossOriginIsolated), isolated);
   assert.ok(await page.locator("#controls input").count() > 119);
-  assert.ok(await page.evaluate(() => engineCommands.some(c => c.command?.method === "sv_new_module" && c.command.args[1] === "FMX")));
+  assert.ok(await page.evaluate(() => engineCommands.some(c => c.command?.method === "sv_load_module_from_memory")));
+  for (const ctl of FMX_TINES.controllers) {
+    assert.equal(await page.getByRole("slider", { name: "FMX " + ctl.name, exact: true, includeHidden: true }).inputValue(), String(ctl.value));
+  }
   await page.keyboard.down("KeyZ");
   await page.keyboard.down("KeyX");
   await page.waitForFunction(() => peak() > 0.001);
@@ -112,6 +117,8 @@ try {
   await range.fill("16384");
   await range.dispatchEvent("input");
   assert.equal(await range.locator("..").locator("output").textContent(), "16384");
+  await range.fill(String(FMX_TINES.controllers[0].value));
+  await range.dispatchEvent("input");
   const downloadPromise = page.waitForEvent("download");
   await page.click("#save");
   const download = await downloadPromise;
@@ -121,6 +128,14 @@ try {
   assert.equal(bytes.subarray(0, 4).toString(), "SVOX");
   assert.ok(bytes.length > 100);
   assert.ok(bytes.includes(Buffer.from("FMX")));
+  const reference = await readFile(path.join(root, "generated/instruments/Scratch FMX Tines.sunsynth"));
+  await withSunVoxSlot({}, async ({module, slot}) => {
+    loadProjectFromBuffer(module, bytes, {slot});
+    const referenceModule = loadSynthModuleFromBuffer(module, reference, {slot, connectToOutput:false});
+    assert.equal(module._sv_get_number_of_module_ctls(slot, 1), 119);
+    for (let i=0; i<119; i++) assert.equal(module._sv_get_module_ctl_value(slot, 1, i, 0), module._sv_get_module_ctl_value(slot, referenceModule, i, 0), "preset controller " + i);
+    assert.equal(module._sv_get_module_finetune(slot, 1), module._sv_get_module_finetune(slot, referenceModule));
+  });
   for (const file of ["LICENSE.txt", "sundog.txt", "libflac.txt", "tremor.txt"]) {
     const response = await page.request.get("http://127.0.0.1:" + server.address().port + "/synth/sunvox_lib/license/" + file);
     assert.equal(response.status(), 200);

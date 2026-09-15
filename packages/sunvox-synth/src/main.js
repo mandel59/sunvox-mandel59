@@ -1,5 +1,6 @@
 import { createSunVoxEngine, NOTECMD_SET_PITCH, NOTECMD_NOTE_OFF, NOTECMD_CLEAN_SYNTHS } from "@mandel59/sunvox-web";
 import "./style.css";
+import tinesUrl from "../assets/scratch-fmx-tines.sunsynth?url";
 import { EDO, KEY_LAYOUT, toneForStep, formatStep } from "./tuning.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -187,7 +188,10 @@ $("#start").addEventListener("click", async () => {
     await next.startAudio();
     check(await next.sv_open_slot(0));
     check(await next.sv_set_song_name(0, "41EDO FMX patch"));
-    generator = check(await next.sv_new_module(0, "FMX", "41EDO FMX", 200, 200, 0));
+    const response = await fetch(tinesUrl);
+    if (!response.ok) throw new Error("初期音色の読み込みに失敗しました");
+    const presetBytes = new Uint8Array(await response.arrayBuffer());
+    generator = check(await next.sv_load_module_from_memory(0, presetBytes, 200, 200, 0));
     const filter = check(await next.sv_new_module(0, "Filter", "Tone", 400, 200, 0));
     const results = await next.batch([
       { method: "sv_connect_module", args: [0, generator, filter] },
@@ -195,8 +199,6 @@ $("#start").addEventListener("click", async () => {
       { method: "sv_volume", args: [0, Math.round(Number($("#volume").value) * 256 / 100)] },
     ]);
     results.forEach(check);
-    // FMX has its own voice limit, independent of the 32 event tracks.
-    check(await next.sv_set_module_ctl_value(0, generator, 3, 32, 0));
     $("#controls").replaceChildren();
     await addControllers(generator, "FMX");
     await addControllers(filter, "FILTER");

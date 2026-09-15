@@ -15,6 +15,11 @@ const SKIP_DIRECTORIES = new Set([".git", ".jj", "node_modules", "dist", "var", 
 const SKIP_FILES = new Set(["sunvox-api-audit.mjs", "sunvox-api-audit.test.mjs"]);
 
 const REVIEW_NOTES = {
+  sv_get_module_finetune: {
+    priority: "medium",
+    notes: ["Returns packed finetune (low 16 bits) and relative note (high 16 bits). Preset verification compares the complete packed value against the source module."],
+    argumentSemantics: {},
+  },
   sv_end_of_song: {
     priority: "medium",
     notes: ["Returns 0 while the song is playing and 1 when stopped. Shared-engine verification uses it to ensure Player disposal does not stop an independent Engine slot."],

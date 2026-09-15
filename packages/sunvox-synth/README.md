@@ -43,7 +43,8 @@ Z=0、D=13、F=24。右隣は11段（321.9512セント）、
 JIS配列などでは記号キーの印字が異なる場合があります。
 フォーム操作・修飾キー付きショートカット・IME変換中は演奏キーを奪いません。
 
-FMXのPolyphonyは初期値32。表示は実ボイス数ではなく押下数です。
+FMXの初期音色は Scratch FMX Tines。全119コントローラーを元の音色に合わせ、
+Polyphonyも初期値10にしています。表示は実ボイス数ではなく押下数です。
 Polyphonyを変更すると一度全音を停止します。上限を下げた場合の
 ボイス奪取とRelease中の余韻はFMXに従います。
 発音には `NOTECMD_SET_PITCH` を使います。画面のHzは目標周波数で、
@@ -104,3 +105,7 @@ Copyright (c) 2008 - 2026, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.r
 ## 設計検討
 
 - [微分音鍵盤と同一モジュール内の独立発音](docs/microtonal-design.md)
+
+初期音色は `generated/instruments/Scratch FMX Tines.sunsynth` のコピーを
+`assets/scratch-fmx-tines.sunsynth` に同梱しています。コントローラーAPI経由の
+値の丸めを避け、元の全119パラメーターを維持します。既存サイトへの実行時依存はありません。
