@@ -149,3 +149,45 @@ node tools/browser-debug/probe-microtonal.mjs
 現在の .sunvox 保存はモジュール構成と設定のみ。
 鍵盤のEDO・基準周波数はアプリの状態なので、自動ではファイルに保存されない。
 微分音鍵盤の実装時には、調律設定の保存方法も明示する。
+
+## 追試: Analog Generator と FMX の調律精度
+
+同じ probe に3種類のモジュール比較を追加した。SunVox Lib 2.1.4、
+44.1kHz、単一正弦波、変調なしで pitch=16123..16130 を1ずつ送信。
+
+**基準音高の刻みは同じだが、その後の計算精度は異なる。**
+
+| モジュール／設定 | pitch=16124 の実測 | pitch=16124..16127 |
+| --- | --- | --- |
+| Generator | 439.8325Hz | 4指定とも同じ周波数 |
+| Analog Generator / accuracy off | 439.8325Hz | 同上 |
+| Analog Generator / accuracy on | 439.8956Hz | 同上 |
+| FMX / 1:1 carrier | 439.9219Hz | 同上 |
+
+pitch=16124 の公称式による値は439.9229Hz。
+これは4で割り切れる比較点で、入力pitchの切り捨ての影響を分離しやすい。
+この点では FMX が公称値に最も近い。ただし単一周波数付近での結果であり、
+全音域の誤差上限ではない。
+
+参照ソース:
+- Generator: `psynths_generator.cpp` は pitch / 4 と通常の DELTA 計算。
+- Analog Generator: `psynths_generator2.cpp` の
+  `gen2_subchannel_set_pitch()` は pitch / 4 を**精度設定によらず**行う。
+  accuracy オンでは `PSYNTH_GET_DELTA64_HQ` に切り替わる。
+- FMX: `psynths_fm2.cpp` の `gen_channel_recalc_pitch()` も pitch / 4。
+  さらに周波数テーブルを3オクターブ上の値で参照し、HQの DELTA 計算を行う。
+  オペレーターの周波数倍率は別段階で掛かる。
+- `psynth.h` の通常版 DELTA マクロは下位2bitを切り捨てるが、HQ版は保持する。
+
+Analog Generator の精度オプションは `sv_send_event(..., module+1, 0x7200, 1)`
+で有効にした。Osc2 の表示上の0は内部値1000なので、それを指定して副発振を無効化。
+FMX はコントローラーが「パラメーター種別 → オペレーター」の順に並ぶ点に注意し、
+第5オペレーターだけを正弦波・周波数倍率1000で発音した。
+
+[公式マニュアル](https://www.warmplace.ru/soft/sunvox/manual.php)にも Analog Generator の
+“Increased frequency computation accuracy” が記載されている。
+この設定でも基準音高が1/256半音刻みになるわけではなく、
+3種類とも実測では4 pitch単位（1/64半音、1.5625セント）のグループを区別できなかった。
+
+前節の「Analog Generator の精度オプションは未検証」という記述は初回検討時点のもの。
+この追試により、精度オプションの効果と、それでも残る音高量子化を確認した。

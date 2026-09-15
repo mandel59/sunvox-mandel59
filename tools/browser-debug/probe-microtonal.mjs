@@ -126,8 +126,56 @@ try {
     measurements.samePitch = { remainingAmplitude: spectrum(await render(), [actualTargets[0]])[0] };
     await off(1); await settle();
     measurements.samePitch.silent = Math.max(...(await render(4096)).map(Math.abs));
+    const modulePrecision = { Generator: precision };
+    for (const type of ["Analog generator", "FMX"]) {
+      await clean();
+      const target = await call("sv_new_module", 0, type, type, 0, 200, 0);
+      await call("sv_connect_module", 0, target, 0);
+      const params = [];
+      for (let i = 0; i < await call("sv_get_number_of_module_ctls", 0, target); i++) {
+        params.push({ index: i, name: await call("sv_get_module_ctl_name", 0, target, i), value: await call("sv_get_module_ctl_value", 0, target, i, 0) });
+      }
+      const setIndex = (i, value) => call("sv_set_module_ctl_value", 0, target, i, value, 0);
+      if (type === "Analog generator") {
+        for (const [name, value] of [["Waveform", 5], ["Attack", 0], ["Release", 0], ["Sustain", 1], ["Osc2", 1000], ["Filter", 0]]) {
+          const param = params.find(p => p.name === name);
+          if (!param) throw new Error("Missing controller " + name);
+          await setIndex(param.index, value);
+        }
+      } else {
+        // Controllers are grouped by parameter, then operator; only operator 5 is audible.
+        for (let op = 0; op < 5; op++) {
+          const base = 9 + op;
+          await setIndex(base, op === 4 ? 32768 : 0);
+          await setIndex(base + 5, 0); // Attack
+          await setIndex(base + 15, 32768); // Sustain level
+          await setIndex(base + 40, 1); // Sustain
+          await setIndex(base + 65, 6); // Sine
+          await setIndex(base + 80, 1000); // 1:1 frequency
+          await setIndex(base + 85, 8192); // No constant pitch
+          await setIndex(base + 90, 0); // No self modulation
+          await setIndex(base + 95, 0); // No feedback
+        }
+      }
+      for (const accuracy of (type === "FMX" ? [null] : [0, 1])) {
+        if (accuracy !== null) await event(0, 0, 0, target + 1, 0x7200, accuracy);
+        const rows = [];
+        for (let delta = 0; delta < 8; delta++) {
+          await clean();
+          await event(0, 133, 70, target + 1, 0, pitches[0] + delta);
+          await settle();
+          const samples = await render();
+          const peak = samples.reduce((p, x) => Math.max(p, Math.abs(x)), 0);
+          const measured = estimate(samples);
+          rows.push({ pitch: pitches[0] + delta, requestedHz: hzForPitch(pitches[0] + delta), measuredHz: measured, peak });
+        }
+        modulePrecision[type + (accuracy === null ? "" : " accuracy=" + accuracy)] = rows;
+      }
+      await clean();
+      await call("sv_remove_module", 0, target);
+    }
     engine.dispose();
-    return { info, graph: "Generator -> Filter -> Output", frequencies, pitches, actualTargets, measurements, precision };
+    return { info, graph: "Generator -> Filter -> Output", frequencies, pitches, actualTargets, measurements, precision, modulePrecision };
   });
   await writeFile(path.join(output, "results.json"), JSON.stringify({ ...result, errors }, null, 2) + "\n");
   for (const mode of ["stereo", "mono"]) {
@@ -145,6 +193,11 @@ try {
   assert.ok(stolen.afterOldOff[1] > 0.01);
   assert.ok(result.measurements.samePitch.remainingAmplitude > 0.01);
   assert.ok(result.measurements.samePitch.silent < 0.00001);
+  for (const rows of Object.values(result.modulePrecision)) {
+    assert.ok(rows.every(row => row.measuredHz > 430 && row.measuredHz < 450));
+    for (let i = 2; i <= 4; i++) assert.ok(Math.abs(rows[i].measuredHz - rows[1].measuredHz) < 0.0001);
+    assert.ok(Math.abs(rows[0].measuredHz - rows[1].measuredHz) > 0.1);
+  }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify(result, null, 2));
 } finally {
