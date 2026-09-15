@@ -17,12 +17,36 @@ npm run dev --workspace @mandel59/sunvox-synth
 表示された localhost の URL を開き、「音声を開始」を押します。
 
 - 画面の鍵盤をマウス・タッチで演奏。複数タッチ・キー同時押しで和音。
-- PC キー A W S E D F T G Y H U J K が C から次の C に対応。
+- 41平均律のアイソモーフィック鍵盤。右へ1段、同じ列を上へ10段。
+  数字・Q・A・Zの4行を使い、全41音とオクターブ上の基準音をカバー。
 - オクターブ切替、全音停止、画面から離れたときの発音解除。
-- Generator と Filter の全コントローラーをネイティブ値で編集。
+- FMX と Filter の全コントローラーをネイティブ値で編集。
   波形などの列挙値も現段階では数値表示。
 - 出力波形表示・音量調整・モジュール構成と設定の .sunvox 保存。
   保存したファイルは SunVox で開けます。演奏の録音やパターン作成ではありません。
+
+## 41EDO のキー配置
+
+```text
+1  2  3  4  5  6  7  8  9  0  -  =   +30..+41
+ Q  W  E  R  T  Y  U  I  O  P  [  ]   +20..+31
+  A  S  D  F  G  H  J  K  L  ;  '    +10..+20
+   Z  X  C  V  B  N  M  ,  .  /       +0..+9
+```
+
+Z は既定で C4（約261.626Hz、A4=440Hzから算出）、= は1オクターブ上。
+1段は1200/41 ≈ 29.2683セント。基準音をC2～C6へ切り替えられます。
+画面ラベルはUS配列表記、PC入力は `KeyboardEvent.code` の物理位置を使うので、
+JIS配列などでは記号キーの印字が異なる場合があります。
+同じ段番号の別キーも別トラックで発音し、独立して離せます。
+フォーム操作・修飾キー付きショートカット・IME変換中は演奏キーを奪いません。
+
+FMXのPolyphonyは初期値32。表示は実ボイス数ではなく押下数です。
+Polyphonyを変更すると一度全音を停止します。上限を下げた場合の
+ボイス奪取とRelease中の余韻はFMXに従います。
+発音には `NOTECMD_SET_PITCH` を使います。画面のHzは目標周波数で、
+FMX内部の音高量子化による誤差は残ります。
+.sunvox保存は音色のみで、鍵盤配置・選択オクターブは含みません。
 
 ## 単独ビルド
 
@@ -50,7 +74,7 @@ npm run preview --workspace @mandel59/sunvox-synth
 
 - Vite + 標準 DOM API。アプリのエントリーは `src/main.js`。
 - `createSunVoxEngine()` で1つの Worker/音声出力を所有。
-- スロット0に Generator → Filter → Output を作成。
+- スロット0に FMX → Filter → Output を作成。
 - 各押下元に別トラックを割り当て、非同期 `sv_send_event()` で発音・消音。
 - コントローラーの名前・範囲・現在値を Engine から取得して UI を生成。
 - `sv_get_module_scope2()` で波形、`sv_save_to_memory()` で保存。

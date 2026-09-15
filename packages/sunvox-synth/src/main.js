@@ -1,12 +1,12 @@
-import { createSunVoxEngine, NOTECMD_NOTE_OFF, NOTECMD_CLEAN_SYNTHS } from "@mandel59/sunvox-web";
+import { createSunVoxEngine, NOTECMD_SET_PITCH, NOTECMD_NOTE_OFF, NOTECMD_CLEAN_SYNTHS } from "@mandel59/sunvox-web";
 import "./style.css";
+import { EDO, KEY_LAYOUT, toneForStep } from "./tuning.js";
 
 const $ = (selector) => document.querySelector(selector);
 let engine, generator, ready = false, meterTimer;
 const held = new Map();
 const keys = [];
-const keyCodes = ["KeyA", "KeyW", "KeyS", "KeyE", "KeyD", "KeyF", "KeyT", "KeyG", "KeyY", "KeyH", "KeyU", "KeyJ", "KeyK"];
-const names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+const codeMap = new Map(KEY_LAYOUT.map(entry => [entry.code, entry]));
 const check = (value) => {
   if (typeof value === "number" && value < 0) throw new Error("SunVox error: " + value);
   return value;
@@ -15,24 +15,28 @@ function report(error) { $("#status").textContent = "エラー: " + error.messag
 function run(promise) { promise.catch(report); }
 
 function refreshKeys() {
-  for (const [offset, key] of keys.entries()) {
-    const active = [...held.values()].some((voice) => voice.offset === offset);
-    key.classList.toggle("active", active);
-    key.setAttribute("aria-pressed", String(active));
-    key.setAttribute("aria-label", names[offset % 12] + (Number($("#octave").value) + Math.floor(offset / 12)));
+  for (const { button, entry } of keys) {
+    const active = [...held.values()].some((voice) => voice.code === entry.code);
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+    const { frequency } = toneForStep(entry.step, Number($("#octave").value));
+    const label = entry.label + " · +" + entry.step + " 段 · " + frequency.toFixed(2) + " Hz";
+    button.setAttribute("aria-label", label);
+    button.title = label;
   }
-  $("#voices").textContent = held.size + " VOICES";
+  $("#voices").textContent = held.size + " KEYS HELD";
 }
-function noteOn(source, offset) {
+function noteOn(source, entry) {
   if (!ready || held.has(source)) return;
   const occupied = new Set([...held.values()].map((voice) => voice.track));
   const track = Array.from({ length: 32 }, (_, i) => i).find((i) => !occupied.has(i));
   if (track === undefined) return;
-  held.set(source, { offset, track });
+  const { pitch, frequency } = toneForStep(entry.step, Number($("#octave").value));
+  held.set(source, { code: entry.code, track });
+  $("#status").textContent = entry.label + " · +" + entry.step + " / 41 · " + frequency.toFixed(2) + " Hz";
   refreshKeys();
-  const note = Number($("#octave").value) * 12 + offset + 1;
   // Send immediately so a following note-off cannot overtake this note-on.
-  run(engine.sv_send_event(0, track, note, 100, generator + 1, 0, 0).then(check));
+  run(engine.sv_send_event(0, track, NOTECMD_SET_PITCH, 100, generator + 1, 0, pitch).then(check));
 }
 function noteOff(source) {
   const voice = held.get(source);
@@ -47,48 +51,55 @@ function panic() {
   if (ready) run(engine.sv_send_event(0, 0, NOTECMD_CLEAN_SYNTHS, 0, 0, 0, 0).then(check));
 }
 
-let whiteIndex = 0;
-for (let offset = 0; offset <= 24; offset++) {
-  const black = [1, 3, 6, 8, 10].includes(offset % 12);
+for (const entry of KEY_LAYOUT) {
+  const { code, label, row, step } = entry;
+  let rowElement = document.querySelector('[data-row="' + row + '"]');
+  if (!rowElement) {
+    rowElement = document.createElement("div");
+    rowElement.className = "key-row";
+    rowElement.dataset.row = row;
+    $("#keyboard").append(rowElement);
+  }
   const button = document.createElement("button");
-  button.className = "key " + (black ? "black" : "white");
+  button.className = "key";
+  button.classList.toggle("root", step % EDO === 0);
   button.disabled = true;
-  button.dataset.offset = offset;
-  if (black) button.style.left = (whiteIndex / 15 * 100 - 2.2) + "%";
-  else whiteIndex++;
-  const caption = document.createElement("span");
-  caption.textContent = keyCodes[offset]?.slice(3) ?? (offset % 12 === 0 ? "C" : "");
-  button.append(caption);
+  button.dataset.code = code;
+  button.dataset.step = step;
+  const caption = document.createElement("strong");
+  caption.textContent = label;
+  const degree = document.createElement("span");
+  degree.textContent = "+" + step;
+  button.append(caption, degree);
   button.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     event.preventDefault();
     button.setPointerCapture(event.pointerId);
-    noteOn("pointer-" + event.pointerId, offset);
+    noteOn("pointer-" + event.pointerId, entry);
   });
   for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
     button.addEventListener(type, (event) => noteOff("pointer-" + event.pointerId));
   }
-  // Enter/Space accessibility activation (pointer clicks are handled above).
   button.addEventListener("keydown", (event) => {
     if (event.code === "Space" || event.code === "Enter") {
       event.preventDefault();
-      if (!event.repeat) noteOn("button-" + offset, offset);
+      if (!event.repeat) noteOn("button-" + code, entry);
     }
   });
   button.addEventListener("keyup", (event) => {
-    if (event.code === "Space" || event.code === "Enter") noteOff("button-" + offset);
+    if (event.code === "Space" || event.code === "Enter") noteOff("button-" + code);
   });
-  button.addEventListener("blur", () => noteOff("button-" + offset));
-  keys.push(button);
-  $("#keyboard").append(button);
+  button.addEventListener("blur", () => noteOff("button-" + code));
+  keys.push({ button, entry });
+  rowElement.append(button);
 }
 refreshKeys();
 window.addEventListener("keydown", (event) => {
-  const offset = keyCodes.indexOf(event.code);
-  if (offset < 0 || event.repeat || event.ctrlKey || event.metaKey || event.altKey ||
+  const entry = codeMap.get(event.code);
+  if (!entry || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey ||
       event.target.matches("input, select, textarea, [contenteditable]")) return;
   event.preventDefault();
-  noteOn(event.code, offset);
+  noteOn(event.code, entry);
 });
 window.addEventListener("keyup", (event) => noteOff(event.code));
 window.addEventListener("blur", panic);
@@ -125,11 +136,13 @@ async function addControllers(module, title) {
     Object.assign(input, { type: "range", min, max, step: 1, value });
     input.setAttribute("aria-label", title + " " + name);
     input.addEventListener("input", () => {
+      if (title === "FMX" && ctl === 3) panic();
       output.textContent = input.value;
       run(engine.sv_set_module_ctl_value(0, module, ctl, Number(input.value), 0).then(check));
     });
     label.append(name, output, input);
-    (ctl < 6 ? grid : extraGrid).append(label);
+    const primary = title === "FMX" ? [0, 3, 12, 13, 92, 93].includes(ctl) : ctl < 6;
+    (primary ? grid : extraGrid).append(label);
   }
   extra.hidden = count <= 6;
   $("#controls").append(section);
@@ -173,8 +186,8 @@ $("#start").addEventListener("click", async () => {
     // startAudio runs before the first await to retain the click gesture.
     await next.startAudio();
     check(await next.sv_open_slot(0));
-    check(await next.sv_set_song_name(0, "SunVox Synth patch"));
-    generator = check(await next.sv_new_module(0, "Generator", "Oscillator", 200, 200, 0));
+    check(await next.sv_set_song_name(0, "41EDO FMX patch"));
+    generator = check(await next.sv_new_module(0, "FMX", "41EDO FMX", 200, 200, 0));
     const filter = check(await next.sv_new_module(0, "Filter", "Tone", 400, 200, 0));
     const results = await next.batch([
       { method: "sv_connect_module", args: [0, generator, filter] },
@@ -182,8 +195,10 @@ $("#start").addEventListener("click", async () => {
       { method: "sv_volume", args: [0, Math.round(Number($("#volume").value) * 256 / 100)] },
     ]);
     results.forEach(check);
+    // FMX has its own voice limit, independent of the 32 event tracks.
+    check(await next.sv_set_module_ctl_value(0, generator, 3, 32, 0));
     $("#controls").replaceChildren();
-    await addControllers(generator, "GENERATOR");
+    await addControllers(generator, "FMX");
     await addControllers(filter, "FILTER");
     ready = true;
     for (const selector of ["#volume", "#save", "#panic", "#octave", ".key"]) {
