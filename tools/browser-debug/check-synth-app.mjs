@@ -67,16 +67,16 @@ try {
   for (const ctl of FMX_TINES.controllers) {
     assert.equal(await page.getByRole("slider", { name: "FMX " + ctl.name, exact: true, includeHidden: true }).inputValue(), String(ctl.value));
   }
-  await page.keyboard.down("KeyZ");
   await page.keyboard.down("KeyX");
+  await page.keyboard.down("KeyC");
   await page.waitForFunction(() => peak() > 0.001);
   const events = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).map(c => c.command.args));
   assert.equal(events.length, 2);
   assert.notEqual(events[0][1], events[1][1]);
   assert.ok(Math.abs(events[0][6] - events[1][6] - 3072 * 24 / 41) < 1);
-  await page.keyboard.up("KeyZ");
-  assert.equal(await page.locator(".key.active").count(), 1);
   await page.keyboard.up("KeyX");
+  assert.equal(await page.locator(".key.active").count(), 1);
+  await page.keyboard.up("KeyC");
   await page.keyboard.down("KeyA");
   await page.keyboard.down("KeyD");
   await page.keyboard.down("KeyG");
@@ -109,15 +109,15 @@ try {
   await page.selectOption("#octave", "5");
   assert.equal(await page.locator(".key.active").count(), 0);
   await page.keyboard.up("KeyW");
-  assert.match(await page.locator('.key[data-code="KeyZ"]').getAttribute("aria-label"), /523\.25 Hz/);
-  for (const [code, step] of Object.entries({KeyZ:0, KeyX:24, KeyC:7, KeyV:31, KeyB:14, KeyM:21, Comma:45, Period:28, Slash:52, KeyS:13, KeyE:26, Digit4:39})) {
+  assert.match(await page.locator('.key[data-code="KeyX"]').getAttribute("aria-label"), /523\.25 Hz/);
+  for (const [code, step] of Object.entries({KeyZ:17, KeyX:0, KeyC:24, KeyV:7, KeyB:31, KeyM:38, Comma:21, Period:45, Slash:28, KeyD:13, KeyR:26, Digit5:39})) {
     assert.equal(await page.locator('.key[data-code="' + code + '"]').getAttribute("data-step"), String(step));
   }
-  await page.keyboard.down("Comma");
-  const commaEvent = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).at(-1).command.args);
-  const commaHz = 440 * 2 ** (1 - 9 / 12 + 45 / 41); // C5 root, +45 EDO steps
-  assert.equal(commaEvent[6], Math.round(30720 - Math.log2(commaHz / 16.333984375) * 3072));
-  await page.keyboard.up("Comma");
+  await page.keyboard.down("Period");
+  const periodEvent = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).at(-1).command.args);
+  const periodHz = 440 * 2 ** (1 - 9 / 12 + 45 / 41); // C5 root, +45 EDO steps
+  assert.equal(periodEvent[6], Math.round(30720 - Math.log2(periodHz / 16.333984375) * 3072));
+  await page.keyboard.up("Period");
   const range = page.locator("#controls input").first();
   await range.fill("16384");
   await range.dispatchEvent("input");

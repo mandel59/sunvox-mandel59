@@ -13,7 +13,7 @@ const rows = [
 // Each pair of horizontal steps is +7, with +24 between the pair's keys.
 function keyboardStep(row, column) {
   const up = 3 - row;
-  const n = column - up;
+  const n = column - 1 - up; // X is the origin.
   const pair = Math.floor(n / 2);
   return up * DIAGONAL_INTERVAL + pair * 7 + (n - pair * 2) * 24;
 }

@@ -19,10 +19,10 @@ test('41 EDO grid preserves alternating +24/-17 horizontal steps and exact +13 d
     if (diagonal) assert.equal(diagonal.step - key.step, 13);
 
   }
-  assert.equal(KEY_LAYOUT.find(k => k.code === 'KeyZ').step, 0);
+  assert.equal(KEY_LAYOUT.find(k => k.code === 'KeyX').step, 0);
   const steps = codes => codes.map(code => KEY_LAYOUT.find(k => k.code === code).step);
-  assert.deepEqual(steps(['KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash']), [0,24,7,31,14,38,21,45,28,52]);
-  assert.deepEqual(steps(['KeyZ','KeyS','KeyE','Digit4']), [0,13,26,39]);
+  assert.deepEqual(steps(['KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash']), [17,0,24,7,31,14,38,21,45,28]);
+  assert.deepEqual(steps(['KeyX','KeyD','KeyR','Digit5']), [0,13,26,39]);
   assert.equal(formatStep(-9), '-9');
   for (const key of KEY_LAYOUT) for (const octave of [2, 6]) assert.ok(toneForStep(key.step, octave).frequency > 0);
 });
