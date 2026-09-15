@@ -14,6 +14,11 @@ const SKIP_DIRECTORIES = new Set([".git", ".jj", "node_modules", "dist", "var", 
 const SKIP_FILES = new Set(["sunvox-api-audit.mjs", "sunvox-api-audit.test.mjs"]);
 
 const REVIEW_NOTES = {
+  sv_end_of_song: {
+    priority: "medium",
+    notes: ["Returns 0 while the song is playing and 1 when stopped. Shared-engine verification uses it to ensure Player disposal does not stop an independent Engine slot."],
+    argumentSemantics: {},
+  },
   sv_get_sample_rate: {
     priority: "medium",
     notes: ["Returns the actual engine sampling rate; compare it with AudioContext before connecting browser output."],

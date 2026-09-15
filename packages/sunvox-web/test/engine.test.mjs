@@ -8,7 +8,7 @@ import { loadSunVoxLib } from "../../../tools/sunvox-node.mjs";
 
 const root = new URL("../../../", import.meta.url);
 const loader = await readFile(new URL("sunvox_lib/sunvox_lib/js/lib/sunvox_lib_loader.js", root), "utf8");
-const workerCode = await readFile(new URL("../src/engine-worker.js", import.meta.url), "utf8");
+const workerCode = await readFile(new URL("../src/sunvox-audio-worker.js", import.meta.url), "utf8");
 
 async function workerHarness(t, config = "") {
   const runtime = await loadSunVoxLib();
@@ -20,14 +20,18 @@ async function workerHarness(t, config = "") {
   };
   const pending = new Map(); let id = 0;
   const scope = {
-    URL, Uint8Array, Uint32Array, Int16Array, Float32Array, Int32Array, ArrayBuffer, TextEncoder,
-    console, setInterval, clearInterval,
+    URL, AbortController, Uint8Array, Uint32Array, Int16Array, Float32Array, Int32Array, ArrayBuffer, TextEncoder,
+    console, setInterval, clearInterval, location: new URL("https://example.test/worker.js"),
     SunVoxLib: () => Promise.resolve(runtime),
+    async fetch(url) {
+      const bytes = await readFile(new URL(new URL(url).pathname.slice(1), root));
+      return { ok: true, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
+    },
     postMessage(message) {
       const command = pending.get(message.id);
       if (!command) return;
       pending.delete(message.id);
-      message.ok ? command.resolve(structuredClone(message.value)) : command.reject(new Error(message.error));
+      message.ok ? command.resolve(structuredClone(message.payload)) : command.reject(new Error(message.error));
     },
     importScripts(url) {
       if (url.endsWith("sunvox_lib_loader.js")) vm.runInContext(loader, context);
@@ -37,10 +41,10 @@ async function workerHarness(t, config = "") {
   const context = vm.createContext(scope);
   vm.runInContext(workerCode, context);
   const send = (message) => new Promise((resolve, reject) => {
-    const next = ++id; pending.set(next, { resolve, reject }); scope.onmessage({ data: { ...message, id: next } });
+    const next = ++id; pending.set(next, { resolve, reject }); scope.onmessage({ data: { type: "command", payload: message, id: next } });
   });
   const info = await send({ type: "initialize", runtimeBaseUrl: "https://example.test/", sampleRate: 44100, config, methods: ENGINE_API });
-  t.after(async () => { await send({ type: "stopAudio" }); runtime._sv_deinit(); });
+  t.after(async () => { await send({ type: "engineStopAudio" }); runtime._sv_deinit(); });
   return { info, receivedConfig, send, scope, runtime, call: (method, ...args) => send({ type: "call", command: { method, args } }) };
 }
 
@@ -161,4 +165,52 @@ test("config strings and corrected sampler entry point reach native exports", as
   assert.equal(typeof await call("sv_sampler_par", 0, sampler, 0, 0, 0, 0), "number");
   const synth = new Uint8Array(await readFile(new URL("instruments/mandel59 shepard.sunsynth", root)));
   assert.ok(await call("sv_load_module_from_memory", 0, synth, 0, 0, 0) > 0);
+});
+
+
+test("Player reservations protect lifecycle while exposing the same editable modules", async (t) => {
+  const { call, send } = await workerHarness(t);
+  await call("sv_open_slot", 0);
+  await call("sv_set_song_name", 0, "Independent slot");
+  await assert.rejects(send({ type: "attachPlayer", owner: 1, slotBase: 0 }), /overlap/);
+  assert.equal(await call("sv_get_song_name", 0), "Independent slot");
+  const layout = await send({ type: "attachPlayer", owner: 1, slotBase: 4 });
+  assert.deepEqual(layout, { project: 4, staging: 5, synths: [6, 7, 8, 9] });
+  await assert.rejects(send({ type: "attachPlayer", owner: 2, slotBase: 10 }), /already/);
+  await assert.rejects(call("sv_close_slot", 4), /owned by Player/);
+  await assert.rejects(call("sv_load_from_memory", 4, new Uint8Array([1])), /owned by Player/);
+  const originalName = await call("sv_get_song_name", 4);
+  await assert.rejects(send({ type: "batch", commands: [
+    { method: "sv_set_song_name", args: [4, "must not apply"] },
+    { method: "sv_stop", args: [4] },
+  ] }), /owned by Player/);
+  assert.equal(await call("sv_get_song_name", 4), originalName);
+  const url = "instruments/mandel59 shepard.sunsynth";
+  await send({ type: "preloadSynth", owner: 1, url, resourceUrl: new URL(url, "https://example.test/").href });
+  const synth = await send({ type: "getSynthSlot", owner: 1, url });
+  await call("sv_set_module_name", synth.slot, synth.moduleIndex, "Shared instrument");
+  assert.equal(await call("sv_get_module_name", synth.slot, synth.moduleIndex), "Shared instrument");
+  await assert.rejects(call("sv_remove_module", synth.slot, synth.moduleIndex), /cached Player/);
+  await assert.rejects(send({ type: "stop", owner: 2 }), /not attached/);
+  await send({ type: "detachPlayer", owner: 1 });
+  assert.equal(await call("sv_get_song_name", 0), "Independent slot");
+  assert.equal(await call("sv_open_slot", 4), 0, "detached Player slots are reusable");
+});
+
+
+test("detaching a Player aborts its pending fetch before releasing its slots", async (t) => {
+  const { call, send, scope } = await workerHarness(t);
+  await send({ type: "attachPlayer", owner: 1, slotBase: 0 });
+  let started;
+  const fetching = new Promise((resolve) => { started = resolve; });
+  scope.fetch = (_url, { signal }) => new Promise((_resolve, reject) => {
+    signal.addEventListener("abort", () => reject(new Error("fetch aborted")), { once: true });
+    started();
+  });
+  const loading = send({ type: "preloadProject", owner: 1, url: "pending.sunvox", resourceUrl: "https://example.test/pending.sunvox" });
+  const rejected = assert.rejects(loading, /aborted/);
+  await fetching;
+  await send({ type: "detachPlayer", owner: 1 });
+  await rejected;
+  assert.equal(await call("sv_open_slot", 0), 0);
 });

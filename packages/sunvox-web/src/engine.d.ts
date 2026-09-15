@@ -109,6 +109,7 @@ export interface SunVoxEngine extends EngineMethods {
   startAudio(): Promise<void>;
   /** Disconnect output; this does not change any slot's transport state. */
   stopAudio(): Promise<void>;
+  getAudioTransportState(): { mode: "message-port" | "shared-array-buffer"; shared: boolean; crossOriginIsolated: boolean };
   dispose(): void;
 }
 export function createSunVoxEngine(options: EngineOptions): SunVoxEngine;

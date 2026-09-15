@@ -1,3 +1,4 @@
+import type { SunVoxEngine, EngineOptions } from "./engine.js";
 export * from "./constants.js";
 export * from "./engine.js";
 
@@ -8,9 +9,9 @@ export interface PlayerState {
   loadedPath: string;
   loadingPath: string;
 }
-export interface PlayerOptions {
-  /** Directory containing the separately supplied SunVox JS, loader and WASM. */
-  runtimeBaseUrl: string | URL;
+export interface PlayerCallbacks {
+  /** Six consecutive Player-owned slots: project, staging and four instruments. */
+  slotBase?: number;
   /** Base for song/synth URLs; defaults to the current page URL. */
   resourceBaseUrl?: string | URL;
   workerUrl?: string | URL;
@@ -20,11 +21,19 @@ export interface PlayerOptions {
   onLog?: (level: "warn" | "log", message: string) => void;
   onReady?: () => void;
 }
+export type PlayerOptions = PlayerCallbacks & (
+  | { engine: SunVoxEngine; runtimeBaseUrl?: never; workerUrl?: never; workletUrl?: never }
+  | (EngineOptions & { engine?: undefined })
+);
 export interface ControllerValue { controllerIndex: number; value: number }
 export interface SunVoxPlayer {
   initialize(): Promise<void>;
-  /** Releases resources permanently. Create a new player to restart. */
-  dispose(): void;
+  /** Close owned slots. An injected Engine remains alive; an internal Engine is disposed. */
+  dispose(): Promise<void>;
+  readonly engine: SunVoxEngine;
+  getProjectSlot(): number;
+  getSlotLayout(): { project: number; staging: number; synths: number[] };
+  getSynthSlot(url: string): Promise<{ slot: number; moduleIndex: number } | null>;
   getPlayerState(): PlayerState;
   getMasterVolume(): number;
   setMasterVolume(volume: number): Promise<number>;

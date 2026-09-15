@@ -1,3 +1,71 @@
+let engineMethods = null;
+let engineContinuousOutput = false;
+const engineOpenSlots = new Set();
+let playerOwner = null;
+let playerAbort = null;
+const MAX_BUFFER_ITEMS = 1048576;
+const EXCLUDED = new Set(["sv_init", "sv_deinit", "sv_lock_slot", "sv_unlock_slot", "sv_audio_callback", "sv_audio_callback2", "sv_update_input"]);
+
+function playerSlots() { return [activeProject, stagingProject, ...synthSlots]; }
+
+function assertPlayerSlotAccess(method, args) {
+  if (!playerOwner || !playerSlots().some((state) => state.slot === args?.[0])) return;
+  const protectedMethods = new Set([
+    "sv_open_slot", "sv_close_slot", "sv_load_from_memory", "sv_play", "sv_play_from_beginning",
+    "sv_stop", "sv_pause", "sv_resume", "sv_sync_resume", "sv_rewind", "sv_set_autostop",
+  ]);
+  if (protectedMethods.has(method) || (method === "sv_send_event" && [131, 132].includes(args[2]))) {
+    throw new Error(`${method}: slot ${args[0]} is owned by Player; use its lifecycle/transport API`);
+  }
+  if (method === "sv_remove_module" && synthSlots.some((s) => s.slot === args[0] && s.loaded && s.moduleIndex === args[1])) {
+    throw new Error("Cannot remove a cached Player instrument root; use Player to replace the instrument");
+  }
+}
+
+function attachPlayer(payload) {
+  if (playerOwner) throw new Error("Engine already has a Player");
+  const base = payload.slotBase;
+  if (!Number.isInteger(base) || base < 0 || base > 10) throw new RangeError("slotBase must be 0..10");
+  const slots = Array.from({ length: 6 }, (_, i) => base + i);
+  if (slots.some((slot) => engineOpenSlots.has(slot))) throw new Error("Player slots overlap existing Engine slots");
+  const opened = [];
+  try {
+    for (const slot of slots) {
+      const result = sv_open_slot(slot);
+      if (result < 0) throw new Error(`sv_open_slot(${slot}) failed: ${result}`);
+      opened.push(slot);
+    }
+  } catch (error) {
+    for (const slot of opened) sv_close_slot(slot);
+    throw error;
+  }
+  playerSlots().forEach((state, i) => { resetSlotState(state); state.slot = slots[i]; });
+  for (const slot of slots) engineOpenSlots.add(slot);
+  playerOwner = payload.owner;
+  playerAbort = new AbortController();
+  return { project: base, staging: base + 1, synths: slots.slice(2) };
+}
+
+function detachPlayer(owner) {
+  if (playerOwner !== owner) return;
+  playerAbort?.abort();
+  for (const state of playerSlots()) {
+    sv_close_slot(state.slot);
+    engineOpenSlots.delete(state.slot);
+    resetSlotState(state);
+  }
+  playerOwner = null;
+  playerAbort = null;
+  projectPlaying = false;
+  projectTailDraining = false;
+  isLoading = false;
+  loadingPath = "";
+  lastTouchedSynthSlot = null;
+  synthControllerPresets.clear();
+  latestLoadRequestSerial = 0;
+  stopAudioOutput({ flush: true });
+}
+
 const DEFAULT_SAMPLE_RATE = 44100;
 const DEFAULT_CHANNELS = 2;
 const DEFAULT_RENDER_FRAMES = 128;
@@ -108,6 +176,8 @@ function configureSunVoxLibLoader(sunvoxJsUrl) {
     originalFactory({
       ...moduleArg,
       locateFile: moduleArg.locateFile || ((fileName) => new URL(fileName, baseUrl).href),
+      print: moduleArg.print || ((text) => postLog("log", String(text))),
+      printErr: moduleArg.printErr || ((text) => postLog("warn", String(text))),
     });
   patched.__sunvoxWorkerPatched = true;
   self.SunVoxLib = patched;
@@ -189,6 +259,7 @@ function displayedLoadedPath() {
 }
 
 function postPlayerState() {
+  if (!playerOwner) return;
   postToMain({
     type: "player-state",
     payload: {
@@ -317,6 +388,7 @@ function setOutputRunning(nextRunning) {
 }
 
 function flushAudioOutput() {
+  if (engineContinuousOutput) return;
   pendingFrames = 0;
   if (sharedControl) {
     Atomics.store(sharedControl, CONTROL_READ_INDEX, 0);
@@ -360,6 +432,7 @@ function outputPeak(floatData) {
 }
 
 function updateIdleOutputState(floatData) {
+  if (engineContinuousOutput) return true;
   if (projectPlaying || anyActiveSynthNotes()) {
     idleOutputFrames = 0;
     return true;
@@ -492,6 +565,7 @@ function startAudioOutput({ resetQueue = false, resetClock = false } = {}) {
 }
 
 function stopAudioOutput({ flush = true } = {}) {
+  if (engineContinuousOutput) return;
   resetIdleOutputState();
   rendering = false;
   setOutputRunning(false);
@@ -689,7 +763,7 @@ function assertFileMagic(bytes, expectedMagic, label) {
 
 async function fetchBytes(url, expectedMagic, label = url) {
   const resourceUrl = resourceUrlFor(url);
-  const response = await fetch(resourceUrl);
+  const response = await fetch(resourceUrl, { signal: playerAbort?.signal });
   if (!response.ok) {
     throw new Error(`Failed to fetch ${resourceUrl}`);
   }
@@ -1014,54 +1088,151 @@ async function setController(payload) {
 }
 
 async function initialize(message) {
-  if (initialized) {
-    return { ready };
-  }
-  audioContextSampleRate = Number(message.sampleRate) || DEFAULT_SAMPLE_RATE;
-  channels = Number(message.channels) || DEFAULT_CHANNELS;
-  renderFrames = Number(message.renderFrames) || DEFAULT_RENDER_FRAMES;
-  maxBufferedFrames = Number(message.maxBufferedFrames) || DEFAULT_MAX_BUFFERED_FRAMES;
-  renderIntervalMs = Number(message.renderIntervalMs) || DEFAULT_RENDER_INTERVAL_MS;
-  setSharedAudio(message.sharedAudio);
-
-  const sunvoxJsUrl = message.sunvoxJsUrl;
-  const sunvoxLoaderJsUrl = message.sunvoxLoaderJsUrl;
-  if (!sunvoxJsUrl || !sunvoxLoaderJsUrl) {
-    throw new Error("Missing SunVox URLs");
-  }
-
+  if (initialized) throw new Error("Engine already initialized");
+  audioContextSampleRate = message.sampleRate;
+  const sunvoxJsUrl = new URL("sunvox.js", message.runtimeBaseUrl).href;
+  const sunvoxLoaderJsUrl = new URL("sunvox_lib_loader.js", message.runtimeBaseUrl).href;
   ensureSunvoxLibraries(sunvoxJsUrl, sunvoxLoaderJsUrl);
   await ensureSunVoxRuntimeReady();
-
-  const initFlags = WORKER_SV_INIT_FLAG_NO_DEBUG_OUTPUT |
-    WORKER_SV_INIT_FLAG_USER_AUDIO_CALLBACK |
-    WORKER_SV_INIT_FLAG_AUDIO_FLOAT32 |
-    WORKER_SV_INIT_FLAG_ONE_THREAD;
-  // USER_AUDIO_CALLBACK keeps SunVox in pull-mode so the worker can call sv_audio_callback.
-  if (typeof sda_ctx === "undefined") {
-    self.sda_ctx = null;
-  }
-  if (typeof sda_node === "undefined") {
-    self.sda_node = null;
-  }
-  const initResult = sv_init(0, audioContextSampleRate, channels, initFlags);
-  if (initResult < 0) {
-    throw new Error(`sv_init failed: ${initResult}`);
-  }
-  for (const slotState of [activeProject, stagingProject, ...synthSlots]) {
-    const openResult = sv_open_slot(slotState.slot);
-    if (openResult < 0) {
-      throw new Error(`sv_open_slot(${slotState.slot}) failed: ${openResult}`);
-    }
-  }
-
+  const flags = WORKER_SV_INIT_FLAG_NO_DEBUG_OUTPUT | WORKER_SV_INIT_FLAG_USER_AUDIO_CALLBACK |
+    WORKER_SV_INIT_FLAG_AUDIO_FLOAT32 | WORKER_SV_INIT_FLAG_ONE_THREAD;
+  sv_flags = flags;
+  sv_channels = 2;
+  const init = (pointer) => svlib._sv_init(pointer, audioContextSampleRate, 2, flags);
+  const version = message.config ? nativeString(message.config, init) : init(0);
+  if (version < 0) throw new Error(`sv_init failed: ${version}`);
+  audioContextSampleRate = sv_get_sample_rate();
   ticksPerSecond = sv_get_ticks_per_second();
+  engineMethods = message.methods;
   initialized = true;
   ready = true;
-  postStatus("Select a music file");
-  postPlayerState();
-  return { ready, sampleRate: audioContextSampleRate, transport: sharedControl ? "shared-array-buffer" : "message-port" };
+  return { version, sampleRate: audioContextSampleRate, channels: 2 };
 }
+
+function bufferLength(value, name) {
+  if (!Number.isInteger(value) || value < 0 || value > MAX_BUFFER_ITEMS) {
+    throw new RangeError(`${name} must be an integer from 0 to ${MAX_BUFFER_ITEMS}`);
+  }
+  return value;
+}
+
+function withMemory(bytes, fn) {
+  const pointer = svlib._malloc(Math.max(1, bytes));
+  if (!pointer) throw new Error("SunVox allocation failed");
+  try { return fn(pointer); } finally { svlib._free(pointer); }
+}
+
+function nativeString(value, fn) {
+  const bytes = new TextEncoder().encode(value + "\0");
+  return withMemory(bytes.length, (pointer) => {
+    svlib.HEAPU8.set(bytes, pointer);
+    return fn(pointer);
+  });
+}
+
+function validateCall(command) {
+  const { method, args } = command ?? {};
+  if (typeof method !== "string" || !/^sv_[a-z0-9_]+$/.test(method) || EXCLUDED.has(method) ||
+      !Object.hasOwn(engineMethods, method) || !Object.hasOwn(self, method) || typeof self[method] !== "function") {
+    throw new TypeError(`Unsupported SunVox method: ${method}`);
+  }
+  assertPlayerSlotAccess(method, args);
+  const spec = engineMethods[method];
+  if (!Array.isArray(args) || args.length !== spec.args.length) throw new TypeError(`Invalid arguments for ${method}`);
+  spec.args.forEach(([name, type], index) => {
+    const value = args[index];
+    const valid = type === "number" ? Number.isFinite(value) && Number.isInteger(value)
+      : type === "string" ? typeof value === "string"
+      : type === "Uint8Array" ? value instanceof Uint8Array : value instanceof Float32Array;
+    if (!valid) throw new TypeError(`${method}: invalid ${name} (${type})`);
+  });
+  if (spec.args[0]?.[0] === "slot" && (args[0] < 0 || args[0] > 15)) throw new RangeError("slot must be 0..15");
+  if (method === "sv_get_time_map") bufferLength(args[2], "len");
+  if (method === "sv_get_module_scope2") bufferLength(args[3], "samples_to_read");
+  if (method === "sv_module_curve") {
+    bufferLength(args[4], "len");
+    bufferLength(args[4] || args[3].length, "curve length");
+    if (args[4] > args[3].length || ![0, 1].includes(args[5])) throw new RangeError("Invalid curve buffer length or direction");
+  }
+  return spec;
+}
+
+function readBuffer(Type, length, fn, input) {
+  return withMemory(length * Type.BYTES_PER_ELEMENT, (pointer) => {
+    if (input) svlib.HEAPU8.set(new Uint8Array(input.buffer, input.byteOffset, length * Type.BYTES_PER_ELEMENT), pointer);
+    else svlib.HEAPU8.fill(0, pointer, pointer + length * Type.BYTES_PER_ELEMENT);
+    const result = fn(pointer);
+    // Snapshot before any subsequent call can change/grow the WASM heap.
+    const data = new Type(svlib.HEAPU8.buffer, pointer, length).slice();
+    return { result, data };
+  });
+}
+
+function invokeCall({ method, args }) {
+  let value;
+  switch (method) {
+    case "sv_get_pattern_event":
+      // Upstream JS omits the line argument from its declaration.
+      value = svlib._sv_get_pattern_event(args[0], args[1], args[2], args[3], args[4]); break;
+    case "sv_sampler_par":
+      // Upstream JS references the nonexistent _sv_sampler_set export.
+      value = svlib._sv_sampler_par(args[0], args[1], args[2], args[3], args[4], args[5]); break;
+    case "sv_set_song_name":
+      value = nativeString(args[1], (pointer) => svlib._sv_set_song_name(args[0], pointer)); break;
+    case "sv_get_time_map":
+      value = readBuffer(Uint32Array, args[2], (pointer) => svlib._sv_get_time_map(args[0], args[1], args[2], pointer, args[3])); break;
+    case "sv_get_module_scope2":
+      value = readBuffer(Int16Array, args[3], (pointer) => svlib._sv_get_module_scope2(args[0], args[1], args[2], pointer, args[3]));
+      value.data = value.data.slice(0, Math.max(0, Math.min(args[3], value.result))); break;
+    case "sv_module_curve":
+      {
+        const length = args[4] || args[3].length;
+        bufferLength(length, "curve length");
+        value = length === 0 ? { result: 0, data: new Float32Array() }
+          : readBuffer(Float32Array, length, (pointer) => svlib._sv_module_curve(args[0], args[1], args[2], pointer, length, args[5]), args[5] === 1 ? args[3] : null);
+        break;
+      }
+    default: value = self[method](...args);
+  }
+  if (method === "sv_open_slot" && value >= 0) engineOpenSlots.add(args[0]);
+  if (method === "sv_close_slot" && value >= 0) engineOpenSlots.delete(args[0]);
+  return ArrayBuffer.isView(value) ? value.slice() : value;
+}
+
+function executeCalls(commands, batch) {
+  if (!Array.isArray(commands)) throw new TypeError("commands must be an array");
+  const specs = commands.map(validateCall);
+  if (batch && commands.some(({ method }) => /^(sv_open_slot|sv_close_slot|sv_save_to_memory)$/.test(method) || method.includes("load_from_memory") || method === "sv_load_module_from_memory")) {
+    throw new Error("Slot lifecycle and memory loading/saving must be called outside batch");
+  }
+  const slots = [...new Set(commands.filter((_, i) => specs[i].lock).map((c) => c.args[0]))].sort((a, b) => a - b);
+  const acquired = [];
+  try {
+    for (const slot of slots) {
+      const result = sv_lock_slot(slot);
+      if (result < 0) throw new Error(`sv_lock_slot failed: ${result}`);
+      acquired.push(slot);
+    }
+    return commands.map(invokeCall);
+  } finally {
+    for (const slot of acquired.reverse()) sv_unlock_slot(slot);
+  }
+}
+
+function renderEngineFrames(message) {
+  const frames = bufferLength(message.frames, "frames");
+  const input = message.input;
+  if (input != null && (!(input instanceof Float32Array) || input.length !== frames * 2)) throw new TypeError("input must contain frames * 2 Float32 samples");
+  const latency = message.latency ?? 0;
+  const time = message.time ?? sv_get_ticks();
+  if (!Number.isInteger(latency) || latency < 0 || !Number.isInteger(time) || time < 0) throw new RangeError("Invalid audio latency/time");
+  if (frames === 0) return { result: 0, data: new Float32Array() };
+  if (input) sv_update_input();
+  const data = new Float32Array(frames * 2);
+  const result = sv_audio_callback2(data, frames, latency, time, input ? 1 : 0, input ? 2 : 0, input ?? null);
+  return { result, data };
+}
+
 
 function runCommand(message) {
   const { payload } = message;
@@ -1069,12 +1240,40 @@ function runCommand(message) {
     ensureReadyState();
   }
 
+  const coreCommands = new Set(["initialize", "configureAudio", "engineStartAudio", "engineStopAudio", "call", "batch", "render", "attachPlayer", "detachPlayer"]);
+  if (!coreCommands.has(payload?.type) && (!playerOwner || payload.owner !== playerOwner)) {
+    throw new Error("Player is not attached to this Engine");
+  }
+
   switch (payload?.type) {
     case "initialize":
       return initialize(payload);
-    case "setAudioPort":
+    case "configureAudio":
+      setSharedAudio(payload.sharedAudio);
+      maxBufferedFrames = sharedControl ? DEFAULT_MAX_BUFFERED_FRAMES : 4096;
       setAudioPort(payload.port);
-      return { audioPortAttached: !!audioPort };
+      return;
+    case "engineStartAudio":
+      engineContinuousOutput = true;
+      startAudioOutput({ resetClock: !rendering });
+      return;
+    case "engineStopAudio":
+      engineContinuousOutput = false;
+      stopAudioOutput({ flush: true });
+      setAudioPort(null);
+      setSharedAudio(null);
+      return;
+    case "attachPlayer": return attachPlayer(payload);
+    case "detachPlayer": return detachPlayer(payload.owner);
+    case "getSynthSlot": {
+      const state = findLoadedSynthSlot(payload.url);
+      return state ? { slot: state.slot, moduleIndex: state.moduleIndex } : null;
+    }
+    case "call": return executeCalls([payload.command], false)[0];
+    case "batch": return executeCalls(payload.commands, true);
+    case "render":
+      if (audioPort) throw new Error("Stop browser audio before explicit rendering");
+      return renderEngineFrames(payload);
     case "loadAndPlay":
       return playProject(payload.url, payload.resourceUrl || payload.url, payload.requestSerial);
     case "preloadProject":
@@ -1128,7 +1327,7 @@ function finishCommand(message, outcome) {
     postCommandResult(message.id, null, outcome.error);
     return;
   }
-  postCommandResult(message.id, outcome.payload ?? {});
+  postCommandResult(message.id, outcome.payload);
 }
 
 function queueCommand(message) {
@@ -1164,6 +1363,8 @@ onmessage = (event) => {
     postCommandResult(message.id, null, new Error("Missing command type"));
     return;
   }
+
+  if (message.payload.type === "detachPlayer" && message.payload.owner === playerOwner) playerAbort?.abort();
 
   if (message.payload.type === "loadAndPlay" && Number.isFinite(message.payload.requestSerial)) {
     latestLoadRequestSerial = message.payload.requestSerial;

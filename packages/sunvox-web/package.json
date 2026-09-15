@@ -16,7 +16,7 @@
     },
     "./worker": "./src/sunvox-audio-worker.js",
     "./worklet": "./src/sunvox-worklet-processor.js",
-    "./engine-worker": "./src/engine-worker.js"
+    "./engine-worker": "./src/sunvox-audio-worker.js"
   },
   "files": [
     "src",

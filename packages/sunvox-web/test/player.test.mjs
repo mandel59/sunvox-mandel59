@@ -1,15 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createSunVoxPlayer } from "../src/index.js";
+import { createSunVoxEngine, createSunVoxPlayer } from "../src/index.js";
 
-function browser(t, { addModule = async () => {}, failWorker = false } = {}) {
+function browser(t, { addModule = async () => {}, failWorker = false, suspended = false } = {}) {
   const workers = [], contexts = [];
   class Context {
-    state = "running"; sampleRate = 44100; destination = {};
+    state = suspended ? "suspended" : "running"; sampleRate = 44100; destination = {};
     audioWorklet = { addModule };
     constructor() { contexts.push(this); }
     async close() { this.closed = true; }
-    async resume() {}
+    async resume() {
+      if (suspended && !this.allowed) return new Promise(() => {});
+      this.state = "running";
+    }
   }
   class Worker {
     constructor(url, options) { Object.assign(this, { url, options, messages: [] }); workers.push(this); }
@@ -17,7 +20,7 @@ function browser(t, { addModule = async () => {}, failWorker = false } = {}) {
       this.messages.push(message.payload);
       queueMicrotask(() => {
         if (failWorker) this.onerror?.({ message: "runtime unavailable" });
-        else this.onmessage?.({ data: { type: "command-result", id: message.id, ok: true, payload: {} } });
+        else this.onmessage?.({ data: { type: "command-result", id: message.id, ok: true, payload: message.payload.type === "initialize" ? { version: 1, sampleRate: 44100, channels: 2 } : {} } });
       });
     }
     terminate() { this.terminated = true; }
@@ -52,12 +55,11 @@ test("initializes once, resolves URLs, and releases resources", async (t) => {
   const player = createSunVoxPlayer({ ...options, workerUrl: "./worker.js", workletUrl: "./worklet.js" });
   await Promise.all([player.initialize(), player.initialize()]);
   assert.equal(workers.length, 1);
-  assert.equal(workers[0].url, "https://example.test/app/worker.js");
+  assert.equal(String(workers[0].url), "https://example.test/app/worker.js");
   assert.equal(workers[0].options.type, "classic");
   assert.deepEqual(modules, ["https://example.test/app/worklet.js"]);
   const init = workers[0].messages.find((m) => m.type === "initialize");
-  assert.equal(init.sunvoxJsUrl, "https://example.test/runtime/sunvox.js");
-  assert.equal(init.sunvoxLoaderJsUrl, "https://example.test/runtime/sunvox_lib_loader.js");
+  assert.equal(init.runtimeBaseUrl, "https://example.test/runtime/");
   await player.loadAndPlay("music/song.sunvox");
   assert.equal(workers[0].messages.find((m) => m.type === "loadAndPlay").resourceUrl, "https://example.test/app/music/song.sunvox");
   assert.equal(player.getPlayerState().ready, true);
@@ -82,8 +84,47 @@ test("dispose during worklet loading cannot resurrect the player", async (t) => 
   const { workers, contexts } = browser(t, { addModule: () => new Promise((resolve) => { finish = resolve; }) });
   const player = createSunVoxPlayer(options);
   const initializing = player.initialize();
+  while (!finish) await Promise.resolve();
   player.dispose(); finish();
   await assert.rejects(initializing, /disposed/);
-  assert.equal(workers.length, 0);
+  assert.equal(workers.length, 1);
+  assert.equal(workers[0].terminated, true);
   assert.equal(contexts[0].closed, true);
+});
+
+
+test("injected Engine has one Player and survives Player disposal", async (t) => {
+  const { workers } = browser(t);
+  const engine = createSunVoxEngine(options);
+  const player = createSunVoxPlayer({ engine, slotBase: 6 });
+  assert.equal(player.engine, engine);
+  assert.equal(player.getProjectSlot(), 6);
+  assert.deepEqual(player.getSlotLayout(), { project: 6, staging: 7, synths: [8, 9, 10, 11] });
+  assert.throws(() => createSunVoxPlayer({ engine }), /already has a Player/);
+  await player.initialize();
+  assert.equal(workers.length, 1);
+  await player.dispose();
+  assert.notEqual(workers[0].terminated, true);
+  await assert.rejects(player.setMasterVolume(0), /disposed/);
+  assert.ok(workers[0].messages.some((m) => m.type === "detachPlayer"));
+  const next = createSunVoxPlayer({ engine });
+  await next.initialize();
+  assert.equal(workers.length, 1);
+  engine.dispose();
+  assert.equal(next.getPlayerState().ready, false);
+  await assert.rejects(next.loadAndPlay("song.sunvox"), /disposed/);
+  await next.dispose();
+});
+
+
+test("automatic preload prepares a suspended context and retries resume on later calls", async (t) => {
+  const { contexts } = browser(t, { suspended: true });
+  const player = createSunVoxPlayer(options);
+  await player.initialize();
+  assert.equal(player.getPlayerState().ready, true);
+  assert.equal(contexts[0].state, "suspended");
+  contexts[0].allowed = true; // Browser grants the later user gesture.
+  await player.loadAndPlay("music/song.sunvox");
+  assert.equal(contexts[0].state, "running");
+  await player.dispose();
 });

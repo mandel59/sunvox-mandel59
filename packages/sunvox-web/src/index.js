@@ -1,36 +1,19 @@
 export * from "./constants.js";
 export { createSunVoxEngine } from "./engine.js";
+import { createSunVoxEngine } from "./engine.js";
+import { engineInternals } from "./engine-internals.js";
 
-/** Create an independent Worker/AudioWorklet player; initialization is lazy. */
+/** High-level playback facade over an injected or privately owned Engine. */
 export function createSunVoxPlayer(options = {}) {
-  if (!options.runtimeBaseUrl) {
-    throw new TypeError("runtimeBaseUrl is required (directory containing sunvox.js, sunvox.wasm and sunvox_lib_loader.js)");
-  }
-  const resourceBaseUrl = new URL(options.resourceBaseUrl ?? globalThis.location?.href ?? import.meta.url);
-  const runtimeBaseUrl = new URL(options.runtimeBaseUrl, resourceBaseUrl);
-  if (!runtimeBaseUrl.pathname.endsWith("/")) runtimeBaseUrl.pathname += "/";
-  const sunvoxJsUrl = new URL("sunvox.js", runtimeBaseUrl).href;
-  const sunvoxLoaderJsUrl = new URL("sunvox_lib_loader.js", runtimeBaseUrl).href;
-  const workerUrl = options.workerUrl
-    ? new URL(options.workerUrl, resourceBaseUrl).href
-    : new URL("./sunvox-audio-worker.js", import.meta.url).href;
-  const workletUrl = options.workletUrl
-    ? new URL(options.workletUrl, resourceBaseUrl).href
-    : new URL("./sunvox-worklet-processor.js", import.meta.url).href;
+  const ownsEngine = !options.engine;
+  const engine = options.engine ?? createSunVoxEngine({ ...options, onLog: undefined });
+  const internals = engineInternals.get(engine);
+  if (!internals) throw new TypeError("engine must be created by createSunVoxEngine");
+  const slotBase = options.slotBase ?? 0;
+  if (!Number.isInteger(slotBase) || slotBase < 0 || slotBase > 10) throw new RangeError("slotBase must be 0..10");
+  const resourceBaseUrl = new URL(options.resourceBaseUrl ?? internals.resourceBaseUrl);
   const DEFAULT_MASTER_VOLUME = 256;
-  const DEFAULT_SAMPLE_RATE = 44100;
-  const DEFAULT_CHANNELS = 2;
-  const DEFAULT_RENDER_FRAMES = 128;
-  const DEFAULT_MAX_BUFFERED_FRAMES = 1024;
-  const FALLBACK_MAX_BUFFERED_FRAMES = 4096;
-  const DEFAULT_RENDER_INTERVAL_MS = 2;
-  const SHARED_BUFFER_FRAMES = 16384;
-  const SHARED_CONTROL_INTS = 16;
   const NOTE_TRACK_MASK = 31;
-
-  const CONTROL_CAPACITY_FRAMES = 2;
-  const CONTROL_CHANNELS = 3;
-
   const playerState = {
     ready: false,
     isPlaying: false,
@@ -40,25 +23,12 @@ export function createSunVoxPlayer(options = {}) {
   };
 
   let disposed = false;
-  let worker = null;
-  let audioContext = null;
-  let workletNode = null;
   let initializePromise = null;
-  let sharedAudioState = null;
-  let commandId = 0;
+  let disposalPromise = null;
   let loadCommandSerial = 0;
   let connected = false;
   let masterVolume = DEFAULT_MASTER_VOLUME;
-  let transportMode = "message-port";
-
-  const pendingCommands = new Map();
-
-  function rejectPendingCommands(reason) {
-    for (const command of pendingCommands.values()) {
-      command.reject(reason);
-    }
-    pendingCommands.clear();
-  }
+  const bridge = internals.claimPlayer(slotBase, (data) => handleWorkerMessage({ data }));
 
   function emitPlayerState() {
     options.onStateChange?.({ ...playerState });
@@ -106,42 +76,20 @@ export function createSunVoxPlayer(options = {}) {
     return Number.isFinite(normalized) ? Math.max(1, Math.min(129, normalized)) : 128;
   }
 
-  function nextCommandId() {
-    return ++commandId;
-  }
-
-  function sendCommand(payload, transferables = []) {
-    const id = nextCommandId();
-    return new Promise((resolve, reject) => {
-      if (!worker) {
-        reject(new Error("SunVox worker is not initialized"));
-        return;
-      }
-      pendingCommands.set(id, { resolve, reject });
-      try {
-        worker.postMessage({ type: "command", id, payload }, transferables);
-      } catch (error) {
-        pendingCommands.delete(id);
-        reject(error);
-      }
-    });
+  function sendCommand(payload) {
+    if (disposed) return Promise.reject(new Error("SunVox player is disposed"));
+    return bridge.command(payload);
   }
 
   function handleWorkerMessage(event) {
     const message = event.data || {};
-    if (message.type === "command-result") {
-      const command = pendingCommands.get(message.id);
-      if (!command) {
-        return;
-      }
-      pendingCommands.delete(message.id);
-      if (message.ok) {
-        command.resolve(message.payload);
-        return;
-      }
-      command.reject(new Error(message.error ?? "Command failed"));
+    if (message.type === "engine-disposed") {
+      disposed = true;
+      connected = false;
+      setPlayerState({ ready: false, isPlaying: false, isLoading: false, loadedPath: "", loadingPath: "" });
       return;
     }
+    if (disposed) return;
 
     if (message.type === "player-state") {
       setPlayerState(message.payload || {});
@@ -168,174 +116,31 @@ export function createSunVoxPlayer(options = {}) {
     }
   }
 
-  function canUseSharedAudio() {
-    return typeof SharedArrayBuffer === "function" && globalThis.crossOriginIsolated === true;
-  }
-
-  function createSharedAudioState() {
-    if (!canUseSharedAudio()) {
-      return null;
-    }
-    const controlBuffer = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * SHARED_CONTROL_INTS);
-    const audioBuffer = new SharedArrayBuffer(
-      Float32Array.BYTES_PER_ELEMENT * SHARED_BUFFER_FRAMES * DEFAULT_CHANNELS,
-    );
-    const control = new Int32Array(controlBuffer);
-    control[CONTROL_CAPACITY_FRAMES] = SHARED_BUFFER_FRAMES;
-    control[CONTROL_CHANNELS] = DEFAULT_CHANNELS;
-    return {
-      controlBuffer,
-      audioBuffer,
-      capacityFrames: SHARED_BUFFER_FRAMES,
-      channels: DEFAULT_CHANNELS,
-    };
-  }
-
-  function postOutputVolumeDirect() {
-    if (!workletNode) {
-      return;
-    }
-    workletNode.port.postMessage({
-      type: "sunvox-master-volume",
-      volume: masterVolume,
-      gain: masterGain(),
-    });
-  }
-
-  function terminateEngine() {
-    if (worker) {
-      worker.onmessage = null;
-      worker.terminate();
-      worker = null;
-    }
-    if (workletNode) {
-      try {
-        workletNode.disconnect();
-      } catch {
-        // no-op
-      }
-      workletNode = null;
-    }
-    if (audioContext) {
-      try {
-        void audioContext.close().catch(() => {});
-      } catch {
-        // no-op
-      }
-      audioContext = null;
-    }
-    connected = false;
-    initializePromise = null;
-    sharedAudioState = null;
-    transportMode = "message-port";
-    rejectPendingCommands(new Error("SunVox engine terminated"));
-  }
-
   async function initializeEngine() {
     if (disposed) throw new Error("SunVox player is disposed");
-    if (initializePromise) {
-      return initializePromise;
+    if (!initializePromise) {
+      // Start AudioContext while still in the caller's user gesture.
+      const audio = bridge.ensureAudio();
+      initializePromise = Promise.all([bridge.attach(), audio]).then(async () => {
+        if (disposed) throw new Error("SunVox player is disposed");
+        connected = true;
+        bridge.setVolume(masterVolume);
+        await sendCommand({ type: "setMasterVolume", volume: masterVolume });
+        setPlayerState({ ready: true });
+        options.onReady?.();
+      }).catch((error) => {
+        initializePromise = null;
+        connected = false;
+        setPlayerState({ ready: false });
+        throw error;
+      });
     }
-
-    initializePromise = (async () => {
-      const AudioContextCtor = globalThis.AudioContext || globalThis.webkitAudioContext;
-      if (!AudioContextCtor) {
-        throw new Error("AudioContext not supported");
-      }
-      if (!globalThis.Worker) {
-        throw new Error("Web Worker not supported");
-      }
-
-      audioContext = new AudioContextCtor({ sampleRate: DEFAULT_SAMPLE_RATE, latencyHint: "interactive" });
-      if (!audioContext?.audioWorklet) {
-        void audioContext.close().catch(() => {});
-        audioContext = null;
-        throw new Error("AudioWorklet not supported");
-      }
-      const moduleUrl = workletUrl;
-      await audioContext.audioWorklet.addModule(moduleUrl);
-      if (disposed) throw new Error("SunVox player is disposed");
-      workletNode = new AudioWorkletNode(audioContext, "sunvox-worklet-processor", {
-        outputChannelCount: [2],
-      });
-
-      sharedAudioState = createSharedAudioState();
-      if (sharedAudioState) {
-        transportMode = "shared-array-buffer";
-        workletNode.port.postMessage({
-          type: "sunvox-shared-buffer",
-          controlBuffer: sharedAudioState.controlBuffer,
-          audioBuffer: sharedAudioState.audioBuffer,
-        });
-      } else {
-        transportMode = "message-port";
-      }
-      postOutputVolumeDirect();
-      workletNode.connect(audioContext.destination);
-
-      worker = new Worker(workerUrl, {
-        type: "classic",
-      });
-      worker.onmessage = handleWorkerMessage;
-      worker.onerror = (event) => {
-        rejectPendingCommands(new Error(event.message || "SunVox worker failed"));
-        terminateEngine();
-        setPlayerState({ ready: false, isPlaying: false, isLoading: false });
-      };
-
-      await sendCommand(
-        {
-          type: "setAudioPort",
-          port: workletNode.port,
-        },
-        [workletNode.port],
-      );
-      await sendCommand({
-        type: "initialize",
-        sampleRate: audioContext.sampleRate,
-        channels: DEFAULT_CHANNELS,
-        renderFrames: DEFAULT_RENDER_FRAMES,
-        maxBufferedFrames: sharedAudioState ? DEFAULT_MAX_BUFFERED_FRAMES : FALLBACK_MAX_BUFFERED_FRAMES,
-        renderIntervalMs: DEFAULT_RENDER_INTERVAL_MS,
-        sharedAudio: sharedAudioState
-          ? {
-              controlBuffer: sharedAudioState.controlBuffer,
-              audioBuffer: sharedAudioState.audioBuffer,
-            }
-          : null,
-        sunvoxJsUrl,
-        sunvoxLoaderJsUrl,
-      });
-
-      await sendCommand({ type: "setMasterVolume", volume: masterVolume });
-
-      connected = true;
-      setPlayerState({
-        ready: true,
-      });
-      options.onReady?.();
-    })().catch((error) => {
-      terminateEngine();
-      setPlayerState({ ready: false });
-      throw error;
-    });
     return initializePromise;
   }
 
   async function ensureAudioContext() {
-    if (!connected || !playerState.ready) {
-      await initializeEngine();
-    }
-    if (!audioContext) {
-      return;
-    }
-    if (audioContext.state !== "running") {
-      try {
-        await audioContext.resume();
-      } catch {
-        // some environments block resume until user action; we still continue
-      }
-    }
+    if (!connected) await initializeEngine();
+    else await bridge.ensureAudio();
   }
 
   function getPlayerState() {
@@ -346,20 +151,16 @@ export function createSunVoxPlayer(options = {}) {
     return masterVolume;
   }
 
-  function getAudioTransportState() {
-    return {
-      mode: transportMode,
-      shared: transportMode === "shared-array-buffer",
-      crossOriginIsolated: globalThis.crossOriginIsolated === true,
-    };
-  }
+  function getAudioTransportState() { return engine.getAudioTransportState(); }
 
   async function setMasterVolume(volume) {
+    if (disposed) throw new Error("SunVox player is disposed");
     masterVolume = clampMasterVolume(volume);
+    bridge.setVolume(masterVolume);
     if (connected && playerState.ready) {
       await sendCommand({ type: "setMasterVolume", volume: masterVolume });
     } else {
-      postOutputVolumeDirect();
+      bridge.setVolume(masterVolume);
     }
     return masterVolume;
   }
@@ -479,11 +280,26 @@ export function createSunVoxPlayer(options = {}) {
 
 
   function dispose() {
+    if (disposalPromise) return disposalPromise;
     disposed = true;
-    terminateEngine();
+    connected = false;
+    if (ownsEngine) engine.dispose();
+    disposalPromise = bridge.release();
     setPlayerState({ ready: false, isPlaying: false, isLoading: false, loadedPath: "", loadingPath: "" });
+    return disposalPromise;
   }
+
+  async function getSynthSlot(url) {
+    if (disposed) throw new Error("SunVox player is disposed");
+    await bridge.attach();
+    return sendCommand({ type: "getSynthSlot", url });
+  }
+
   return {
+    engine,
+    getProjectSlot: () => slotBase,
+    getSlotLayout: () => ({ project: slotBase, staging: slotBase + 1, synths: [2, 3, 4, 5].map((offset) => slotBase + offset) }),
+    getSynthSlot,
     initialize: ensureAudioContext,
     dispose,
     playLoadedProject,

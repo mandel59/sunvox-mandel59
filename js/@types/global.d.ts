@@ -39,3 +39,15 @@ declare function sv_send_event(
   controller: number,
   value: number,
 ): number;
+
+declare function sv_get_sample_rate(): number;
+declare function sv_update_input(): number;
+declare function sv_audio_callback2(
+  out_buf: Float32Array,
+  frames: number,
+  latency: number,
+  out_time: number,
+  in_type: number,
+  in_channels: number,
+  in_buf: Float32Array | null,
+): number;
