@@ -73,7 +73,7 @@ try {
   const events = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).map(c => c.command.args));
   assert.equal(events.length, 2);
   assert.notEqual(events[0][1], events[1][1]);
-  assert.ok(Math.abs(events[0][6] - events[1][6] - 3072 * 11 / 41) < 1);
+  assert.ok(Math.abs(events[0][6] - events[1][6] - 3072 * 24 / 41) < 1);
   await page.keyboard.up("KeyZ");
   assert.equal(await page.locator(".key.active").count(), 1);
   await page.keyboard.up("KeyX");
@@ -110,9 +110,9 @@ try {
   assert.equal(await page.locator(".key.active").count(), 0);
   await page.keyboard.up("KeyW");
   assert.match(await page.locator('.key[data-code="KeyZ"]').getAttribute("aria-label"), /523\.25 Hz/);
-  assert.equal(await page.locator('.key[data-code="KeyD"]').getAttribute("data-step"), "13");
-  assert.equal(await page.locator('.key[data-code="KeyF"]').getAttribute("data-step"), "24");
-  assert.match(await page.locator('.key[data-code="KeyA"]').getAttribute("aria-label"), / · -9 段/);
+  for (const [code, step] of Object.entries({KeyZ:0, KeyX:24, KeyC:7, KeyV:31, KeyB:14, KeyS:13, KeyE:26, Digit4:39})) {
+    assert.equal(await page.locator('.key[data-code="' + code + '"]').getAttribute("data-step"), String(step));
+  }
   const range = page.locator("#controls input").first();
   await range.fill("16384");
   await range.dispatchEvent("input");
