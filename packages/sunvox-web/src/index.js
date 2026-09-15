@@ -1,3 +1,6 @@
+export * from "./constants.js";
+export { createSunVoxEngine } from "./engine.js";
+
 /** Create an independent Worker/AudioWorklet player; initialization is lazy. */
 export function createSunVoxPlayer(options = {}) {
   if (!options.runtimeBaseUrl) {

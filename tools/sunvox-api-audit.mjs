@@ -14,6 +14,41 @@ const SKIP_DIRECTORIES = new Set([".git", ".jj", "node_modules", "dist", "var", 
 const SKIP_FILES = new Set(["sunvox-api-audit.mjs", "sunvox-api-audit.test.mjs"]);
 
 const REVIEW_NOTES = {
+  sv_get_sample_rate: {
+    priority: "medium",
+    notes: ["Returns the actual engine sampling rate; compare it with AudioContext before connecting browser output."],
+    argumentSemantics: {},
+  },
+  sv_update_input: {
+    priority: "high",
+    notes: ["Handles input enable/disable requests after creating an Input module. Call outside a slot lock; the low-level worker calls it before rendering supplied PCM."],
+    argumentSemantics: {},
+  },
+  sv_new_module: {
+    priority: "high",
+    notes: ["Creates a module and returns its number, or a negative error. Requires slot lock/unlock. A created module needs an explicit output connection."],
+    argumentSemantics: {},
+  },
+  sv_get_module_scope2: {
+    priority: "medium",
+    notes: ["Copies at most samples_to_read int16 samples into caller-owned storage and returns the received count. The worker allocates a bounded buffer and snapshots the received samples."],
+    argumentSemantics: {},
+  },
+  sv_module_curve: {
+    priority: "high",
+    notes: ["Reads (w=0) or writes (w=1) module-specific float curves. Native len=0 requests the whole curve; the worker substitutes the provided buffer length to prevent overflow. Generator drawn-wave values are quantized to int8."],
+    argumentSemantics: {},
+  },
+  sv_sampler_par: {
+    priority: "medium",
+    notes: ["Reads or writes a Sampler sample parameter according to set. The upstream JS wrapper incorrectly targets _sv_sampler_set; the low-level worker calls _sv_sampler_par directly."],
+    argumentSemantics: {},
+  },
+  sv_set_song_name: {
+    priority: "medium",
+    notes: ["Copies a UTF-8 project name. The upstream JS wrapper drops the native return value; the low-level worker allocates/frees the string and preserves that result."],
+    argumentSemantics: {},
+  },
   sv_init: {
     priority: "high",
     notes: [

@@ -15,7 +15,8 @@
       "import": "./src/index.js"
     },
     "./worker": "./src/sunvox-audio-worker.js",
-    "./worklet": "./src/sunvox-worklet-processor.js"
+    "./worklet": "./src/sunvox-worklet-processor.js",
+    "./engine-worker": "./src/engine-worker.js"
   },
   "files": [
     "src",

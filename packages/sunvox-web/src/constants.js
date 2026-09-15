@@ -1,0 +1,26 @@
+// Names and values follow SunVox Lib 2.1.4d.
+export const NOTECMD_NOTE_OFF = 128;
+export const NOTECMD_ALL_NOTES_OFF = 129;
+export const NOTECMD_CLEAN_SYNTHS = 130;
+export const NOTECMD_STOP = 131;
+export const NOTECMD_PLAY = 132;
+export const NOTECMD_SET_PITCH = 133;
+export const NOTECMD_CLEAN_MODULE = 140;
+export const SV_INIT_FLAG_NO_DEBUG_OUTPUT = ( 1 << 0 );
+export const SV_INIT_FLAG_USER_AUDIO_CALLBACK = ( 1 << 1 );
+export const SV_INIT_FLAG_OFFLINE = ( 1 << 1 );
+export const SV_INIT_FLAG_AUDIO_INT16 = ( 1 << 2 );
+export const SV_INIT_FLAG_AUDIO_FLOAT32 = ( 1 << 3 );
+export const SV_INIT_FLAG_ONE_THREAD = ( 1 << 4 );
+export const SV_MODULE_FLAG_EXISTS = 1 << 0;
+export const SV_MODULE_FLAG_GENERATOR = 1 << 1;
+export const SV_MODULE_FLAG_EFFECT = 1 << 2;
+export const SV_MODULE_FLAG_MUTE = 1 << 3;
+export const SV_MODULE_FLAG_SOLO = 1 << 4;
+export const SV_MODULE_FLAG_BYPASS = 1 << 5;
+export const SV_MODULE_INPUTS_OFF = 16;
+export const SV_MODULE_INPUTS_MASK = ( 255 << SV_MODULE_INPUTS_OFF );
+export const SV_MODULE_OUTPUTS_OFF = ( 16 + 8 );
+export const SV_MODULE_OUTPUTS_MASK = ( 255 << SV_MODULE_OUTPUTS_OFF );
+export const SV_TIME_MAP_SPEED = 0;
+export const SV_TIME_MAP_FRAMECNT = 1;
