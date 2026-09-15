@@ -210,6 +210,10 @@ async function main() {
       host: '127.0.0.1',
       port: 5173,
       strictPort: false,
+      headers: {
+        'Cross-Origin-Opener-Policy': args.has('--no-isolation') ? 'unsafe-none' : 'same-origin',
+        'Cross-Origin-Embedder-Policy': args.has('--no-isolation') ? 'unsafe-none' : 'require-corp',
+      },
     },
   });
 

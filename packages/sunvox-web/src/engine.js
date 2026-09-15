@@ -1,4 +1,3 @@
-import { engineInternals } from "./engine-internals.js";
 import { ENGINE_API } from "./engine-api.js";
 
 /** Independent engine with native slot numbering and no player policy. */
@@ -14,17 +13,14 @@ export function createSunVoxEngine(options = {}) {
   if (options.config !== undefined && typeof options.config !== "string") throw new TypeError("config must be a string");
   let worker, initialization, context, node, startingAudio;
   let disposed = false;
-  let player = null;
-  let ownerSerial = 0;
   let transportMode = "message-port";
-  let outputVolume = 256;
+  let outputGain = 1;
   let commandId = 0;
   const pending = new Map();
 
   function dispose() {
     if (disposed) return;
     disposed = true;
-    player?.events({ type: "engine-disposed" });
     worker?.terminate();
     worker = null;
     node?.disconnect();
@@ -55,7 +51,6 @@ export function createSunVoxEngine(options = {}) {
       worker.onmessage = ({ data }) => {
         if (data.type !== "command-result") {
           if (data.type === "log") options.onLog?.(data.level, data.message);
-          player?.events(data);
           return;
         }
         const command = pending.get(data.id);
@@ -122,7 +117,7 @@ export function createSunVoxEngine(options = {}) {
         control[2] = 16384; control[3] = 2;
         node.port.postMessage({ type: "sunvox-shared-buffer", ...sharedAudio });
       }
-      node.port.postMessage({ type: "sunvox-master-volume", gain: outputVolume / 256 });
+      node.port.postMessage({ type: "sunvox-master-volume", gain: outputGain });
       await send({ type: "configureAudio", port: node.port, sharedAudio }, [node.port]);
     })().catch(async (error) => {
       if (!disposed && worker) await send({ type: "engineStopAudio" }).catch(() => {});
@@ -151,46 +146,26 @@ export function createSunVoxEngine(options = {}) {
     return { mode: transportMode, shared: transportMode === "shared-array-buffer", crossOriginIsolated: globalThis.crossOriginIsolated === true };
   }
 
-  function claimPlayer(slotBase, events) {
+  /** Pause rendering and discard queued samples while retaining the AudioContext. */
+  async function pauseAudio() {
+    if (startingAudio) await startingAudio;
+    if (!disposed && worker) await send({ type: "enginePauseAudio" });
+  }
+
+  async function setOutputGain(gain) {
     if (disposed) throw new Error("SunVox engine disposed");
-    if (player) throw new Error("Engine already has a Player; await its dispose() before attaching another");
-    const owner = ++ownerSerial;
-    const holder = { owner, events, attachment: null };
-    player = holder;
-    const attach = () => {
-      if (!holder.attachment) holder.attachment = initialize()
-        .then(() => send({ type: "attachPlayer", owner, slotBase }))
-        .catch((error) => { holder.attachment = null; throw error; });
-      return holder.attachment;
-    };
-    return {
-      attach,
-      ensureAudio,
-      setVolume: (volume) => {
-        outputVolume = volume;
-        node?.port.postMessage({ type: "sunvox-master-volume", gain: volume / 256 });
-      },
-      command: (payload) => send({ ...payload, owner }),
-      async release() {
-        events = () => {};
-        holder.events = events;
-        try {
-          if (holder.attachment) {
-            // Queue detach immediately so the worker can abort an in-flight fetch.
-            await holder.attachment.catch(() => {});
-            if (!disposed && worker) await send({ type: "detachPlayer", owner });
-          }
-        } finally { if (player === holder) player = null; }
-      },
-    };
+    if (!Number.isFinite(gain) || gain < 0) throw new RangeError("gain must be finite and nonnegative");
+    outputGain = gain;
+    if (startingAudio) await startingAudio;
+    if (!disposed && worker) await send({ type: "setOutputGain", gain });
   }
 
   const api = Object.freeze({
-    initialize, dispose, call, startAudio, stopAudio, getAudioTransportState,
-    batch: (commands) => request({ type: "batch", commands }),
+    initialize, dispose, call, startAudio, pauseAudio, stopAudio, setOutputGain, getAudioTransportState,
+    pauseAudioWhenSilent: ({ seconds = 0.75, threshold = 0.00003 } = {}) => request({ type: "pauseAudioWhenSilent", seconds, threshold }),
+    batch: (commands, batchOptions = {}) => request({ type: "batch", commands, eventTime: batchOptions.eventTime }),
     render: (frames, renderOptions = {}) => request({ ...renderOptions, type: "render", frames }),
     ...Object.fromEntries(Object.keys(ENGINE_API).map((method) => [method, (...args) => call(method, ...args)])),
   });
-  engineInternals.set(api, { claimPlayer, resourceBaseUrl: base.href });
   return api;
 }

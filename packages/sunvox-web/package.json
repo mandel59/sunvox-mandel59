@@ -1,7 +1,7 @@
 {
   "name": "@mandel59/sunvox-web",
   "version": "0.1.0",
-  "description": "Browser SunVox playback and synth glue using a Worker and AudioWorklet",
+  "description": "Asynchronous low-level SunVox API and browser audio transport",
   "type": "module",
   "license": "UNLICENSED",
   "repository": {

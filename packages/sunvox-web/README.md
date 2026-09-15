@@ -1,14 +1,10 @@
 # @mandel59/sunvox-web
 
-ESM glue for SunVox playback and low-level engine access in web applications.
-`createSunVoxEngine()` provides 83 asynchronous `sv_*` methods with native numbering.
-Each Engine owns a Worker and its audio output. A Player is a high-level facade
-over that Engine; it can borrow an existing Engine or create one internally.
-Importing the package does not start audio or modify the DOM or browser globals.
-Includes TypeScript declarations. No dependencies or package build step.
-
-Use **Player** for URL-based playback, **Engine** for low-level operations, or
-combine them by passing `{ engine }` to `createSunVoxPlayer`.
+ESM glue for asynchronous low-level SunVox access in web applications.
+Each Engine owns a Worker, a WASM runtime and optional browser audio output.
+It exposes 83 native-numbered `sv_*` operations, `batch`, `render`, constants
+and TypeScript declarations. Importing it has no browser side effects.
+No application playback state, URL loading, instrument cache or reserved slots.
 
 ## Install
 
@@ -20,27 +16,11 @@ npm pack --workspace @mandel59/sunvox-web
 npm install /path/to/mandel59-sunvox-web-0.1.0.tgz
 ```
 
-## Use
+## Runtime and hosting
 
-Supply `sunvox.js`, `sunvox_lib_loader.js` and `sunvox.wasm` in one served directory.
-The SunVox runtime is not included. This repository's
-`sh scripts/install_sunvox_lib.sh` installs the tested runtime, 2.1.4d.
-
-```js
-import { createSunVoxPlayer } from "@mandel59/sunvox-web";
-
-const player = createSunVoxPlayer({
-  runtimeBaseUrl: new URL("./sunvox/", location.href),
-  onStateChange: (state) => console.log(state),
-  onStatus: (message) => console.log(message),
-});
-
-document.querySelector("#play").addEventListener("click", async () => {
-  await player.loadAndPlay("./music/example.sunvox");
-});
-document.querySelector("#stop").addEventListener("click", () => player.stopPlayback());
-// When unmounting: player.dispose();
-```
+Serve `sunvox.js`, `sunvox_lib_loader.js` and `sunvox.wasm` in one directory.
+These upstream files are external dependencies, not included in the package.
+This repository uses SunVox 2.1.4d, installed by `sh scripts/install_sunvox_lib.sh`.
 
 Use HTTPS or localhost, with playback initiated from a user gesture.
 Requires AudioWorklet and classic Web Workers. Default worker/worklet URLs are
@@ -52,10 +32,10 @@ Serve the worker from the app origin. For unbundled ESM, serve `src/` intact and
 import `src/index.js` directly.
 
 `runtimeBaseUrl` is required. `resourceBaseUrl` defaults to the page URL and
-resolves relative project/synth paths and asset overrides. Runtime and resource
+resolves relative runtime paths and asset overrides. Runtime and resource
 hosting must be compatible with your CORS, CSP and isolation configuration.
 
-For the shared Engine output, SharedArrayBuffer is used when cross-origin isolation is enabled; otherwise
+For Engine output, SharedArrayBuffer is used when cross-origin isolation is enabled; otherwise
 MessagePort audio chunks are used. To enable isolation serve the page with:
 
 ```text
@@ -63,95 +43,10 @@ Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
 
-## Player API
+## Low-level API
 
-- `initialize()` starts/resumes audio lazily; playback methods call it automatically.
-- `loadAndPlay(url)`, `preloadProject(url)`, `playLoadedProject()`, `stopPlayback()`.
-- `preloadSynth(url)`, `playSynthNote(url, note, velocity = 128, track = note)`,
-  `stopSynthNote(note, track = note)`, `stopInstrumentNotes()`.
-- `setSynthController(url, controllerIndex, value)` and
-  `configureSynthControllers(url, controllers)` with `{ controllerIndex, value }`
-  entries; configuration requires an initialized player.
-- `setMasterVolume(value)` and `getMasterVolume()`: integer 0-256, default 256.
-- `getPlayerState()` returns a snapshot; `getAudioTransportState()` reports transport.
-- `await dispose()` closes the Player-owned slots. An injected Engine survives;
-  an Engine created internally by the Player is disposed with it.
-- Callbacks: `onStateChange`, `onStatus`, `onLog(level, message)`, `onReady`.
-
-Notes use zero-based semitone numbers, tracks wrap to 0-31, velocity is 1-129.
-Four synth slots are cached. Boolean-returning methods return false for command
-failures; initialization errors reject. `loadAndPlay` and `playLoadedProject`
-reject on command failure. See `src/index.d.ts` for result types.
-
-## Combining Player and Engine
-
-```js
-import { createSunVoxEngine, createSunVoxPlayer } from "@mandel59/sunvox-web";
-
-const engine = createSunVoxEngine({ runtimeBaseUrl: "/sunvox/" });
-const player = createSunVoxPlayer({ engine });
-
-// In a click handler:
-await player.loadAndPlay("/music/example.sunvox");
-const slot = player.getProjectSlot();
-await engine.sv_set_song_name(slot, "Edited in the browser");
-const module = await engine.sv_new_module(slot, "Generator", "Lead", 256, 256, 0);
-await engine.sv_connect_module(slot, module, 0);
-const bytes = await engine.sv_save_to_memory(slot);
-
-await player.dispose(); // closes only this Player's six slots
-await engine.sv_open_slot(slot); // the same Engine remains usable
-engine.dispose(); // caller owns the injected Engine and its audio output
-```
-
-For a standalone Player, the shorter form still works:
-
-```js
-const player = createSunVoxPlayer({ runtimeBaseUrl: "/sunvox/" });
-const engine = player.engine; // the exact Engine used by this Player
-// ...mix player operations and engine editing as above...
-await player.dispose(); // also disposes its internally created Engine
-```
-
-### Slot and resource ownership
-
-- One Player per Engine. Await Player disposal before attaching a replacement.
-- `slotBase` defaults to 0 and must be 0..10. The Player reserves six consecutive
-  slots: project, staging, and four cached instruments. `getSlotLayout()` returns
-  their numbers. Slots open lazily on initialization; overlap with already open
-  Engine slots is rejected without closing the existing slots.
-- `getProjectSlot()` returns the designated project slot. After `preloadSynth(url)`,
-  `await getSynthSlot(url)` returns `{ slot, moduleIndex }` or null. Cached synth
-  references can become stale on eviction/replacement; query again after loading
-  other instruments. Returned objects are snapshots.
-- On Player slots, module/pattern edits, controllers, queries and saving are
-  allowed through Engine. Opening/closing the slot, replacing the whole project,
-  and transport operations (play/stop/pause/resume/rewind/autostop) are rejected;
-  use Player's lifecycle/transport methods. Deleting a cached instrument's root
-  module is also rejected. These checks apply to `call()` and `batch()` alike.
-- Other Engine slots remain available for independent playback/editing. Call
-  `engine.startAudio()` when the Engine should maintain continuous output;
-  Player stop/disposal then leaves that output and other slots running.
-- `player.setMasterVolume()` controls the **shared output gain**, including other
-  Engine slots. Use `engine.sv_volume()` for individual slot volumes. Disposing
-  an injected Player does not reset output gain or close the shared AudioContext.
-- `engine.stopAudio()` disconnects all output; the next Player playback operation
-  reconnects it. `engine.dispose()` invalidates the attached Player and rejects
-  its pending requests. `player.dispose()` is asynchronous so callers can wait
-  until slot release is complete; an in-flight Player fetch is aborted.
-- Configure runtime/worker/sample-rate options on Engine when injecting it.
-  Player's resource URLs inherit Engine's `resourceBaseUrl`, unless overridden.
-
-Player preparation does not wait for autoplay permission. A suspended audio
-context is retried on later calls, allowing background instrument preloading
-before a user clicks to play.
-
-## Low-level engine API
-
-An Engine alone reserves no slots, creates no modules or connections automatically,
-and does not clamp/translate note or module numbers. Attaching a Player reserves
-six slots on that same Engine. High- and low-level calls then share one command
-transport, runtime and audio output.
+The caller opens and owns slots, modules and connections. Note and module
+numbers follow SunVox conventions without app-specific translation.
 
 ```js
 import { createSunVoxEngine, NOTECMD_NOTE_OFF } from "@mandel59/sunvox-web";
@@ -207,7 +102,7 @@ in-thread binding is not included.
 - Use `await engine.sv_*(...)` or `await engine.call("sv_*", ...args)`.
 - Native numeric return values are preserved, including negative errors and
   lookup-not-found values. Check each function's documented result. Transport,
-  argument-validation, Player ownership, initialization and allocation errors reject the Promise.
+  argument-validation, initialization and allocation errors reject the Promise.
 - `Uint8Array`, `Int32Array`, strings and null results are preserved. Arrays are
   snapshots, never live views of WASM memory. Input arrays are copied when the
   method is called; the caller retains ownership and may reuse them immediately.
@@ -276,6 +171,55 @@ The engine corrects bugs in the supplied 2.1.4d JS wrapper: the lost config
 pointer in `sv_init`, the missing return in `sv_set_song_name`, the missing `line`
 argument in `sv_get_pattern_event`; it also calls `_sv_sampler_par` instead of the
 wrapper's nonexistent `_sv_sampler_set`. Upstream files are left unchanged.
+
+## Timing and output control
+
+Audio callbacks, buffer filling, optional silence detection and native batch
+execution stay in the Worker. AudioWorklet consumes PCM and applies output gain.
+UI work does not run in either audio processing path.
+
+- `startAudio()` starts/resumes continuous output and cancels a pending silence
+  stop. Call it directly in a user gesture. Preparing audio while autoplay is
+  suspended does not wait for permission; later calls retry resume.
+- `pauseAudio()` stops rendering and discards queued output, retaining the
+  AudioContext and slots. `startAudio()` resumes it.
+- `pauseAudioWhenSilent({ seconds = 0.75, threshold = 0.00003 })` arms a
+  Worker-side detector. It pauses after the specified continuous duration of
+  rendered audio at or below the peak threshold, without main-thread polling.
+  It neither sends note-offs nor inspects slots. Apps decide when to arm it.
+- `setOutputGain(gain)` sets nonnegative linear output gain (default 1),
+  independent of each song's `sv_volume`. Silence detection is before this gain.
+- `stopAudio()` additionally closes the AudioContext; explicit `render()`
+  requires this, even if browser rendering was paused.
+
+Use a scheduled batch when note events should share the next Worker render
+position, avoiding a round trip to obtain that timestamp:
+
+```js
+await engine.startAudio();
+await engine.batch([
+  { method: "sv_send_event", args: [0, 0, 61, 128, moduleNumber + 1, 0, 0] },
+  { method: "sv_send_event", args: [0, 1, 65, 128, moduleNumber + 1, 0, 0] },
+], { eventTime: "render" });
+```
+
+All events use the same timestamp. The Worker sets event time on the affected
+slots and resets them to automatic timing in `finally`, including on failure.
+This option cannot be combined with `sv_set_event_t` inside that batch. Omit it
+to retain native timing semantics, including manually configured event times.
+When not rendering, the option uses the current SunVox clock. To schedule
+against the audio timeline, start output first. This does not remove latency
+from queued audio or message delivery.
+
+## Migration from the Player API
+
+`createSunVoxPlayer`, Player types, Engine injection and Player slot protection
+have been removed from this package. Replace both client and Worker together.
+The existing site's private Player is now [js/sunvox-player.js](../../js/sunvox-player.js)
+and uses only public Engine operations. Its project loading, four-instrument
+cache, note routing and tail-stop policy belong to the site. It owns its Engine
+exclusively and does not expose it for concurrent low-level editing.
+The independent `sunvox-synth` app continues using Engine directly.
 
 ## Licensing and distribution
 

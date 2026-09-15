@@ -338,4 +338,7 @@ same notice and copied license files.
 Browser Worker/AudioWorklet glue is available in
 [packages/sunvox-web](packages/sunvox-web/) as `@mandel59/sunvox-web`.
 Run `npm install` to link the workspace. The site uses the package through
-`js/player.js`; see the package README for installation, runtime URLs and API.
+[js/sunvox-player.js](js/sunvox-player.js), which privately owns an Engine and
+implements the site-specific Player. `js/player.js` connects it to the page.
+The package contains low-level API and audio transport only; see its README for
+installation, runtime URLs and API.

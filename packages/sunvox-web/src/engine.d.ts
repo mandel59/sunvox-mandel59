@@ -102,13 +102,19 @@ export interface SunVoxEngine extends EngineMethods {
   initialize(): Promise<{ version: number; sampleRate: number; channels: 2 }>;
   call<K extends EngineMethod>(method: K, ...args: Parameters<EngineMethods[K]>): ReturnType<EngineMethods[K]>;
   /** Runs validated calls without render interleaving. Not a rollback transaction. */
-  batch(commands: readonly EngineCommand[]): Promise<unknown[]>;
+  batch(commands: readonly EngineCommand[], options?: { eventTime?: "render" }): Promise<unknown[]>;
   /** Interleaved stereo Float32 audio; input, if supplied, uses the same layout. */
   render(frames: number, options?: { input?: Float32Array; latency?: number; time?: number }): Promise<BufferResult<Float32Array>>;
   /** Connect/resume browser output from a user gesture. */
   startAudio(): Promise<void>;
   /** Disconnect output; this does not change any slot's transport state. */
   stopAudio(): Promise<void>;
+  /** Stop rendering and clear queued audio, retaining the context for a later startAudio(). */
+  pauseAudio(): Promise<void>;
+  /** Linear output gain, independent of each project's sv_volume; defaults to 1. */
+  setOutputGain(gain: number): Promise<void>;
+  /** Arm Worker-side silence detection; startAudio() cancels it. Defaults: 0.75s, peak <= 0.00003. */
+  pauseAudioWhenSilent(options?: { seconds?: number; threshold?: number }): Promise<void>;
   getAudioTransportState(): { mode: "message-port" | "shared-array-buffer"; shared: boolean; crossOriginIsolated: boolean };
   dispose(): void;
 }

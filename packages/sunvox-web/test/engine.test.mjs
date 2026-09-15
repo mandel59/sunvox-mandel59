@@ -168,49 +168,58 @@ test("config strings and corrected sampler entry point reach native exports", as
 });
 
 
-test("Player reservations protect lifecycle while exposing the same editable modules", async (t) => {
+
+test("Worker accepts only generic commands and leaves every slot under caller control", async (t) => {
   const { call, send } = await workerHarness(t);
-  await call("sv_open_slot", 0);
-  await call("sv_set_song_name", 0, "Independent slot");
-  await assert.rejects(send({ type: "attachPlayer", owner: 1, slotBase: 0 }), /overlap/);
-  assert.equal(await call("sv_get_song_name", 0), "Independent slot");
-  const layout = await send({ type: "attachPlayer", owner: 1, slotBase: 4 });
-  assert.deepEqual(layout, { project: 4, staging: 5, synths: [6, 7, 8, 9] });
-  await assert.rejects(send({ type: "attachPlayer", owner: 2, slotBase: 10 }), /already/);
-  await assert.rejects(call("sv_close_slot", 4), /owned by Player/);
-  await assert.rejects(call("sv_load_from_memory", 4, new Uint8Array([1])), /owned by Player/);
-  const originalName = await call("sv_get_song_name", 4);
-  await assert.rejects(send({ type: "batch", commands: [
-    { method: "sv_set_song_name", args: [4, "must not apply"] },
-    { method: "sv_stop", args: [4] },
-  ] }), /owned by Player/);
-  assert.equal(await call("sv_get_song_name", 4), originalName);
-  const url = "instruments/mandel59 shepard.sunsynth";
-  await send({ type: "preloadSynth", owner: 1, url, resourceUrl: new URL(url, "https://example.test/").href });
-  const synth = await send({ type: "getSynthSlot", owner: 1, url });
-  await call("sv_set_module_name", synth.slot, synth.moduleIndex, "Shared instrument");
-  assert.equal(await call("sv_get_module_name", synth.slot, synth.moduleIndex), "Shared instrument");
-  await assert.rejects(call("sv_remove_module", synth.slot, synth.moduleIndex), /cached Player/);
-  await assert.rejects(send({ type: "stop", owner: 2 }), /not attached/);
-  await send({ type: "detachPlayer", owner: 1 });
-  assert.equal(await call("sv_get_song_name", 0), "Independent slot");
-  assert.equal(await call("sv_open_slot", 4), 0, "detached Player slots are reusable");
+  await assert.rejects(send({ type: "attachPlayer", slotBase: 0 }), /Unknown command/);
+  for (const slot of [0, 1, 2, 3, 4, 5, 15]) {
+    assert.equal(await call("sv_open_slot", slot), 0);
+    assert.equal(await call("sv_close_slot", slot), 0);
+  }
 });
 
-
-test("detaching a Player aborts its pending fetch before releasing its slots", async (t) => {
+test("scheduled batch uses one Worker render time and resets event timing even on failure", async (t) => {
   const { call, send, scope } = await workerHarness(t);
-  await send({ type: "attachPlayer", owner: 1, slotBase: 0 });
-  let started;
-  const fetching = new Promise((resolve) => { started = resolve; });
-  scope.fetch = (_url, { signal }) => new Promise((_resolve, reject) => {
-    signal.addEventListener("abort", () => reject(new Error("fetch aborted")), { once: true });
-    started();
-  });
-  const loading = send({ type: "preloadProject", owner: 1, url: "pending.sunvox", resourceUrl: "https://example.test/pending.sunvox" });
-  const rejected = assert.rejects(loading, /aborted/);
-  await fetching;
-  await send({ type: "detachPlayer", owner: 1 });
-  await rejected;
-  assert.equal(await call("sv_open_slot", 0), 0);
+  await call("sv_open_slot", 0);
+  const events = [];
+  scope.sv_get_ticks = () => 1234;
+  scope.sv_set_event_t = (...args) => { events.push(args); return 0; };
+  scope.sv_send_event = (...args) => { events.push(args); return 0; };
+  const commands = [0, 1].map((track) => ({ method: "sv_send_event", args: [0, track, 61, 128, 1, 0, 0] }));
+  await send({ type: "batch", commands, eventTime: "render" });
+  assert.deepEqual(events, [[0, 1, 1234], commands[0].args, commands[1].args, [0, 0, 0]]);
+  events.length = 0;
+  scope.sv_send_event = () => { throw new Error("event failed"); };
+  await assert.rejects(send({ type: "batch", commands, eventTime: "render" }), /event failed/);
+  assert.deepEqual(events, [[0, 1, 1234], [0, 0, 0]]);
+  await assert.rejects(send({ type: "batch", commands, eventTime: "bad" }), /eventTime/);
+  await assert.rejects(send({ type: "batch", eventTime: "render", commands: [{ method: "sv_set_event_t", args: [0, 1, 0] }] }), /cannot contain/);
+});
+
+test("silence detection and pause run in the Worker without app polling", async (t) => {
+  const { send, scope } = await workerHarness(t);
+  let step, callbacks = 0, signal = 0.25, ticks = [];
+  scope.setInterval = (callback) => { step = callback; return 1; };
+  scope.clearInterval = () => {};
+  scope.sv_audio_callback = (buffer, _frames, _latency, time) => { buffer.fill(signal); callbacks++; ticks.push(time); return 0; };
+  const messages = [];
+  const port = { close() {}, postMessage(message) {
+    messages.push(message);
+    if (message.type === "sunvox-audio") port.onmessage({ data: { type: "sunvox-consumed", consumedFrames: message.audioData.length / 2 } });
+  } };
+  await send({ type: "configureAudio", port });
+  await send({ type: "engineStartAudio" });
+  await send({ type: "pauseAudioWhenSilent", seconds: 0.01, threshold: 0.001 });
+  step(); const sounding = callbacks; step();
+  assert.ok(callbacks > sounding, "sound must keep rendering beyond the silence timeout");
+  signal = 0; step();
+  const stopped = callbacks; step(); assert.equal(callbacks, stopped);
+  assert.ok(messages.some((m) => m.type === "sunvox-clear"));
+  await send({ type: "engineStartAudio" });
+  const resumed = callbacks; step(); assert.ok(callbacks > resumed, "startAudio cancels idle stopping");
+  await send({ type: "enginePauseAudio" });
+  const paused = callbacks; step(); assert.equal(callbacks, paused);
+  await send({ type: "setOutputGain", gain: 0.25 });
+  assert.equal(messages.at(-1).gain, 0.25);
+  await assert.rejects(send({ type: "pauseAudioWhenSilent", seconds: 0, threshold: 0 }), /Invalid silence/);
 });

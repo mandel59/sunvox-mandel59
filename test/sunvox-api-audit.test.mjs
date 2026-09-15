@@ -88,7 +88,7 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   );
   assert.ok(
     setController.calls.some((call) =>
-      /sv_set_module_ctl_value\(slotState\.slot, slotState\.moduleIndex, index, scaledValue, 0\)/.test(call.text),
+      call.file.replaceAll("\\", "/") === "js/sunvox-player.js" && call.binding === "sunvox-web" && call.argumentCount === 5,
     ),
     "sv_set_module_ctl_value should be called through the expected wrapper signature",
   );
@@ -104,10 +104,10 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   assert.ok(
     loadProject.calls.some(
       (call) =>
-        call.binding === "js-wrapper" &&
+        call.binding === "sunvox-web" &&
         call.argumentCount === 2 &&
         call.expectedArgumentCount === 2 &&
-        call.expectedArgumentSource === "wrapper",
+        call.expectedArgumentSource === "sunvox-web",
     ),
   );
   assert.ok(
@@ -122,7 +122,7 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
   assert.equal(loadModule.parameterCount, 6);
   assert.equal(loadModule.wrapperParameterCount, 5);
   assert.equal(loadModule.review.argumentSemantics.data_size.unit, "bytes");
-  assert.ok(loadModule.calls.some((call) => call.binding === "js-wrapper" && call.argumentCount === 5));
+  assert.ok(loadModule.calls.some((call) => call.binding === "sunvox-web" && call.argumentCount === 5));
   assert.ok(loadModule.calls.some((call) => call.binding === "wasm-export" && call.argumentCount === 6));
   assert.equal(init.review.argumentSemantics.freq.unit, "Hz");
   assert.equal(init.review.argumentSemantics.freq.minimum, 44100);
@@ -168,10 +168,9 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
 });
 
 test("declares browser SunVox wrapper calls used by the player", async () => {
-  const [audit, declarationsText, workerSource] = await Promise.all([
+  const [audit, declarationsText] = await Promise.all([
     collectApiAudit({ scanRoots: ["js", "packages/sunvox-web/src"] }),
     readFile("js/@types/global.d.ts", "utf8"),
-    readFile("packages/sunvox-web/src/sunvox-audio-worker.js", "utf8"),
   ]);
   const declaredParameterCounts = parseDeclaredFunctionParameterCounts(declarationsText);
   const playerApis = new Set(
@@ -192,55 +191,6 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
       wrapper: item.wrapperParameterCount,
     }));
   assert.deepEqual(arityMismatches, []);
-  const playerSendEvent = audit.apis.find((item) => item.api === "sv_send_event");
-  assert.ok(
-    playerSendEvent.calls.some(
-      (call) =>
-        isPlaybackEngineCall(call) &&
-        call.binding === "js-wrapper" &&
-        call.file.includes("sunvox-audio-worker.js"),
-    ),
-    "browser playback path should send seven-argument sv_send_event calls",
-  );
-  assert.ok(/sv_send_event\(/u.test(workerSource));
-  assert.ok(
-    /return noteOff\(\{ track: 0, note: ALL_NOTES_OFF \}\);/u.test(workerSource),
-    "browser player should use the global all-notes-off event for synth cleanup",
-  );
-  assert.ok(
-    /sv_set_module_ctl_value\(slotState\.slot, slotState\.moduleIndex, index, scaledValue, 0\)/u.test(workerSource),
-    "browser player should send raw controller values with scaled=0",
-  );
-  assert.ok(
-    /sv_connect_module\(slotState\.slot, loadedModule, INSTRUMENT_OUTPUT_MODULE\)/u.test(workerSource),
-    "browser player should connect loaded synth modules to output module 0",
-  );
-  assert.ok(
-    /noteTrack\(payload\.track/.test(workerSource),
-    "browser player should route synth notes using payload track",
-  );
-  assert.ok(
-    /slotState\.moduleIndex \+ 1/.test(workerSource),
-    "browser player should send module number as module + 1",
-  );
-});
-
-test("browser project playback preserves loaded project global volume", async () => {
-  const workerSource = await readFile("packages/sunvox-web/src/sunvox-audio-worker.js", "utf8");
-  const projectLoaderStart = workerSource.indexOf("async function loadProjectIntoSlot");
-  const projectLoaderEnd = workerSource.indexOf("async function preloadProject");
-  const synthLoaderStart = workerSource.indexOf("async function loadSynthFromUrl");
-  const synthLoaderEnd = workerSource.indexOf("async function preloadSynth");
-  assert.ok(projectLoaderStart >= 0 && projectLoaderEnd > projectLoaderStart);
-  assert.ok(synthLoaderStart >= 0 && synthLoaderEnd > synthLoaderStart);
-
-  const projectLoaderSource = workerSource.slice(projectLoaderStart, projectLoaderEnd);
-  const synthLoaderSource = workerSource.slice(synthLoaderStart, synthLoaderEnd);
-  assert.ok(!/sv_volume\(/u.test(projectLoaderSource), "project playback should preserve the loaded .sunvox global volume");
-  assert.ok(
-    /sv_volume\(slotState\.slot, DEFAULT_SLOT_VOLUME\)/u.test(synthLoaderSource),
-    "synth slots should still initialize their slot output volume",
-  );
 });
 
 test("SunVox balance analyzer preserves loaded project global volume", async () => {

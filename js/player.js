@@ -1,4 +1,4 @@
-import { createSunVoxPlayer } from "@mandel59/sunvox-web";
+import { createSunVoxPlayer } from "./sunvox-player.js";
 
 const player = createSunVoxPlayer({
   runtimeBaseUrl: new URL("sunvox_lib/sunvox_lib/js/lib/", window.location.href),
