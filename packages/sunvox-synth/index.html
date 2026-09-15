@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#161b23"><link rel="icon" href="data:,"><title>SunVox Synth</title></head>
+<body>
+<div class="app">
+  <header><div><p class="eyebrow">SUNVOX WEB / INSTRUMENT 01</p><h1>SunVox Synth<span>音をつくる、音であそぶ。</span></h1></div><button id="start" class="primary">音声を開始</button></header>
+  <div class="statusbar"><span id="status" role="status">音声を開始して、鍵盤を弾いてください。</span><span id="voices">0 VOICES</span></div>
+  <main>
+    <section class="panel sound"><div class="section-heading"><h2>音色</h2><span class="route">GENERATOR → FILTER → OUTPUT</span></div>
+      <p class="muted">スライダーで音色を調整できます。値は SunVox のコントローラー値です。</p>
+      <div id="controls"><p class="placeholder">音声を開始すると、音色パラメーターが表示されます。</p></div>
+    </section>
+    <section class="panel monitor"><div class="section-heading"><h2>波形</h2><span>OUTPUT</span></div><canvas id="scope" width="640" height="180" aria-label="出力波形"></canvas>
+      <label class="volume">出力音量 <output id="volume-value">50%</output><input id="volume" type="range" min="0" max="100" value="50" disabled></label>
+      <button id="save" disabled>音色を .sunvox で保存 ↓</button><p class="muted">作成したモジュール構成と設定を保存します。</p>
+    </section>
+    <section class="panel performance"><div class="section-heading"><h2>鍵盤</h2><div class="toolbar"><label>オクターブ <select id="octave" disabled><option value="3">C3 – C5</option><option value="4" selected>C4 – C6</option><option value="5">C5 – C7</option></select></label><button id="panic" disabled>全音停止</button></div></div>
+      <div class="keyboard-scroll"><div id="keyboard" aria-label="演奏用鍵盤"></div></div>
+      <p class="muted">クリック・タッチで演奏。PC キー: A W S E D F T G Y H U J K（C ～ 次の C）。同時押しで和音。</p>
+    </section>
+  </main>
+  <footer><span>Powered by <a href="https://warmplace.ru/soft/sunvox/">SunVox (modular synth &amp; tracker)</a><br>Copyright (c) 2008 - 2026, Alexander Zolotov &lt;nightradio@gmail.com&gt;, WarmPlace.ru</span><span><a href="./sunvox_lib/license/LICENSE.txt">SunVox license</a> · <a href="./sunvox_lib/license/sundog.txt">SunDog</a> · <a href="./sunvox_lib/license/libflac.txt">FLAC</a> · <a href="./sunvox_lib/license/tremor.txt">Tremor</a></span></footer>
+</div><script type="module" src="/src/main.js"></script>
+</body></html>

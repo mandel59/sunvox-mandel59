@@ -253,3 +253,14 @@ test("SunVox balance analyzer preserves loaded project global volume", async () 
   assert.ok(!/sv_volume\(/u.test(analyzeSource), "balance analysis should not override .sunvox project global volume");
   assert.ok(/globalVolumePercent/u.test(source), "balance output should expose project global volume percentage");
 });
+
+
+test("SunVox web buffer calls use package arity instead of native output buffers", async () => {
+  const audit = await collectApiAudit({ scanRoots: ["packages/sunvox-synth/src"] });
+  const scope = audit.apis.find((item) => item.api === "sv_get_module_scope2");
+  assert.ok(scope);
+  assert.equal(scope.wrapperParameterCount, 5);
+  assert.equal(scope.calls[0].binding, "sunvox-web");
+  assert.equal(scope.calls[0].expectedArgumentCount, 4);
+  assert.equal(audit.strictArityMismatches.length, 0);
+});

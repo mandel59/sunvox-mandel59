@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { ENGINE_API } from "../packages/sunvox-web/src/engine-api.js";
 
 import { readdir, readFile } from "node:fs/promises";
 import { relative, resolve } from "node:path";
@@ -635,12 +636,14 @@ function collectCallsFromText(text, file) {
     const codeOnlyLine = line.replace(stringLiteralPattern, (match) => " ".repeat(match.length));
     for (const match of codeOnlyLine.matchAll(pattern)) {
       const rawName = match[1];
+      // Conventional Engine proxy receivers use the package buffer signatures.
+      const engineCall = /(?:engine|next)\.$/i.test(codeOnlyLine.slice(0, match.index));
       const openParenIndex = match.index + match[0].length - 1;
       const argumentText = readCallArgumentsFromLine(codeOnlyLine, openParenIndex);
       calls.push({
         api: normalizeApiName(rawName),
         rawName,
-        binding: rawName.startsWith("_sv_") ? "wasm-export" : "js-wrapper",
+        binding: rawName.startsWith("_sv_") ? "wasm-export" : engineCall ? "sunvox-web" : "js-wrapper",
         argumentCount: argumentText === undefined ? undefined : countCallArguments(argumentText),
         file,
         line: lineIndex + 1,
@@ -876,8 +879,9 @@ export async function collectApiAudit({
       const wrapperParameterCount = wrapperParameters.length;
       const callsWithExpectedArity = apiCalls.map((call) => {
         const expectedArgumentCount =
+          call.binding === "sunvox-web" ? ENGINE_API[api]?.args.length :
           call.binding === "js-wrapper" && wrapper ? wrapperParameterCount : header ? parameterCount : undefined;
-        const expectedArgumentSource = call.binding === "js-wrapper" && wrapper ? "wrapper" : header ? "header" : undefined;
+        const expectedArgumentSource = call.binding === "sunvox-web" ? "sunvox-web" : call.binding === "js-wrapper" && wrapper ? "wrapper" : header ? "header" : undefined;
         return {
           ...call,
           expectedArgumentCount,
