@@ -110,9 +110,14 @@ try {
   assert.equal(await page.locator(".key.active").count(), 0);
   await page.keyboard.up("KeyW");
   assert.match(await page.locator('.key[data-code="KeyZ"]').getAttribute("aria-label"), /523\.25 Hz/);
-  for (const [code, step] of Object.entries({KeyZ:0, KeyX:24, KeyC:7, KeyV:31, KeyB:14, KeyS:13, KeyE:26, Digit4:39})) {
+  for (const [code, step] of Object.entries({KeyZ:0, KeyX:24, KeyC:7, KeyV:31, KeyB:14, KeyM:21, Comma:45, Period:28, Slash:52, KeyS:13, KeyE:26, Digit4:39})) {
     assert.equal(await page.locator('.key[data-code="' + code + '"]').getAttribute("data-step"), String(step));
   }
+  await page.keyboard.down("Comma");
+  const commaEvent = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).at(-1).command.args);
+  const commaHz = 440 * 2 ** (1 - 9 / 12 + 45 / 41); // C5 root, +45 EDO steps
+  assert.equal(commaEvent[6], Math.round(30720 - Math.log2(commaHz / 16.333984375) * 3072));
+  await page.keyboard.up("Comma");
   const range = page.locator("#controls input").first();
   await range.fill("16384");
   await range.dispatchEvent("input");
