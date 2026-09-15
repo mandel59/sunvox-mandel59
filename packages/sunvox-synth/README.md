@@ -74,3 +74,7 @@ Copyright (c) 2008 - 2026, Alexander Zolotov <nightradio@gmail.com>, WarmPlace.r
 ランタイムのライセンスと第三者通知はビルド成果物の
 `sunvox_lib/license/` に同梱し、画面からリンクしています。
 アプリは private な開発用 workspace パッケージで、npm 公開は行いません。
+
+## 設計検討
+
+- [微分音鍵盤と同一モジュール内の独立発音](docs/microtonal-design.md)
