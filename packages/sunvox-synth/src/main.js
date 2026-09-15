@@ -1,6 +1,6 @@
 import { createSunVoxEngine, NOTECMD_SET_PITCH, NOTECMD_NOTE_OFF, NOTECMD_CLEAN_SYNTHS } from "@mandel59/sunvox-web";
 import "./style.css";
-import { EDO, KEY_LAYOUT, toneForStep } from "./tuning.js";
+import { EDO, KEY_LAYOUT, toneForStep, formatStep } from "./tuning.js";
 
 const $ = (selector) => document.querySelector(selector);
 let engine, generator, ready = false, meterTimer;
@@ -20,7 +20,7 @@ function refreshKeys() {
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
     const { frequency } = toneForStep(entry.step, Number($("#octave").value));
-    const label = entry.label + " · +" + entry.step + " 段 · " + frequency.toFixed(2) + " Hz";
+    const label = entry.label + " · " + formatStep(entry.step) + " 段 · " + frequency.toFixed(2) + " Hz";
     button.setAttribute("aria-label", label);
     button.title = label;
   }
@@ -69,7 +69,7 @@ for (const entry of KEY_LAYOUT) {
   const caption = document.createElement("strong");
   caption.textContent = label;
   const degree = document.createElement("span");
-  degree.textContent = "+" + step;
+  degree.textContent = formatStep(step);
   button.append(caption, degree);
   button.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;

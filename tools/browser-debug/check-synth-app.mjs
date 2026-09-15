@@ -68,7 +68,7 @@ try {
   const events = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).map(c => c.command.args));
   assert.equal(events.length, 2);
   assert.notEqual(events[0][1], events[1][1]);
-  assert.ok(Math.abs(events[0][6] - events[1][6] - 3072 / 41) < 1);
+  assert.ok(Math.abs(events[0][6] - events[1][6] - 3072 * 11 / 41) < 1);
   await page.keyboard.up("KeyZ");
   assert.equal(await page.locator(".key.active").count(), 1);
   await page.keyboard.up("KeyX");
@@ -97,14 +97,17 @@ try {
   await page.keyboard.up("KeyS");
   assert.equal(await page.locator(".key.active").count(), 0);
   await page.keyboard.down("KeyQ");
-  await page.keyboard.down("Quote");
+  await page.keyboard.down("KeyW");
   assert.equal(await page.locator(".key.active").count(), 2);
   await page.keyboard.up("KeyQ");
   assert.equal(await page.locator(".key.active").count(), 1);
   await page.selectOption("#octave", "5");
   assert.equal(await page.locator(".key.active").count(), 0);
-  await page.keyboard.up("Quote");
+  await page.keyboard.up("KeyW");
   assert.match(await page.locator('.key[data-code="KeyZ"]').getAttribute("aria-label"), /523\.25 Hz/);
+  assert.equal(await page.locator('.key[data-code="KeyD"]').getAttribute("data-step"), "13");
+  assert.equal(await page.locator('.key[data-code="KeyF"]').getAttribute("data-step"), "24");
+  assert.match(await page.locator('.key[data-code="KeyA"]').getAttribute("aria-label"), / · -9 段/);
   const range = page.locator("#controls input").first();
   await range.fill("16384");
   await range.dispatchEvent("input");

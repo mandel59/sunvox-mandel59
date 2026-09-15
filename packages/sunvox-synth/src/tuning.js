@@ -1,15 +1,17 @@
 export const EDO = 41;
-export const ROW_INTERVAL = 10;
+export const ROW_INTERVAL = -9;
+export const COLUMN_INTERVAL = 11;
+export const formatStep = step => step >= 0 ? "+" + step : String(step);
 // Physical KeyboardEvent.code positions; labels use the US keyboard legends.
 const rows = [
-  ["Digit1 Digit2 Digit3 Digit4 Digit5 Digit6 Digit7 Digit8 Digit9 Digit0 Minus Equal", "1 2 3 4 5 6 7 8 9 0 - =", 30],
-  ["KeyQ KeyW KeyE KeyR KeyT KeyY KeyU KeyI KeyO KeyP BracketLeft BracketRight", "Q W E R T Y U I O P [ ]", 20],
-  ["KeyA KeyS KeyD KeyF KeyG KeyH KeyJ KeyK KeyL Semicolon Quote", "A S D F G H J K L ; '", 10],
+  ["Digit1 Digit2 Digit3 Digit4 Digit5 Digit6 Digit7 Digit8 Digit9 Digit0 Minus Equal", "1 2 3 4 5 6 7 8 9 0 - =", -27],
+  ["KeyQ KeyW KeyE KeyR KeyT KeyY KeyU KeyI KeyO KeyP BracketLeft BracketRight", "Q W E R T Y U I O P [ ]", -18],
+  ["KeyA KeyS KeyD KeyF KeyG KeyH KeyJ KeyK KeyL Semicolon Quote", "A S D F G H J K L ; '", -9],
   ["KeyZ KeyX KeyC KeyV KeyB KeyN KeyM Comma Period Slash", "Z X C V B N M , . /", 0],
 ];
 export const KEY_LAYOUT = rows.flatMap(([codes, labels, base], row) =>
   codes.split(" ").map((code, column) => ({
-    code, label: labels.split(" ")[column], row, column, step: base + column,
+    code, label: labels.split(" ")[column], row, column, step: base + column * COLUMN_INTERVAL,
   }))
 );
 export function toneForStep(step, octave = 4) {
