@@ -332,3 +332,10 @@ required SunVox notice and links every TXT file under
 under `sunvox/docs/license/`. After `npm run build`, run
 `npm run licenses:check:dist` to verify that the GitHub Pages output keeps the
 same notice and copied license files.
+
+## Reusable web package
+
+Browser Worker/AudioWorklet glue is available in
+[packages/sunvox-web](packages/sunvox-web/) as `@mandel59/sunvox-web`.
+Run `npm install` to link the workspace. The site uses the package through
+`js/player.js`; see the package README for installation, runtime URLs and API.

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_HEADER_PATH = "var/sunvox_lib/sunvox_lib/headers/sunvox.h";
 const DEFAULT_IMPLEMENTATION_PATH = "var/sunvox_lib/sunvox_lib/main/sunvox_lib.cpp";
 const DEFAULT_WRAPPER_PATH = "sunvox_lib/sunvox_lib/js/lib/sunvox_lib_loader.js";
-const DEFAULT_SCAN_ROOTS = ["js", "tools", "test"];
+const DEFAULT_SCAN_ROOTS = ["js", "packages", "tools", "test"];
 const SOURCE_EXTENSIONS = new Set([".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx"]);
 const SKIP_DIRECTORIES = new Set([".git", ".jj", "node_modules", "dist", "var", "sunvox_lib"]);
 const SKIP_FILES = new Set(["sunvox-api-audit.mjs", "sunvox-api-audit.test.mjs"]);

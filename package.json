@@ -49,5 +49,11 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "vite": "^7.0.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "@mandel59/sunvox-web": "file:packages/sunvox-web"
   }
 }

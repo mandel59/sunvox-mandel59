@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const DEFAULT_PATHS = ["tools", "test", "js", "src"];
+const DEFAULT_PATHS = ["tools", "test", "js", "src", "packages"];
 const SOURCE_EXTENSIONS = new Set([".js", ".jsx", ".mjs"]);
 const SKIP_DIRECTORIES = new Set(["node_modules", "dist", "var", "sunvox_lib"]);
 

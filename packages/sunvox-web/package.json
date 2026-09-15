@@ -1,0 +1,27 @@
+{
+  "name": "@mandel59/sunvox-web",
+  "version": "0.1.0",
+  "description": "Browser SunVox playback and synth glue using a Worker and AudioWorklet",
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mandel59/sunvox-mandel59.git",
+    "directory": "packages/sunvox-web"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    },
+    "./worker": "./src/sunvox-audio-worker.js",
+    "./worklet": "./src/sunvox-worklet-processor.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

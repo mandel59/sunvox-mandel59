@@ -16,7 +16,7 @@ function parseDeclaredFunctionParameterCounts(text) {
 
 function isPlaybackEngineCall(call) {
   const file = call.file.replaceAll("\\", "/");
-  return file.endsWith("js/player.js") || file.endsWith("js/sunvox-audio-worker.js");
+  return file.endsWith("js/player.js") || file.endsWith("packages/sunvox-web/src/sunvox-audio-worker.js");
 }
 
 test("audits checked-in SunVox Lib API calls against the source fixture", async () => {
@@ -169,9 +169,9 @@ test("audits checked-in SunVox Lib API calls against the source fixture", async 
 
 test("declares browser SunVox wrapper calls used by the player", async () => {
   const [audit, declarationsText, workerSource] = await Promise.all([
-    collectApiAudit({ scanRoots: ["js"] }),
+    collectApiAudit({ scanRoots: ["js", "packages/sunvox-web/src"] }),
     readFile("js/@types/global.d.ts", "utf8"),
-    readFile("js/sunvox-audio-worker.js", "utf8"),
+    readFile("packages/sunvox-web/src/sunvox-audio-worker.js", "utf8"),
   ]);
   const declaredParameterCounts = parseDeclaredFunctionParameterCounts(declarationsText);
   const playerApis = new Set(
@@ -226,7 +226,7 @@ test("declares browser SunVox wrapper calls used by the player", async () => {
 });
 
 test("browser project playback preserves loaded project global volume", async () => {
-  const workerSource = await readFile("js/sunvox-audio-worker.js", "utf8");
+  const workerSource = await readFile("packages/sunvox-web/src/sunvox-audio-worker.js", "utf8");
   const projectLoaderStart = workerSource.indexOf("async function loadProjectIntoSlot");
   const projectLoaderEnd = workerSource.indexOf("async function preloadProject");
   const synthLoaderStart = workerSource.indexOf("async function loadSynthFromUrl");
