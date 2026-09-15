@@ -1,6 +1,6 @@
 import { ENGINE_API } from "./engine-api.js";
 
-/** Independent engine with native slot numbering and no player policy. */
+/** Asynchronous Worker-backed engine with native slot numbering. */
 export function createSunVoxEngine(options = {}) {
   if (!options.runtimeBaseUrl) throw new TypeError("runtimeBaseUrl is required");
   const base = new URL(options.resourceBaseUrl ?? globalThis.location?.href ?? import.meta.url);

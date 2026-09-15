@@ -4,7 +4,6 @@ ESM glue for asynchronous low-level SunVox access in web applications.
 Each Engine owns a Worker, a WASM runtime and optional browser audio output.
 It exposes 83 native-numbered `sv_*` operations, `batch`, `render`, constants
 and TypeScript declarations. Importing it has no browser side effects.
-No application playback state, URL loading, instrument cache or reserved slots.
 
 ## Install
 
@@ -211,16 +210,6 @@ When not rendering, the option uses the current SunVox clock. To schedule
 against the audio timeline, start output first. This does not remove latency
 from queued audio or message delivery.
 
-## Migration from the Player API
-
-`createSunVoxPlayer`, Player types, Engine injection and Player slot protection
-have been removed from this package. Replace both client and Worker together.
-The existing site's private Player is now [js/sunvox-player.js](../../js/sunvox-player.js)
-and uses only public Engine operations. Its project loading, four-instrument
-cache, note routing and tail-stop policy belong to the site. It owns its Engine
-exclusively and does not expose it for concurrent low-level editing.
-The independent `sunvox-synth` app continues using Engine directly.
-
 ## Licensing and distribution
 
 This package's code is distributed under the [MIT License](LICENSE).
@@ -228,8 +217,7 @@ Copyright (c) 2026 Ryusei Yamaguchi (@mandel59).
 
 The separately supplied SunVox runtime and its third-party components retain
 their own licenses. Retain their required notices and license files when
-deploying, as the example site does. Packing and workspace installation do not
-publish to npm.
+deploying. Packing and workspace installation do not publish to npm.
 
 ## Verify
 

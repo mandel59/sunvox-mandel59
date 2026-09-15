@@ -171,7 +171,7 @@ test("config strings and corrected sampler entry point reach native exports", as
 
 test("Worker accepts only generic commands and leaves every slot under caller control", async (t) => {
   const { call, send } = await workerHarness(t);
-  await assert.rejects(send({ type: "attachPlayer", slotBase: 0 }), /Unknown command/);
+  await assert.rejects(send({ type: "unknownOperation" }), /Unknown command/);
   for (const slot of [0, 1, 2, 3, 4, 5, 15]) {
     assert.equal(await call("sv_open_slot", slot), 0);
     assert.equal(await call("sv_close_slot", slot), 0);
