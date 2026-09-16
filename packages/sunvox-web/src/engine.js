@@ -115,10 +115,9 @@ export function createSunVoxEngine(options = {}) {
       if (sharedAudio) {
         const control = new Int32Array(sharedAudio.controlBuffer);
         control[2] = 16384; control[3] = 2;
-        node.port.postMessage({ type: "sunvox-shared-buffer", ...sharedAudio });
       }
-      node.port.postMessage({ type: "sunvox-master-volume", gain: outputGain });
-      await send({ type: "configureAudio", port: node.port, sharedAudio }, [node.port]);
+      // Transfer ownership before sending worklet configuration through the port.
+      await send({ type: "configureAudio", port: node.port, sharedAudio, gain: outputGain }, [node.port]);
     })().catch(async (error) => {
       if (!disposed && worker) await send({ type: "engineStopAudio" }).catch(() => {});
       node?.disconnect(); node = null;

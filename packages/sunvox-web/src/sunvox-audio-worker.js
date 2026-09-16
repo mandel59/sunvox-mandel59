@@ -530,6 +530,8 @@ function runCommand({ payload }) {
       setSharedAudio(payload.sharedAudio);
       maxBufferedFrames = sharedControl ? 512 : 2048;
       setAudioPort(payload.port);
+      if (payload.sharedAudio) audioPort.postMessage({ type: "sunvox-shared-buffer", ...payload.sharedAudio });
+      audioPort.postMessage({ type: "sunvox-master-volume", gain: payload.gain ?? 1 });
       return;
     case "engineStartAudio":
       idleStop = null; idleFrames = 0;

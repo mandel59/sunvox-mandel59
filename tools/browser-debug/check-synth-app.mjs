@@ -3,13 +3,14 @@ import { readFile, mkdir } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
+import { chromium, firefox } from "playwright";
 import { FMX_TINES } from "../../packages/sunvox-synth/test/fmx-tines.fixture.js";
 import { withSunVoxSlot, loadProjectFromBuffer, loadSynthModuleFromBuffer } from "../sunvox-node.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const dist = path.join(root, "packages/sunvox-synth/dist");
-const artifacts = path.join(root, "var/issue-71");
+const useFirefox = process.argv.includes("--firefox");
+const artifacts = path.join(root, useFirefox ? "var/firefox-synth-check" : "var/issue-71");
 await mkdir(artifacts, { recursive: true });
 const isolated = process.argv.includes("--isolation");
 const mime = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".wasm": "application/wasm", ".txt": "text/plain" };
@@ -29,11 +30,14 @@ const server = http.createServer(async (req, res) => {
   } catch { res.writeHead(404); res.end(); }
 });
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-let browser;
+let browser, page;
 try {
-  try { browser = await chromium.launch(); }
-  catch { browser = await chromium.launch({ channel: "msedge" }); }
-  const page = await browser.newPage({ hasTouch: true, viewport: { width: 1280, height: 1000 } });
+  if (useFirefox) browser = await firefox.launch();
+  else {
+    try { browser = await chromium.launch(); }
+    catch { browser = await chromium.launch({ channel: "msedge" }); }
+  }
+  page = await browser.newPage({ hasTouch: !useFirefox, viewport: { width: 1280, height: 1000 } });
   page.setDefaultTimeout(15000); const errors = [];
   page.on("pageerror", (error) => { errors.push(error.message); console.log(error.message); }); page.on("console", msg => console.log("browser:", msg.text()));
   await page.addInitScript(() => {
@@ -91,7 +95,7 @@ try {
   assert.equal(await page.locator(".key.active").count(), 0);
   const key = page.locator('.key[data-code="KeyG"]');
   await key.scrollIntoViewIfNeeded(); const box = await key.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height - 20);
+  await key.hover({ position: { x: box.width / 2, y: box.height - 20 } });
   await page.mouse.down();
   await page.waitForFunction(() => peak() > 0.001);
   await page.mouse.move(5, 5);
@@ -168,17 +172,27 @@ try {
   await touchKey.scrollIntoViewIfNeeded();
   const touchBox = await touchKey.boundingBox();
   const touchBox2 = await page.locator('.key[data-code="KeyC"]').boundingBox();
-  const session = await page.context().newCDPSession(page);
-  await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [
-    { x: touchBox.x + touchBox.width / 2, y: touchBox.y + touchBox.height - 20, id: 1 },
-    { x: touchBox2.x + touchBox2.width / 2, y: touchBox2.y + touchBox2.height - 20, id: 2 },
-  ] });
-  assert.equal(await page.locator(".key.active").count(), 2);
-  await session.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
-  assert.equal(await page.locator(".key.active").count(), 0);
+  if (!useFirefox) {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [
+      { x: touchBox.x + touchBox.width / 2, y: touchBox.y + touchBox.height - 20, id: 1 },
+      { x: touchBox2.x + touchBox2.width / 2, y: touchBox2.y + touchBox2.height - 20, id: 2 },
+    ] });
+    assert.equal(await page.locator(".key.active").count(), 2);
+    await session.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
+    assert.equal(await page.locator(".key.active").count(), 0);
+  }
   await page.screenshot({ path: path.join(artifacts, "mobile.png"), fullPage: true });
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ isolated, audio: "audible", chord: "passed", panic: "silent", releaseOutside: "passed", blur: "passed", controllers: "passed", savedBytes: bytes.length, mobileOverflow: false, multiTouchAndCancel: "passed", errors }, null, 2));
+  console.log(JSON.stringify({ browser: browser.browserType().name(), version: browser.version(), isolated, audio: "audible", chord: "passed", panic: "silent", releaseOutside: "passed", blur: "passed", controllers: "passed", savedBytes: bytes.length, mobileOverflow: false, multiTouchAndCancel: useFirefox ? "not tested (CDP required)" : "passed", errors }, null, 2));
+} catch (error) {
+  if (page) console.error("Browser state:", await page.evaluate(() => ({
+    status: document.querySelector("#status")?.textContent,
+    audioState: window.testAnalyser?.context.state,
+    sampleRate: window.testAnalyser?.context.sampleRate,
+    lastCommand: window.engineCommands?.at(-1)?.type,
+  })).catch(() => null));
+  throw error;
 } finally {
   await browser?.close();
   await new Promise((resolve) => server.close(resolve));

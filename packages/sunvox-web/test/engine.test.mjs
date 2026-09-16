@@ -223,3 +223,20 @@ test("silence detection and pause run in the Worker without app polling", async 
   assert.equal(messages.at(-1).gain, 0.25);
   await assert.rejects(send({ type: "pauseAudioWhenSilent", seconds: 0, threshold: 0 }), /Invalid silence/);
 });
+
+test("Worker configures shared audio and gain on the transferred port before rendering", async (t) => {
+  const { send } = await workerHarness(t);
+  const sharedAudio = { controlBuffer: new SharedArrayBuffer(64), audioBuffer: new SharedArrayBuffer(16384 * 2 * 4) };
+  const control = new Int32Array(sharedAudio.controlBuffer);
+  control[2] = 16384; control[3] = 2;
+  const messages = [];
+  const port = { close() {}, postMessage: message => messages.push(message) };
+  await send({ type: "configureAudio", port, sharedAudio, gain: 0.25 });
+  assert.equal(messages[0].type, "sunvox-shared-buffer");
+  assert.equal(messages[0].controlBuffer, sharedAudio.controlBuffer);
+  assert.equal(messages[0].audioBuffer, sharedAudio.audioBuffer);
+  assert.deepEqual(structuredClone(messages[1]), { type: "sunvox-master-volume", gain: 0.25 });
+  assert.equal(control[1], 0, "configuration precedes the first render");
+  await send({ type: "engineStartAudio" });
+  assert.ok(control[1] > 0);
+});

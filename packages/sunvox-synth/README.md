@@ -98,6 +98,9 @@ npm run preview --workspace @mandel59/sunvox-synth
 npm run build --workspace @mandel59/sunvox-synth
 node tools/browser-debug/check-synth-app.mjs
 node tools/browser-debug/check-synth-app.mjs --isolation
+# Playwright Firefox をインストール後:
+node tools/browser-debug/check-synth-app.mjs --firefox
+node tools/browser-debug/check-synth-app.mjs --firefox --isolation
 ```
 
 ## ライセンス
