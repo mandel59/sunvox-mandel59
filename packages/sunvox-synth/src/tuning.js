@@ -1,5 +1,6 @@
 export const EDO = 41;
-export const DIAGONAL_INTERVAL = 13;
+export const DIAGONAL_INTERVAL = 7;
+export const HORIZONTAL_INTERVAL = 17;
 export const wrapStep = step => ((step % EDO) + EDO) % EDO;
 export const formatStep = step => step >= 0 ? "+" + step : String(step);
 // Physical KeyboardEvent.code positions; labels use the US keyboard legends.
@@ -10,13 +11,11 @@ const rows = [
   ["KeyA KeyS KeyD KeyF KeyG KeyH KeyJ KeyK KeyL Semicolon Quote", "A S D F G H J K L ; '"],
   ["KeyZ KeyX KeyC KeyV KeyB KeyN KeyM Comma Period Slash", "Z X C V B N M , . /"],
 ];
-// Moving diagonally upward keeps n unchanged, so every diagonal step is +13.
-// Each pair of horizontal steps is +7, with +24 between the pair's keys.
+// Moving diagonally upward keeps n unchanged; moving right increases n by one.
 function keyboardStep(row, column) {
   const up = 3 - row;
   const n = column - 1 - up; // X is the origin.
-  const pair = Math.floor(n / 2);
-  return up * DIAGONAL_INTERVAL + pair * 7 + (n - pair * 2) * 24;
+  return up * DIAGONAL_INTERVAL + n * HORIZONTAL_INTERVAL;
 }
 export const KEY_LAYOUT = rows.flatMap(([codes, labels], index) => {
   const row = index - 1; // Preserve the number/Q/A/Z row coordinates.

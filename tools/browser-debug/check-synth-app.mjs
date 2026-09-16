@@ -73,7 +73,7 @@ try {
   const events = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).map(c => c.command.args));
   assert.equal(events.length, 2);
   assert.notEqual(events[0][1], events[1][1]);
-  assert.ok(Math.abs(events[0][6] - events[1][6] - 3072 * 24 / 41) < 1);
+  assert.ok(Math.abs(events[0][6] - events[1][6] - 3072 * 17 / 41) < 1);
   await page.keyboard.up("KeyX");
   assert.equal(await page.locator(".key.active").count(), 1);
   await page.keyboard.up("KeyC");
@@ -110,12 +110,12 @@ try {
   assert.equal(await page.locator(".key.active").count(), 0);
   await page.keyboard.up("KeyW");
   assert.match(await page.locator('.key[data-code="KeyX"]').getAttribute("aria-label"), /523\.25 Hz/);
-  for (const [code, step] of Object.entries({KeyZ:17, KeyX:0, KeyC:24, KeyV:7, KeyB:31, KeyM:38, Comma:21, Period:45, Slash:28, KeyD:13, KeyR:26, Digit5:39})) {
+  for (const [code, step] of Object.entries({KeyZ:-17, KeyX:0, KeyC:17, KeyV:34, KeyB:51, KeyM:85, Comma:102, Period:119, Slash:136, KeyD:7, KeyR:14, Digit5:21})) {
     assert.equal(await page.locator('.key[data-code="' + code + '"]').getAttribute("data-step"), String(step));
   }
   await page.keyboard.down("Period");
   const periodEvent = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).at(-1).command.args);
-  const periodHz = 440 * 2 ** (1 - 9 / 12 + 45 / 41); // C5 root, +45 EDO steps
+  const periodHz = 440 * 2 ** (1 - 9 / 12 + 119 / 41); // C5 root, +119 EDO steps
   assert.equal(periodEvent[6], Math.round(30720 - Math.log2(periodHz / 16.333984375) * 3072));
   await page.keyboard.up("Period");
   const oneBox = await page.locator('.key[data-code="Digit1"]').boundingBox();
@@ -123,7 +123,7 @@ try {
   const twoBox = await page.locator('.key[data-code="Digit2"]').boundingBox();
   assert.ok(f1Box.y < oneBox.y && f1Box.x > oneBox.x && f1Box.x < twoBox.x);
   await page.locator("#octave").evaluate(el => el.blur());
-  for (const [index, step] of [38,62,45,69,52,76,59,83,66,90].entries()) {
+  for (const [index, step] of [-40,-23,-6,11,28,45,62,79,96,113].entries()) {
     const code = 'F' + (index + 1);
     await page.keyboard.down(code);
     await page.keyboard.down(code); // Auto-repeat must also suppress browser shortcuts.
