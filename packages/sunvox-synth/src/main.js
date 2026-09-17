@@ -1,13 +1,15 @@
 import { createSunVoxEngine, NOTECMD_SET_PITCH, NOTECMD_NOTE_OFF, NOTECMD_CLEAN_SYNTHS } from "@mandel59/sunvox-web";
 import "./style.css";
 import tinesUrl from "../assets/scratch-fmx-tines.sunsynth?url";
-import { EDO, KEY_LAYOUT, toneForStep, formatStep } from "./tuning.js";
+import { TUNING_PRESETS, LAYOUT_PRESETS, DEFAULT_TUNING_ID, DEFAULT_LAYOUT_ID, createKeyLayout, getTuning, getLayout, toneForStep, formatStep } from "./tuning.js";
 
 const $ = (selector) => document.querySelector(selector);
 let engine, generator, ready = false, meterTimer;
 const held = new Map();
-const keys = [];
-const codeMap = new Map(KEY_LAYOUT.map(entry => [entry.code, entry]));
+let keys = [];
+let codeMap = new Map();
+let tuning = getTuning(DEFAULT_TUNING_ID);
+let layout = getLayout(DEFAULT_LAYOUT_ID);
 const check = (value) => {
   if (typeof value === "number" && value < 0) throw new Error("SunVox error: " + value);
   return value;
@@ -20,7 +22,7 @@ function refreshKeys() {
     const active = [...held.values()].some((voice) => voice.code === entry.code);
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
-    const { frequency } = toneForStep(entry.step, Number($("#octave").value));
+    const { frequency } = toneForStep(entry.step, Number($("#octave").value), tuning);
     const label = entry.label + " · " + formatStep(entry.step) + " 段 · " + frequency.toFixed(2) + " Hz";
     button.setAttribute("aria-label", label);
     button.title = label;
@@ -32,9 +34,9 @@ function noteOn(source, entry) {
   const occupied = new Set([...held.values()].map((voice) => voice.track));
   const track = Array.from({ length: 32 }, (_, i) => i).find((i) => !occupied.has(i));
   if (track === undefined) return;
-  const { pitch, frequency } = toneForStep(entry.step, Number($("#octave").value));
+  const { pitch, frequency } = toneForStep(entry.step, Number($("#octave").value), tuning);
   held.set(source, { code: entry.code, track });
-  $("#status").textContent = entry.label + " · +" + entry.step + " / 41 · " + frequency.toFixed(2) + " Hz";
+  $("#status").textContent = entry.label + " · " + formatStep(entry.step) + " / " + tuning.edo + " · " + frequency.toFixed(2) + " Hz";
   refreshKeys();
   // Send immediately so a following note-off cannot overtake this note-on.
   run(engine.sv_send_event(0, track, NOTECMD_SET_PITCH, 100, generator + 1, 0, pitch).then(check));
@@ -52,48 +54,64 @@ function panic() {
   if (ready) run(engine.sv_send_event(0, 0, NOTECMD_CLEAN_SYNTHS, 0, 0, 0, 0).then(check));
 }
 
-for (const entry of KEY_LAYOUT) {
-  const { code, label, row, step } = entry;
-  let rowElement = document.querySelector('[data-row="' + row + '"]');
-  if (!rowElement) {
-    rowElement = document.createElement("div");
-    rowElement.className = "key-row";
-    rowElement.dataset.row = row;
-    $("#keyboard").append(rowElement);
-  }
-  const button = document.createElement("button");
-  button.className = "key";
-  button.classList.toggle("root", step % EDO === 0);
-  button.disabled = true;
-  button.dataset.code = code;
-  button.dataset.step = step;
-  const caption = document.createElement("strong");
-  caption.textContent = label;
-  const degree = document.createElement("span");
-  degree.textContent = formatStep(step);
-  button.append(caption, degree);
-  button.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    button.setPointerCapture(event.pointerId);
-    noteOn("pointer-" + event.pointerId, entry);
-  });
-  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
-    button.addEventListener(type, (event) => noteOff("pointer-" + event.pointerId));
-  }
-  button.addEventListener("keydown", (event) => {
-    if (event.code === "Space" || event.code === "Enter") {
-      event.preventDefault();
-      if (!event.repeat) noteOn("button-" + code, entry);
+function renderKeyboard() {
+  panic();
+  keys = [];
+  const keyLayout = createKeyLayout(tuning, layout);
+  codeMap = new Map(keyLayout.map(entry => [entry.code, entry]));
+  $("#keyboard").replaceChildren();
+  $("#keyboard-title").textContent = tuning.edo + " EDO / " + layout.label;
+  $("#keyboard").setAttribute("aria-label", tuning.label + "の" + layout.label + "鍵盤");
+  const intervals = layout.intervals(tuning.edo);
+  $("#layout-description").textContent = layout.description + "。右へ " + formatStep(intervals.horizontal) + " 音、右上へ " + formatStep(intervals.diagonal) + " 音。X が基準音です。";
+  for (const entry of keyLayout) {
+    const { code, label, row, step } = entry;
+    let rowElement = document.querySelector('[data-row="' + row + '"]');
+    if (!rowElement) {
+      rowElement = document.createElement("div");
+      rowElement.className = "key-row";
+      rowElement.dataset.row = row;
+      $("#keyboard").append(rowElement);
     }
-  });
-  button.addEventListener("keyup", (event) => {
-    if (event.code === "Space" || event.code === "Enter") noteOff("button-" + code);
-  });
-  button.addEventListener("blur", () => noteOff("button-" + code));
-  keys.push({ button, entry });
-  rowElement.append(button);
+    const button = document.createElement("button");
+    button.className = "key";
+    button.classList.toggle("root", step % tuning.edo === 0);
+    button.disabled = !ready;
+    button.dataset.code = code;
+    button.dataset.step = step;
+    const caption = document.createElement("strong");
+    caption.textContent = label;
+    const degree = document.createElement("span");
+    degree.textContent = formatStep(step);
+    button.append(caption, degree);
+    button.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      button.setPointerCapture(event.pointerId);
+      noteOn("pointer-" + event.pointerId, entry);
+    });
+    for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+      button.addEventListener(type, (event) => noteOff("pointer-" + event.pointerId));
+    }
+    button.addEventListener("keydown", (event) => {
+      if (event.code === "Space" || event.code === "Enter") {
+        event.preventDefault();
+        if (!event.repeat) noteOn("button-" + code, entry);
+      }
+    });
+    button.addEventListener("keyup", (event) => {
+      if (event.code === "Space" || event.code === "Enter") noteOff("button-" + code);
+    });
+    button.addEventListener("blur", () => noteOff("button-" + code));
+    keys.push({ button, entry });
+    rowElement.append(button);
+  }
 }
+for (const preset of TUNING_PRESETS) $("#tuning").add(new Option(preset.label, preset.id, false, preset.id === DEFAULT_TUNING_ID));
+for (const preset of LAYOUT_PRESETS) $("#layout").add(new Option(preset.label, preset.id, false, preset.id === DEFAULT_LAYOUT_ID));
+$("#tuning").addEventListener("change", () => { tuning = getTuning($("#tuning").value); renderKeyboard(); });
+$("#layout").addEventListener("change", () => { layout = getLayout($("#layout").value); renderKeyboard(); });
+renderKeyboard();
 refreshKeys();
 window.addEventListener("keydown", (event) => {
   const entry = codeMap.get(event.code);
@@ -191,7 +209,7 @@ $("#start").addEventListener("click", async () => {
     // startAudio runs before the first await to retain the click gesture.
     await next.startAudio();
     check(await next.sv_open_slot(0));
-    check(await next.sv_set_song_name(0, "41EDO FMX patch"));
+    check(await next.sv_set_song_name(0, "SunVox Synth patch"));
     const response = await fetch(tinesUrl);
     if (!response.ok) throw new Error("初期音色の読み込みに失敗しました");
     const presetBytes = new Uint8Array(await response.arrayBuffer());
