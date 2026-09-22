@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {KEY_LAYOUT, EDO, TUNING_PRESETS, LAYOUT_PRESETS, createKeyLayout, getTuning, getLayout, toneForStep, formatStep} from '../src/tuning.js';
+import {KEY_LAYOUT, EDO, PERFORMANCE_PRESETS, createKeyLayout, getPreset, toneForStep, formatStep} from '../src/tuning.js';
 
 test('41 EDO grid preserves +17 horizontal steps and +7 upward-right diagonals', () => {
   assert.equal(new Set(KEY_LAYOUT.map(k => k.code)).size, KEY_LAYOUT.length);
@@ -41,18 +41,17 @@ test('tuning preserves octave ratios and sends fractional-semitone pitch', () =>
   assert.throws(() => toneForStep(0, 9));
 });
 
-test('tuning and keyboard layout presets can be combined', () => {
-  assert.deepEqual(TUNING_PRESETS.map(({ edo }) => edo), [12, 19, 31, 41, 53]);
-  assert.deepEqual(LAYOUT_PRESETS.map(({ id }) => id), ['isomorphic', 'chromatic']);
-  for (const tuning of TUNING_PRESETS) {
-    for (const layout of LAYOUT_PRESETS) {
-      const keys = createKeyLayout(tuning, layout);
+test('every performance preset is playable across all supported octaves', () => {
+  for (const tuning of PERFORMANCE_PRESETS) {
+      const keys = createKeyLayout(tuning);
       assert.equal(keys.length, 55);
       assert.equal(new Set(keys.map(({ code }) => code)).size, 55);
       assert.equal(keys.find(({ code }) => code === 'KeyX').step, 0);
       assert.equal(toneForStep(tuning.edo, 4, tuning).frequency, toneForStep(0, 5, tuning).frequency);
-    }
+      for (const key of keys) for (let octave = 2; octave <= 6; octave++) {
+        const tone = toneForStep(key.step, octave, tuning);
+        assert.ok(tone.pitch >= 0 && tone.pitch <= 30720);
+      }
   }
-  assert.throws(() => getTuning('missing'));
-  assert.throws(() => getLayout('missing'));
+  assert.throws(() => getPreset('missing'));
 });

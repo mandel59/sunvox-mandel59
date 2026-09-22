@@ -1,15 +1,14 @@
 import { createSunVoxEngine, NOTECMD_SET_PITCH, NOTECMD_NOTE_OFF, NOTECMD_CLEAN_SYNTHS } from "@mandel59/sunvox-web";
 import "./style.css";
 import tinesUrl from "../assets/scratch-fmx-tines.sunsynth?url";
-import { TUNING_PRESETS, LAYOUT_PRESETS, DEFAULT_TUNING_ID, DEFAULT_LAYOUT_ID, createKeyLayout, getTuning, getLayout, toneForStep, formatStep } from "./tuning.js";
+import { PERFORMANCE_PRESETS, DEFAULT_PRESET_ID, createKeyLayout, getPreset, toneForStep, formatStep } from "./tuning.js";
 
 const $ = (selector) => document.querySelector(selector);
 let engine, generator, ready = false, meterTimer;
 const held = new Map();
 let keys = [];
 let codeMap = new Map();
-let tuning = getTuning(DEFAULT_TUNING_ID);
-let layout = getLayout(DEFAULT_LAYOUT_ID);
+let tuning = getPreset(DEFAULT_PRESET_ID);
 const check = (value) => {
   if (typeof value === "number" && value < 0) throw new Error("SunVox error: " + value);
   return value;
@@ -56,13 +55,12 @@ function panic() {
 
 function renderKeyboard() {
   keys = [];
-  const keyLayout = createKeyLayout(tuning, layout);
+  const keyLayout = createKeyLayout(tuning);
   codeMap = new Map(keyLayout.map(entry => [entry.code, entry]));
   $("#keyboard").replaceChildren();
-  $("#keyboard-title").textContent = tuning.edo + " EDO / " + layout.label;
-  $("#keyboard").setAttribute("aria-label", tuning.label + "の" + layout.label + "鍵盤");
-  const intervals = layout.intervals(tuning.edo);
-  $("#layout-description").textContent = layout.description + "。右へ " + formatStep(intervals.horizontal) + " 音、右上へ " + formatStep(intervals.diagonal) + " 音。X が基準音です。";
+  $("#keyboard-title").textContent = tuning.label;
+  $("#keyboard").setAttribute("aria-label", tuning.label + " 鍵盤");
+  $("#layout-description").textContent = tuning.edo + "平均律。右へ " + formatStep(tuning.horizontal) + " 段、右上へ " + formatStep(tuning.diagonal) + " 段。X が基準音です。";
   for (const entry of keyLayout) {
     const { code, label, row, step } = entry;
     let rowElement = document.querySelector('[data-row="' + row + '"]');
@@ -107,17 +105,11 @@ function renderKeyboard() {
   }
   refreshKeys();
 }
-for (const preset of TUNING_PRESETS) $("#tuning").add(new Option(preset.label, preset.id, false, preset.id === DEFAULT_TUNING_ID));
-for (const preset of LAYOUT_PRESETS) $("#layout").add(new Option(preset.label, preset.id, false, preset.id === DEFAULT_LAYOUT_ID));
-$("#tuning").addEventListener("change", (event) => {
+for (const preset of PERFORMANCE_PRESETS) $("#preset").add(new Option(preset.label, preset.id, false, preset.id === DEFAULT_PRESET_ID));
+$("#preset").addEventListener("change", (event) => {
+  const nextPreset = getPreset(event.currentTarget.value);
   panic();
-  tuning = getTuning(event.currentTarget.value);
-  renderKeyboard();
-  event.currentTarget.blur();
-});
-$("#layout").addEventListener("change", (event) => {
-  panic();
-  layout = getLayout(event.currentTarget.value);
+  tuning = nextPreset;
   renderKeyboard();
   event.currentTarget.blur();
 });

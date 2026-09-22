@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, firefox } from "playwright";
 import { FMX_TINES } from "../../packages/sunvox-synth/test/fmx-tines.fixture.js";
+import { PERFORMANCE_PRESETS } from "../../packages/sunvox-synth/src/tuning.js";
 import { withSunVoxSlot, loadProjectFromBuffer, loadSynthModuleFromBuffer } from "../sunvox-node.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
@@ -82,18 +83,36 @@ try {
   assert.equal(await page.locator(".key.active").count(), 1);
   await page.keyboard.up("KeyC");
   const beforePresetSwitch = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).length);
-  await page.selectOption("#tuning", "12edo");
+  await page.selectOption("#preset", "12edo-isomorphic");
   await page.keyboard.press("KeyX");
   await page.locator('.key[data-code="KeyC"]').click({ delay: 100 });
   const afterTuningSwitch = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).length);
   assert.equal(afterTuningSwitch, beforePresetSwitch + 2, "keyboard and pointer work after tuning switch");
-  await page.selectOption("#layout", "chromatic");
+  await page.selectOption("#preset", "12edo-chromatic");
   await page.keyboard.press("KeyX");
   await page.locator('.key[data-code="KeyC"]').click({ delay: 100 });
   const afterLayoutSwitch = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).length);
   assert.equal(afterLayoutSwitch, afterTuningSwitch + 2, "keyboard and pointer work after layout switch");
-  await page.selectOption("#tuning", "41edo");
-  await page.selectOption("#layout", "isomorphic");
+  for (const preset of PERFORMANCE_PRESETS) {
+    await page.keyboard.down("KeyX");
+    await page.selectOption("#preset", preset.id);
+    await page.keyboard.up("KeyX");
+    assert.equal(await page.locator(".key.active").count(), 0);
+    await page.waitForFunction(() => peak() < 0.00001);
+    assert.equal(await page.locator('.key[data-code="KeyC"]').getAttribute("data-step"), String(preset.horizontal));
+    assert.match(await page.locator('.key[data-code="KeyX"]').getAttribute("aria-label"), /261\.63 Hz/);
+    await page.keyboard.down("KeyC");
+    await page.waitForFunction(() => peak() > 0.001);
+    const pitch = await page.evaluate(() => engineCommands.filter(c => c.command?.method === "sv_send_event" && c.command.args[2] === 133).at(-1).command.args[6]);
+    const hz = 440 * 2 ** (-9 / 12 + preset.horizontal / preset.edo);
+    assert.equal(pitch, Math.round(30720 - Math.log2(hz / 16.333984375) * 3072));
+    await page.keyboard.up("KeyC");
+    await page.locator('.key[data-code="KeyX"]').hover();
+    await page.mouse.down();
+    await page.waitForFunction(() => peak() > 0.001);
+    await page.mouse.up();
+  }
+  await page.selectOption("#preset", "41edo-isomorphic");
   await page.keyboard.down("KeyA");
   await page.keyboard.down("KeyD");
   await page.keyboard.down("KeyG");

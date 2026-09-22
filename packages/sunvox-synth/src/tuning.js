@@ -1,16 +1,13 @@
-export const TUNING_PRESETS = Object.freeze([
-  { id: "12edo", label: "12 EDO（標準）", edo: 12 },
-  { id: "19edo", label: "19 EDO", edo: 19 },
-  { id: "31edo", label: "31 EDO", edo: 31 },
-  { id: "41edo", label: "41 EDO", edo: 41 },
-  { id: "53edo", label: "53 EDO", edo: 53 },
-]);
-export const LAYOUT_PRESETS = Object.freeze([
-  { id: "isomorphic", label: "アイソモーフィック", description: "右へ純正4度、右上へ大全音に近い間隔", intervals: edo => ({ horizontal: Math.round(edo * Math.log2(4 / 3)), diagonal: Math.round(edo * Math.log2(9 / 8)) }) },
-  { id: "chromatic", label: "クロマチック", description: "右へ1音、上の段へ完全4度に近い間隔", intervals: edo => ({ horizontal: 1, diagonal: Math.round(edo * Math.log2(4 / 3)) + 1 }) },
-]);
-export const DEFAULT_TUNING_ID = "41edo";
-export const DEFAULT_LAYOUT_ID = "isomorphic";
+// Each preset fully specifies both tuning and physical key intervals.
+export const PERFORMANCE_PRESETS = Object.freeze([
+  { id: "12edo-chromatic", label: "12 EDO / クロマチック", edo: 12, horizontal: 1, diagonal: 6 },
+  { id: "12edo-isomorphic", label: "12 EDO / 右+5・右上+2", edo: 12, horizontal: 5, diagonal: 2 },
+  { id: "19edo-isomorphic", label: "19 EDO / 右+8・右上+3", edo: 19, horizontal: 8, diagonal: 3 },
+  { id: "31edo-isomorphic", label: "31 EDO / 右+13・右上+5", edo: 31, horizontal: 13, diagonal: 5 },
+  { id: "41edo-isomorphic", label: "41 EDO / 右+17・右上+7", edo: 41, horizontal: 17, diagonal: 7 },
+  { id: "53edo-isomorphic", label: "53 EDO / 右+22・右上+9", edo: 53, horizontal: 22, diagonal: 9 },
+].map(Object.freeze));
+export const DEFAULT_PRESET_ID = "41edo-isomorphic";
 export const EDO = 41;
 export const wrapStep = (step, edo = EDO) => ((step % edo) + edo) % edo;
 export const formatStep = step => step >= 0 ? "+" + step : String(step);
@@ -23,18 +20,13 @@ const rows = [
   ["KeyZ KeyX KeyC KeyV KeyB KeyN KeyM Comma Period Slash", "Z X C V B N M , . /"],
 ];
 // Moving diagonally upward keeps n unchanged; moving right increases n by one.
-export function getTuning(id) {
-  const tuning = TUNING_PRESETS.find(preset => preset.id === id);
-  if (!tuning) throw new RangeError("Unknown tuning preset: " + id);
-  return tuning;
+export function getPreset(id) {
+  const preset = PERFORMANCE_PRESETS.find(preset => preset.id === id);
+  if (!preset) throw new RangeError("Unknown performance preset: " + id);
+  return preset;
 }
-export function getLayout(id) {
-  const layout = LAYOUT_PRESETS.find(preset => preset.id === id);
-  if (!layout) throw new RangeError("Unknown keyboard layout preset: " + id);
-  return layout;
-}
-export function createKeyLayout(tuning = getTuning(DEFAULT_TUNING_ID), layout = getLayout(DEFAULT_LAYOUT_ID)) {
-  const { horizontal, diagonal } = layout.intervals(tuning.edo);
+export function createKeyLayout(preset = getPreset(DEFAULT_PRESET_ID)) {
+  const { horizontal, diagonal } = preset;
   return rows.flatMap(([codes, labels], index) => {
     const row = index - 1;
     return codes.split(" ").map((code, position) => {
@@ -46,7 +38,7 @@ export function createKeyLayout(tuning = getTuning(DEFAULT_TUNING_ID), layout = 
   });
 }
 export const KEY_LAYOUT = createKeyLayout();
-export function toneForStep(step, octave = 4, tuning = getTuning(DEFAULT_TUNING_ID)) {
+export function toneForStep(step, octave = 4, tuning = getPreset(DEFAULT_PRESET_ID)) {
   if (!Number.isInteger(step) || !Number.isInteger(octave) || octave < 2 || octave > 6 || !Number.isInteger(tuning?.edo) || tuning.edo < 1) {
     throw new RangeError("Invalid keyboard pitch");
   }
