@@ -55,7 +55,6 @@ function panic() {
 }
 
 function renderKeyboard() {
-  panic();
   keys = [];
   const keyLayout = createKeyLayout(tuning, layout);
   codeMap = new Map(keyLayout.map(entry => [entry.code, entry]));
@@ -106,13 +105,23 @@ function renderKeyboard() {
     keys.push({ button, entry });
     rowElement.append(button);
   }
+  refreshKeys();
 }
 for (const preset of TUNING_PRESETS) $("#tuning").add(new Option(preset.label, preset.id, false, preset.id === DEFAULT_TUNING_ID));
 for (const preset of LAYOUT_PRESETS) $("#layout").add(new Option(preset.label, preset.id, false, preset.id === DEFAULT_LAYOUT_ID));
-$("#tuning").addEventListener("change", () => { tuning = getTuning($("#tuning").value); renderKeyboard(); });
-$("#layout").addEventListener("change", () => { layout = getLayout($("#layout").value); renderKeyboard(); });
+$("#tuning").addEventListener("change", (event) => {
+  panic();
+  tuning = getTuning(event.currentTarget.value);
+  renderKeyboard();
+  event.currentTarget.blur();
+});
+$("#layout").addEventListener("change", (event) => {
+  panic();
+  layout = getLayout(event.currentTarget.value);
+  renderKeyboard();
+  event.currentTarget.blur();
+});
 renderKeyboard();
-refreshKeys();
 window.addEventListener("keydown", (event) => {
   const entry = codeMap.get(event.code);
   if (!entry || event.isComposing || event.ctrlKey || event.metaKey || event.altKey ||
