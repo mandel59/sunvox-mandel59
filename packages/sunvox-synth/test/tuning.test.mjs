@@ -41,12 +41,30 @@ test('tuning preserves octave ratios and sends fractional-semitone pitch', () =>
   assert.throws(() => toneForStep(0, 9));
 });
 
+test('Wicki-Hayden variants place whole tones right and fourths upper-left of F', () => {
+  for (const [edo, whole, fourth] of [[12, 2, 5], [19, 3, 8], [31, 5, 13], [41, 7, 17], [53, 9, 22]]) {
+    const preset = getPreset(`${edo}edo-wicki-hayden`);
+    const keys = createKeyLayout(preset);
+    const step = code => keys.find(key => key.code === code).step;
+    assert.equal(step('KeyF'), 0);
+    assert.equal(step('KeyG'), whole);
+    assert.equal(step('KeyR'), fourth);
+    assert.equal(step('KeyT'), fourth + whole);
+    for (const key of keys) {
+      const right = keys.find(k => k.row === key.row && k.column === key.column + 1);
+      const upperLeft = keys.find(k => k.row === key.row - 1 && k.column === key.column);
+      if (right) assert.equal(right.step - key.step, whole);
+      if (upperLeft) assert.equal(upperLeft.step - key.step, fourth);
+    }
+  }
+});
+
 test('every performance preset is playable across all supported octaves', () => {
   for (const tuning of PERFORMANCE_PRESETS) {
       const keys = createKeyLayout(tuning);
       assert.equal(keys.length, 55);
       assert.equal(new Set(keys.map(({ code }) => code)).size, 55);
-      assert.equal(keys.find(({ code }) => code === 'KeyX').step, 0);
+      assert.equal(keys.find(({ code }) => code === tuning.rootCode).step, 0);
       assert.equal(toneForStep(tuning.edo, 4, tuning).frequency, toneForStep(0, 5, tuning).frequency);
       for (const key of keys) for (let octave = 2; octave <= 6; octave++) {
         const tone = toneForStep(key.step, octave, tuning);

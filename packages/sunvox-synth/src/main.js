@@ -60,7 +60,11 @@ function renderKeyboard() {
   $("#keyboard").replaceChildren();
   $("#keyboard-title").textContent = tuning.label;
   $("#keyboard").setAttribute("aria-label", tuning.label + " 鍵盤");
-  $("#layout-description").textContent = tuning.edo + "平均律。右へ " + formatStep(tuning.horizontal) + " 段、右上へ " + formatStep(tuning.diagonal) + " 段。X が基準音です。";
+  const direction = tuning.leftUp === undefined
+    ? "右上へ " + formatStep(tuning.diagonal)
+    : "左上へ " + formatStep(tuning.leftUp);
+  $("#layout-description").textContent = tuning.edo + "平均律。右へ " + formatStep(tuning.horizontal) + " 段、" + direction + " 段。" + tuning.rootLabel + " キーが基準音です。";
+  for (const option of $("#octave").options) option.textContent = tuning.rootLabel + " = C" + option.value;
   for (const entry of keyLayout) {
     const { code, label, row, step } = entry;
     let rowElement = document.querySelector('[data-row="' + row + '"]');
