@@ -4,7 +4,8 @@ import tinesUrl from "../assets/scratch-fmx-tines.sunsynth?url";
 import { PERFORMANCE_PRESETS, DEFAULT_PRESET_ID, createKeyLayout, getPreset, toneForStep, formatStep } from "./tuning.js";
 
 const $ = (selector) => document.querySelector(selector);
-let engine, generator, ready = false, meterTimer;
+let engine, generator, ready = false, starting = false, meterTimer;
+const pendingNotes = new Map();
 const held = new Map();
 let keys = [];
 let codeMap = new Map();
@@ -29,7 +30,12 @@ function refreshKeys() {
   $("#voices").textContent = held.size + " KEYS HELD";
 }
 function noteOn(source, entry) {
-  if (!ready || held.has(source)) return;
+  if (!ready) {
+    pendingNotes.set(source, entry);
+    if (!starting) run(startAudio());
+    return;
+  }
+  if (held.has(source)) return;
   const occupied = new Set([...held.values()].map((voice) => voice.track));
   const track = Array.from({ length: 32 }, (_, i) => i).find((i) => !occupied.has(i));
   if (track === undefined) return;
@@ -41,6 +47,7 @@ function noteOn(source, entry) {
   run(engine.sv_send_event(0, track, NOTECMD_SET_PITCH, 100, generator + 1, 0, pitch).then(check));
 }
 function noteOff(source) {
+  pendingNotes.delete(source);
   const voice = held.get(source);
   if (!voice) return;
   held.delete(source);
@@ -48,6 +55,7 @@ function noteOff(source) {
   run(engine.sv_send_event(0, voice.track, NOTECMD_NOTE_OFF, 0, 0, 0, 0).then(check));
 }
 function panic() {
+  pendingNotes.clear();
   held.clear();
   refreshKeys();
   if (ready) run(engine.sv_send_event(0, 0, NOTECMD_CLEAN_SYNTHS, 0, 0, 0, 0).then(check));
@@ -77,7 +85,6 @@ function renderKeyboard() {
     const button = document.createElement("button");
     button.className = "key";
     button.classList.toggle("root", step % tuning.edo === 0);
-    button.disabled = !ready;
     button.dataset.code = code;
     button.dataset.step = step;
     const caption = document.createElement("strong");
@@ -205,12 +212,13 @@ async function meter() {
   if (ready) meterTimer = setTimeout(meter, 60);
 }
 
-$("#start").addEventListener("click", async () => {
-  $("#start").disabled = true;
+async function startAudio() {
+  starting = true;
   $("#status").textContent = "音声エンジンを準備しています…";
-  const next = createSunVoxEngine({ runtimeBaseUrl: new URL("./sunvox_lib/", location.href) });
-  engine = next;
+  let next;
   try {
+    next = createSunVoxEngine({ runtimeBaseUrl: new URL("./sunvox_lib/", location.href) });
+    engine = next;
     // startAudio runs before the first await to retain the click gesture.
     await next.startAudio();
     check(await next.sv_open_slot(0));
@@ -233,17 +241,20 @@ $("#start").addEventListener("click", async () => {
     for (const selector of ["#volume", "#save", "#panic", "#octave", ".key"]) {
       document.querySelectorAll(selector).forEach((element) => { element.disabled = false; });
     }
-    $("#start").textContent = "音声 ON";
     $("#status").textContent = "演奏できます · 鍵盤を押して音を鳴らしましょう";
+    for (const [source, entry] of pendingNotes) noteOn(source, entry);
+    pendingNotes.clear();
     meter();
   } catch (error) {
-    next.dispose();
+    ready = false;
+    pendingNotes.clear();
+    next?.dispose();
     $("#controls").replaceChildren();
-    $("#start").disabled = false;
-    $("#start").textContent = "再試行";
     report(error);
+  } finally {
+    starting = false;
   }
-});
+}
 $("#volume").addEventListener("input", () => {
   const value = Number($("#volume").value);
   $("#volume-value").textContent = value + "%";

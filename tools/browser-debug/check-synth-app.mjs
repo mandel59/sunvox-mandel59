@@ -64,8 +64,14 @@ try {
   });
   console.log("browser launched"); await page.goto("http://127.0.0.1:" + server.address().port + "/synth/");
   assert.equal(await page.locator(".key").count(), 55);
-  await page.click("#start"); console.log("starting");
-  await page.waitForFunction(() => document.querySelector("#start").textContent === "音声 ON");
+  await page.locator('.key[data-code="KeyX"]').hover();
+  await page.mouse.down(); console.log("starting from keyboard");
+  await page.waitForFunction(() => document.querySelector('#save').disabled === false);
+  await page.waitForFunction(() => peak() > 0.001);
+  assert.equal(await page.locator('.key.active').count(), 1);
+  await page.mouse.up();
+  assert.equal(await page.locator('.key.active').count(), 0);
+  await page.evaluate(() => { window.engineCommands = window.engineCommands.filter(c => c.command?.method !== 'sv_send_event'); });
   console.log("ready"); assert.equal(await page.evaluate(() => crossOriginIsolated), isolated);
   assert.ok(await page.locator("#controls input").count() > 119);
   assert.ok(await page.evaluate(() => engineCommands.some(c => c.command?.method === "sv_load_module_from_memory")));
@@ -217,6 +223,20 @@ try {
     assert.equal(await page.locator(".key.active").count(), 0);
   }
   await page.screenshot({ path: path.join(artifacts, "mobile.png"), fullPage: true });
+  assert.deepEqual(errors, []);
+  // Release during a deliberately slow startup must not leave a queued note.
+  await page.route('**/*.sunsynth', async route => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    await route.continue();
+  });
+  await page.reload();
+  await page.locator('.key[data-code="KeyX"]').click();
+  await page.waitForFunction(() => document.querySelector('#save').disabled === false);
+  assert.equal(await page.locator('.key.active').count(), 0);
+  assert.equal(await page.evaluate(() => engineCommands.filter(c => c.command?.method === 'sv_send_event' && c.command.args[2] === 133).length), 0);
+  await page.keyboard.down('KeyX');
+  await page.waitForFunction(() => peak() > 0.001);
+  await page.keyboard.up('KeyX');
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ browser: browser.browserType().name(), version: browser.version(), isolated, audio: "audible", chord: "passed", panic: "silent", releaseOutside: "passed", blur: "passed", controllers: "passed", savedBytes: bytes.length, mobileOverflow: false, multiTouchAndCancel: useFirefox ? "not tested (CDP required)" : "passed", errors }, null, 2));
 } catch (error) {
