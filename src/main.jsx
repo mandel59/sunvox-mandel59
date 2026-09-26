@@ -21,6 +21,7 @@ const SYNTH_KEYBOARD_OCTAVE_STEP = 12;
 const SYNTH_KEYBOARD_MIN_START_NOTE = 0;
 const SYNTH_KEYBOARD_MAX_START_NOTE = 96;
 const SYNTH_KEYBOARD_VELOCITY = 128;
+const SYNTH_COLD_TAP_DURATION_MS = 180;
 const DEFAULT_SYNTH_VOLUME_CONTROLLER_MAX = 1024;
 const SYNTH_USER_CONTROLLER_MAX = 32768;
 const METAMODULE_USER_CONTROLLER_BASE_INDEX = 5;
@@ -536,6 +537,8 @@ function SynthKeyboardSection({ project }) {
   const activeInputNotesRef = useRef(new Map());
   const noteHoldCountsRef = useRef(new Map());
   const activeNotesRef = useRef(new Set());
+  const pendingStartsRef = useRef(new Map());
+  const releaseTimersRef = useRef(new Map());
   const synthKeyboardNotes = useMemo(() => keyboardNotes(keyboardStartNote), [keyboardStartNote]);
   const synthKeyboardWhiteKeys = useMemo(
     () => synthKeyboardNotes.filter((keyboardNote) => !keyboardNote.black).length,
@@ -657,11 +660,27 @@ function SynthKeyboardSection({ project }) {
     setActiveNotes(new Set(activeNotesRef.current));
     setKeyboardStatus("Loading");
 
+    const releaseTimer = releaseTimersRef.current.get(note);
+    if (releaseTimer !== undefined) {
+      window.clearTimeout(releaseTimer);
+      releaseTimersRef.current.delete(note);
+    }
+    const pendingStart = Symbol();
+    pendingStartsRef.current.set(note, pendingStart);
+
     const played = await window.playSynthNote?.(project.path, note, SYNTH_KEYBOARD_VELOCITY);
+    if (pendingStartsRef.current.get(note) !== pendingStart) {
+      return;
+    }
+    pendingStartsRef.current.delete(note);
 
     if (!hasHeldNote(note)) {
       if (played !== false) {
-        window.stopSynthNote?.(note);
+        const timer = window.setTimeout(() => {
+          releaseTimersRef.current.delete(note);
+          if (!hasHeldNote(note)) window.stopSynthNote?.(note);
+        }, SYNTH_COLD_TAP_DURATION_MS);
+        releaseTimersRef.current.set(note, timer);
       }
       return;
     }
@@ -691,12 +710,16 @@ function SynthKeyboardSection({ project }) {
 
     noteHoldCountsRef.current.delete(note);
     activeNotesRef.current.delete(note);
-    window.stopSynthNote?.(note);
+    if (!pendingStartsRef.current.has(note)) window.stopSynthNote?.(note);
     publishActiveNotes();
   }
 
   function stopAllInputNotes() {
-    for (const note of activeNotesRef.current) {
+    const notes = new Set([...activeNotesRef.current, ...pendingStartsRef.current.keys(), ...releaseTimersRef.current.keys()]);
+    for (const timer of releaseTimersRef.current.values()) window.clearTimeout(timer);
+    releaseTimersRef.current.clear();
+    pendingStartsRef.current.clear();
+    for (const note of notes) {
       window.stopSynthNote?.(note);
     }
     activeInputNotesRef.current.clear();
