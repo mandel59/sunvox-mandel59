@@ -38,7 +38,7 @@ const recipe = {
           name: "Noise pluck",
           position: { x: 240, y: 640, z: 0 },
           controllers: {
-            volume: 64,
+            volume: 160,
             waveform: "noiseSampler",
             attack: 0,
             release: 1,
