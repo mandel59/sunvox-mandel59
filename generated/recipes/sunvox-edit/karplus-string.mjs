@@ -6,10 +6,10 @@ const recipe = {
   outputs: {
     karplusString: {
       kind: "sunsynth",
-      file: "generated/instruments/Karplus String.sunsynth",
+      file: "generated/instruments/Karplus-Strong Pluck.sunsynth",
       create: {
         module: "MetaModule",
-        name: "Karplus String",
+        name: "Karplus-Strong Pluck",
         volume: 256,
         color: "#d0a46a",
       },
