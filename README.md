@@ -446,5 +446,17 @@ local checks; a disabled CI workflow does not block local deployment.
 
 After deployment, confirm project playback, synth taps and downloads at
 https://sunvox-projects.ryusei.dev/. Record the source commit, Wrangler Version
-ID and the verification results in the deployment Issue. Disable GitHub Pages
-in the repository settings after the first successful Cloudflare cutover.
+ID and the verification results in the deployment Issue.
+
+The legacy URL `https://mandel59.github.io/sunvox-mandel59/` is retained as a
+redirect to the Cloudflare site. GitHub Pages publishes only `main:/docs` using
+its built-in branch publisher; `docs/CNAME` sets the destination domain. Keep the
+Cloudflare DNS pointing at the Worker. The Pages publisher does not build the
+application or generated audio and has no Cloudflare credentials.
+
+`docs/index.html` and `docs/404.html` also provide a browser redirect fallback
+that removes the old repository prefix and keeps the query and `#file=...`.
+If the destination changes, update both fallback pages and `docs/CNAME`, then
+verify the old root, project permalink and direct download URLs after publishing.
+Changes to `main:/docs` update this redirect only; Cloudflare publication still
+requires the explicit local command above.
