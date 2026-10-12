@@ -21,6 +21,7 @@ const LANES = [
   { key: "bass", name: "Bass", y: 32, tracks: 2, color: { foreground: "#dcffe9", background: "#123326" } },
   { key: "keys", name: "Keys", y: 64, tracks: 12, color: { foreground: "#e2f2ff", background: "#152a40" } },
   { key: "lead", name: "Lead & Brass", y: 96, tracks: 11, color: { foreground: "#ffe9f6", background: "#3b1838" } },
+  { key: "twin", name: "Twin Lead", y: 160, tracks: 1, color: { foreground: "#ffe9f6", background: "#4a1a3a" } },
   { key: "fx", name: "City & Automation", y: 128, tracks: 6, color: { foreground: "#f1ecff", background: "#221d3a" } },
 ];
 
@@ -88,7 +89,7 @@ export async function buildMidnightLoopLineDocument() {
   // --- Master chain ---------------------------------------------------------
   song.addModule("limiter", {
     type: "Compressor", name: "Last Train Limiter", color: "#ff6b6b", position: at(2200, 600),
-    controllers: { volume: 256, threshold: 236, slope: 100, attack: 0, release: 60, mode: "peakZeroLatency", sideChainInput: 0 },
+    controllers: { volume: 256, threshold: 228, slope: 100, attack: 0, release: 60, mode: "peakZeroLatency", sideChainInput: 0 },
     to: "output",
   });
   song.addModule("busGlue", {
@@ -203,6 +204,13 @@ export async function buildMidnightLoopLineDocument() {
     to: "musicBus",
   });
   song.addModule("lead", { ...patches.leadSynth(), position: at(0, 1120), to: "leadEcho" });
+  song.addModule("leadHarmony", {
+    ...patches.leadSynth(),
+    name: "Twin Lead",
+    controllers: { ...patches.leadSynth().controllers, volume: 112, panning: 104, filterFreq: 7600 },
+    position: at(0, 1160),
+    to: "leadEcho",
+  });
   song.addModule("whistle", { ...patches.softLead(), position: at(0, 1200), to: "leadEcho" });
   song.addModule("choirChorus", {
     type: "Flanger", name: "Choir Ensemble", color: "#f5c2ff", position: at(900, 1360),
@@ -228,7 +236,7 @@ export async function buildMidnightLoopLineDocument() {
   // --- Score ----------------------------------------------------------------
   const timeline = new Timeline(song, { sections: SECTIONS, lanes: LANES });
   const M = Object.fromEntries(
-    ["kick", "snare", "clap", "hats", "perc", "toms", "cymbals", "ambience", "bass", "ep", "epFilter", "strings", "brass", "cutMute", "cutOpen", "lead", "whistle", "bell", "choir", "choirFormant"].map((key) => [key, key]),
+    ["kick", "snare", "clap", "hats", "perc", "toms", "cymbals", "ambience", "bass", "ep", "epFilter", "strings", "brass", "cutMute", "cutOpen", "lead", "leadHarmony", "whistle", "bell", "choir", "choirFormant"].map((key) => [key, key]),
   );
   arrange(timeline, M);
 

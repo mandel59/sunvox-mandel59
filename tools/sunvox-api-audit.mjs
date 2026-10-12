@@ -532,6 +532,22 @@ const REVIEW_NOTES = {
       sample_slot: { meaning: "target sample slot", specialValues: { "-1": "replace whole sampler" } },
     },
   },
+  sv_get_song_length_frames: {
+    priority: "medium",
+    notes: ["Returns the project length in audio frames at the engine sample rate; offline renders add their own tail after it."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      returnValue: { meaning: "project length", unit: "frames", range: "0..0xFFFFFFFF" },
+    },
+  },
+  sv_set_autostop: {
+    priority: "medium",
+    notes: ["With autostop off the project loops endlessly; offline renders enable it so tails are effect release, not a restart."],
+    argumentSemantics: {
+      slot: { meaning: "SunVox slot index" },
+      autostop: { meaning: "autostop mode", specialValues: { 0: "loop endlessly", 1: "stop at song end" } },
+    },
+  },
 };
 
 function usage() {

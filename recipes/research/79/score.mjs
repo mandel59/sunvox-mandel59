@@ -177,11 +177,15 @@ export function fitVoicing(voicing, chord, start, end) {
   return result.sort((a, b) => a - b);
 }
 
+// SunVox note numbers here are C0 = 0 with A4 = 440 Hz, so 17..31 is F1..G2.
+const BASS_LOW = 17;
+const BASS_HIGH = 31;
+
 function bassRoot(chord, previous) {
-  let best = 28 + ((chord.rootPc - 4 + 12) % 12);
+  let best = BASS_LOW + ((chord.rootPc - (BASS_LOW % 12) + 12) % 12);
   if (previous !== undefined) {
     for (const candidate of [best - 12, best, best + 12]) {
-      if (candidate >= 27 && candidate <= 42 && Math.abs(candidate - previous) < Math.abs(best - previous)) best = candidate;
+      if (candidate >= BASS_LOW - 2 && candidate <= BASS_HIGH && Math.abs(candidate - previous) < Math.abs(best - previous)) best = candidate;
     }
   }
   return best;
@@ -346,7 +350,8 @@ export function arrange(timeline, M) {
       timeline.note(lane, entry.line, options);
       if (entry.vibrato && entry.length >= 6) {
         for (let offset = 4; offset < entry.length; offset += 1) {
-          timeline.effect(lane, entry.line + offset, { track, module, effect: "vibrato", parameter: { speed: 6, amplitude: Math.min(28, 8 + offset * 3) } });
+          // Speed 22 is about 5.3 Hz at 116 BPM / speed 6; amplitude 20 is about +-31 cents.
+          timeline.effect(lane, entry.line + offset, { track, module, effect: "vibrato", parameter: { speed: 22, amplitude: Math.min(20, 6 + offset * 2) } });
         }
       }
       if (bellDouble && entry.length >= 2) {
@@ -366,9 +371,13 @@ export function arrange(timeline, M) {
   writeLine(LEAD_LINES.bridge, { module: M.whistle, track: 6, velocity: 100, swing: false });
   writeLine(LEAD_LINES.lift, { module: M.lead, track: 0, velocity: 106 });
   writeLine(LEAD_LINES.final, { module: M.lead, track: 0, velocity: 116, bellDouble: true });
+  // Twin lead: a diatonic third below the final chorus melody.
+  const harmony = LEAD_LINES.final.map((entry) => ({ ...entry, note: diatonicBelow(entry.note, E_MAJOR) }));
+  MELODY_NOTES.push(...harmony);
+  writeLine(harmony, { module: M.leadHarmony, track: 0, lane: "twin", velocity: 100 });
   writeLine(LEAD_LINES.riff3, { module: M.lead, track: 0, velocity: 110 });
   writeLine(LEAD_LINES.outroTail, { module: M.lead, track: 0, velocity: 112 });
-  writeLine(LEAD_LINES.bellTeaser, { module: M.bell, track: 1, velocity: 62, swing: false });
+  writeLine(LEAD_LINES.bellTeaser, { module: M.bell, track: 1, velocity: 78, swing: false });
 
   // Brass doubles the riff an octave down with a diatonic third underneath.
   for (const riff of [LEAD_LINES.riff1, LEAD_LINES.riff2, LEAD_LINES.riff3]) {
@@ -436,7 +445,7 @@ export function arrange(timeline, M) {
 
     // Electric piano
     if (section === "intro" && bar < 4) {
-      epChord(base, entries[0].chord, { gate: 16, velocity: 74, roll: 5 });
+      epChord(base, entries[0].chord, { gate: 16, velocity: 86, roll: 5 });
     } else if (kime) {
       for (const offset of [0, 3, 6]) epChord(base + offset, chordAt(base + offset), { gate: 2, velocity: 104 });
     } else if (COMP_SECTIONS.includes(section) && bar < 54) {
@@ -475,7 +484,7 @@ export function arrange(timeline, M) {
     }
 
     // Strings
-    const stringVelocity = { intro: 58, pre: 80, chorus: 86, bridge: 70, build: 78 + (bar - 40) * 16, final: 92, outro: 84 }[section];
+    const stringVelocity = { intro: 70, pre: 80, chorus: 86, bridge: 70, build: 78 + (bar - 40) * 16, final: 92, outro: 84 }[section];
     if (stringVelocity && !kime && !(section === "intro" && bar >= 4) && !(section === "outro" && bar !== 54)) {
       for (const entry of entries) stringChord(base + entry.start, entry.chord, { gate: bar === 54 ? 32 : entry.length, velocity: stringVelocity });
     }
@@ -535,7 +544,7 @@ export function arrange(timeline, M) {
         const run = MELODY_NOTES.filter((entry) => entry.line >= base + 12 && entry.line < base + 16);
         for (const [index, entry] of run.entries()) {
           let note = entry.note;
-          while (note > 46) note -= 12;
+          while (note > 36) note -= 12;
           play(entry.line - base, note, 1, 100 + index * 4, index % 2);
         }
       }
@@ -543,8 +552,8 @@ export function arrange(timeline, M) {
       continue;
     }
     if (bar === 54) {
-      const root = bassRoot(entries[0].chord, previousRoot);
-      play(0, root, 28, 112);
+      // Final chord: drop to the low E1 under the held tonic.
+      play(0, noteNumber("E1"), 28, 116);
       continue;
     }
     for (const entry of entries) {

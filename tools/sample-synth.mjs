@@ -242,7 +242,7 @@ export function reverse(signal) {
   return Float64Array.from(signal).reverse();
 }
 
-// 16-bit mono PCM WAV for sv_sampler_load_from_memory().
+// 16-bit mono PCM WAV, the format SunVox Lib Samplers load from memory.
 export function toWav16(signal, sampleRate = SAMPLE_RATE) {
   const buffer = Buffer.alloc(44 + signal.length * 2);
   buffer.write("RIFF", 0, "latin1");

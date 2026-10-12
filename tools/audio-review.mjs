@@ -452,6 +452,27 @@ export function barReport({ left, right, sampleRate, stft, barSeconds, startSeco
   return rows;
 }
 
+// ITU-R BS.1770 integrated loudness with absolute (-70) and relative (-10) gates.
+export function integratedLoudness(left, right, sampleRate) {
+  const kl = kWeight(left, sampleRate);
+  const kr = kWeight(right, sampleRate);
+  const block = Math.round(0.4 * sampleRate);
+  const hop = Math.round(0.1 * sampleRate);
+  const powers = [];
+  for (let start = 0; start + block <= kl.length; start += hop) {
+    let sum = 0;
+    for (let i = start; i < start + block; i += 1) sum += kl[i] * kl[i] + kr[i] * kr[i];
+    powers.push(sum / block);
+  }
+  const lufs = (power) => -0.691 + powerDb(power);
+  const absolute = powers.filter((power) => lufs(power) > -70);
+  if (!absolute.length) return Number.NEGATIVE_INFINITY;
+  const mean = (values) => values.reduce((a, b) => a + b, 0) / values.length;
+  const relativeGate = lufs(mean(absolute)) - 10;
+  const gated = absolute.filter((power) => lufs(power) > relativeGate);
+  return lufs(mean(gated));
+}
+
 function formatReport(rows) {
   const header = "row      LUFS   peak  S/M   cent  sub  bass lowm  mid high  chroma";
   const lines = rows.map((row) => {
@@ -498,7 +519,10 @@ async function main() {
   );
 
   const rows = barReport({ left, right, sampleRate, stft, barSeconds, startSeconds: options.start, barsPerRow: options.barsPerRow });
-  const text = formatReport(rows);
+  let peak = 0;
+  for (let i = 0; i < left.length; i += 1) peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+  const summary = `integrated ${integratedLoudness(left, right, sampleRate).toFixed(1)} LUFS, sample peak ${(20 * Math.log10(peak || 1e-12)).toFixed(2)} dBFS, ${(left.length / sampleRate).toFixed(2)} s`;
+  const text = `${summary}\n${formatReport(rows)}`;
   if (options.report) {
     await mkdir(dirname(resolve(options.report)), { recursive: true });
     await writeFile(resolve(options.report), `${text}\n`);

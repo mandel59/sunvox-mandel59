@@ -11,7 +11,7 @@ import { noteName, noteNumber } from "./song-builder.mjs";
 const minOverlap = Number(process.argv[2] ?? 2);
 const document = await buildMidnightLoopLineDocument();
 const nameOf = (index) => document.modules[index]?.name;
-const LEADS = new Set(["Loop Line Lead", "Platform Whistle"]);
+const LEADS = new Set(["Loop Line Lead", "Twin Lead", "Platform Whistle"]);
 const ACCOMPANIMENT = new Set(["Loop Line Tines", "Afterglow Strings", "Shuto Brass", "Cutting (open)", "Lately Pop Bass"]);
 
 const spans = [];

@@ -72,7 +72,7 @@ export function fmBass() {
     name: "Lately Pop Bass",
     color: "#5dd39e",
     controllers: {
-      volume: 12500,
+      volume: 14500,
       panning: 128,
       sampleRate: "native",
       polyphony: 2,
@@ -83,11 +83,15 @@ export function fmBass() {
       noiseFilter: 32768,
       envelopeGain: 1000,
       operators: [
-        op({ volume: 12500, attack: 0, decay: 240, sustainLevel: 3600, sustain: "on", release: 60, freqMul: 1000, velocitySensitivity: 236, outputMode: TO_OP(4) }),
-        op({ volume: 5200, attack: 0, decay: 45, sustainLevel: 0, sustain: "off", freqMul: 3000, velocitySensitivity: 250, outputMode: TO_OP(4) }),
+        // 1x index: the sustained growl that carries on small speakers.
+        op({ volume: 17000, attack: 0, decay: 260, sustainLevel: 7200, sustain: "on", release: 60, freqMul: 1000, velocitySensitivity: 236, outputMode: TO_OP(4) }),
+        // 3x pop: the slap transient.
+        op({ volume: 9000, attack: 0, decay: 70, sustainLevel: 0, sustain: "off", freqMul: 3000, velocitySensitivity: 250, outputMode: TO_OP(4) }),
         op({ volume: 6000, attack: 1, decay: 900, sustainLevel: 20000, sustain: "on", release: 70, freqMul: 1000, velocitySensitivity: 120, outputMode: TO_OUT }),
-        op({ outputMode: 0 }),
-        op({ volume: 24000, attack: 1, decay: 500, sustainLevel: 21000, sustain: "on", release: 70, freqMul: 1000, velocitySensitivity: 150 }),
+        // 2x body: adds the octave-harmonic "knock" under the pop.
+        op({ volume: 5200, attack: 0, decay: 160, sustainLevel: 1800, sustain: "on", release: 60, freqMul: 2000, velocitySensitivity: 220, outputMode: TO_OP(4) }),
+        // Carrier self-modulation gives the DX-style saw edge (2500 keeps the fundamental solid).
+        op({ volume: 24000, attack: 1, decay: 500, sustainLevel: 21000, sustain: "on", release: 70, freqMul: 1000, selfMod: 2500, velocitySensitivity: 150 }),
       ],
     },
   };
@@ -180,7 +184,7 @@ export function choirSource() {
     name: "Night Choir Source",
     color: "#f5c2ff",
     controllers: analog({
-      volume: 84, waveform: "saw", attack: 90, release: 110, osc2Pitch: 1009, osc2Volume: 30000,
+      volume: 112, waveform: "saw", attack: 90, release: 110, osc2Pitch: 1009, osc2Volume: 30000,
       filter: "lp12db", filterFreq: 3800, filterResonance: 0, polyphony: 10, noise: 10,
     }),
   };
@@ -192,7 +196,7 @@ export function leadSynth() {
     name: "Loop Line Lead",
     color: "#ff5ea8",
     controllers: analog({
-      volume: 124, waveform: "saw", attack: 3, release: 34, dutyCycle: 380, osc2Pitch: 1004, osc2Volume: 20000,
+      volume: 156, waveform: "saw", attack: 3, release: 34, dutyCycle: 380, osc2Pitch: 1004, osc2Volume: 20000,
       osc2Mode: "add", filter: "lp24db", filterFreq: 6800, filterResonance: 260, filterAttack: 6, filterRelease: 70,
       filterEnvelope: "sustainOn", polyphony: 1, mode: "hqMono",
     }),
