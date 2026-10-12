@@ -354,7 +354,8 @@ installation, runtime URLs and API.
 
 The site deploys from `main` to https://sunvox-projects.ryusei.dev/ using
 Cloudflare Workers static assets. Vite uses `/` as its base path.
-`.github/workflows/cloudflare.yml` runs quality checks before deployment;
+`.github/workflows/cloudflare.yml` runs quality checks before deployment
+and deploys only `main`;
 `.github/workflows/ci.yml` checks pull requests and other branches.
 
 Generated binaries are not committed. `generated/manifest.json` lists the
