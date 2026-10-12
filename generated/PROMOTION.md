@@ -59,6 +59,12 @@ their continued distribution is re-reviewed. `Pending` is not approval.
 | Japanese-style BGM | 1 | `wa-bgm-sketch.mjs` | #32 | #59 | Pending |
 | 43-EDO studies | 3 | `microtonal-43edo-studies.mjs` | #42 | #60 | Pending |
 
+Files promoted through this gate:
+
+| Review unit | Outputs | Source recipes | Source research | Promotion | Status |
+| --- | ---: | --- | --- | --- | --- |
+| Midnight Loop Line | 1 | `midnight-loop-line.mjs` (modules in `music-lib/midnight-loop-line/`) | #79 | #80 | Approved for distribution by the owner (2026-10-12) |
+
 Inventory counts must match the music entries in `generated/manifest.json`.
 When a promotion Issue closes, update its row with the
 decision and link the commit or PR that either retains or removes the files.

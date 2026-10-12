@@ -3,7 +3,7 @@
 // slap-ish FM bass on FMX, analog brass/strings/leads, and an offline
 // Karplus-Strong guitar sample for funk cutting.
 
-import { createRng, expDecay, fadeOut, filter, frames, multiply, normalize } from "../../../tools/sample-synth.mjs";
+import { createRng, expDecay, fadeOut, filter, frames, multiply, normalize } from "../../../../tools/sample-synth.mjs";
 
 function op(overrides) {
   return {

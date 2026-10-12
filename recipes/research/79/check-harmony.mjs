@@ -5,8 +5,8 @@
 // weighted by overlap. Reconstructs note spans per supertrack lane.
 // Usage: node recipes/research/79/check-harmony.mjs [minOverlapLines]
 
-import { buildMidnightLoopLineDocument } from "./midnight-loop-line.mjs";
-import { noteName, noteNumber } from "./song-builder.mjs";
+import { buildMidnightLoopLineDocument } from "../../../generated/recipes/music/midnight-loop-line.mjs";
+import { noteName, noteNumber } from "../../../tools/sunvox-song-builder.mjs";
 
 const minOverlap = Number(process.argv[2] ?? 2);
 const document = await buildMidnightLoopLineDocument();

@@ -11,6 +11,8 @@ Human-authored recipes belong under `recipes/`.
 - `recipes/sunvox-edit/`: reproducible instrument recipes, including outputs
   that are intentionally absent from the distribution list.
 - `recipes/music/`: promoted music recipes.
+- `recipes/music-lib/`: song-specific helper modules imported by music recipes;
+  these are not scanned as recipes.
 - `instruments/` and `music/`: rebuilt distribution outputs.
 
 ```sh

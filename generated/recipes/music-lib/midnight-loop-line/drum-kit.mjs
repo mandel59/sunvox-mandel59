@@ -19,7 +19,7 @@ import {
   segments,
   silence,
   softClip,
-} from "../../../tools/sample-synth.mjs";
+} from "../../../../tools/sample-synth.mjs";
 
 const TR808_METAL_HZ = [205.3, 304.4, 369.6, 522.7, 540.0, 800.0];
 

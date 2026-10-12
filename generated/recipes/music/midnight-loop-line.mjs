@@ -3,18 +3,19 @@
 // "Midnight Loop Line" (#79): a two-minute neo city pop instrumental built
 // entirely from code. Drums, guitar and ambience are synthesized offline and
 // embedded in Samplers; keys, bass, brass, strings and leads are native
-// SunVox synths. Run with:
-//   npm run sunvox:music-recipe -- recipes/research/79/midnight-loop-line.mjs
+// SunVox synths. Song-specific modules live in
+// generated/recipes/music-lib/midnight-loop-line/. Run with:
+//   npm run sunvox:music-recipe -- generated/recipes/music/midnight-loop-line.mjs
 
 import { buildSamplerModules } from "../../../tools/sunvox-sampler-embed.mjs";
 import { toWav16 } from "../../../tools/sample-synth.mjs";
-import { drumKitSamples } from "./drum-kit.mjs";
-import * as patches from "./instruments.mjs";
-import { BAR_SECONDS, BPM, SECTIONS, arrange } from "./score.mjs";
-import { SongBuilder, Timeline } from "./song-builder.mjs";
+import { SongBuilder, Timeline } from "../../../tools/sunvox-song-builder.mjs";
+import { drumKitSamples } from "../music-lib/midnight-loop-line/drum-kit.mjs";
+import * as patches from "../music-lib/midnight-loop-line/instruments.mjs";
+import { BAR_SECONDS, BPM, SECTIONS, arrange } from "../music-lib/midnight-loop-line/score.mjs";
 
-const PROJECT_PATH = "var/79/midnight-loop-line.sunvox";
-const SUMMARY_PATH = "var/79/midnight-loop-line.summary.json";
+const PROJECT_PATH = "generated/music/midnight-loop-line.sunvox";
+const SUMMARY_PATH = "var/music-recipe/midnight-loop-line.summary.json";
 
 const LANES = [
   { key: "drums", name: "Drums", y: 0, tracks: 8, color: { foreground: "#ffe3ea", background: "#3a1426" } },
@@ -269,7 +270,7 @@ export async function buildMidnightLoopLineDocument() {
     pruneEmptyPatterns: true,
     comments: [
       "Midnight Loop Line: neo city pop instrumental, Eb major -> E major, 116 BPM, about two minutes.",
-      "Built by recipes/research/79/midnight-loop-line.mjs; drums, guitar and city ambience are synthesized offline and embedded in Samplers.",
+      "Built by generated/recipes/music/midnight-loop-line.mjs; drums, guitar and city ambience are synthesized offline and embedded in Samplers.",
     ],
   });
 }

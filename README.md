@@ -39,6 +39,8 @@ npm run sunvox:render-debug -- --mode both generated/instruments/Scratch\ FMX\ T
 npm run sunvox:edit-recipe -- --out var/synth-lab generated/recipes/sunvox-edit/scratch-analog.mjs
 npm run sunvox:music-recipe -- --help
 npm run sunvox:analyze-balance -- --parts --perceptual --duration 60 --format text generated/music/aurora-pulse.sunvox
+npm run sunvox:render-audio -- --bit-depth 24 --out var/render/midnight-loop-line.wav generated/music/midnight-loop-line.sunvox
+npm run audio:review -- --bpm 116 --bars-per-row 4 var/render/midnight-loop-line.wav
 npm run sunvox:api-audit
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics
@@ -124,6 +126,30 @@ Module #0 Amp [Amplifier] input links
 Pattern #1 Lead events
   ~ patterns[1].events[3].note: "C4" -> "D4"
 ```
+
+`sunvox:render-audio` renders a project offline through SunVox Lib to a 16-bit,
+24-bit, or float WAV. It stops at the song end so the tail is effect release;
+`--loop` keeps playing past the end to check loop behavior such as tempo
+resets. `--mute` and `--solo` disconnect source modules by name or `#index`
+for stem checks, and `--set "Module.controller=value"` overrides a controller
+before rendering (for example `--set "Last Train Limiter.slope=0"` to inspect
+pre-limiter peaks). `audio:review` turns a WAV into a log-frequency spectrogram
+PNG with waveform and short-term loudness lanes, bar lines, and section labels,
+and prints BS.1770 integrated loudness plus a per-bar table of K-weighted
+loudness, peak, side/mid ratio, spectral centroid, band balance, and chroma.
+Treat these as review aids alongside listening, not quality scores.
+
+Music recipes that need more than native synths can use
+[tools/sample-synth.mjs](tools/sample-synth.mjs) for seeded offline DSP
+(oscillators, filters, envelopes, a small FDN room) and
+[tools/sunvox-sampler-embed.mjs](tools/sunvox-sampler-embed.mjs) to load the
+resulting WAV data into Sampler modules through `sv_sampler_load_from_memory`,
+with note maps and base-note compensation.
+[tools/sunvox-song-builder.mjs](tools/sunvox-song-builder.mjs) builds
+multi-pattern projects from named modules and routes; its `Timeline` writes one
+pattern per section and lane for supertracks projects, where `noNotesOff`
+patterns let notes sustain across section boundaries. It fills DB controller
+defaults so sparse controller objects are not zero-filled (issue #37).
 
 `sunsynth:characterize` renders `.sunsynth` files through SunVox Lib with a
 fixed probe note and prints the probe parameters together with objective timbre
@@ -234,6 +260,8 @@ The repository uses these data locations:
 - `recipes/`: human-authored generation recipes and experiments.
 - `generated/recipes/sunvox-edit/`: committed `.sunsynth` recipes.
 - `generated/recipes/music/`: committed `.sunvox` music recipes.
+- `generated/recipes/music-lib/`: modules imported by music recipes; not scanned
+  as recipes.
 - `generated/music/`: untracked `.sunvox` outputs rebuilt from the manifest.
 - `generated/instruments/`: untracked `.sunsynth` outputs rebuilt from the manifest.
 - `var/`: untracked temporary input/output, downloaded archives, and scratch data.

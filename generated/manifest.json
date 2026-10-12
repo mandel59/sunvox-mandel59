@@ -170,6 +170,13 @@
       "bytes": 23481
     },
     {
+      "recipe": "generated/recipes/music/midnight-loop-line.mjs",
+      "outputId": "midnightLoopLine",
+      "path": "generated/music/midnight-loop-line.sunvox",
+      "sha256": "0cfd2c6c789f73131070b07f120b739ce21691b4cef11dda82278b1d10b5643a",
+      "bytes": 2369453
+    },
+    {
       "recipe": "generated/recipes/music/short-video-bgm.mjs",
       "outputId": "narration-lofi-bed",
       "path": "generated/music/narration-lofi-bed.sunvox",

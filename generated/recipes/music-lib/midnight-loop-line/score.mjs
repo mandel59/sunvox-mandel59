@@ -3,8 +3,8 @@
 // with a final chorus lifted to E major. All parts are generated into a
 // section-by-lane Timeline; one line is a 16th note.
 
-import { createRng } from "../../../tools/sample-synth.mjs";
-import { noteNumber } from "./song-builder.mjs";
+import { createRng } from "../../../../tools/sample-synth.mjs";
+import { noteNumber } from "../../../../tools/sunvox-song-builder.mjs";
 
 export const BPM = 116;
 export const LPB = 16;

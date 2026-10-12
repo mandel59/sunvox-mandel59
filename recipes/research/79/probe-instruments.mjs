@@ -12,8 +12,8 @@ import { buildSamplerModules } from "../../../tools/sunvox-sampler-embed.mjs";
 import { toWav16 } from "../../../tools/sample-synth.mjs";
 import { writeWavFile } from "../../../tools/wav-io.mjs";
 import { applySunVoxLibMusicDefaults } from "../../../tools/sunvox-music-recipe.mjs";
-import { SongBuilder, noteNumber } from "./song-builder.mjs";
-import * as patches from "./instruments.mjs";
+import { SongBuilder, noteNumber } from "../../../tools/sunvox-song-builder.mjs";
+import * as patches from "../../../generated/recipes/music-lib/midnight-loop-line/instruments.mjs";
 
 const OUT_DIR = "var/79/probe";
 

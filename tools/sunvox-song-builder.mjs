@@ -2,9 +2,9 @@
 // Small structured builder for multi-pattern SunVox projects: named modules
 // with routing, and timeline patterns written with note/controller helpers.
 
-import { TEXT_FORMAT } from "../../../tools/sunvox-codec.mjs";
-import { defaultControllers } from "../../../tools/sunsynth-lab.mjs";
-import { deterministicIconBase64 } from "../../../tools/sunvox-music-recipe-helpers.mjs";
+import { TEXT_FORMAT } from "./sunvox-codec.mjs";
+import { defaultControllers } from "./sunsynth-lab.mjs";
+import { deterministicIconBase64 } from "./sunvox-music-recipe-helpers.mjs";
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const FLAT_TO_SHARP = { Db: "C#", Eb: "D#", Gb: "F#", Ab: "G#", Bb: "A#", Cb: "B", Fb: "E" };

@@ -127,38 +127,27 @@ function biquad(samples, { b0, b1, b2, a1, a2 }) {
 }
 
 function kWeight(samples, sampleRate) {
-  // ITU-R BS.1770 pre-filter (shelf) and RLB high-pass via RBJ biquads.
+  // ITU-R BS.1770 K-weighting in the libebur128 bilinear formulation, which
+  // matches the standard 48 kHz coefficients and adapts to other rates.
   const shelf = (() => {
-    const f = 1681.974450955533;
+    const k = Math.tan((Math.PI * 1681.974450955533) / sampleRate);
     const q = 0.7071752369554196;
-    const amp = 10 ** (3.99984385397 / 40);
-    const w = (2 * Math.PI * f) / sampleRate;
-    const cos = Math.cos(w);
-    const alpha = Math.sin(w) / (2 * q);
-    const root = Math.sqrt(amp);
-    const a0 = amp + 1 - (amp - 1) * cos + 2 * root * alpha;
+    const vh = 10 ** (3.999843853973347 / 20);
+    const vb = vh ** 0.4996667741545416;
+    const a0 = 1 + k / q + k * k;
     return {
-      b0: (amp * (amp + 1 + (amp - 1) * cos + 2 * root * alpha)) / a0,
-      b1: (-2 * amp * (amp - 1 + (amp + 1) * cos)) / a0,
-      b2: (amp * (amp + 1 + (amp - 1) * cos - 2 * root * alpha)) / a0,
-      a1: (2 * (amp - 1 - (amp + 1) * cos)) / a0,
-      a2: (amp + 1 - (amp - 1) * cos - 2 * root * alpha) / a0,
+      b0: (vh + (vb * k) / q + k * k) / a0,
+      b1: (2 * (k * k - vh)) / a0,
+      b2: (vh - (vb * k) / q + k * k) / a0,
+      a1: (2 * (k * k - 1)) / a0,
+      a2: (1 - k / q + k * k) / a0,
     };
   })();
   const highPass = (() => {
-    const f = 38.13547087602444;
+    const k = Math.tan((Math.PI * 38.13547087602444) / sampleRate);
     const q = 0.5003270373238773;
-    const w = (2 * Math.PI * f) / sampleRate;
-    const cos = Math.cos(w);
-    const alpha = Math.sin(w) / (2 * q);
-    const a0 = 1 + alpha;
-    return {
-      b0: (1 + cos) / 2 / a0,
-      b1: -(1 + cos) / a0,
-      b2: (1 + cos) / 2 / a0,
-      a1: (-2 * cos) / a0,
-      a2: (1 - alpha) / a0,
-    };
+    const a0 = 1 + k / q + k * k;
+    return { b0: 1, b1: -2, b2: 1, a1: (2 * (k * k - 1)) / a0, a2: (1 - k / q + k * k) / a0 };
   })();
   return biquad(biquad(samples, shelf), highPass);
 }
