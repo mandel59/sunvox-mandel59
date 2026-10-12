@@ -55,7 +55,7 @@ export function tinePiano() {
       envelopeGain: 1000,
       operators: [
         // Tine: a 14x modulator that decays fast, giving the bell-like ping.
-        op({ volume: 7600, attack: 0, decay: 260, sustain: "off", freqMul: 14000, velocitySensitivity: 236, envScaling: 150, outputMode: TO_OP(2) }),
+        op({ volume: 9400, attack: 0, decay: 300, sustain: "off", freqMul: 14000, velocitySensitivity: 236, envScaling: 150, outputMode: TO_OP(2) }),
         // Body: a 1x modulator that slowly mellows the tone.
         op({ volume: 9800, attack: 0, decay: 1700, sustainLevel: 2600, sustain: "on", release: 260, freqMul: 1000, velocitySensitivity: 224, envScaling: 140, outputMode: TO_OP(3) }),
         op({ volume: 15000, attack: 1, decay: 2300, sustainLevel: 0, sustain: "on", release: 320, freqMul: 1003, envScaling: 150, velocitySensitivity: 176, outputMode: TO_OUT }),
@@ -99,7 +99,7 @@ export function glassBell() {
     name: "Neon Glass Bell",
     color: "#e6d2ff",
     controllers: {
-      volume: 14000,
+      volume: 19000,
       panning: 128,
       sampleRate: "native",
       polyphony: 8,
@@ -154,8 +154,8 @@ export function synthBrass() {
     name: "Shuto Brass",
     color: "#ffb347",
     controllers: analog({
-      volume: 110, waveform: "saw", attack: 6, release: 46, osc2Pitch: 1006, osc2Volume: 26000,
-      filter: "lp24db", filterFreq: 5200, filterResonance: 160, filterAttack: 18, filterRelease: 60,
+      volume: 116, waveform: "saw", attack: 6, release: 46, osc2Pitch: 1006, osc2Volume: 26000,
+      filter: "lp24db", filterFreq: 7200, filterResonance: 160, filterAttack: 18, filterRelease: 60,
       filterEnvelope: "sustainOn", polyphony: 8,
     }),
   };
@@ -169,6 +169,19 @@ export function stringPad() {
     controllers: analog({
       volume: 44, waveform: "saw", attack: 70, release: 90, osc2Pitch: 1005, osc2Volume: 30000,
       filter: "lp12db", filterFreq: 4200, filterResonance: 80, polyphony: 10,
+    }),
+  };
+}
+
+// Detuned saw source for the formant "aah" choir layer.
+export function choirSource() {
+  return {
+    type: "Analog generator",
+    name: "Night Choir Source",
+    color: "#f5c2ff",
+    controllers: analog({
+      volume: 84, waveform: "saw", attack: 90, release: 110, osc2Pitch: 1009, osc2Volume: 30000,
+      filter: "lp12db", filterFreq: 3800, filterResonance: 0, polyphony: 10, noise: 10,
     }),
   };
 }

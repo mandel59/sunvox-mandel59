@@ -33,11 +33,13 @@ Options:
   --mute <names>         Comma-separated module names or #indices to disconnect
   --solo <names>         Comma-separated module names or #indices to keep; other
                          source generators are disconnected
+  --set <Module.ctl=v>   Override a module controller before rendering
+                         (repeatable), e.g. --set "Last Train Limiter.slope=0"
   --json                 Print render statistics as JSON`);
 }
 
 function parseArgs(argv) {
-  const options = { tailSeconds: DEFAULT_TAIL_SECONDS, bitDepth: 16, mute: [], solo: [] };
+  const options = { tailSeconds: DEFAULT_TAIL_SECONDS, bitDepth: 16, mute: [], solo: [], set: [] };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const next = () => {
@@ -52,6 +54,7 @@ function parseArgs(argv) {
     else if (arg === "--bit-depth") options.bitDepth = Number(next());
     else if (arg === "--mute") options.mute.push(...next().split(",").filter(Boolean));
     else if (arg === "--solo") options.solo.push(...next().split(",").filter(Boolean));
+    else if (arg === "--set") options.set.push(next());
     else if (arg === "--json") options.json = true;
     else if (arg.startsWith("--")) throw new Error(`Unknown option: ${arg}`);
     else options.input = arg;
@@ -81,9 +84,16 @@ export function disconnectModules(document, moduleIndices) {
   return document;
 }
 
-export function applyMuteSolo(bytes, { mute = [], solo = [] } = {}) {
-  if (!mute.length && !solo.length) return bytes;
+export function applyMuteSolo(bytes, { mute = [], solo = [], set = [] } = {}) {
+  if (!mute.length && !solo.length && !set.length) return bytes;
   const document = parseContainer(bytes);
+  for (const assignment of set) {
+    const match = /^(.+)\.([A-Za-z0-9]+)=(.+)$/u.exec(assignment);
+    if (!match) throw new Error(`Invalid --set assignment: ${assignment}`);
+    const [index] = resolveModuleIndices(document, [match[1]]);
+    const numeric = Number(match[3]);
+    document.modules[index].controllers[match[2]] = Number.isFinite(numeric) ? numeric : match[3];
+  }
   const muted = new Set(resolveModuleIndices(document, mute));
   if (solo.length) {
     const kept = new Set(resolveModuleIndices(document, solo));

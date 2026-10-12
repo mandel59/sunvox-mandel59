@@ -405,6 +405,13 @@ export function arrange(timeline, M) {
     });
   };
 
+  const choirVoicer = createVoicer({ low: 62, high: 84, center: 72 });
+  const choirChord = (line, chord, { gate, velocity }) => {
+    fitVoicing(choirVoicer(chord), chord, line, line + gate).slice(0, 4).forEach((note, index) => {
+      timeline.note("lead", line, { track: 7 + index, note, module: M.choir, velocity: human(velocity, 2), gate });
+    });
+  };
+
   const brassStab = (line, chord, { gate = 1, velocity = 100 }) => {
     fitVoicing(brassVoicer(chord), chord, line, line + gate).slice(0, 4).forEach((note, index) => {
       timeline.note("lead", line, {
@@ -475,6 +482,13 @@ export function arrange(timeline, M) {
     if (section === "verse" && bar >= 12) {
       stringChord(base, entries[0].chord, { gate: 16, velocity: 54 });
     }
+
+    // "Aah" choir layer
+    const choirVelocity = { chorus: 84, final: 96, bridge: 72 }[section];
+    if (choirVelocity && !kime) {
+      for (const entry of entries) choirChord(base + entry.start, entry.chord, { gate: entry.length, velocity: choirVelocity });
+    }
+    if (bar === 54) choirChord(base, entries[0].chord, { gate: 32, velocity: 90 });
 
     // Brass stabs and kime hits
     if (kime) {
@@ -730,15 +744,20 @@ export function arrange(timeline, M) {
     const level = beat < 6 ? 46 + beat * 9 : 100 - (beat - 6) * 9;
     timeline.note("fx", beat * 4, { track: 1, note: beat % 2 ? "C#5" : "D5", module: M.ambience, velocity: level });
   }
+  // Outro: the crossing rings again and a last train passes under the final chord.
   for (let beat = 0; beat < 10; beat += 1) {
-    timeline.note("fx", 54 * LPB + 8 + beat * 4, { track: 1, note: beat % 2 ? "C#5" : "D5", module: M.ambience, velocity: 30 + beat * 6 });
+    timeline.note("fx", 54 * LPB + 4 + beat * 4, { track: 1, note: beat % 2 ? "C#5" : "D5", module: M.ambience, velocity: 34 + beat * 5 });
   }
-  timeline.note("fx", 54 * LPB + 12, { track: 0, note: "C5", module: M.ambience, velocity: 84 });
+  timeline.note("fx", 54 * LPB, { track: 0, note: "C5", module: M.ambience, velocity: 88 });
 
   // Electric piano filter opens through the dream intro.
   for (let step = 0; step <= 16; step += 1) {
     const hz = 900 * (14000 / 900) ** (step / 16);
     timeline.ctl("fx", step * 4, { track: 2, module: M.epFilter, controller: "freq", value: (hz / 14000) * 0x8000 });
+  }
+  // Choir vowel: "a" for choruses, toward "o" for the bridge.
+  for (const [bar, position] of [[20, 0], [32, 40], [42, 0], [54, 30]]) {
+    timeline.ctl("fx", bar * LPB, { track: 5, module: M.choirFormant, controller: "vowelPosition", value: (position / 256) * 0x8000 });
   }
   // Lead brightness per section.
   for (const [bar, hz] of [[4, 7600], [8, 4300], [16, 5600], [20, 8200], [28, 7800], [40, 6800], [42, 9200], [50, 8400]]) {

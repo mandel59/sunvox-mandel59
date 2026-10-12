@@ -38,7 +38,7 @@ export function kick() {
   const seconds = 0.62;
   const length = frames(seconds);
   const body = osc(seconds, (t) => 52 + 120 * Math.exp(-t / 0.03) + 260 * Math.exp(-t / 0.0045));
-  const bodyEnv = expDecay(length, 0.15, { attackSeconds: 0.0006, holdSeconds: 0.024 });
+  const bodyEnv = expDecay(length, 0.12, { attackSeconds: 0.0006, holdSeconds: 0.022 });
   const knock = filter(osc(seconds, (t) => 120 + 90 * Math.exp(-t / 0.01)), "lowpass", 400);
   const knockEnv = expDecay(length, 0.03);
   const click = filter(noise(0.02, 11), "highpass", 2500);

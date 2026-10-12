@@ -20,7 +20,7 @@ const LANES = [
   { key: "drums", name: "Drums", y: 0, tracks: 8, color: { foreground: "#ffe3ea", background: "#3a1426" } },
   { key: "bass", name: "Bass", y: 32, tracks: 2, color: { foreground: "#dcffe9", background: "#123326" } },
   { key: "keys", name: "Keys", y: 64, tracks: 12, color: { foreground: "#e2f2ff", background: "#152a40" } },
-  { key: "lead", name: "Lead & Brass", y: 96, tracks: 7, color: { foreground: "#ffe9f6", background: "#3b1838" } },
+  { key: "lead", name: "Lead & Brass", y: 96, tracks: 11, color: { foreground: "#ffe9f6", background: "#3b1838" } },
   { key: "fx", name: "City & Automation", y: 128, tracks: 6, color: { foreground: "#f1ecff", background: "#221d3a" } },
 ];
 
@@ -103,7 +103,7 @@ export async function buildMidnightLoopLineDocument() {
   });
   song.addModule("masterBus", {
     type: "Amplifier", name: "Master Bus", color: "#d6d8d8", position: at(1600, 600),
-    controllers: { volume: 180, balance: 128, dcOffset: 128, inverse: "off", stereoWidth: 140, absolute: "off", fineVolume: 32768, gain: 1, bipolarDcOffset: 16384 },
+    controllers: { volume: 132, balance: 128, dcOffset: 128, inverse: "off", stereoWidth: 140, absolute: "off", fineVolume: 32768, gain: 1, bipolarDcOffset: 16384 },
     to: "masterEq",
   });
 
@@ -133,10 +133,10 @@ export async function buildMidnightLoopLineDocument() {
   song.addModule("kick", { ...sampler(kits.kick, { color: drumColor, volume: 400, polyphony: 2, position: at(0, 0) }), to: ["drumBus", "bassDuck"] });
   song.addModule("snare", { ...sampler(kits.snare, { color: drumColor, volume: 380, polyphony: 4, position: at(0, 80) }), to: ["drumBus", "plateSend"] });
   song.addModule("clap", { ...sampler(kits.clap, { color: drumColor, volume: 400, panning: 120, polyphony: 4, position: at(0, 160) }), to: ["drumBus", "plateSend"] });
-  song.addModule("hats", { ...sampler(kits.hats, { color: "#ffc2d4", volume: 220, panning: 164, polyphony: 4, position: at(0, 240) }), to: "drumBus" });
-  song.addModule("perc", { ...sampler(kits.perc, { color: "#ffc2d4", volume: 200, panning: 86, polyphony: 6, position: at(0, 320) }), to: "drumBus" });
+  song.addModule("hats", { ...sampler(kits.hats, { color: "#ffc2d4", volume: 300, panning: 172, polyphony: 4, position: at(0, 240) }), to: "drumBus" });
+  song.addModule("perc", { ...sampler(kits.perc, { color: "#ffc2d4", volume: 310, panning: 74, polyphony: 6, position: at(0, 320) }), to: "drumBus" });
   song.addModule("toms", { ...sampler(kits.toms, { color: drumColor, volume: 170, panning: 120, polyphony: 4, position: at(0, 400) }), to: ["drumBus", "plateSend"] });
-  song.addModule("cymbals", { ...sampler(kits.cymbals, { color: "#ffe08a", volume: 200, panning: 146, polyphony: 3, position: at(0, 480) }), to: "drumBus" });
+  song.addModule("cymbals", { ...sampler(kits.cymbals, { color: "#ffe08a", volume: 290, panning: 150, polyphony: 3, position: at(0, 480) }), to: "drumBus" });
 
   // --- Bass -----------------------------------------------------------------
   song.addModule("bassComp", {
@@ -146,7 +146,7 @@ export async function buildMidnightLoopLineDocument() {
   });
   song.addModule("bassDuck", {
     type: "Compressor", name: "Kick Duck", color: "#48b884", position: at(800, 560),
-    controllers: { volume: 256, threshold: 70, slope: 55, attack: 1, release: 90, mode: "peakZeroLatency", sideChainInput: 1 },
+    controllers: { volume: 256, threshold: 110, slope: 30, attack: 1, release: 60, mode: "peakZeroLatency", sideChainInput: 1 },
     to: "bassComp",
   });
   song.addModule("bass", { ...patches.fmBass(), position: at(0, 580), to: "bassDuck" });
@@ -165,6 +165,11 @@ export async function buildMidnightLoopLineDocument() {
   song.addModule("epChorus", {
     type: "Flanger", name: "Tine Chorus", color: "#7fc8ff", position: at(700, 700),
     controllers: { dry: 256, wet: 150, feedback: 30, delay: 260, response: 2, lfoFreq: 70, lfoAmp: 70, lfoWaveform: "sin", setLfoPhase: 0, lfoFreqUnit: "hz005" },
+    to: "tineWidth",
+  });
+  song.addModule("tineWidth", {
+    type: "Delay", name: "Tine Width", color: "#9fd6ff", position: at(900, 700),
+    controllers: { dry: 256, wet: 130, delayL: 1, delayR: 11, volumeL: 0, volumeR: 256, channels: "stereo", delayUnit: "ms", delayMultiplier: 1, feedback: 0 },
     to: "musicBus",
   });
   song.addModule("epFilter", {
@@ -184,10 +189,10 @@ export async function buildMidnightLoopLineDocument() {
     to: "musicBus",
   });
   song.addModule("strings", { ...patches.stringPad(), position: at(0, 800), to: "stringChorus" });
-  song.addModule("brass", { ...patches.synthBrass(), controllers: { ...patches.synthBrass().controllers, panning: 176 }, position: at(0, 880), to: "musicBus" });
+  song.addModule("brass", { ...patches.synthBrass(), controllers: { ...patches.synthBrass().controllers, panning: 188 }, position: at(0, 880), to: "musicBus" });
   song.addModule("guitarBus", {
     type: "Amplifier", name: "Cutting Bus", color: "#d0a46a", position: at(700, 960),
-    controllers: { volume: 256, balance: 70, stereoWidth: 128 },
+    controllers: { volume: 360, balance: 52, stereoWidth: 128 },
     to: "musicBus",
   });
   song.addModule("cutMute", { ...sampler(kits.cutMute, { color: "#d0a46a", volume: 300, polyphony: 8, position: at(0, 960) }), to: "guitarBus" });
@@ -199,7 +204,18 @@ export async function buildMidnightLoopLineDocument() {
   });
   song.addModule("lead", { ...patches.leadSynth(), position: at(0, 1120), to: "leadEcho" });
   song.addModule("whistle", { ...patches.softLead(), position: at(0, 1200), to: "leadEcho" });
-  song.addModule("bell", { ...patches.glassBell(), controllers: { ...patches.glassBell().controllers, panning: 172 }, position: at(0, 1280), to: "musicBus" });
+  song.addModule("choirChorus", {
+    type: "Flanger", name: "Choir Ensemble", color: "#f5c2ff", position: at(900, 1360),
+    controllers: { dry: 256, wet: 180, feedback: 10, delay: 520, response: 2, lfoFreq: 30, lfoAmp: 120, lfoWaveform: "sin", setLfoPhase: 96, lfoFreqUnit: "hz005" },
+    to: "musicBus",
+  });
+  song.addModule("choirFormant", {
+    type: "Vocal filter", name: "Aah Formant", color: "#eab0ff", position: at(700, 1360),
+    controllers: { volume: 320, formantWidth: 196, intensity: 168, formants: 5, vowelPosition: 0, voiceType: "soprano", channels: "stereo", vowel1: "a", vowel2: "o", vowel3: "u", vowel4: "e", vowel5: "i" },
+    to: "choirChorus",
+  });
+  song.addModule("choir", { ...patches.choirSource(), position: at(0, 1360), to: "choirFormant" });
+  song.addModule("bell", { ...patches.glassBell(), controllers: { ...patches.glassBell().controllers, panning: 182 }, position: at(0, 1280), to: "musicBus" });
 
   // --- City ambience --------------------------------------------------------
   song.addModule("cityVerb", {
@@ -212,7 +228,7 @@ export async function buildMidnightLoopLineDocument() {
   // --- Score ----------------------------------------------------------------
   const timeline = new Timeline(song, { sections: SECTIONS, lanes: LANES });
   const M = Object.fromEntries(
-    ["kick", "snare", "clap", "hats", "perc", "toms", "cymbals", "ambience", "bass", "ep", "epFilter", "strings", "brass", "cutMute", "cutOpen", "lead", "whistle", "bell"].map((key) => [key, key]),
+    ["kick", "snare", "clap", "hats", "perc", "toms", "cymbals", "ambience", "bass", "ep", "epFilter", "strings", "brass", "cutMute", "cutOpen", "lead", "whistle", "bell", "choir", "choirFormant"].map((key) => [key, key]),
   );
   arrange(timeline, M);
 
