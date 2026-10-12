@@ -46,8 +46,8 @@
     "generated:build": "node tools/build-generated-assets.mjs",
     "pretest": "npm run generated:build -- --if-missing",
     "predev": "npm run generated:build -- --if-missing",
-    "cloudflare:dev": "wrangler dev",
-    "cloudflare:deploy": "npm run build && wrangler deploy"
+    "cloudflare:dev": "npm run build && wrangler dev",
+    "cloudflare:deploy": "npm run quality && wrangler deploy"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",

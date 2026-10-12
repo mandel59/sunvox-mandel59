@@ -352,11 +352,12 @@ installation, runtime URLs and API.
 
 ## Generated assets and deployment
 
-The site deploys from `main` to https://sunvox-projects.ryusei.dev/ using
-Cloudflare Workers static assets. Vite uses `/` as its base path.
-`.github/workflows/cloudflare.yml` runs quality checks before deployment
-and deploys only `main`;
-`.github/workflows/ci.yml` checks pull requests and other branches.
+The site is deployed locally from reviewed `main` commits to
+https://sunvox-projects.ryusei.dev/ using Cloudflare Workers static assets.
+Vite uses `/` as its base path. `.github/workflows/ci.yml` runs quality checks
+for pushes (including `main`), pull requests and manual dispatches.
+Publication is an explicit local action: merging or pushing a commit does not
+publish the site, and GitHub does not hold Cloudflare deployment credentials.
 
 Generated binaries are not committed. `generated/manifest.json` lists the
 selected recipe output IDs, public paths, SHA-256 hashes and byte sizes.
@@ -371,9 +372,7 @@ See [generated/README.md](generated/README.md) for the promotion process.
 ```sh
 npm ci
 sh scripts/install_sunvox_lib.sh
-npm run generated:build
-npm run quality
-npm run cloudflare:dev # preview the built dist/ through Wrangler
+npm run cloudflare:dev # rebuild dist/ and preview it through Wrangler
 ```
 
 The build writes `.sunvox.gz` and `.sunsynth.gz` siblings throughout `dist/`
@@ -386,11 +385,38 @@ cross-origin isolation headers used by the audio runtime.
 [Cloudflare's response API](https://developers.cloudflare.com/workers/runtime-apis/response/#the-encodebody-option)
 requires `encodeBody: "manual"` for these precompressed response bodies.
 
-Before the first production deployment, set repository secrets
-`CLOUDFLARE_API_TOKEN` (Workers deployment permissions) and
-`CLOUDFLARE_ACCOUNT_ID`. The account must host the active `ryusei.dev` zone;
-Custom Domain deployment also needs permission to manage that zone's DNS.
-Without both secrets, CI builds and uploads the artifact but skips deployment.
-Once the Cloudflare URL is live and playback/downloads are verified, disable
-GitHub Pages in the repository settings. Manual deployment, with the same
-credentials in the environment, uses `npm run cloudflare:deploy`.
+Authenticate Wrangler on the machine used for deployment:
+
+```sh
+npx wrangler login
+npx wrangler whoami
+```
+
+[`wrangler login`](https://developers.cloudflare.com/workers/wrangler/commands/general/#login)
+uses browser-based OAuth and stores the login locally. The chosen account must
+host the active `ryusei.dev` zone and allow Worker creation/deployment and
+Custom Domain configuration. If the login covers multiple accounts, select
+the intended account locally with `CLOUDFLARE_ACCOUNT_ID`; this value does not
+need to be registered in GitHub. An API token is optional for local automation,
+using `CLOUDFLARE_API_TOKEN` in the local environment.
+
+For each release, choose the reviewed `main` commit and record its ID:
+
+```sh
+jj log -r main --no-graph
+# In the workspace containing that reviewed main revision:
+npm run cloudflare:deploy -- --dry-run
+npm run cloudflare:deploy
+```
+
+`cloudflare:deploy` runs the local quality gate first, including full generated
+asset regeneration, manifest hash checks, tests, the frontend build and built
+license notices. Wrangler runs only after these checks succeed, deploying the
+fresh `dist/` and the Worker together. `--dry-run` checks the Worker bundle and
+configuration without publishing. Remote CI status is supplementary to these
+local checks; a disabled CI workflow does not block local deployment.
+
+After deployment, confirm project playback, synth taps and downloads at
+https://sunvox-projects.ryusei.dev/. Record the source commit, Wrangler Version
+ID and the verification results in the deployment Issue. Disable GitHub Pages
+in the repository settings after the first successful Cloudflare cutover.
