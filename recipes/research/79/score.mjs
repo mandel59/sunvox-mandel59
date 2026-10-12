@@ -772,7 +772,9 @@ export function arrange(timeline, M) {
   for (const [bar, hz] of [[4, 7600], [8, 4300], [16, 5600], [20, 8200], [28, 7800], [40, 6800], [42, 9200], [50, 8400]]) {
     timeline.ctl("fx", bar * LPB, { track: 3, module: M.lead, controller: "filterFreq", value: (hz / 14000) * 0x8000 });
   }
-  // Ritardando into the final chord.
+  // Tempo reset on the first line so loop playback does not keep the
+  // ritardando's final tempo, then the ritardando into the final chord.
+  timeline.effect("fx", 0, { track: 4, effect: "setBpm", parameter: { bpm: BPM } });
   for (const [line, bpm] of [[53 * LPB + 8, 110], [53 * LPB + 12, 103], [54 * LPB, 96]]) {
     timeline.effect("fx", line, { track: 4, effect: "setBpm", parameter: { bpm } });
   }

@@ -35,6 +35,8 @@ Options:
                          source generators are disconnected
   --set <Module.ctl=v>   Override a module controller before rendering
                          (repeatable), e.g. --set "Last Train Limiter.slope=0"
+  --loop                 Keep looping past the song end (autostop off); use
+                         with --duration to check loop playback
   --json                 Print render statistics as JSON`);
 }
 
@@ -56,6 +58,7 @@ function parseArgs(argv) {
     else if (arg === "--solo") options.solo.push(...next().split(",").filter(Boolean));
     else if (arg === "--set") options.set.push(next());
     else if (arg === "--json") options.json = true;
+    else if (arg === "--loop") options.loop = true;
     else if (arg.startsWith("--")) throw new Error(`Unknown option: ${arg}`);
     else options.input = arg;
   }
@@ -104,14 +107,14 @@ export function applyMuteSolo(bytes, { mute = [], solo = [], set = [] } = {}) {
   return buildContainer(disconnectModules(document, [...muted]));
 }
 
-export async function renderProjectAudio(bytes, { durationSeconds, tailSeconds = DEFAULT_TAIL_SECONDS } = {}) {
+export async function renderProjectAudio(bytes, { durationSeconds, tailSeconds = DEFAULT_TAIL_SECONDS, loop = false } = {}) {
   return withSunVoxSlot(
     { sampleRate: DEFAULT_SAMPLE_RATE, channels: DEFAULT_CHANNELS, flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS },
     async ({ module, slot, sampleRate, channels }) => {
       loadProjectFromBuffer(module, bytes, { slot });
       assertSunVoxOk(module._sv_volume(slot, 256), "sv_volume");
       // Stop at the song end so the tail is reverb release, not a loop restart.
-      module._sv_set_autostop(slot, 1);
+      module._sv_set_autostop(slot, loop ? 0 : 1);
       const songFrames = module._sv_get_song_length_frames(slot) >>> 0;
       const seconds = durationSeconds ?? songFrames / sampleRate + tailSeconds;
       assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
