@@ -135,7 +135,7 @@ function controllerDefaultValue(controller) {
   return controller.type === "enum" ? enumName(controller.enum, value) : value;
 }
 
-function defaultControllers(type) {
+export function defaultControllers(type) {
   const controllers = {};
   for (const controller of expandedControllerDefinitions(type)) {
     const value = controllerDefaultValue(controller);

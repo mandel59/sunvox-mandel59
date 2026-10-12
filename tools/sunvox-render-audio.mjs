@@ -100,6 +100,8 @@ export async function renderProjectAudio(bytes, { durationSeconds, tailSeconds =
     async ({ module, slot, sampleRate, channels }) => {
       loadProjectFromBuffer(module, bytes, { slot });
       assertSunVoxOk(module._sv_volume(slot, 256), "sv_volume");
+      // Stop at the song end so the tail is reverb release, not a loop restart.
+      module._sv_set_autostop(slot, 1);
       const songFrames = module._sv_get_song_length_frames(slot) >>> 0;
       const seconds = durationSeconds ?? songFrames / sampleRate + tailSeconds;
       assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
