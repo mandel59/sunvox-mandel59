@@ -180,6 +180,12 @@ UI work does not run in either audio processing path.
 - `startAudio()` starts/resumes continuous output and cancels a pending silence
   stop. Call it directly in a user gesture. Preparing audio while autoplay is
   suspended does not wait for permission; later calls retry resume.
+- `startAudio({ bufferFrames })` selects a target queue of 256..8192 frames.
+  Larger queues tolerate Worker scheduling delays and batched device callbacks,
+  at the cost of input latency. Omitting the option restores the interactive
+  default (512 frames with shared memory, 2048 over MessagePort). The site's
+  Player uses 4096 frames (about 93 ms at 44.1 kHz) for music and retains that
+  target for simultaneous synth notes; instrument-only output uses the default.
 - `pauseAudio()` stops rendering and discards queued output, retaining the
   AudioContext and slots. `startAudio()` resumes it.
 - `pauseAudioWhenSilent({ seconds = 0.75, threshold = 0.00003 })` arms a

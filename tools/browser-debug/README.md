@@ -56,3 +56,25 @@ and verifies that `preloadSynth()` + `playSynthNote()` produce non-zero
 AudioWorklet output. `check:synth:mobile` opens the app with an iPhone viewport,
 selects a synth through the permalink hash, taps the on-screen keyboard, and
 verifies both the `playSynthNote()` call and non-zero AudioWorklet output.
+
+To measure uninterrupted music playback, use a server with COOP/COEP (such as
+`npm run cloudflare:dev`) and a bundled Firefox or Chromium installation:
+
+```sh
+node tools/browser-debug/check-audio-continuity.mjs --browser=firefox --url=http://127.0.0.1:8787/ --seconds=125 --interval-ms=16
+node tools/browser-debug/check-audio-continuity.mjs --browser=chromium --url=http://127.0.0.1:8787/ --seconds=125 --interval-ms=32
+node tools/browser-debug/check-audio-continuity.mjs --browser=firefox --seconds=125 --no-worker-probe
+```
+
+The default project is Midnight Loop Line; `--project=path` selects another.
+The default URL is the production Cloudflare site. This probe reads shared
+audio underrun/dropped-frame counters and requires audio to advance in real
+time after a 250 ms startup period. It fails on any later underrun, dropped
+frame or browser error. By default it leaves the Worker response unchanged
+and reads only shared counters. `--worker-probe` inserts timer-gap/render-duration
+instrumentation only in the test's Worker response; `--interval-ms` also enables
+that instrumentation and deliberately delays the render timer. `--no-worker-probe`
+explicitly disables response instrumentation (use this for production Firefox checks).
+`--executable=/path/to/firefox` can select an existing Playwright-compatible
+browser binary. Browser version and metrics are printed as JSON; save logs
+under `var/` and avoid rebuilding the served `dist/` during the measurement.

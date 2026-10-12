@@ -128,9 +128,12 @@ export function createSunVoxEngine(options = {}) {
     return startingAudio;
   }
 
-  async function startAudio() {
+  async function startAudio({ bufferFrames } = {}) {
+    if (bufferFrames !== undefined && (!Number.isInteger(bufferFrames) || bufferFrames < 256 || bufferFrames > 8192)) {
+      throw new RangeError("bufferFrames must be an integer from 256 to 8192");
+    }
     await ensureAudio();
-    await send({ type: "engineStartAudio" });
+    await send({ type: "engineStartAudio", bufferFrames });
   }
 
   async function stopAudio() {

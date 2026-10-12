@@ -1,5 +1,9 @@
 import { createSunVoxEngine } from "@mandel59/sunvox-web";
 
+// Music playback must survive Worker timer jitter and batched device callbacks.
+// Instrument-only output keeps the Engine's smaller interactive buffer.
+const PROJECT_BUFFER_FRAMES = 4096;
+
 /** Site playback policy. The Engine and all six slots belong exclusively to this instance. */
 export function createSunVoxPlayer(options = {}) {
   if (options.engine) throw new TypeError("The site Player owns its Engine");
@@ -48,7 +52,7 @@ export function createSunVoxPlayer(options = {}) {
   function initialize() {
     assertAlive();
     // Retry resume synchronously in each caller's gesture, even after automatic preload.
-    const audio = engine.startAudio();
+    const audio = engine.startAudio({ bufferFrames: state.isPlaying || tailDraining ? PROJECT_BUFFER_FRAMES : undefined });
     if (!initialization) {
       initialization = (async () => {
         await audio;
@@ -114,7 +118,7 @@ export function createSunVoxPlayer(options = {}) {
     if (!project.loaded) throw new Error("No project loaded");
     tailDraining = false;
     checked(await (fromBeginning ? engine.sv_play_from_beginning(project.slot) : engine.sv_play(project.slot)), "sv_play");
-    await engine.startAudio();
+    await engine.startAudio({ bufferFrames: PROJECT_BUFFER_FRAMES });
     emit({ isPlaying: true, loadedPath: project.url });
     return { playing: true, loadedPath: project.url, slot: project.slot };
   }
@@ -239,7 +243,7 @@ export function createSunVoxPlayer(options = {}) {
         await clearTail();
         if (noteRequests.get(key) !== request) return;
         // Schedule at the next render position in the Worker, without a clock round trip.
-        await engine.startAudio();
+        await engine.startAudio({ bufferFrames: state.isPlaying ? PROJECT_BUFFER_FRAMES : undefined });
         if (noteRequests.get(key) !== request) { await armIdleStop(); return; }
         slot.notes.set(key, note);
         const nativeNote = Math.max(1, Math.min(127, Math.round(note) + 1));

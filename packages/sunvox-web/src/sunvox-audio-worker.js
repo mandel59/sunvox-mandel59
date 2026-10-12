@@ -6,7 +6,7 @@ const DEFAULT_CHANNELS = 2;
 const DEFAULT_RENDER_FRAMES = 128;
 const DEFAULT_MAX_BUFFERED_FRAMES = 1024;
 const DEFAULT_RENDER_INTERVAL_MS = 2;
-const MAX_RENDER_BATCH = 8;
+const MAX_RENDER_BATCH = 32;
 
 const WORKER_SV_INIT_FLAG_NO_DEBUG_OUTPUT = 1 << 0;
 const WORKER_SV_INIT_FLAG_USER_AUDIO_CALLBACK = 1 << 1;
@@ -534,6 +534,10 @@ function runCommand({ payload }) {
       audioPort.postMessage({ type: "sunvox-master-volume", gain: payload.gain ?? 1 });
       return;
     case "engineStartAudio":
+      if (payload.bufferFrames !== undefined && (!Number.isInteger(payload.bufferFrames) || payload.bufferFrames < 256 || payload.bufferFrames > 8192)) {
+        throw new RangeError("bufferFrames must be an integer from 256 to 8192");
+      }
+      maxBufferedFrames = payload.bufferFrames ?? (sharedControl ? 512 : 2048);
       idleStop = null; idleFrames = 0;
       startAudioOutput({ resetClock: !rendering });
       return;

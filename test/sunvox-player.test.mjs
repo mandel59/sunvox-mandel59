@@ -168,3 +168,19 @@ test("cached notes and controller presets use native values and Worker batches",
     [2, 4, 63, 90, 4, 0, 0], [2, 0, 129, 0, 4, 0, 0],
   ]);
 });
+
+test("project buffering persists through preloads and notes, then returns to instrument latency", async (t) => {
+  const { workers } = browser(t);
+  const player = createSunVoxPlayer(options);
+  t.after(() => player.dispose());
+  const starts = () => workers[0].messages.filter((m) => m.type === "engineStartAudio");
+  await player.loadAndPlay("song.sunvox");
+  assert.equal(starts().at(-1).bufferFrames, 4096);
+  const before = starts().length;
+  await player.preloadProject("next.sunvox");
+  await player.playSynthNote("voice.sunsynth", 60, 128);
+  assert.ok(starts().slice(before).every((m) => m.bufferFrames === 4096), "preloads and simultaneous notes must not reduce music buffering");
+  await player.stopPlayback();
+  await player.playSynthNote("voice.sunsynth", 62, 128);
+  assert.equal(starts().at(-1).bufferFrames, undefined, "instrument-only output uses the interactive default");
+});

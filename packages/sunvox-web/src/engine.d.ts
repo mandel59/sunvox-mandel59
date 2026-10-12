@@ -105,8 +105,8 @@ export interface SunVoxEngine extends EngineMethods {
   batch(commands: readonly EngineCommand[], options?: { eventTime?: "render" }): Promise<unknown[]>;
   /** Interleaved stereo Float32 audio; input, if supplied, uses the same layout. */
   render(frames: number, options?: { input?: Float32Array; latency?: number; time?: number }): Promise<BufferResult<Float32Array>>;
-  /** Connect/resume browser output from a user gesture. */
-  startAudio(): Promise<void>;
+  /** Connect/resume output. Target queue: 256..8192 frames; default 512 shared / 2048 MessagePort. */
+  startAudio(options?: { bufferFrames?: number }): Promise<void>;
   /** Disconnect output; this does not change any slot's transport state. */
   stopAudio(): Promise<void>;
   /** Stop rendering and clear queued audio, retaining the context for a later startAudio(). */

@@ -240,3 +240,34 @@ test("Worker configures shared audio and gain on the transferred port before ren
   await send({ type: "engineStartAudio" });
   assert.ok(control[1] > 0);
 });
+
+test("music buffering survives 32ms render gaps and can return to interactive output", async (t) => {
+  const { send, scope } = await workerHarness(t);
+  let step;
+  scope.setInterval = (callback) => { step = callback; return 1; };
+  scope.clearInterval = () => {};
+  scope.sv_audio_callback = (buffer) => { buffer.fill(0.25); return 0; };
+  const sharedAudio = { controlBuffer: new SharedArrayBuffer(64), audioBuffer: new SharedArrayBuffer(16384 * 2 * 4) };
+  const control = new Int32Array(sharedAudio.controlBuffer);
+  control[2] = 16384; control[3] = 2;
+  const port = { close() {}, postMessage() {} };
+  await send({ type: "configureAudio", port, sharedAudio });
+  await send({ type: "engineStartAudio", bufferFrames: 4096 });
+  // A device callback may consume 12 quanta before the delayed Worker wakes.
+  const consumedPerWake = 12 * 128;
+  for (let wake = 0; wake < 100; wake++) {
+    const buffered = (control[1] - control[0] + control[2]) % control[2];
+    assert.ok(buffered >= consumedPerWake, "device callbacks must not run out of samples between Worker wakes");
+    Atomics.store(control, 0, (control[0] + consumedPerWake) % control[2]);
+    step();
+  }
+  assert.equal(control[8], 0, "no rendered frames were dropped");
+  await send({ type: "enginePauseAudio" });
+  assert.equal(control[0], control[1], "pause immediately discards buffered music");
+  assert.equal(control[4], 0);
+  await send({ type: "engineStartAudio" });
+  assert.equal((control[1] - control[0] + control[2]) % control[2], 512, "standalone instrument output returns to low latency");
+  await assert.rejects(send({ type: "engineStartAudio", bufferFrames: 0 }), /bufferFrames/);
+  await assert.rejects(send({ type: "engineStartAudio", bufferFrames: 16384 }), /bufferFrames/);
+  await assert.rejects(send({ type: "engineStartAudio", bufferFrames: 512.5 }), /bufferFrames/);
+});
