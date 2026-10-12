@@ -176,6 +176,11 @@ export async function buildMidnightLoopLineDocument() {
   song.addModule("epFilter", {
     type: "Filter", name: "Dream Filter", color: "#5fb0ef", position: at(450, 700),
     controllers: { volume: 256, freq: 14000, resonance: 180, type: "lp", response: 12, mode: "hq", mix: 256, rolloff: "db12" },
+    to: "epHighPass",
+  });
+  song.addModule("epHighPass", {
+    type: "Filter", name: "Tine High-pass", color: "#4f9fdf", position: at(575, 760),
+    controllers: { volume: 256, freq: 110, resonance: 0, type: "hp", response: 8, mode: "hq", mix: 256, rolloff: "db12" },
     to: "epChorus",
   });
   song.addModule("ep", { ...patches.tinePiano(), position: at(0, 700), to: "epFilter" });
@@ -232,6 +237,24 @@ export async function buildMidnightLoopLineDocument() {
     to: "masterBus",
   });
   song.addModule("ambience", { ...sampler(kits.ambience, { color: "#b9b2ff", volume: 150, polyphony: 4, position: at(0, 1400) }), to: "cityVerb" });
+
+  // --- Layout: one signal-flow band per instrument group --------------------
+  const LAYOUT = {
+    kick: [0, 0], snare: [0, 80], clap: [0, 160], hats: [0, 240], perc: [0, 320], toms: [0, 400], cymbals: [0, 480],
+    drumBus: [300, 200], drumGlue: [450, 200], plateSend: [300, 380], plate: [450, 380],
+    bass: [0, 640], bassDuck: [300, 640], bassComp: [450, 640],
+    ep: [0, 760], epFilter: [150, 760], epHighPass: [300, 760], epChorus: [450, 760], tineWidth: [600, 760],
+    strings: [0, 860], stringChorus: [300, 860], stringWidth: [450, 860],
+    brass: [0, 940],
+    cutMute: [0, 1020], cutOpen: [0, 1100], guitarBus: [300, 1060],
+    lead: [0, 1200], leadHarmony: [0, 1280], whistle: [0, 1360], leadEcho: [300, 1280],
+    bell: [0, 1460],
+    choir: [0, 1560], choirFormant: [150, 1560], choirChorus: [300, 1560],
+    ambience: [0, 1680], cityVerb: [300, 1680],
+    musicBus: [800, 1100], hall: [950, 1100],
+    masterBus: [1100, 700], masterEq: [1250, 700], busGlue: [1400, 700], limiter: [1550, 700], output: [1700, 700],
+  };
+  for (const [key, [x, y]] of Object.entries(LAYOUT)) song.place(key, x, y);
 
   // --- Score ----------------------------------------------------------------
   const timeline = new Timeline(song, { sections: SECTIONS, lanes: LANES });

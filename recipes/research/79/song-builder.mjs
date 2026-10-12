@@ -160,6 +160,10 @@ export class SongBuilder {
     return index;
   }
 
+  place(key, x, y) {
+    this.modules[this.moduleIndex(key)].position = { x, y, z: 0 };
+  }
+
   connect(source, target) {
     this.links.push([source, target]);
   }

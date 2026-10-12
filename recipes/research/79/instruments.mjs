@@ -55,9 +55,9 @@ export function tinePiano() {
       envelopeGain: 1000,
       operators: [
         // Tine: a 14x modulator that decays fast, giving the bell-like ping.
-        op({ volume: 9400, attack: 0, decay: 300, sustain: "off", freqMul: 14000, velocitySensitivity: 236, envScaling: 150, outputMode: TO_OP(2) }),
+        op({ volume: 9400, attack: 0, decay: 300, sustain: "off", freqMul: 14000, velocitySensitivity: 176, envScaling: 150, outputMode: TO_OP(2) }),
         // Body: a 1x modulator that slowly mellows the tone.
-        op({ volume: 9800, attack: 0, decay: 1700, sustainLevel: 2600, sustain: "on", release: 260, freqMul: 1000, velocitySensitivity: 224, envScaling: 140, outputMode: TO_OP(3) }),
+        op({ volume: 9800, attack: 0, decay: 1700, sustainLevel: 2600, sustain: "on", release: 260, freqMul: 1000, velocitySensitivity: 176, envScaling: 140, outputMode: TO_OP(3) }),
         op({ volume: 15000, attack: 1, decay: 2300, sustainLevel: 0, sustain: "on", release: 320, freqMul: 1003, envScaling: 150, velocitySensitivity: 176, outputMode: TO_OUT }),
         op({ volume: 26000, attack: 1, decay: 5200, sustainLevel: 7000, sustain: "on", release: 360, freqMul: 997, envScaling: 140, velocitySensitivity: 150, outputMode: TO_OUT }),
         op({ volume: 3200, attack: 1, decay: 1500, sustainLevel: 0, sustain: "on", release: 300, freqMul: 2000, envScaling: 150, velocitySensitivity: 200 }),
