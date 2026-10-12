@@ -450,13 +450,18 @@ ID and the verification results in the deployment Issue.
 
 The legacy URL `https://mandel59.github.io/sunvox-mandel59/` is retained as a
 redirect to the Cloudflare site. GitHub Pages publishes only `main:/docs` using
-its built-in branch publisher; `docs/CNAME` sets the destination domain. Keep the
-Cloudflare DNS pointing at the Worker. The Pages publisher does not build the
+its built-in branch publisher, with no custom domain configured. The HTML pages
+redirect browsers directly to HTTPS. Keep the Cloudflare DNS pointing at the Worker. The Pages publisher does not build the
 application or generated audio and has no Cloudflare credentials.
 
-`docs/index.html` and `docs/404.html` also provide a browser redirect fallback
+`docs/index.html` and `docs/404.html` provide a browser redirect
 that removes the old repository prefix and keeps the query and `#file=...`.
-If the destination changes, update both fallback pages and `docs/CNAME`, then
-verify the old root, project permalink and direct download URLs after publishing.
+If the destination changes, update both pages, then verify the old root, project
+permalink and direct file navigation after publishing. The 404 redirect works
+when a browser opens a file URL; HTTP clients such as `curl` and programmatic
+`fetch` do not execute it and must use the new file URL directly. GitHub Pages
+custom-domain redirects were checked but pointed to HTTP; HTTPS enforcement
+requires a GitHub-issued certificate, which conflicts with keeping the destination
+host served by Cloudflare.
 Changes to `main:/docs` update this redirect only; Cloudflare publication still
 requires the explicit local command above.

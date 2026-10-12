@@ -9,7 +9,7 @@
 
 - `main` は Cloudflare Workers static assets (`https://sunvox-projects.ryusei.dev/`) のデプロイ対象として扱う。
 - Cloudflare への公開はローカルで `npm run cloudflare:deploy` を明示的に実行する。CI は品質チェック専用とし、push / merge で自動デプロイしない。
-- 旧 GitHub Pages は `main:/docs` の転送専用ページだけを branch publisher で公開する。`docs/CNAME` と HTML fallback の転送先を一致させ、Cloudflare の DNS は維持する。
+- 旧 GitHub Pages は `main:/docs` の転送専用ページだけを branch publisher で公開する。custom domain は設定せず HTML から HTTPS の新 URL に転送する。Cloudflare の DNS は維持する。
 - デプロイ時は対象の main commit と Wrangler の Version ID、公開確認の結果を Issue に記録する。
 - `main` に入れる変更は、公開してよいサイト内容、配布物、ドキュメント、品質ゲートを通した実装に限定する。
 - デプロイ可否や公開タイミングが決まっていない研究群は `main` に直接積まず、`main` から生やした `research-main` bookmark / branch に集約する。
