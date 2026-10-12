@@ -10,19 +10,22 @@ approval.
 - Research recipe: `recipes/research/<issue>/`
 - Research output and reports: `var/<issue>/`
 - Promoted recipe: `generated/recipes/music/`
-- Promoted output: `generated/music/`
+- Promoted distribution entry: `generated/manifest.json`
+- Rebuilt output: `generated/music/` (untracked)
 
 The default site-data roots include `generated/music/`, but do not include
 `recipes/research/` or `var/`. Research-only work therefore remains outside the
-public deployment until an explicit promotion change moves selected files.
+public deployment until an explicit promotion change adds selected manifest entries.
 
 ## Required Evidence
 
-The focused promotion Issue must record all of the following before the files
-move to a promoted path:
+The focused promotion Issue must record all of the following before a recipe and its manifest entries
+move to promoted paths:
 
 1. **Deterministic regeneration:** the checked-in recipe reproduces every
-   proposed `.sunvox` file byte-for-byte. Record the exact command and result.
+   proposed `.sunvox` file with the SHA-256 and byte size recorded in
+   `generated/manifest.json`. Record the exact regeneration command and result;
+   `npm run generated:build` verifies these approved bytes.
 2. **Structural validation:** codec validation and the relevant recipe tests
    pass. Link any exception to a focused diagnostic Issue.
 3. **Render verification:** record duration, peak, RMS, non-zero frames,
@@ -42,11 +45,12 @@ only commands, summaries, decisions, and durable artifact links in the Issue.
 
 ## Current Inventory
 
-The following 20 files predate this gate and remain publicly deployed while
+The following 21 files predate this gate and remain publicly deployed while
 their continued distribution is re-reviewed. `Pending` is not approval.
 
 | Review unit | Outputs | Source recipes | Source research | Promotion | Status |
 | --- | ---: | --- | --- | --- | --- |
+| Aurora Pulse | 1 | `aurora-pulse.mjs` | Not yet identified | Not yet assigned | Pending |
 | Short-video pack | 9 | `short-video-bgm.mjs`, `short-video-alt-palette.mjs`, `short-video-poly-vocoder.mjs` | #30 | #55 | Pending |
 | Podcast pack | 5 | `podcast-bed-loop.mjs`, `podcast-purpose-pack.mjs` | #38 | #56 | Pending |
 | Neon Razor Drift | 1 | `neon-razor-drift.mjs` | Not yet identified | #57 | Pending |
@@ -54,6 +58,5 @@ their continued distribution is re-reviewed. `Pending` is not approval.
 | Japanese-style BGM | 1 | `wa-bgm-sketch.mjs` | #32 | #59 | Pending |
 | 43-EDO studies | 3 | `microtonal-43edo-studies.mjs` | #42 | #60 | Pending |
 
-Inventory counts must match the tracked `.sunvox` files under
-`generated/music/`. When a promotion Issue closes, update its row with the
+Inventory counts must match the music entries in `generated/manifest.json`. When a promotion Issue closes, update its row with the
 decision and link the commit or PR that either retains or removes the files.

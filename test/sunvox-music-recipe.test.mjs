@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { access, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -233,42 +233,4 @@ test("a later build failure leaves earlier outputs unwritten", async () => {
   );
   await assert.rejects(access(join(outDir, "valid.sunvox")), { code: "ENOENT" });
   await assert.rejects(access(join(outDir, "valid.summary.json")), { code: "ENOENT" });
-});
-
-test("checked-in SunVox Music Recipes reproduce generated music byte-for-byte", async () => {
-  const tempDir = await mkdtemp(join(tmpdir(), "sunvox-music-recipe-generated-"));
-  const recipeDir = "generated/recipes/music";
-  const recipeFiles = (await readdir(recipeDir))
-    .filter((file) => file.endsWith(".mjs"))
-    .sort()
-    .map((file) => join(recipeDir, file));
-  assert.ok(recipeFiles.length > 0);
-
-  const expectedOutputPaths = [];
-  const expectedIssueByOutputPath = new Map();
-  for (const recipeFile of recipeFiles) {
-    const recipe = await loadMusicRecipe(recipeFile, { cacheBust: true });
-    expectedOutputPaths.push(...Object.values(recipe.outputs).map((output) => output.file.replaceAll("\\", "/")));
-    for (const output of Object.values(recipe.outputs)) {
-      expectedIssueByOutputPath.set(output.file.replaceAll("\\", "/"), recipe.issue);
-    }
-  }
-  const outputs = await runMusicRecipes(recipeFiles, { outDir: tempDir, cacheBust: true });
-
-  assert.deepEqual(
-    outputs.map((output) => output.outputPath.replaceAll("\\", "/").replace(`${tempDir.replaceAll("\\", "/")}/`, "")).sort(),
-    expectedOutputPaths.sort(),
-  );
-
-  for (const output of outputs) {
-    const relativeOutput = output.outputPath
-      .replaceAll("\\", "/")
-      .replace(`${tempDir.replaceAll("\\", "/")}/`, "");
-    assert.deepEqual(await readFile(output.outputPath), await readFile(relativeOutput), relativeOutput);
-    assert.ok(output.summaryPath, `${relativeOutput} writes a summary`);
-    const summary = JSON.parse(await readFile(output.summaryPath, "utf8"));
-    assert.equal(summary.recipe.issue, expectedIssueByOutputPath.get(relativeOutput));
-    assert.equal(summary.validation.ok, true);
-    assert.ok(summary.project.events > 0);
-  }
 });

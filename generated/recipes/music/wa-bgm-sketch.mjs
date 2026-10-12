@@ -390,9 +390,9 @@ function removeInitialPatterns(module, slot) {
   }
 }
 
-async function buildRuntimeProject() {
+async function buildRuntimeProject(assetRoot = ".") {
   const instrumentBytes = await Promise.all(
-    INSTRUMENTS.map((instrument) => readSunsynthForMusic(instrument.file, { rootVolume: instrument.musicRootVolume })),
+    INSTRUMENTS.map((instrument) => readSunsynthForMusic(resolve(assetRoot, instrument.file), { rootVolume: instrument.musicRootVolume })),
   );
   return withSunVoxSlot(
     {
@@ -534,8 +534,8 @@ async function renderSavedProjectStats(buffer, durationSeconds = 12) {
   );
 }
 
-export async function buildWaBgmDocument() {
-  const built = await buildRuntimeProject();
+export async function buildWaBgmDocument(context = {}) {
+  const built = await buildRuntimeProject(context.assetRoot);
   return projectDocumentFromBuffer(built.buffer);
 }
 

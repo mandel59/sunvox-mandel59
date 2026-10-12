@@ -309,8 +309,9 @@ async function planMusicRecipes(recipePaths, options) {
   for (const recipePath of recipePaths) {
     const absoluteRecipePath = resolve(recipePath);
     const recipe = await loadMusicRecipe(absoluteRecipePath, options);
-    const context = { recipePath: absoluteRecipePath, recipeDir: dirname(absoluteRecipePath), recipe };
+    const context = { recipePath: absoluteRecipePath, recipeDir: dirname(absoluteRecipePath), recipe, assetRoot: options.assetRoot };
     for (const [outputId, output] of Object.entries(recipe.outputs)) {
+      if (options.outputIds && !options.outputIds.includes(outputId)) continue;
       validateOutputSpec(outputId, output);
       const outputPath = resolveOutputPath(outputRoot, output.file, `Music recipe output ${outputId} file`);
       claimDestination(destinations, outputPath, `${recipePath} output ${outputId}`);

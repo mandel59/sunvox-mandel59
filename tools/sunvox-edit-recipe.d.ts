@@ -161,4 +161,5 @@ export interface SunVoxEditRecipe {
 export interface SunVoxEditRecipeRunOptions {
   recipePath?: string;
   outDir?: string;
+  outputIds?: string[];
 }

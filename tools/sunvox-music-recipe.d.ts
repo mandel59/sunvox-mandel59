@@ -5,6 +5,7 @@ export type MaybePromise<T> = T | Promise<T>;
 export interface SunVoxMusicRecipeContext {
   recipePath: string;
   recipeDir: string;
+  assetRoot?: string;
   outputId: string;
   output: SunVoxMusicRecipeOutput;
   recipe: SunVoxMusicRecipe;
@@ -40,4 +41,6 @@ export interface SunVoxMusicRecipe {
 export interface SunVoxMusicRecipeRunOptions {
   recipePath?: string;
   outDir?: string;
+  assetRoot?: string;
+  outputIds?: string[];
 }

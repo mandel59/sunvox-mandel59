@@ -314,6 +314,7 @@ export async function runEditRecipe(recipePath, options = {}) {
   const inputs = await loadInputAssets(recipe, recipeDir);
   const outputs = [];
   for (const [outputId, output] of Object.entries(recipe.outputs)) {
+    if (options.outputIds && !options.outputIds.includes(outputId)) continue;
     if (output.kind === "sunsynth") {
       outputs.push(await runSunSynthOutput(outputId, output, inputs, options));
     } else if (output.kind === "sunvox") {

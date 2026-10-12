@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "recipe": "generated/recipes/sunvox-edit/karplus-string-4ch.mjs",
+      "outputId": "karplusString4ch",
+      "path": "generated/instruments/Karplus-Strong Pluck 4ch.sunsynth",
+      "sha256": "c3a9dbe310c3a5efc42c810b521dc937940c026efbe5f5cd91454da09c4db83c",
+      "bytes": 8805
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/karplus-string.mjs",
+      "outputId": "karplusString",
+      "path": "generated/instruments/Karplus-Strong Pluck.sunsynth",
+      "sha256": "c1970d3e94244719b2ae57db81c516f77077210dc1463b9481cd0a7bc031cec6",
+      "bytes": 2341
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+      "outputId": "scratchAcidBass",
+      "path": "generated/instruments/Scratch Acid Bass.sunsynth",
+      "sha256": "7a7a933fb3aba36392ccda3ebc9e6a7b30db0e47b8958a1f6b2871ac8afadb5b",
+      "bytes": 2973
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-analog.mjs",
+      "outputId": "scratchAnalog",
+      "path": "generated/instruments/Scratch Analog.sunsynth",
+      "sha256": "a26f7e8c84ab9926893040248167329ab84aff85227c67bbd9594cd4c4f93993",
+      "bytes": 1830
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+      "outputId": "scratchFMXBass",
+      "path": "generated/instruments/Scratch FMX Bass.sunsynth",
+      "sha256": "a2fe4ac52d12c00672557ecfced1f73ff4fdb2ec4ac84facf7834b060f5bafec",
+      "bytes": 1603
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+      "outputId": "scratchFMXBell",
+      "path": "generated/instruments/Scratch FMX Bell.sunsynth",
+      "sha256": "e9d245bb3b392fe0405767a732f3c41f7ffe4700bea0b4ee24f010fadf001a55",
+      "bytes": 1603
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+      "outputId": "scratchFMXPluck",
+      "path": "generated/instruments/Scratch FMX Pluck.sunsynth",
+      "sha256": "1e922b39dcd5c8fd2b50e5154bf37bffb3d6d0b50c3cea63bdd9d1930a173ae1",
+      "bytes": 1603
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-fmx.mjs",
+      "outputId": "scratchFMXTines",
+      "path": "generated/instruments/Scratch FMX Tines.sunsynth",
+      "sha256": "e1a2552e6f62ba161b36c05f7c3c146171a9d820d37fd48057559906618da6a2",
+      "bytes": 1603
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+      "outputId": "scratchGlassBell",
+      "path": "generated/instruments/Scratch Glass Bell.sunsynth",
+      "sha256": "7a2482228eea7557580b545424ea97d7d98997c66596808ebe404b9f5effa9b0",
+      "bytes": 3441
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+      "outputId": "scratchKickSnap",
+      "path": "generated/instruments/Scratch Kick Snap.sunsynth",
+      "sha256": "2fd20794713be48c1d255dd5fd559f10e1aaf502ad26dcca1ca3a54ef9f92e2a",
+      "bytes": 2373
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-layered-pad.mjs",
+      "outputId": "scratchLayeredPad",
+      "path": "generated/instruments/Scratch Layered Pad.sunsynth",
+      "sha256": "c5c303b2541ae73576c1d856055be28c7ee4225e4242d961740a50127c5e400b",
+      "bytes": 4264
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+      "outputId": "scratchPWMOrgan",
+      "path": "generated/instruments/Scratch PWM Organ.sunsynth",
+      "sha256": "2903e8a7b61a33396a97f942637ec8dd3d482631968133c7b524542d91631cfc",
+      "bytes": 3500
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/wa-instruments.mjs",
+      "outputId": "waKotoPluck",
+      "path": "generated/instruments/Wa Koto Pluck.sunsynth",
+      "sha256": "51b1e40a99fa84bf9d9c3641ae51d9ce749b75861cc0a4279c19ee9f7b6ffc13",
+      "bytes": 4562
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/wa-instruments.mjs",
+      "outputId": "waShakuhachiBreath",
+      "path": "generated/instruments/Wa Shakuhachi Breath.sunsynth",
+      "sha256": "1939a45a22e40c36493e267e0f71e2310106f1c689177a32dc5617799015b8ce",
+      "bytes": 4344
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/wa-instruments.mjs",
+      "outputId": "waShamisenTwang",
+      "path": "generated/instruments/Wa Shamisen Twang.sunsynth",
+      "sha256": "9a5938b58600a01b9de61ee56e771fcc1288d89a0af2502926d2e36b685577b3",
+      "bytes": 5904
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/wa-instruments.mjs",
+      "outputId": "waTaikoEnsemble",
+      "path": "generated/instruments/Wa Taiko Ensemble.sunsynth",
+      "sha256": "a2513de49b41b795aa93a4f42b73a28ac89c12b24128e834f0f09af26dff48ec",
+      "bytes": 3598
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-alt-palette.mjs",
+      "outputId": "alt-filter-bass-run",
+      "path": "generated/music/alt-filter-bass-run.sunvox",
+      "sha256": "3aa43054d8de9879b973d503eae0ca9cd0f3d8434a2ce075fe567a77a79eefc0",
+      "bytes": 65048
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-alt-palette.mjs",
+      "outputId": "alt-shepard-chip-bumper",
+      "path": "generated/music/alt-shepard-chip-bumper.sunvox",
+      "sha256": "1c59d41ebbacf2c61b683099a62622097cdee4799633c43ccafe59986f9edfad",
+      "bytes": 65056
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-alt-palette.mjs",
+      "outputId": "alt-soft-formant-bed",
+      "path": "generated/music/alt-soft-formant-bed.sunvox",
+      "sha256": "cbed8bd8059bf20488e6a28aae982b9493f98f6b32784d8eddf9e1815b04ac96",
+      "bytes": 65050
+    },
+    {
+      "recipe": "generated/recipes/music/aurora-pulse.mjs",
+      "outputId": "auroraPulse",
+      "path": "generated/music/aurora-pulse.sunvox",
+      "sha256": "258fa49734dba4ea85208df60561b13197ab2a234263feb306fd06197ef1c7f4",
+      "bytes": 65558
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-bgm.mjs",
+      "outputId": "first-hook-loop",
+      "path": "generated/music/first-hook-loop.sunvox",
+      "sha256": "cdb27055a7da15747ce4b729de381cb2d5d54b5088dfc5ffcc0967d1244e72c5",
+      "bytes": 47445
+    },
+    {
+      "recipe": "generated/recipes/music/microtonal-43edo-studies.mjs",
+      "outputId": "mosFifthCanon",
+      "path": "generated/music/microtonal-43edo-mos-fifth-canon.sunvox",
+      "sha256": "b2d1479b568faf1b66031c52b460dff1517379e0ceb1330ee77b5a69cf0b5c1c",
+      "bytes": 28087
+    },
+    {
+      "recipe": "generated/recipes/music/microtonal-43edo-studies.mjs",
+      "outputId": "neutralTetrachordDrift",
+      "path": "generated/music/microtonal-43edo-neutral-tetrachord-drift.sunvox",
+      "sha256": "20d6767162abe4fad27a2d29ac8b0a020df0a4c1cf5aece5224f16b3f9295a90",
+      "bytes": 25790
+    },
+    {
+      "recipe": "generated/recipes/music/microtonal-43edo-studies.mjs",
+      "outputId": "primeLatticeBloom",
+      "path": "generated/music/microtonal-43edo-prime-lattice-bloom.sunvox",
+      "sha256": "0e9aa860dd57fceb9335e36917d440f03ca6fdda52297f2dcc33ab76fe213034",
+      "bytes": 23481
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-bgm.mjs",
+      "outputId": "narration-lofi-bed",
+      "path": "generated/music/narration-lofi-bed.sunvox",
+      "sha256": "49f9f681166eb23f912b9a41a2eba66673b0d9bd01dd735db3c30c976d32847f",
+      "bytes": 47459
+    },
+    {
+      "recipe": "generated/recipes/music/neon-razor-drift.mjs",
+      "outputId": "neonRazorDrift",
+      "path": "generated/music/neon-razor-drift.sunvox",
+      "sha256": "99db1f1a85c6c6d8a99331ad7254339ec2a0c701f036117e784e764f4e66884a",
+      "bytes": 20997
+    },
+    {
+      "recipe": "generated/recipes/music/pitch-bend-sketch.mjs",
+      "outputId": "pitchBendSketch",
+      "path": "generated/music/pitch-bend-sketch.sunvox",
+      "sha256": "149e3d867dfa8679088e53144858c72fd11355d4f62380f07a488e8280a0142b",
+      "bytes": 5453
+    },
+    {
+      "recipe": "generated/recipes/music/podcast-purpose-pack.mjs",
+      "outputId": "adReadBed",
+      "path": "generated/music/podcast-ad-read-bed.sunvox",
+      "sha256": "1cfe4a434fb3327c5e015ecf01b000c56cc8d6780eb7d78eac32e058dda429ce",
+      "bytes": 42235
+    },
+    {
+      "recipe": "generated/recipes/music/podcast-bed-loop.mjs",
+      "outputId": "podcastBedLoop",
+      "path": "generated/music/podcast-bed-loop.sunvox",
+      "sha256": "24e6cfc18f55df83ee3d19a9d511e61b30783def9f2789f5ca261ad5c88e7d60",
+      "bytes": 79096
+    },
+    {
+      "recipe": "generated/recipes/music/podcast-purpose-pack.mjs",
+      "outputId": "coldOpenTitle",
+      "path": "generated/music/podcast-cold-open-title.sunvox",
+      "sha256": "822fe56741bcbc2118f42f5961ea15d5e7a48b03f751afff3c83e0d9037771b7",
+      "bytes": 29955
+    },
+    {
+      "recipe": "generated/recipes/music/podcast-purpose-pack.mjs",
+      "outputId": "outroCredits",
+      "path": "generated/music/podcast-outro-credits.sunvox",
+      "sha256": "c9d833f9345b7486256a7b70e2e60c03c45c5abe52f4ed63d5d21f4b3fa949b9",
+      "bytes": 51455
+    },
+    {
+      "recipe": "generated/recipes/music/podcast-purpose-pack.mjs",
+      "outputId": "sectionTransition",
+      "path": "generated/music/podcast-section-transition.sunvox",
+      "sha256": "de7441f2c6faa2308c4957727e627fd6d693e3e05ac6b83d85ce666698e2fb39",
+      "bytes": 17672
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-poly-vocoder.mjs",
+      "outputId": "poly-odd-robot-break",
+      "path": "generated/music/poly-odd-robot-break.sunvox",
+      "sha256": "e023f60d6be94d9d7535ad655a70e34f8702a254d534e8851cbe05c9f6cb87c4",
+      "bytes": 40492
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-poly-vocoder.mjs",
+      "outputId": "poly-soft-vocoder-kaleidoscope",
+      "path": "generated/music/poly-soft-vocoder-kaleidoscope.sunvox",
+      "sha256": "6d5dac56b822ed5e3eafff45c5c3437135ad34cb20a35dded5da7581b4be7d43",
+      "bytes": 40504
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-poly-vocoder.mjs",
+      "outputId": "poly-vocoder-syllable-grid",
+      "path": "generated/music/poly-vocoder-syllable-grid.sunvox",
+      "sha256": "f765c4d9661f6560ab478c27a42bc41fdfe0db6a0404c3868a328a8cdc50860c",
+      "bytes": 40496
+    },
+    {
+      "recipe": "generated/recipes/music/short-video-bgm.mjs",
+      "outputId": "tech-demo-stinger",
+      "path": "generated/music/tech-demo-stinger.sunvox",
+      "sha256": "c45a6737d9e531483f7f03958ddd0276ea9446c54834051fac30dd607082f862",
+      "bytes": 47455
+    },
+    {
+      "recipe": "generated/recipes/music/wa-bgm-sketch.mjs",
+      "outputId": "waBgmSketch",
+      "path": "generated/music/wa-bgm-sketch.sunvox",
+      "sha256": "47bfcf0ff816733bbe89b2ba6df0239ca1902705dd721f8222123a36fe9b788d",
+      "bytes": 37447
+    }
+  ]
+}

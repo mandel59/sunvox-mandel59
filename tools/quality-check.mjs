@@ -5,6 +5,7 @@ const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 const isWindows = process.platform === "win32";
 
 const CHECKS = [
+  ["Build generated assets", npmCommand, ["run", "generated:build"]],
   ["License notices", npmCommand, ["run", "licenses:check"]],
   ["Regenerate SunVox fixtures", npmCommand, ["run", "sunvox:fixtures:generate"]],
   ["Regenerate site data", npmCommand, ["run", "site:data:generate"]],
