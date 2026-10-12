@@ -7,12 +7,14 @@
 
 ## Branches and Deployment
 
-- `main` は GitHub Pages のデプロイ対象として扱う。
+- `main` は Cloudflare Workers static assets (`https://sunvox-projects.ryusei.dev/`) のデプロイ対象として扱う。
 - `main` に入れる変更は、公開してよいサイト内容、配布物、ドキュメント、品質ゲートを通した実装に限定する。
 - デプロイ可否や公開タイミングが決まっていない研究群は `main` に直接積まず、`main` から生やした `research-main` bookmark / branch に集約する。
 - `research-main` は deploy-ready ではない研究取りまとめ用ブランチとして扱い、調査メモ、probe、実験用コード、未確定設計を比較・レビューする場所にする。
 - focused research branch は Issue 単位で作り、研究継続なら `research-main` に向け、公開・配布できる状態に整理したものだけ `main` に昇格する。
 - PR target は目的で分ける。研究継続なら `research-main`、デプロイ対象化なら `main` に向ける。
+
+- `generated/music/*.sunvox` と `generated/instruments/*.sunsynth` はコミットせず、recipe と `generated/manifest.json` を管理する。配布物は `npm run generated:build` で再生成・ハッシュ検証し、意図した変更はレビュー後に `--update-manifest` で記録する。
 
 ## Worktrees
 

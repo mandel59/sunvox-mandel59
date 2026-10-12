@@ -41,3 +41,7 @@ manifest is a reviewed promotion step.
 The synth demo's `packages/sunvox-synth/assets/scratch-fmx-tines.sunsynth`
 remains a committed package fixture. Removing or replacing that bundled copy
 is a separate package decision; it is outside this generated distribution list.
+
+The files in this directory should not be described as hand-authored by
+Ryusei Yamaguchi (@mandel59) unless they were authored separately from the
+generation workflow. Recipes may be produced with Codex or Claude Code.

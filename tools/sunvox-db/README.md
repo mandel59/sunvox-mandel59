@@ -276,7 +276,7 @@ Run the combined quality loop before committing codec or DB changes:
 npm run quality
 ```
 
-The command runs license notice checks, fixture regeneration, GitHub Pages
+The command runs license notice checks, fixture regeneration, site
 project-index regeneration, SunVox JS/WASM compatibility, Node tests, SunVox
 project metrics, code metrics, DB structure checks, coverage and controller
 metadata gates, sample round-trip verification, the frontend build, and

@@ -15,12 +15,13 @@ approval.
 
 The default site-data roots include `generated/music/`, but do not include
 `recipes/research/` or `var/`. Research-only work therefore remains outside the
-public deployment until an explicit promotion change adds selected manifest entries.
+public deployment until an explicit promotion change adds selected manifest
+entries.
 
 ## Required Evidence
 
-The focused promotion Issue must record all of the following before a recipe and its manifest entries
-move to promoted paths:
+The focused promotion Issue must record all of the following before a recipe
+and its manifest entries move to promoted paths:
 
 1. **Deterministic regeneration:** the checked-in recipe reproduces every
    proposed `.sunvox` file with the SHA-256 and byte size recorded in
@@ -58,5 +59,6 @@ their continued distribution is re-reviewed. `Pending` is not approval.
 | Japanese-style BGM | 1 | `wa-bgm-sketch.mjs` | #32 | #59 | Pending |
 | 43-EDO studies | 3 | `microtonal-43edo-studies.mjs` | #42 | #60 | Pending |
 
-Inventory counts must match the music entries in `generated/manifest.json`. When a promotion Issue closes, update its row with the
+Inventory counts must match the music entries in `generated/manifest.json`.
+When a promotion Issue closes, update its row with the
 decision and link the commit or PR that either retains or removes the files.

@@ -159,7 +159,7 @@ const CROSS_ORIGIN_ISOLATION_HEADERS = {
 };
 
 export default defineConfig({
-  base: process.env.PAGES_BASE_PATH || "./",
+  base: "/",
   plugins: [react(), localPreviewSiteDataPlugin()],
   server: {
     ...readLocalServerConfig(),

@@ -234,8 +234,8 @@ The repository uses these data locations:
 - `recipes/`: human-authored generation recipes and experiments.
 - `generated/recipes/sunvox-edit/`: committed `.sunsynth` recipes.
 - `generated/recipes/music/`: committed `.sunvox` music recipes.
-- `generated/music/`: committed machine-generated `.sunvox` outputs.
-- `generated/instruments/`: committed machine-generated `.sunsynth` outputs.
+- `generated/music/`: untracked `.sunvox` outputs rebuilt from the manifest.
+- `generated/instruments/`: untracked `.sunsynth` outputs rebuilt from the manifest.
 - `var/`: untracked temporary input/output, downloaded archives, and scratch data.
 
 `sunvox:validate` checks DB-backed editability and runtime compatibility rules
@@ -244,8 +244,8 @@ the DB rule ID, source hint, and tracking issue when available. Clean samples
 print `no validation issues`; warnings are used for values that can still
 round-trip but may be clamped or ignored by SunVox at runtime.
 
-`site:data:generate` builds `site-data/sunvox-projects.json` from checked-in
-`.sunvox` and `.sunsynth` files. The GitHub Pages frontend uses this generated
+`site:data:generate` builds `site-data/sunvox-projects.json` from distributed
+`.sunvox` and `.sunsynth` files, including regenerated outputs. The Cloudflare frontend uses this generated
 index to show project modules, graph links, patterns, event previews, and
 embedded MetaModule containers without decoding binary files in the browser.
 The inspector UI is a Vite/React app under [src/](src/) while the SunVox
@@ -264,7 +264,7 @@ sample files and small codec-edited variants, so representative text edits are
 verified against the runtime API as well as byte-level round-trips. These checks
 cover project, module, pattern, controller, module link, pattern note,
 pattern controller, pattern effect edits, SunVox Lib save/reload compatibility,
-DB-driven validation warnings, regenerated GitHub Pages project index data, and
+DB-driven validation warnings, regenerated site project index data, and
 code-size metrics across checked-in samples and local tooling.
 
 ### SunVox Lib Fixtures
@@ -308,7 +308,7 @@ Built by project tooling from Codex-generated recipes under
 
 The generated site index automatically records each generated `.sunsynth`
 file's source recipe by reading checked-in recipe `variants[].fileName` values.
-The GitHub Pages app shows that source recipe in each generated synth's detail
+The site app shows that source recipe in each generated synth's detail
 view instead of maintaining a hand-written list in the license notice.
 
 ### Human-authored music under [music/](music/)
@@ -330,14 +330,14 @@ This license applies to the library files under
 > Powered by SunVox (modular synth & tracker)  
 > Copyright (c) 2008 - 2026, Alexander Zolotov \<nightradio@gmail.com>, WarmPlace.ru
 
-The GitHub Pages frontend links to the SunVox library license and the required
+The Cloudflare frontend links to the SunVox library license and the required
 third-party license text files from the deployed page.
 
 Run `npm run licenses:check` to verify that the source frontend includes the
 required SunVox notice and links every TXT file under
 `sunvox_lib/sunvox_lib/docs/license/`, plus the project data module license
 under `sunvox/docs/license/`. After `npm run build`, run
-`npm run licenses:check:dist` to verify that the GitHub Pages output keeps the
+`npm run licenses:check:dist` to verify that the Cloudflare build output keeps the
 same notice and copied license files.
 
 ## Reusable web package
@@ -349,3 +349,47 @@ Run `npm install` to link the workspace. The site uses the package through
 implements the site-specific Player. `js/player.js` connects it to the page.
 The package contains low-level API and audio transport only; see its README for
 installation, runtime URLs and API.
+
+## Generated assets and deployment
+
+The site deploys from `main` to https://sunvox-projects.ryusei.dev/ using
+Cloudflare Workers static assets. Vite uses `/` as its base path.
+`.github/workflows/cloudflare.yml` runs quality checks before deployment;
+`.github/workflows/ci.yml` checks pull requests and other branches.
+
+Generated binaries are not committed. `generated/manifest.json` lists the
+selected recipe output IDs, public paths, SHA-256 hashes and byte sizes.
+`npm run generated:build` builds instruments first, then music, in a temporary
+staging directory and verifies every hash before copying distributed files.
+`npm test`, `npm run dev` and `npm run build` automatically restore missing
+assets and verify existing ones. A hash mismatch fails instead of silently
+accepting changed music. After reviewing an intentional recipe change, run
+`npm run generated:build -- --update-manifest` and review the manifest diff.
+See [generated/README.md](generated/README.md) for the promotion process.
+
+```sh
+npm ci
+sh scripts/install_sunvox_lib.sh
+npm run generated:build
+npm run quality
+npm run cloudflare:dev # preview the built dist/ through Wrangler
+```
+
+The build writes `.sunvox.gz` and `.sunsynth.gz` siblings throughout `dist/`
+when gzip is smaller. The Worker negotiates gzip at the original URLs,
+sets `Content-Encoding: gzip` and `Vary: Accept-Encoding`, and returns the
+original file for clients without gzip support, absent compressed siblings,
+and byte-range requests (which receive the full original with status 200).
+Both static and Worker responses preserve the
+cross-origin isolation headers used by the audio runtime.
+[Cloudflare's response API](https://developers.cloudflare.com/workers/runtime-apis/response/#the-encodebody-option)
+requires `encodeBody: "manual"` for these precompressed response bodies.
+
+Before the first production deployment, set repository secrets
+`CLOUDFLARE_API_TOKEN` (Workers deployment permissions) and
+`CLOUDFLARE_ACCOUNT_ID`. The account must host the active `ryusei.dev` zone;
+Custom Domain deployment also needs permission to manage that zone's DNS.
+Without both secrets, CI builds and uploads the artifact but skips deployment.
+Once the Cloudflare URL is live and playback/downloads are verified, disable
+GitHub Pages in the repository settings. Manual deployment, with the same
+credentials in the environment, uses `npm run cloudflare:deploy`.
