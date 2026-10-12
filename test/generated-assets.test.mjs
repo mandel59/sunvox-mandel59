@@ -1,4 +1,9 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { pathToFileURL } from "node:url";
+
+const execFileAsync = promisify(execFile);
 import { cp, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -21,7 +26,10 @@ async function fixture(t) {
 test("distributed music and instruments rebuild from recipes to manifest hashes in an empty directory", async (t) => {
   const outDir = await mkdtemp(join(tmpdir(), "sunvox-generated-test-"));
   t.after(() => rm(outDir, { recursive: true, force: true }));
-  const manifest = await buildGeneratedAssets({ outDir });
+  const manifest = await readGeneratedManifest();
+  const script = `const { buildGeneratedAssets } = await import(${JSON.stringify(pathToFileURL(resolve("tools/build-generated-assets.mjs")).href)}); await buildGeneratedAssets({root: ${JSON.stringify(resolve("."))}, outDir: process.cwd()});`;
+  // No generated inputs or human instruments exist in the process's cwd.
+  await execFileAsync(process.execPath, ["--input-type=module", "-e", script], { cwd: outDir });
   for (const asset of manifest.assets) assert.deepEqual(assetDigest(await readFile(resolve(outDir, asset.path))), { sha256: asset.sha256, bytes: asset.bytes }, asset.path);
   for (const directory of ["generated/instruments", "generated/music"]) {
     assert.deepEqual((await readdir(resolve(outDir, directory))).sort(), manifest.assets.filter((asset) => asset.path.startsWith(`${directory}/`)).map((asset) => basename(asset.path)).sort());

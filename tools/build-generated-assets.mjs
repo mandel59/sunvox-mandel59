@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { cp, copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -101,6 +101,9 @@ export async function buildGeneratedAssets({ root = process.cwd(), outDir = root
   if (ifMissing && await assetsPresent(outDir, manifest)) return manifest;
   const staging = await mkdtemp(join(tmpdir(), "sunvox-generated-"));
   try {
+    // Human-authored instrument inputs also belong to the isolated build root.
+    try { await cp(resolve(root, "instruments"), resolve(staging, "instruments"), { recursive: true }); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
     // Instruments precede music; music reads dependencies only from staging.
     const groups = new Map();
     const ordered = [...manifest.assets].sort((a, b) => Number(a.path.endsWith(".sunvox")) - Number(b.path.endsWith(".sunvox")));

@@ -1327,7 +1327,7 @@ function analyzePartBalance(mix, partSummaries) {
   };
 }
 
-async function loadSourceModules(module, slot, sources, layout) {
+async function loadSourceModules(module, slot, sources, layout, assetRoot = ".") {
   const loaded = {};
   for (const source of sources) {
     const position = layout.sources[source.id];
@@ -1340,7 +1340,7 @@ async function loadSourceModules(module, slot, sources, layout) {
       loaded[source.id] = moduleIndex;
       continue;
     }
-    const bytes = await readSunsynthForMusic(source.path, { rootVolume: source.musicRootVolume });
+    const bytes = await readSunsynthForMusic(resolve(assetRoot, source.path), { rootVolume: source.musicRootVolume });
     const moduleIndex = loadSynthModuleFromBuffer(module, bytes, {
       slot,
       ...position,
@@ -1352,7 +1352,7 @@ async function loadSourceModules(module, slot, sources, layout) {
   return loaded;
 }
 
-async function buildThemeProject(theme) {
+async function buildThemeProject(theme, assetRoot = ".") {
   const sources = specsForTheme(sourceModules, theme.sourceControllers);
   const effects = specsForTheme(effectModules, theme.effectControllers);
   const volumes = sourceVolumeMap(sources);
@@ -1363,7 +1363,7 @@ async function buildThemeProject(theme) {
       setSongName(module, slot, theme.songName);
 
       const nodeLayout = computeNodeLayout();
-      const loadedSources = await loadSourceModules(module, slot, sources, nodeLayout);
+      const loadedSources = await loadSourceModules(module, slot, sources, nodeLayout, assetRoot);
       const mixGraph = addMixGraph(module, slot, loadedSources, effects, nodeLayout);
 
       const patternIndex = createPattern(module, {
@@ -1393,8 +1393,8 @@ async function buildThemeProject(theme) {
   );
 }
 
-async function buildThemeDocument(theme) {
-  return (await buildThemeProject(theme)).document;
+async function buildThemeDocument(theme, assetRoot = ".") {
+  return (await buildThemeProject(theme, assetRoot)).document;
 }
 
 /** @satisfies {import("../../../tools/sunvox-music-recipe.d.ts").SunVoxMusicRecipe} */
@@ -1409,7 +1409,7 @@ export const recipe = {
         file: outputPathForTheme(theme),
         title: theme.title,
         summaryFile: summaryPathForTheme(theme),
-        buildDocument: () => buildThemeDocument(theme),
+        buildDocument: (context) => buildThemeDocument(theme, context.assetRoot),
       },
     ]),
   ),

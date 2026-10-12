@@ -1192,7 +1192,7 @@ function analyzePartBalance(mix, partSummaries) {
   };
 }
 
-async function buildThemeProject(theme) {
+async function buildThemeProject(theme, assetRoot = ".") {
   const instrumentVolumes = instrumentVolumesForTheme(theme);
 
   return withSunVoxSlot(
@@ -1203,7 +1203,7 @@ async function buildThemeProject(theme) {
       const nodeLayout = computeNodeLayout();
       const loaded = {};
       for (const instrument of instruments) {
-        const bytes = await readSunsynthForMusic(instrument.path, { rootVolume: instrument.musicRootVolume });
+        const bytes = await readSunsynthForMusic(resolve(assetRoot, instrument.path), { rootVolume: instrument.musicRootVolume });
         const position = nodeLayout.instruments[instrument.id];
         loaded[instrument.id] = loadSynthModuleFromBuffer(module, bytes, {
           slot,
@@ -1246,8 +1246,8 @@ async function buildThemeProject(theme) {
   );
 }
 
-async function buildThemeDocument(theme) {
-  return (await buildThemeProject(theme)).document;
+async function buildThemeDocument(theme, assetRoot = ".") {
+  return (await buildThemeProject(theme, assetRoot)).document;
 }
 
 /** @satisfies {import("../../../tools/sunvox-music-recipe.d.ts").SunVoxMusicRecipe} */
@@ -1262,7 +1262,7 @@ export const recipe = {
         file: outputPathForTheme(theme),
         title: theme.title,
         summaryFile: summaryPathForTheme(theme),
-        buildDocument: () => buildThemeDocument(theme),
+        buildDocument: (context) => buildThemeDocument(theme, context.assetRoot),
       },
     ]),
   ),
