@@ -5,14 +5,15 @@
 // not drawn: a tempo-synced LFO sweeps the sequencer VCF through Sound2Ctl,
 // an ADSR envelope opens the bass VCF, a stepped-random LFO is the sample &
 // hold for the band-pass plucks, and one MultiCtl "voltage" macro fans out to
-// five destinations, including the depth of the other modulators. Run with:
-//   npm run sunvox:music-recipe -- recipes/research/90/voltage-garden.mjs
+// five destinations, including the depth of the other modulators. The score
+// lives in generated/recipes/music-lib/voltage-garden/. Run with:
+//   npm run sunvox:music-recipe -- generated/recipes/music/voltage-garden.mjs
 
 import { SongBuilder, Timeline } from "../../../tools/sunvox-song-builder.mjs";
-import { BPM, SECTIONS, TOTAL_BARS, arrange } from "./voltage-garden-score.mjs";
+import { BPM, SECTIONS, TOTAL_BARS, arrange } from "../music-lib/voltage-garden/score.mjs";
 
-const PROJECT_PATH = "var/90/voltage-garden.sunvox";
-const SUMMARY_PATH = "var/90/voltage-garden.summary.json";
+const PROJECT_PATH = "generated/music/voltage-garden.sunvox";
+const SUMMARY_PATH = "var/music-recipe/voltage-garden.summary.json";
 
 const LANES = [
   { key: "drums", name: "Drums", y: 0, tracks: 5, color: { foreground: "#fff0d6", background: "#3a2a12" } },
@@ -243,7 +244,7 @@ export function buildVoltageGardenDocument() {
 
   // --- The "voltage" macro: one knob, five destinations ----------------------
   // Output slots follow the order of the MultiCtl's output links (destination
-  // module order), checked by probe-modulation.mjs song.
+  // module order), checked at runtime by recipes/research/90/check-macro.mjs.
   const macroTargets = [
     ["bassEnvS2C", { controller: CTL.sound2CtlOutMax, min: norm(900, 14000), max: norm(5200, 14000) }],
     ["seqVcf", { controller: CTL.filterResonance, min: norm(450, 1530), max: norm(950, 1530) }],
@@ -284,7 +285,7 @@ export function buildVoltageGardenDocument() {
     pruneEmptyPatterns: true,
     comments: [
       `Voltage Garden: modular-synth loop in D Dorian, ${BPM} BPM, ${TOTAL_BARS} bars = 60 s, seamless loop.`,
-      "Built by recipes/research/90/voltage-garden.mjs from native SunVox modules only.",
+      "Built by generated/recipes/music/voltage-garden.mjs from native SunVox modules only.",
     ],
   });
 }

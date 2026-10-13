@@ -41,6 +41,7 @@ npm run sunvox:music-recipe -- --help
 npm run sunvox:analyze-balance -- --parts --perceptual --duration 60 --format text generated/music/aurora-pulse.sunvox
 npm run sunvox:render-audio -- --bit-depth 24 --out var/render/midnight-loop-line.wav generated/music/midnight-loop-line.sunvox
 npm run audio:review -- --bpm 116 --bars-per-row 4 var/render/midnight-loop-line.wav
+npm run sunvox:render-audio -- --loop --duration 125 --out var/render/voltage-garden.loop.wav generated/music/voltage-garden.sunvox
 npm run sunvox:api-audit
 npm run sunvox:fixtures:generate
 npm run sunvox:metrics

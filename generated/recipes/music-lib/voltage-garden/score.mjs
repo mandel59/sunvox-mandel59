@@ -3,8 +3,8 @@
 // 32 bars = 512 lines = exactly 60 s; bar 31 turns around (A7) into bar 0.
 // One line is a 16th note.
 
-import { createRng } from "../../../tools/sample-synth.mjs";
-import { noteNumber } from "../../../tools/sunvox-song-builder.mjs";
+import { createRng } from "../../../../tools/sample-synth.mjs";
+import { noteNumber } from "../../../../tools/sunvox-song-builder.mjs";
 
 export const BPM = 128;
 export const LPB = 16;

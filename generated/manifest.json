@@ -261,6 +261,13 @@
       "bytes": 47455
     },
     {
+      "recipe": "generated/recipes/music/voltage-garden.mjs",
+      "outputId": "voltageGarden",
+      "path": "generated/music/voltage-garden.sunvox",
+      "sha256": "b766a427e01b44c3b0c0d94572f01c4ee7102d1d403b4b857c4f3fbd0f964f72",
+      "bytes": 106531
+    },
+    {
       "recipe": "generated/recipes/music/wa-bgm-sketch.mjs",
       "outputId": "waBgmSketch",
       "path": "generated/music/wa-bgm-sketch.sunvox",
