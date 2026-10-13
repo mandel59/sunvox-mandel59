@@ -128,9 +128,14 @@ export function buildVoltageGardenDocument() {
     controllers: { dry: 256, wet: 90, delayL: 3, delayR: 6, volumeL: 256, volumeR: 200, channels: "stereo", delayUnit: "line", delayMultiplier: 1, feedback: 9000 },
     to: ["musicBus", "springSend"],
   });
+  // Tone LPF after the drive: removes the saturation's upper harmonics.
+  song.addModule("seqTone", {
+    type: "Filter", name: "Seq Tone", controllers: { freq: 3200, resonance: 0, type: "lp", rolloff: "db12", mode: "hq" },
+    to: "seqEcho",
+  });
   song.addModule("seqDrive", {
     type: "Distortion", name: "Seq Drive", controllers: { volume: 150, type: "saturation3", power: 120 },
-    to: "seqEcho",
+    to: "seqTone",
   });
   song.addModule("seqVcf", {
     type: "Filter", name: "Seq VCF", controllers: { freq: 1200, resonance: 900, type: "lp", rolloff: "db24", mode: "hq", response: 4 },
@@ -144,7 +149,7 @@ export function buildVoltageGardenDocument() {
   song.addModule("seqIn", { type: "MultiSynth", name: "Seq In", to: "seqVco" });
   song.addModule("seqLfoS2C", {
     type: "Sound2Ctl", name: "LFO -> Seq Cutoff",
-    controllers: { sampleRate: 400, channels: "mono", absolute: "on", gain: 256, smooth: 0, mode: "hq", outMin: norm(260, 14000), outMax: norm(3600, 14000), outController: CTL.filterFreq },
+    controllers: { sampleRate: 400, channels: "mono", absolute: "on", gain: 256, smooth: 0, mode: "hq", outMin: norm(240, 14000), outMax: norm(2200, 14000), outController: CTL.filterFreq },
     to: "seqVcf",
   });
   song.addModule("seqLfo", {
@@ -177,7 +182,7 @@ export function buildVoltageGardenDocument() {
     to: ["musicBus", "springSend"],
   });
   song.addModule("pluckVcf", {
-    type: "Filter", name: "Pluck BPF", controllers: { volume: 256, freq: 1500, resonance: 1250, type: "bp", rolloff: "db12", mode: "hq", response: 0 },
+    type: "Filter", name: "Pluck BPF", controllers: { volume: 256, freq: 1500, resonance: 1100, type: "bp", rolloff: "db12", mode: "hq", response: 0 },
     to: "pluckEcho",
   });
   song.addModule("pluck", {
@@ -187,7 +192,7 @@ export function buildVoltageGardenDocument() {
   });
   song.addModule("pluckSH", {
     type: "Sound2Ctl", name: "S&H -> Pluck BPF",
-    controllers: { sampleRate: 400, channels: "mono", absolute: "on", gain: 256, smooth: 0, mode: "hq", outMin: norm(700, 14000), outMax: norm(5200, 14000), outController: CTL.filterFreq },
+    controllers: { sampleRate: 400, channels: "mono", absolute: "on", gain: 256, smooth: 0, mode: "hq", outMin: norm(600, 14000), outMax: norm(3400, 14000), outController: CTL.filterFreq },
     to: "pluckVcf",
   });
   song.addModule("pluckRandom", {
@@ -241,7 +246,7 @@ export function buildVoltageGardenDocument() {
   // module order), checked by probe-modulation.mjs song.
   const macroTargets = [
     ["bassEnvS2C", { controller: CTL.sound2CtlOutMax, min: norm(900, 14000), max: norm(5200, 14000) }],
-    ["seqVcf", { controller: CTL.filterResonance, min: norm(600, 1530), max: norm(1150, 1530) }],
+    ["seqVcf", { controller: CTL.filterResonance, min: norm(450, 1530), max: norm(950, 1530) }],
     ["seqEcho", { controller: CTL.delayFeedback, min: 5000, max: 17000 }],
     ["seqDrive", { controller: CTL.distortionPower, min: norm(80, 256), max: norm(220, 256) }],
     ["padVcf", { controller: CTL.filterFreq, min: norm(900, 14000), max: norm(5200, 14000) }],
@@ -257,7 +262,7 @@ export function buildVoltageGardenDocument() {
   const LAYOUT = {
     kick: [0, 0], snareNoise: [0, 90], snareVcf: [150, 90], snareBody: [0, 160], snareLevel: [300, 120], hat: [0, 240], openHat: [0, 310], hatVcf: [150, 270], hatVca: [300, 270], hatLevel: [450, 270], drumBus: [600, 150],
     bassIn: [0, 420], bassVco: [150, 400], bassEnv: [150, 470], bassEnvS2C: [300, 470], bassVcf: [450, 420],
-    seqIn: [0, 560], seqVco: [150, 560], seqVcf: [300, 560], seqDrive: [450, 560], seqEcho: [600, 560], seqLfo: [150, 640], seqLfoS2C: [300, 640],
+    seqIn: [0, 560], seqVco: [150, 560], seqVcf: [300, 560], seqDrive: [450, 560], seqTone: [600, 560], seqEcho: [750, 560], seqLfo: [150, 640], seqLfoS2C: [300, 640],
     pad: [0, 740], padVcf: [150, 740], padEnsemble: [300, 740],
     pluck: [0, 830], pluckVcf: [150, 830], pluckEcho: [300, 830], pluckRandom: [0, 900], pluckSH: [150, 900],
     leadIn: [0, 1000], leadRatio: [150, 1060], leadMod: [300, 1060], leadWobble: [450, 1060], leadCarrier: [600, 1000], leadVibrato: [750, 1000], leadEcho: [900, 1000],
