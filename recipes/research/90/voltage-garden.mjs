@@ -129,7 +129,7 @@ export function buildVoltageGardenDocument() {
     to: ["musicBus", "springSend"],
   });
   song.addModule("seqDrive", {
-    type: "Distortion", name: "Seq Drive", controllers: { volume: 240, type: "saturation3", power: 120 },
+    type: "Distortion", name: "Seq Drive", controllers: { volume: 150, type: "saturation3", power: 120 },
     to: "seqEcho",
   });
   song.addModule("seqVcf", {
