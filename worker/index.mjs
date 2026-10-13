@@ -10,6 +10,15 @@ export function acceptsGzip(header = "") {
   return (qualities.get("gzip") ?? qualities.get("*") ?? 0) > 0;
 }
 
+function clientEncoding(request, env) {
+  // Deployed Cloudflare requests lose q-values even in cf.clientAcceptEncoding (#84).
+  // A Request Header Transform Rule must preserve the original header first.
+  // If configured but missing, use identity rather than the lossy cf value.
+  if (env.CLIENT_ACCEPT_ENCODING_HEADER) return request.headers.get(env.CLIENT_ACCEPT_ENCODING_HEADER) ?? "";
+  if (request.cf) return request.cf.clientAcceptEncoding ?? "";
+  return request.headers.get("Accept-Encoding") ?? "";
+}
+
 function responseHeaders(response, compressed) {
   const headers = new Headers(response.headers);
   const vary = (headers.get("Vary") ?? "").split(",").map((value) => value.trim()).filter(Boolean);
@@ -30,11 +39,7 @@ export default {
     if (!/\.(sunvox|sunsynth)$/u.test(url.pathname) || !["GET", "HEAD"].includes(request.method)) {
       return env.ASSETS.fetch(request);
     }
-    // Cloudflare normalizes Accept-Encoding; cf retains the client's original value.
-    // https://developers.cloudflare.com/fundamentals/reference/http-headers/#accept-encoding
-    const encoding = request.cf && "clientAcceptEncoding" in request.cf
-      ? request.cf.clientAcceptEncoding ?? ""
-      : request.headers.get("Accept-Encoding") ?? "";
+    const encoding = clientEncoding(request, env);
     // Range requests keep byte offsets in the original file representation.
     if (!request.headers.has("Range") && acceptsGzip(encoding)) {
       url.pathname += ".gz";

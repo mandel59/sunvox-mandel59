@@ -85,7 +85,7 @@ test("unrelated paths and unsupported methods pass through; gzip failures propag
 
 
 test("Cloudflare's original client encoding takes precedence over the normalized header", async () => {
-  for (const encoding of ["identity", "gzip;q=0, *;q=1", "", null]) {
+  for (const encoding of ["identity", "gzip;q=0, *;q=1", "", null, undefined]) {
     const env = mockAssets();
     const request = new Request("https://site.test/song.sunvox", { headers: { "Accept-Encoding": "br, gzip" } });
     request.cf = { clientAcceptEncoding: encoding };
@@ -97,4 +97,42 @@ test("Cloudflare's original client encoding takes precedence over the normalized
   const request = new Request("https://site.test/song.sunvox", { headers: { "Accept-Encoding": "identity" } });
   request.cf = { clientAcceptEncoding: "gzip" };
   assert.equal((await worker.fetch(request, env)).headers.get("Content-Encoding"), "gzip");
+});
+
+test("preserved client encoding overrides Cloudflare's stripped quality values", async () => {
+  for (const [encoding, compressedResponse] of [
+    ["gzip;q=0", false], ["gzip;q=0, *;q=1", false], ["*;q=1, gzip;q=0", false], ["identity", false],
+    ["gzip", true], ["gzip;q=0.5", true], ["*;q=1", true], ["", false], [null, false],
+  ]) {
+    for (const method of ["GET", "HEAD"]) {
+      const env = { ...mockAssets(), CLIENT_ACCEPT_ENCODING_HEADER: "X-Sunvox-Client-Accept-Encoding" };
+      const headers = { "Accept-Encoding": "gzip, br" };
+      if (encoding !== null) headers[env.CLIENT_ACCEPT_ENCODING_HEADER] = encoding;
+      const request = new Request("https://site.test/song.sunvox", { method, headers });
+      request.cf = { clientAcceptEncoding: "gzip" };
+      const response = await worker.fetch(request, env);
+      assert.equal(response.headers.get("Content-Encoding"), compressedResponse ? "gzip" : null, `${method}: ${encoding}`);
+      assert.equal(env.calls.length, 1);
+      if (method === "GET") {
+        const bytes = Buffer.from(await response.arrayBuffer());
+        assert.deepEqual(compressedResponse ? gunzipSync(bytes) : bytes, raw);
+      } else {
+        assert.equal(await response.text(), "");
+      }
+    }
+  }
+});
+
+test("preserved gzip still honors Range and representation-specific conditional requests", async () => {
+  for (const [method, status, range] of [["GET", 200, true], ["HEAD", 304, false], ["GET", 304, false]]) {
+    const env = { ...mockAssets({ status }), CLIENT_ACCEPT_ENCODING_HEADER: "X-Sunvox-Client-Accept-Encoding" };
+    const headers = { "Accept-Encoding": "gzip, br", "X-Sunvox-Client-Accept-Encoding": "gzip", "If-None-Match": range ? '"raw"' : '"gzip"' };
+    if (range) headers.Range = "bytes=0-10";
+    const response = await worker.fetch(new Request("https://site.test/song.sunvox", { method, headers }), env);
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get("Content-Encoding"), range ? null : "gzip");
+    assert.equal(response.headers.get("ETag"), headers["If-None-Match"]);
+    assert.equal(env.calls[0].headers.get("If-None-Match"), headers["If-None-Match"]);
+    if (range) assert.deepEqual(Buffer.from(await response.arrayBuffer()), raw);
+  }
 });

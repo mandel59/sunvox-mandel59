@@ -1,0 +1,15 @@
+{
+  "ref": "sunvox_preserve_accept_encoding",
+  "description": "Preserve SunVox client compression quality values before Worker normalization (#84)",
+  "expression": "http.host eq \"sunvox-projects.ryusei.dev\" and (ends_with(http.request.uri.path, \".sunvox\") or ends_with(http.request.uri.path, \".sunsynth\"))",
+  "action": "rewrite",
+  "action_parameters": {
+    "headers": {
+      "x-sunvox-client-accept-encoding": {
+        "operation": "set",
+        "expression": "join(http.request.headers[\"accept-encoding\"], \",\")"
+      }
+    }
+  },
+  "enabled": true
+}

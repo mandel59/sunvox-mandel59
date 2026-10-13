@@ -5,6 +5,9 @@
   "compatibility_date": "2026-10-12",
   "workers_dev": false,
   "preview_urls": false,
+  "vars": {
+    "CLIENT_ACCEPT_ENCODING_HEADER": "X-Sunvox-Client-Accept-Encoding"
+  },
   "routes": [
     { "pattern": "sunvox-projects.ryusei.dev", "custom_domain": true }
   ],
