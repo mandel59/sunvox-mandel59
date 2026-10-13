@@ -413,6 +413,11 @@ Both static and Worker responses preserve the
 cross-origin isolation headers used by the audio runtime.
 [Cloudflare's response API](https://developers.cloudflare.com/workers/runtime-apis/response/#the-encodebody-option)
 requires `encodeBody: "manual"` for these precompressed response bodies.
+Deployed Cloudflare requests can lose compression quality values even in
+`request.cf.clientAcceptEncoding`. The candidate preservation rule, release
+requirements, and `npm run cloudflare:check:encoding` probe are documented in
+[worker/README.md](worker/README.md). The configured Worker returns original
+bytes when the preserved header is missing.
 
 Authenticate Wrangler on the machine used for deployment:
 

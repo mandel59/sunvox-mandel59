@@ -49,6 +49,7 @@
     "pretest": "npm run generated:build -- --if-missing",
     "predev": "npm run generated:build -- --if-missing",
     "cloudflare:dev": "npm run build && wrangler dev",
+    "cloudflare:check:encoding": "node tools/check-cloudflare-encoding.mjs",
     "cloudflare:deploy": "npm run quality && wrangler deploy"
   },
   "devDependencies": {
