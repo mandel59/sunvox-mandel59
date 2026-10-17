@@ -20,7 +20,7 @@ const BOW_ATTACK_MS = 140;
 const HAT_CLOSED_RELEASE = 178;
 const HAT_RELEASE_RANGE = [150, 235];
 
-/** Full FMX operator spec; FMX velocitySensitivity 0 silences an operator. @param {Record<string, string | number>} overrides */
+/** Full FMX operator spec. velocitySensitivity 128 is neutral; lower values invert it (0 = silent at full velocity). @param {Record<string, string | number>} overrides */
 const fmxOp = (overrides) => ({
   volume: 0,
   attack: 0,
@@ -365,7 +365,7 @@ const recipe = {
       create: {
         module: "MetaModule",
         name: "Scratch String Ensemble",
-        volume: 130,
+        volume: 100,
         bpm: 120,
         tpl: 6,
         color: "#d98cff",
@@ -401,7 +401,7 @@ const recipe = {
                 sustain: "on",
                 releaseCurve: "exp1",
                 waveform: "saw",
-                velocitySensitivity: 96,
+                velocitySensitivity: 176,
                 outputMode: FMX_TO_OUT,
               }),
               fmxOp({ volume: 0 }),
