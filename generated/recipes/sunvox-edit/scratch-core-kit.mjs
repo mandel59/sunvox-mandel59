@@ -9,10 +9,12 @@ const at = (x, y) => ({ x, y, z: 0 });
 // MultiCtl output slot controller numbers are 1-based; slot min/max are
 // normalized to 0..32768 of the destination range.
 const ANALOG_RELEASE = 5;
-const FMX_OP1_ATTACK = 11;
+// FMX controllers are grouped by parameter (all five volumes, then all
+// attacks, ...), so operator 1 attack is controller 15, not 11.
+const FMX_OP1_ATTACK = 15;
 // FMX outputMode bit 0 sends an operator to the main output.
 const FMX_TO_OUT = 1;
-const BOW_ATTACK_MS = 380;
+const BOW_ATTACK_MS = 140;
 // Analog generator release is steeply non-linear: 120 ≈ 30 ms, 180 ≈ 100 ms,
 // 215 ≈ 400 ms, 256 never decays.
 const HAT_CLOSED_RELEASE = 178;
@@ -363,7 +365,7 @@ const recipe = {
       create: {
         module: "MetaModule",
         name: "Scratch String Ensemble",
-        volume: 110,
+        volume: 130,
         bpm: 120,
         tpl: 6,
         color: "#d98cff",
