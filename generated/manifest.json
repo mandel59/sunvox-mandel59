@@ -65,6 +65,13 @@
       "bytes": 3441
     },
     {
+      "recipe": "generated/recipes/sunvox-edit/scratch-core-kit.mjs",
+      "outputId": "scratchHiHat",
+      "path": "generated/instruments/Scratch Hi-Hat.sunsynth",
+      "sha256": "f8a4c00832b3fda03db0b523798b91d355cf709a11762e9ff7eef96a2c633b19",
+      "bytes": 4772
+    },
+    {
       "recipe": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
       "outputId": "scratchKickSnap",
       "path": "generated/instruments/Scratch Kick Snap.sunsynth",
@@ -84,6 +91,27 @@
       "path": "generated/instruments/Scratch PWM Organ.sunsynth",
       "sha256": "2903e8a7b61a33396a97f942637ec8dd3d482631968133c7b524542d91631cfc",
       "bytes": 3500
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-core-kit.mjs",
+      "outputId": "scratchSnare",
+      "path": "generated/instruments/Scratch Snare.sunsynth",
+      "sha256": "8b4125dfcbde5d5a618991511c610c4b6321871eb6693d0095d23a8e8ba36ab7",
+      "bytes": 3283
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-core-kit.mjs",
+      "outputId": "scratchStringEnsemble",
+      "path": "generated/instruments/Scratch String Ensemble.sunsynth",
+      "sha256": "b59276a1ee17cdd52e677ed4c81fb0cb95fd2009f44ff469fb436898cf83d6a7",
+      "bytes": 10171
+    },
+    {
+      "recipe": "generated/recipes/sunvox-edit/scratch-core-kit.mjs",
+      "outputId": "scratchSubBass",
+      "path": "generated/instruments/Scratch Sub Bass.sunsynth",
+      "sha256": "22c71ad99ab558fcc39fd05c2fcf128ec024e630404789e654ed6fddb8915a10",
+      "bytes": 3378
     },
     {
       "recipe": "generated/recipes/sunvox-edit/wa-instruments.mjs",
