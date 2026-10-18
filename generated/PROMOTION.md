@@ -65,6 +65,7 @@ Files promoted through this gate:
 | --- | ---: | --- | --- | --- | --- |
 | Midnight Loop Line | 1 | `midnight-loop-line.mjs` (modules in `music-lib/midnight-loop-line/`) | #79 | #80 | Approved for distribution by the owner (2026-10-12) |
 | Voltage Garden | 1 | `voltage-garden.mjs` (score in `music-lib/voltage-garden/`) | #90 | #91 | Approved for distribution by the owner (2026-10-13) |
+| Glass Tide | 1 | `glass-tide.mjs` (score in `music-lib/glass-tide/`) | #95 | #96 | Approved for distribution by the owner (2026-10-19) |
 
 Inventory counts must match the music entries in `generated/manifest.json`.
 When a promotion Issue closes, update its row with the

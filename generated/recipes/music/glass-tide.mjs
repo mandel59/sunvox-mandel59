@@ -4,16 +4,17 @@
 // 174 BPM, synthesized from native SunVox modules only. Two-step Kicker /
 // noise drums through an automated bus low-pass, a sine sub with a detuned
 // "reese" layer ducked by the kick, FM tine keys, bowed FMX saw pads and a
-// soft lead with a dotted echo, all sharing one hall reverb. Run with:
-//   npm run sunvox:music-recipe -- recipes/research/95/glass-tide.mjs
+// soft lead with a dotted echo, all sharing one hall reverb. The score lives
+// in generated/recipes/music-lib/glass-tide/. Run with:
+//   npm run sunvox:music-recipe -- generated/recipes/music/glass-tide.mjs
 
 import { SongBuilder, Timeline } from "../../../tools/sunvox-song-builder.mjs";
 import { defaultControllers } from "../../../tools/sunsynth-lab.mjs";
-import { tinePiano } from "../../../generated/recipes/music-lib/midnight-loop-line/instruments.mjs";
-import { BPM, SECTIONS, TOTAL_BARS, arrange } from "./glass-tide-score.mjs";
+import { tinePiano } from "../music-lib/midnight-loop-line/instruments.mjs";
+import { BPM, SECTIONS, TOTAL_BARS, arrange } from "../music-lib/glass-tide/score.mjs";
 
-const PROJECT_PATH = "var/95/glass-tide.sunvox";
-const SUMMARY_PATH = "var/95/glass-tide.summary.json";
+const PROJECT_PATH = "generated/music/glass-tide.sunvox";
+const SUMMARY_PATH = "var/music-recipe/glass-tide.summary.json";
 
 const LANES = [
   { key: "drums", name: "Drums", y: 0, tracks: 6, color: { foreground: "#fff0d6", background: "#3a2a12" } },
@@ -253,7 +254,7 @@ export function buildGlassTideDocument() {
     pruneEmptyPatterns: true,
     comments: [
       `Glass Tide: liquid drum & bass in F minor, ${BPM} BPM, ${TOTAL_BARS} bars.`,
-      "Built by recipes/research/95/glass-tide.mjs from native SunVox modules only.",
+      "Built by generated/recipes/music/glass-tide.mjs from native SunVox modules only.",
     ],
   });
 }

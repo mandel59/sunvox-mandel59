@@ -2,7 +2,7 @@
 # Stem loudness check (#95): renders each part solo and prints the first
 # audio-review line (integrated loudness) next to the full mix.
 set -euo pipefail
-song=${1:-var/95/glass-tide.sunvox}
+song=${1:-generated/music/glass-tide.sunvox}
 out=var/95/stems
 mkdir -p "$out"
 declare -A groups=(

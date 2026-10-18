@@ -3,8 +3,8 @@
 // 72 bars, one line is a 16th note. Intro / Drop 1 / Breakdown / Drop 2 /
 // Outro, ending on a held Fm9 that rings out.
 
-import { createRng } from "../../../tools/sample-synth.mjs";
-import { noteNumber } from "../../../tools/sunvox-song-builder.mjs";
+import { createRng } from "../../../../tools/sample-synth.mjs";
+import { noteNumber } from "../../../../tools/sunvox-song-builder.mjs";
 
 export const BPM = 174;
 export const LPB = 16;
