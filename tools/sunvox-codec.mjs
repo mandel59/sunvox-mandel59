@@ -1606,9 +1606,19 @@ function validateControllerValue(moduleEntry, controller) {
 }
 
 function validateModuleControllers(document, basePath = "") {
-  return documentModuleEntries(document, basePath).flatMap((entry) =>
-    moduleControllers(entry.module?.type).flatMap((controller) => validateControllerValue(entry, controller)),
-  );
+  return documentModuleEntries(document, basePath).flatMap((entry) => {
+    const issues = moduleControllers(entry.module?.type).flatMap((controller) => validateControllerValue(entry, controller));
+    // Legacy chunk documents patch existing CVALs rather than materializing gaps.
+    if (!Array.isArray(entry.module?.chunks)) {
+      try {
+        resolvedControllerValues(entry.module, entry.path);
+      } catch (error) {
+        if (!(error instanceof ControllerEncodingError)) throw error;
+        issues.push(error.issue);
+      }
+    }
+    return issues;
+  });
 }
 
 function documentPatternEntries(document, basePath = "") {
@@ -2717,6 +2727,17 @@ function encodeControllerValue(definition, value) {
   return value;
 }
 
+// Indexed, encoded DB defaults; an unknown default remains absent.
+export function defaultControllerValues(type) {
+  const values = [];
+  for (const controller of moduleControllers(type)) {
+    if (controller.default !== undefined && !Array.isArray(controller.default)) {
+      values[controller.index] = encodeControllerValue(controller, controller.default);
+    }
+  }
+  return values;
+}
+
 function metaModuleUserControllerMetadata(module) {
   const dataChunks = module?.dataChunks ?? [];
   const names = new Map();
@@ -2885,43 +2906,112 @@ function syncModuleControllers(type, controllers, controllerChunks) {
   }
 }
 
-function controllerValuesFromObject(type, controllers) {
+function controllerValuesFromObject(module, path) {
+  const type = module?.type;
+  const controllers = module?.controllers;
   if (Array.isArray(controllers)) {
     return controllers;
   }
   const definitions = moduleControllers(type);
-  if (definitions.length === 0 || !controllers || typeof controllers !== "object") {
+  if (!controllers || typeof controllers !== "object") {
     return undefined;
+  }
+  if (!moduleDefinition(type) && Object.keys(controllers).some((key) => key !== "extra" && !key.startsWith("_"))) {
+    throw new ControllerEncodingError(module, path, 0, 0,
+      "unknown module type has no named controller metadata; use a dense raw array or explicit extra indexes");
   }
   const values = [];
   for (const controller of definitions) {
     const value = getPath(controllers, controllerPath(controller));
     if (value !== undefined) {
-      values[controller.index] = encodeControllerValue(controller, value);
+      values[controller.index] = value;
     }
   }
   if (type === "MetaModule") {
+    if (controllers.user !== undefined && !Array.isArray(controllers.user)) {
+      throw new ControllerEncodingError(module, path, 5, 5, "user controllers must be an array of index/value entries");
+    }
+    for (const [arrayIndex, controller] of (controllers.user ?? []).entries()) {
+      const index = controller?.index ?? arrayIndex;
+      if (!isControllerIndex(index + 5) || index < 0 || !isRawControllerValue(controller?.value)) {
+        throw new ControllerEncodingError(module, path, index + 5, index + 5,
+          "user controllers require a nonnegative index and an explicit int32 value");
+      }
+    }
     applyMetaModuleUserControllerValues(controllers, values);
   }
   if (controllers.extra && typeof controllers.extra === "object") {
     for (const [indexText, value] of Object.entries(controllers.extra)) {
       const index = Number(indexText);
-      if (Number.isInteger(index) && index >= 0) {
-        values[index] = value;
+      if (!isControllerIndex(index) || !isRawControllerValue(value)) {
+        throw new ControllerEncodingError(module, path, index, index,
+          `extra controller ${JSON.stringify(indexText)} requires a nonnegative index and an explicit int32 value`);
       }
+      values[index] = value;
     }
   }
   return values.length ? values : undefined;
 }
 
-function makeControllerChunks(type, controllers) {
-  const values = controllerValuesFromObject(type, controllers);
-  if (!values) {
-    return [];
+function isRawControllerValue(value) {
+  return Number.isInteger(value) && value >= -0x80000000 && value <= 0x7fffffff;
+}
+
+function isControllerIndex(index) {
+  return Number.isInteger(index) && index >= 0 && index < 0xffffffff;
+}
+
+class ControllerEncodingError extends Error {
+  constructor(module, path, index, highest, reason) {
+    const controller = moduleControllerDefinition(module?.type, index);
+    const controllerName = controller ? controllerPath(controller) : `extra.${index}`;
+    const controllerLocation = Array.isArray(module?.controllers) ? `[${index}]` : `.${controllerName}`;
+    const location = `${path}.controllers${controllerLocation}`;
+    const message = `${location}: module ${JSON.stringify(module?.name ?? "(unnamed)")} [${module?.type ?? "unknown"}], controller index ${index}, materialized through index ${highest}: ${reason}`;
+    super(message);
+    this.issue = {
+      severity: "error", rule: "module.controller.encoding", path: location, message,
+      source: "tools/sunvox-db/database.json", trackingIssue: 37,
+      moduleType: module?.type, controllerIndex: index, materializedThrough: highest,
+    };
   }
+}
+
+function resolvedControllerValues(module, path) {
+  const type = module?.type;
+  const controllers = module?.controllers;
+  const values = controllerValuesFromObject(module, path);
+  if (!values) return [];
+  const raw = Array.isArray(controllers);
+  const resolved = Array.from(values);
+  const defaults = raw ? [] : defaultControllerValues(type);
+  const highest = values.length - 1;
+  for (let index = 0; index <= highest; index += 1) {
+    if (resolved[index] === undefined) {
+      if (defaults[index] === undefined) {
+        throw new ControllerEncodingError(module, path, index, highest,
+          raw ? "raw controller arrays must be dense; supply every preceding value explicitly"
+            : "no DB default for omitted controller; supply an explicit raw value");
+      }
+      resolved[index] = defaults[index];
+    }
+    // Null is explicit invalid input, including JSON-serialized sparse arrays.
+    if (resolved[index] === null) {
+      throw new ControllerEncodingError(module, path, index, highest, "controller value must not be null");
+    }
+    if (raw && !isRawControllerValue(resolved[index])) {
+      throw new ControllerEncodingError(module, path, index, highest, "raw controllers require explicit int32 values");
+    }
+  }
+  return resolved;
+}
+
+function makeControllerChunks(module, path) {
+  const values = resolvedControllerValues(module, path);
   const chunks = [];
   for (let index = 0; index < values.length; index += 1) {
-    chunks.push(makeSemanticChunk("CVAL", "value", values[index] ?? 0));
+    const definition = Array.isArray(module.controllers) ? undefined : moduleControllerDefinition(module.type, index);
+    chunks.push(makeSemanticChunk("CVAL", "value", encodeControllerValue(definition, values[index])));
   }
   return chunks;
 }
@@ -3243,7 +3333,7 @@ function makeMidiBindingsChunk(module) {
   return makeSemanticChunk("CMID", "midiBindings", module.midiBindings);
 }
 
-function syncModule(module) {
+function syncModule(module, path) {
   if (Array.isArray(module?.chunks)) {
     return syncLegacyModule(module);
   }
@@ -3251,7 +3341,7 @@ function syncModule(module) {
   const terminator = scopeGrammar("module").terminator;
   for (const token of scopeGrammar("module").order) {
     if (token === "controllers") {
-      chunks.push(...makeControllerChunks(module?.type, module?.controllers));
+      chunks.push(...makeControllerChunks(module, path));
       continue;
     }
     if (token === "midiBindings") {
@@ -3292,14 +3382,14 @@ function flattenStructuredDocument(document) {
   if (document.magic === "SSYN") {
     return [
       ...(document.preludeChunks ?? []).map(cloneJson),
-      ...syncModule(document.module),
+      ...syncModule(document.module, "module"),
       ...(document.trailingChunks ?? []).map(cloneJson),
     ];
   }
   return [
     ...syncProject(document.project),
     ...(document.patterns ?? []).flatMap((pattern) => syncPattern(pattern, document.modules ?? [])),
-    ...(document.modules ?? []).flatMap(syncModule),
+    ...(document.modules ?? []).flatMap((module, index) => syncModule(module, `modules[${index}]`)),
     ...(document.trailingChunks ?? []).map(cloneJson),
   ];
 }

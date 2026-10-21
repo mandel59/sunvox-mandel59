@@ -149,8 +149,25 @@ with note maps and base-note compensation.
 [tools/sunvox-song-builder.mjs](tools/sunvox-song-builder.mjs) builds
 multi-pattern projects from named modules and routes; its `Timeline` writes one
 pattern per section and lane for supertracks projects, where `noNotesOff`
-patterns let notes sustain across section boundaries. It fills DB controller
-defaults so sparse controller objects are not zero-filled (issue #37).
+patterns let notes sustain across section boundaries.
+
+For direct `buildContainer()` recipes, object-form `module.controllers` is a
+semantic patch: omitted paths keep the module defaults. When a high controller
+index requires preceding `CVAL` chunks, the codec fills only those preceding
+indexes from the DB defaults. For example, `{ fineVolume: 32768 }` on an
+Amplifier preserves `volume: 256` and `dcOffset: 128`. Explicit `0` stays `0`.
+This also applies to nested FMX operator paths and MetaModule built-in
+controllers. `defaultControllerValues(type)` exposes encoded defaults by index.
+
+Positional controller arrays contain raw int32 values and must be dense;
+holes, `undefined` and `null` are errors. `controllers.extra` and MetaModule
+`controllers.user` supply explicit raw values. Gaps before those indexes use
+known DB defaults; unknown indexes (including preceding user controllers) need
+explicit values. `validateContainer()` reports unsafe gaps with the module
+name/type, controller path/index and highest emitted index, and encoding rejects
+them. Unknown module types can use dense raw arrays or dense `extra` indexes.
+Parsed files retain their existing controller values when rebuilt; the codec
+does not replace explicit zeros in existing files with defaults. See issue #37.
 
 `sunsynth:characterize` renders `.sunsynth` files through SunVox Lib with a
 fixed probe note and prints the probe parameters together with objective timbre

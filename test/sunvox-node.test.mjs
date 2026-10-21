@@ -160,6 +160,43 @@ test(
 );
 
 test(
+  "renders a direct sparse Amplifier patch without DC or stuck output (#37)",
+  { skip: existsSync(DEFAULT_SUNVOX_JS_PATH) ? false : "SunVox Lib runtime is not installed" },
+  async () => {
+    const bytes = buildContainer({
+      format: TEXT_FORMAT, magic: "SVOX", headerTailHex: "00000000",
+      project: { name: "Sparse amplifier audio", bpm: 125, speed: 6 },
+      patterns: [{
+        name: "Probe", tracks: 1, lines: 16,
+        events: [{ line: 0, track: 0, module: 1, note: "C4", velocity: 112 }],
+      }],
+      modules: [
+        { name: "Output", flags: { exists: true, output: true }, inputs: [{ slot: 0, module: 2 }] },
+        { name: "Tone", type: "Generator", controllers: { volume: 64, waveform: "sin" } },
+        { name: "Amp", type: "Amplifier", controllers: { fineVolume: 32768 }, inputs: [{ slot: 0, module: 1 }] },
+      ],
+    });
+    const rendered = await withSunVoxSlot(
+      { sampleRate: DEFAULT_SAMPLE_RATE, channels: DEFAULT_CHANNELS, flags: DEFAULT_FLOAT_OFFLINE_INIT_FLAGS },
+      async ({ module, slot, sampleRate, channels }) => {
+        loadProjectFromBuffer(module, bytes, { slot });
+        assert.equal(module._sv_get_module_ctl_value(slot, 2, 0, 0), 256);
+        assert.equal(module._sv_get_module_ctl_value(slot, 2, 2, 0), 128);
+        assertSunVoxOk(module._sv_play_from_beginning(slot), "sv_play_from_beginning");
+        return renderSlotAudio(module, { slot, sampleRate, channels, durationSeconds: 1 });
+      },
+    );
+    const { sum, squareSum, peak } = rendered.samples.reduce((stats, sample) => ({
+      sum: stats.sum + sample, squareSum: stats.squareSum + sample * sample,
+      peak: Math.max(stats.peak, Math.abs(sample)),
+    }), { sum: 0, squareSum: 0, peak: 0 });
+    assert.ok(peak > 0.01 && peak < 1, `audible, unclipped peak: ${peak}`);
+    assert.ok(Math.abs(sum / rendered.samples.length) < 0.005, "mean output stays near zero");
+    assert.ok(Math.sqrt(squareSum / rendered.samples.length) < peak * 0.9, "output is not constant");
+  },
+);
+
+test(
   "renders a synth probe through a SunVox pattern",
   { skip: existsSync(DEFAULT_SUNVOX_JS_PATH) ? false : "SunVox Lib runtime is not installed" },
   async () => {
