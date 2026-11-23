@@ -15,6 +15,9 @@ Human-authored recipes belong under `recipes/`.
   these are not scanned as recipes.
 - `instruments/` and `music/`: rebuilt distribution outputs.
 
+The distributed files in `generated/instruments/` and `generated/music/` are
+released under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+
 ```sh
 npm run generated:build
 npm run generated:build -- --if-missing

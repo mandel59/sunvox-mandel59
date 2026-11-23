@@ -365,6 +365,11 @@ Some music project files use modules by Aden Cheney (ACheney). Those modules
 are distributed under the
 [ACheney modules MIT License](sunvox/docs/license/ACheney%20modules.txt).
 
+### Generated music under [generated/music/](generated/music/)
+
+The generated music files are distributed under
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
+
 ### The SunVox Library
 
 This repository contains the SunVox library.
