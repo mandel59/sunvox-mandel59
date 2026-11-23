@@ -58,7 +58,7 @@ const requiredPageTexts = [
   "Application and runtime notices",
   "Distributed project data",
   "Files under music/ and instruments/ were created by Ryusei Yamaguchi (@mandel59).",
-  "Files under generated/instruments/ are generated SunSynth assets: Codex produced the recipes under generated/recipes/, and project tooling builds the distributed .sunsynth files from those recipes.",
+  "Files under generated/instruments/ are generated SunSynth assets. Codex and/or Claude Code produced the recipes under generated/recipes/, and project tooling builds the distributed .sunsynth files from those recipes.",
   "music/ files are distributed under CC BY 4.0.",
   "Some music/ project files use modules by Aden Cheney (ACheney). Those modules are distributed under the ACheney modules MIT License.",
   "instruments/ and generated/instruments/ files are distributed under CC0 1.0.",

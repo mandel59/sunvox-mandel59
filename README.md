@@ -348,7 +348,7 @@ Created by Ryusei Yamaguchi (@mandel59). Distributed under
 
 ### Generated instruments under [generated/instruments/](generated/instruments/)
 
-Built by project tooling from Codex-generated recipes under
+Built by project tooling from recipes that Codex and/or Claude Code produced under
 [generated/recipes/](generated/recipes/). Distributed under
 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 
