@@ -303,6 +303,13 @@
       "bytes": 47455
     },
     {
+      "recipe": "generated/recipes/music/turbo-prism.mjs",
+      "outputId": "turboPrism",
+      "path": "generated/music/turbo-prism.sunvox",
+      "sha256": "7e51d5bdd5bdeee43f9fd207d6db6e267b7b2f6be7d204323afe560c880a0b9d",
+      "bytes": 189744
+    },
+    {
       "recipe": "generated/recipes/music/voltage-garden.mjs",
       "outputId": "voltageGarden",
       "path": "generated/music/voltage-garden.sunvox",
