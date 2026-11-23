@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { cp, copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { cp, copyFile, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadEditRecipe, runEditRecipe } from "./sunvox-edit-recipe.mjs";
 import { loadMusicRecipe, runMusicRecipe } from "./sunvox-music-recipe.mjs";
+
+export const GENERATED_MANIFEST_DIRECTORY = "generated/manifests";
+const ASSET_DIRECTORIES = ["instruments", "music"];
 
 export function assetDigest(bytes) {
   return { sha256: createHash("sha256").update(bytes).digest("hex"), bytes: bytes.length };
@@ -18,12 +21,13 @@ export function validateManifest(manifest) {
   const paths = new Set();
   const outputs = new Set();
   for (const asset of manifest.assets) {
+    if (typeof asset?.path !== "string") throw new Error(`Invalid generated asset: ${JSON.stringify(asset)}`);
     const music = /^generated\/music\/[^/]+\.sunvox$/u.test(asset.path);
     const synth = /^generated\/instruments\/[^/]+\.sunsynth$/u.test(asset.path);
     const recipePattern = music
       ? /^generated\/recipes\/music\/[\w-]+\.mjs$/u
       : /^generated\/recipes\/sunvox-edit\/[\w-]+\.mjs$/u;
-    if ((!music && !synth) || asset.path.includes("\\") || !recipePattern.test(asset.recipe) ||
+    if ((!music && !synth) || asset.path.includes("\\") || typeof asset.recipe !== "string" || !recipePattern.test(asset.recipe) ||
         typeof asset.outputId !== "string" || !asset.outputId ||
         !/^[a-f0-9]{64}$/u.test(asset.sha256) || !Number.isSafeInteger(asset.bytes) || asset.bytes <= 0) {
       throw new Error(`Invalid generated asset: ${JSON.stringify(asset)}`);
@@ -36,8 +40,50 @@ export function validateManifest(manifest) {
   return manifest;
 }
 
+function manifestEntryPath(assetPath) {
+  const output = assetPath.slice("generated/".length).replace(/\.(sunvox|sunsynth)$/u, ".json");
+  return `${GENERATED_MANIFEST_DIRECTORY}/${output}`;
+}
+
+async function readManifestEntries(root, directory) {
+  const entryDirectory = `${GENERATED_MANIFEST_DIRECTORY}/${directory}`;
+  let filenames;
+  try { filenames = await readdir(resolve(root, entryDirectory)); }
+  catch (error) { if (error.code === "ENOENT") return []; throw error; }
+  const entries = [];
+  for (const filename of filenames.filter((name) => name.endsWith(".json")).sort()) {
+    const entryPath = `${entryDirectory}/${filename}`;
+    const contents = await readFile(resolve(root, entryPath), "utf8");
+    let asset;
+    try { asset = JSON.parse(contents); }
+    catch (error) { throw new Error(`Invalid JSON in ${entryPath}: ${error.message}`, { cause: error }); }
+    if (typeof asset?.path !== "string" || manifestEntryPath(asset.path) !== entryPath) {
+      throw new Error(`Manifest entry ${entryPath} does not match its output path: ${asset?.path}`);
+    }
+    entries.push(asset);
+  }
+  return entries;
+}
+
 export async function readGeneratedManifest(root = process.cwd()) {
-  return validateManifest(JSON.parse(await readFile(resolve(root, "generated/manifest.json"), "utf8")));
+  const entries = await Promise.all(ASSET_DIRECTORIES.map((directory) => readManifestEntries(root, directory)));
+  return validateManifest({ schemaVersion: 1, assets: entries.flat() });
+}
+
+async function writeManifestUpdates(root, assets) {
+  if (!assets.length) return;
+  const staging = await mkdtemp(resolve(root, GENERATED_MANIFEST_DIRECTORY, ".update-"));
+  try {
+    const updates = [];
+    for (const [index, asset] of assets.entries()) {
+      const draft = join(staging, `${index}.json`);
+      await writeFile(draft, `${JSON.stringify(asset, null, 2)}\n`);
+      updates.push({ draft, destination: resolve(root, manifestEntryPath(asset.path)) });
+    }
+    for (const { draft, destination } of updates) await rename(draft, destination);
+  } finally {
+    await rm(staging, { recursive: true, force: true });
+  }
 }
 
 function assertDigest(asset, bytes) {
@@ -59,7 +105,8 @@ async function assetsPresent(root, manifest) {
     }
     assertDigest(asset, bytes);
   }
-  for (const directory of ["generated/instruments", "generated/music"]) {
+  for (const name of ASSET_DIRECTORIES) {
+    const directory = `generated/${name}`;
     let files;
     try { files = await readdir(resolve(root, directory)); }
     catch (error) { if (error.code === "ENOENT") continue; throw error; }
@@ -112,13 +159,22 @@ export async function buildGeneratedAssets({ root = process.cwd(), outDir = root
       groups.get(asset.recipe).push(asset);
     }
     for (const [recipe, assets] of groups) await buildRecipeGroup(root, staging, recipe, assets);
+    const manifestUpdates = [];
     for (const asset of manifest.assets) {
       const bytes = await readFile(resolve(staging, asset.path));
-      if (updateManifest) Object.assign(asset, assetDigest(bytes));
-      else assertDigest(asset, bytes);
+      if (!updateManifest) {
+        assertDigest(asset, bytes);
+        continue;
+      }
+      const digest = assetDigest(bytes);
+      if (digest.sha256 !== asset.sha256 || digest.bytes !== asset.bytes) {
+        Object.assign(asset, digest);
+        manifestUpdates.push(asset);
+      }
     }
     // Publish only after every build and hash check passes. Remove stale distributed outputs.
-    for (const directory of ["generated/instruments", "generated/music"]) {
+    for (const name of ASSET_DIRECTORIES) {
+      const directory = `generated/${name}`;
       await mkdir(resolve(outDir, directory), { recursive: true });
       for (const file of await readdir(resolve(outDir, directory))) {
         if (/\.(sunvox|sunsynth)$/u.test(file) && !manifest.assets.some((asset) => asset.path === `${directory}/${file}`)) {
@@ -127,7 +183,7 @@ export async function buildGeneratedAssets({ root = process.cwd(), outDir = root
       }
     }
     for (const asset of manifest.assets) await copyFile(resolve(staging, asset.path), resolve(outDir, asset.path));
-    if (updateManifest) await writeFile(resolve(root, "generated/manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+    await writeManifestUpdates(root, manifestUpdates);
     return manifest;
   } finally {
     await rm(staging, { recursive: true, force: true });
@@ -142,7 +198,7 @@ if (import.meta.url === pathToFileURL(resolve(process.argv[1] ?? "")).href) {
   } else {
     try {
       const manifest = await buildGeneratedAssets({ ifMissing: flags.includes("--if-missing"), updateManifest: flags.includes("--update-manifest") });
-      console.log(`Verified ${manifest.assets.length} generated assets against generated/manifest.json`);
+      console.log(`Verified ${manifest.assets.length} generated assets against ${GENERATED_MANIFEST_DIRECTORY}/`);
     } catch (error) {
       console.error(error.message);
       process.exitCode = 1;

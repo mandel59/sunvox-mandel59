@@ -1,0 +1,7 @@
+{
+  "recipe": "generated/recipes/sunvox-edit/karplus-string-4ch.mjs",
+  "outputId": "karplusString4ch",
+  "path": "generated/instruments/Karplus-Strong Pluck 4ch.sunsynth",
+  "sha256": "c3a9dbe310c3a5efc42c810b521dc937940c026efbe5f5cd91454da09c4db83c",
+  "bytes": 8805
+}

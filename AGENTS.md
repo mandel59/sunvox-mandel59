@@ -17,7 +17,7 @@
 - focused research branch は Issue 単位で作り、研究継続なら `research-main` に向け、公開・配布できる状態に整理したものだけ `main` に昇格する。
 - PR target は目的で分ける。研究継続なら `research-main`、デプロイ対象化なら `main` に向ける。
 
-- `generated/music/*.sunvox` と `generated/instruments/*.sunsynth` はコミットせず、recipe と `generated/manifest.json` を管理する。配布物は `npm run generated:build` で再生成・ハッシュ検証し、意図した変更はレビュー後に `--update-manifest` で記録する。
+- `generated/music/*.sunvox` と `generated/instruments/*.sunsynth` はコミットせず、recipe と `generated/manifests/` の配布物ごとの JSON を管理する。配布物は `npm run generated:build` で再生成・ハッシュ検証し、意図した変更はレビュー後に `--update-manifest` で記録する。公開用の `generated/manifest.json` はサイトビルド時に集約する。
 
 ## Worktrees
 

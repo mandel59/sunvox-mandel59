@@ -10,7 +10,7 @@ approval.
 - Research recipe: `recipes/research/<issue>/`
 - Research output and reports: `var/<issue>/`
 - Promoted recipe: `generated/recipes/music/`
-- Promoted distribution entry: `generated/manifest.json`
+- Promoted distribution entries under `generated/manifests/music/`
 - Rebuilt output: `generated/music/` (untracked)
 
 The default site-data roots include `generated/music/`, but do not include
@@ -24,9 +24,9 @@ The focused promotion Issue must record all of the following before a recipe
 and its manifest entries move to promoted paths:
 
 1. **Deterministic regeneration:** the checked-in recipe reproduces every
-   proposed `.sunvox` file with the SHA-256 and byte size recorded in
-   `generated/manifest.json`. Record the exact regeneration command and result;
-   `npm run generated:build` verifies these approved bytes.
+   proposed `.sunvox` file with the SHA-256 and byte size listed in its JSON file
+   under `generated/manifests/music/`. Record the exact regeneration command and
+   result. `npm run generated:build` verifies these approved bytes.
 2. **Structural validation:** codec validation and the relevant recipe tests
    pass. Link any exception to a focused diagnostic Issue.
 3. **Render verification:** record duration, peak, RMS, non-zero frames,
@@ -47,8 +47,8 @@ only commands, summaries, decisions, and durable artifact links in the Issue.
 ## Promotion Records
 
 Keep one [promotion record](promotions/) per track or small pack. Use the
-track or pack name for the filename. Record the output paths from
-`generated/manifest.json`, the source recipes, the source and promotion Issues,
+track or pack name for the filename. Record the output paths from the entries in
+`generated/manifests/music/`, the source recipes, the source and promotion Issues,
 and the current review status. When a promotion Issue closes, update its
 record with the decision and link the commit or PR that retains or removes
 the files.

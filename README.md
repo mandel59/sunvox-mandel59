@@ -410,14 +410,15 @@ for pushes (including `main`), pull requests and manual dispatches.
 Publication is an explicit local action: merging or pushing a commit does not
 publish the site, and GitHub does not hold Cloudflare deployment credentials.
 
-Generated binaries are not committed. `generated/manifest.json` lists the
-selected recipe output IDs, public paths, SHA-256 hashes and byte sizes.
+Generated binaries are not committed. Each file under `generated/manifests/`
+records one selected recipe output ID, public path, SHA-256 hash and byte size.
+The site build combines these records into the public `generated/manifest.json`.
 `npm run generated:build` builds instruments first, then music, in a temporary
 staging directory and verifies every hash before copying distributed files.
 `npm test`, `npm run dev` and `npm run build` automatically restore missing
 assets and verify existing ones. A hash mismatch fails instead of silently
 accepting changed music. After reviewing an intentional recipe change, run
-`npm run generated:build -- --update-manifest` and review the manifest diff.
+`npm run generated:build -- --update-manifest` and review the changed records.
 See [generated/README.md](generated/README.md) for the promotion process.
 
 ```sh

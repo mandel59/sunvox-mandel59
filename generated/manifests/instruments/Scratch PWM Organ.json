@@ -1,0 +1,7 @@
+{
+  "recipe": "generated/recipes/sunvox-edit/scratch-assorted-instruments.mjs",
+  "outputId": "scratchPWMOrgan",
+  "path": "generated/instruments/Scratch PWM Organ.sunsynth",
+  "sha256": "2903e8a7b61a33396a97f942637ec8dd3d482631968133c7b524542d91631cfc",
+  "bytes": 3500
+}

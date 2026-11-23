@@ -10,17 +10,23 @@ import { basename, dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { assetDigest, buildGeneratedAssets, readGeneratedManifest, validateManifest } from "../tools/build-generated-assets.mjs";
 
-async function fixture(t) {
+async function fixture(t, outputIds = ["scratchAnalog"]) {
   const root = await mkdtemp(join(tmpdir(), "sunvox-manifest-test-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const source = await readGeneratedManifest();
-  const asset = structuredClone(source.assets.find((item) => item.outputId === "scratchAnalog"));
-  assert.ok(asset);
-  await mkdir(dirname(resolve(root, asset.recipe)), { recursive: true });
-  await cp(resolve(asset.recipe), resolve(root, asset.recipe));
-  const manifest = { schemaVersion: 1, assets: [asset] };
-  await writeFile(resolve(root, "generated/manifest.json"), `${JSON.stringify(manifest)}\n`);
-  return { root, asset, manifest };
+  const assets = source.assets.filter((asset) => outputIds.includes(asset.outputId));
+  assert.equal(assets.length, outputIds.length);
+  const directory = resolve(root, "generated/manifests/instruments");
+  await mkdir(directory, { recursive: true });
+  const entries = [];
+  for (const asset of assets) {
+    await mkdir(dirname(resolve(root, asset.recipe)), { recursive: true });
+    await cp(resolve(asset.recipe), resolve(root, asset.recipe));
+    const entry = resolve(directory, `${basename(asset.path, ".sunsynth")}.json`);
+    await writeFile(entry, `${JSON.stringify(asset)}\n`);
+    entries.push(entry);
+  }
+  return { root, asset: assets[0], manifest: { schemaVersion: 1, assets }, entries };
 }
 
 test("distributed music and instruments rebuild from recipes to manifest hashes in an empty directory", async (t) => {
@@ -46,28 +52,39 @@ test("if-missing restores outputs, verifies existing bytes and rejects corruptio
   await assert.rejects(buildGeneratedAssets({ root, ifMissing: true }), /hash\/size mismatch/u);
 });
 
-test("mismatched regeneration leaves existing outputs and manifest untouched", async (t) => {
-  const { root, asset, manifest } = await fixture(t);
+test("mismatched regeneration leaves existing outputs and manifest entries untouched", async (t) => {
+  const { root, asset, manifest, entries: [entry] } = await fixture(t);
   await mkdir(dirname(resolve(root, asset.path)), { recursive: true });
   await writeFile(resolve(root, asset.path), "previous output");
   manifest.assets[0].sha256 = "0".repeat(64);
-  await writeFile(resolve(root, "generated/manifest.json"), JSON.stringify(manifest));
+  await writeFile(entry, JSON.stringify(asset));
   await assert.rejects(buildGeneratedAssets({ root }), /hash\/size mismatch/u);
   assert.equal(await readFile(resolve(root, asset.path), "utf8"), "previous output");
   assert.deepEqual(await readGeneratedManifest(root), manifest);
 });
 
-test("explicit update records the rebuilt digest and removes stale outputs", async (t) => {
-  const { root, asset, manifest } = await fixture(t);
-  manifest.assets[0].sha256 = "0".repeat(64);
-  await writeFile(resolve(root, "generated/manifest.json"), JSON.stringify(manifest));
+test("explicit update rewrites only changed entries and removes stale outputs", async (t) => {
+  const { root, asset, entries: [changed, unchanged] } = await fixture(t, ["scratchAnalog", "scratchFMXTines"]);
+  const unchangedText = await readFile(unchanged, "utf8");
+  await writeFile(changed, JSON.stringify({ ...asset, sha256: "0".repeat(64) }));
   await mkdir(resolve(root, "generated/music"), { recursive: true });
   await writeFile(resolve(root, "generated/music/stale.sunvox"), "stale");
   await buildGeneratedAssets({ root, updateManifest: true });
   const updated = await readGeneratedManifest(root);
-  assert.deepEqual(assetDigest(await readFile(resolve(root, asset.path))), { sha256: updated.assets[0].sha256, bytes: updated.assets[0].bytes });
+  assert.deepEqual(updated.assets[0], asset);
+  assert.deepEqual(assetDigest(await readFile(resolve(root, asset.path))), { sha256: asset.sha256, bytes: asset.bytes });
+  assert.equal(await readFile(unchanged, "utf8"), unchangedText);
   assert.deepEqual(await readdir(resolve(root, "generated/music")), []);
   await assert.rejects(buildGeneratedAssets({ root, updateManifest: true, ifMissing: true }), /cannot be combined/u);
+});
+
+test("independent entries must match their output paths and cannot select the same recipe output", async (t) => {
+  const { root, asset, entries: [entry] } = await fixture(t);
+  const secondEntry = resolve(dirname(entry), "Second.json");
+  await writeFile(secondEntry, JSON.stringify(asset));
+  await assert.rejects(readGeneratedManifest(root), /Second\.json does not match its output path/u);
+  await writeFile(secondEntry, JSON.stringify({ ...asset, path: "generated/instruments/Second.sunsynth" }));
+  await assert.rejects(readGeneratedManifest(root), /Duplicate generated asset/u);
 });
 
 test("manifest rejects duplicate paths, invalid hashes and non-distribution paths", async () => {
