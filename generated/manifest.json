@@ -170,6 +170,13 @@
       "bytes": 65558
     },
     {
+      "recipe": "generated/recipes/music/brass-ferry.mjs",
+      "outputId": "brassFerry",
+      "path": "generated/music/brass-ferry.sunvox",
+      "sha256": "e76caa8e80971bc2fd30e0518f2e63678d97050bd5cb2976bb24dc9e94b9678f",
+      "bytes": 150959
+    },
+    {
       "recipe": "generated/recipes/music/candy-comet.mjs",
       "outputId": "candyComet",
       "path": "generated/music/candy-comet.sunvox",
@@ -189,6 +196,13 @@
       "path": "generated/music/glass-tide.sunvox",
       "sha256": "1e4816a736abd17246153a99907faca5095236b76cdc71acaaa19e22c2244df9",
       "bytes": 234806
+    },
+    {
+      "recipe": "generated/recipes/music/lemon-tram.mjs",
+      "outputId": "lemonTram",
+      "path": "generated/music/lemon-tram.sunvox",
+      "sha256": "a2b9767c44be8dac4c8c4a02f58de9ade5a558c59be351c431e525b330aff0a0",
+      "bytes": 146622
     },
     {
       "recipe": "generated/recipes/music/microtonal-43edo-studies.mjs",
@@ -238,6 +252,13 @@
       "path": "generated/music/pitch-bend-sketch.sunvox",
       "sha256": "149e3d867dfa8679088e53144858c72fd11355d4f62380f07a488e8280a0142b",
       "bytes": 5453
+    },
+    {
+      "recipe": "generated/recipes/music/pixel-sprint.mjs",
+      "outputId": "pixelSprint",
+      "path": "generated/music/pixel-sprint.sunvox",
+      "sha256": "b8d157d3308e52c011abfde371ee0a270b93a602ff04c298a024c9d6e8321c1d",
+      "bytes": 73532
     },
     {
       "recipe": "generated/recipes/music/podcast-purpose-pack.mjs",
@@ -301,6 +322,13 @@
       "path": "generated/music/tech-demo-stinger.sunvox",
       "sha256": "c45a6737d9e531483f7f03958ddd0276ea9446c54834051fac30dd607082f862",
       "bytes": 47455
+    },
+    {
+      "recipe": "generated/recipes/music/turbo-prism.mjs",
+      "outputId": "turboPrism",
+      "path": "generated/music/turbo-prism.sunvox",
+      "sha256": "7e51d5bdd5bdeee43f9fd207d6db6e267b7b2f6be7d204323afe560c880a0b9d",
+      "bytes": 189744
     },
     {
       "recipe": "generated/recipes/music/voltage-garden.mjs",

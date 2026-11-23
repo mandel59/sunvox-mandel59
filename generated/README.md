@@ -37,7 +37,8 @@ manifest with the reviewed SHA-256 and byte size, then run the normal build.
 The existing public bytes seeded this manifest and rebuild without changes.
 The six experimental SuperSaw variants are intentionally not distributed.
 
-Generated music promotion is governed by [PROMOTION.md](PROMOTION.md).
+Generated music promotion follows [PROMOTION.md](PROMOTION.md). Each track or
+pack has its own [promotion record](promotions/).
 Research recipes belong under `recipes/research/<issue>/` and research
 outputs under `var/<issue>/`; neither is part of the deployment roots.
 Adding a recipe to `generated/recipes/music/` and a distribution entry to the
