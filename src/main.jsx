@@ -210,6 +210,20 @@ function groupProjects(projects) {
   }));
 }
 
+function groupProjectsByCreationDate(projects, newestFirst) {
+  const music = projects.filter((project) => project.type !== "synth");
+  const synthGroups = groupProjects(projects.filter((project) => project.type === "synth"));
+  if (!music.length) return synthGroups;
+  music.sort((left, right) => {
+    if (!left.createdOn || !right.createdOn) {
+      return Number(Boolean(right.createdOn)) - Number(Boolean(left.createdOn));
+    }
+    const byDate = left.createdOn.localeCompare(right.createdOn);
+    return newestFirst ? -byDate : byDate;
+  });
+  return [{ id: "music", label: projectGroupLabel("music"), projects: music }, ...synthGroups];
+}
+
 function moduleHexId(value) {
   return value.toString(16).toUpperCase().padStart(2, "0");
 }
@@ -961,6 +975,7 @@ function graphEdgePoints(from, to, moduleScale) {
 function ProjectList({ projects, selectedPath, onSelect, open, onToggle }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [sort, setSort] = useState("path");
   const selectedProject = projects.find((project) => project.path === selectedPath);
   const normalizedQuery = query.trim().toLowerCase();
   const filteredProjects = useMemo(
@@ -972,7 +987,12 @@ function ProjectList({ projects, selectedPath, onSelect, open, onToggle }) {
       ),
     [filter, normalizedQuery, projects],
   );
-  const groupedProjects = useMemo(() => groupProjects(filteredProjects), [filteredProjects]);
+  const groupedProjects = useMemo(
+    () => sort === "path"
+      ? groupProjects(filteredProjects)
+      : groupProjectsByCreationDate(filteredProjects, sort === "newest"),
+    [filteredProjects, sort],
+  );
   const filterOptions = useMemo(
     () =>
       PROJECT_FILE_FILTERS.map((option) => ({
@@ -1037,6 +1057,14 @@ function ProjectList({ projects, selectedPath, onSelect, open, onToggle }) {
                 </button>
               ))}
             </div>
+            <label className="file-sort-control">
+              Sort
+              <select value={sort} onChange={(event) => setSort(event.target.value)}>
+                <option value="path">File path</option>
+                <option value="newest">Created (newest first)</option>
+                <option value="oldest">Created (oldest first)</option>
+              </select>
+            </label>
             <div className="project-list-meta">
               Showing {filteredProjects.length} of {projects.length}
             </div>
@@ -1071,6 +1099,9 @@ function ProjectList({ projects, selectedPath, onSelect, open, onToggle }) {
                         <span className="project-button-copy">
                           <span className="project-title">{project.title}</span>
                           <span className="project-path">{project.path}</span>
+                          {project.createdOn ? (
+                            <time className="project-date" dateTime={project.createdOn}>{project.createdOn}</time>
+                          ) : null}
                         </span>
                         <span className="badge">{typeLabel(project)}</span>
                       </button>
@@ -1809,6 +1840,10 @@ function ProjectPropertiesSection({ project, onSelectModuleTarget }) {
         {projectInfo ? (
           <>
             <dl className="property-grid">
+              <PropertyRow
+                label="Created"
+                value={project.createdOn ? <time dateTime={project.createdOn}>{project.createdOn}</time> : undefined}
+              />
               <PropertyRow label="BPM" value={projectInfo.bpm} />
               <PropertyRow label="Speed" value={projectInfo.speed} />
               <PropertyRow label="Global volume" value={projectInfo.globalVolume} />

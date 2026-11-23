@@ -14,6 +14,12 @@ export function assetDigest(bytes) {
   return { sha256: createHash("sha256").update(bytes).digest("hex"), bytes: bytes.length };
 }
 
+export function isMusicCreationDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 export function validateManifest(manifest) {
   if (manifest?.schemaVersion !== 1 || !Array.isArray(manifest.assets) || !manifest.assets.length) {
     throw new Error("Expected a non-empty generated manifest with schemaVersion 1");
@@ -31,6 +37,9 @@ export function validateManifest(manifest) {
         typeof asset.outputId !== "string" || !asset.outputId ||
         !/^[a-f0-9]{64}$/u.test(asset.sha256) || !Number.isSafeInteger(asset.bytes) || asset.bytes <= 0) {
       throw new Error(`Invalid generated asset: ${JSON.stringify(asset)}`);
+    }
+    if (asset.createdOn !== undefined && !isMusicCreationDate(asset.createdOn)) {
+      throw new Error(`Invalid createdOn for ${asset.path}: expected a valid date in YYYY-MM-DD format`);
     }
     const output = `${asset.recipe}:${asset.outputId}`;
     if (paths.has(asset.path) || outputs.has(output)) throw new Error(`Duplicate generated asset: ${asset.path}`);

@@ -107,6 +107,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.equal(data.projects.length, expectedProjectCount);
   assert.ok(project);
   assert.equal(project.type, "project");
+  assert.equal(project.createdOn, "2022-04-17");
   assert.deepEqual(project.project.flags, {});
   assert.deepEqual(project.project.timeline, { grid: 4, grid2: 4 });
   assert.equal(project.stats.activeModules, 9);
@@ -131,6 +132,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.equal(Object.hasOwn(project.patterns[0], "eventPreview"), false);
   assert.equal(project.links.some((link) => link.fromName === "DrumSynth" && link.toName === "Reverb"), true);
   assert.ok(projectWithEmptyPatterns);
+  assert.equal(projectWithEmptyPatterns.createdOn, "2022-04-17");
   assert.deepEqual(projectWithEmptyPatterns.project.flags, { supertracks: true });
   assert.equal(projectWithEmptyPatterns.stats.patterns, 6);
   assert.deepEqual(projectWithEmptyPatterns.patterns.map((pattern) => pattern.index), [0, 1, 2, 3, 4, 5]);
@@ -145,6 +147,7 @@ test("site data summarizes project structure without embedding full event grids"
   ]);
   assert.ok(synth);
   assert.equal(synth.type, "synth");
+  assert.equal(synth.createdOn, undefined);
   assert.deepEqual(synth.catalog.deployment, {
     status: "deploy",
     deploy: true,
@@ -285,6 +288,7 @@ test("site data summarizes project structure without embedding full event grids"
   assert.equal(polyVocoderSyllableGrid.project.bpm, 128);
   assert.equal(polyVocoderSyllableGrid.stats.patterns, 1);
   assert.ok(waBgmSketch);
+  assert.equal(waBgmSketch.createdOn, "2026-06-10");
   assert.equal(waBgmSketch.type, "project");
   assert.deepEqual(waBgmSketch.sourceRecipe, {
     path: "generated/recipes/music/wa-bgm-sketch.mjs",
@@ -400,6 +404,7 @@ export default recipe;
     const data = await collectSiteData([musicDir], { musicRecipeRoots: [recipeDir], editRecipeRoots: [] });
     assert.equal(data.projects.length, 1);
     assert.equal(data.projects[0].path, outputPath);
+    assert.equal(data.projects[0].createdOn, undefined);
     assert.deepEqual(data.projects[0].sourceRecipe, {
       path: recipePath.replaceAll("\\", "/"),
       name: "minimal-music.mjs",

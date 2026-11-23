@@ -10,6 +10,7 @@ import {
   parsePreviewRoots,
 } from "./generate-site-data.mjs";
 import { createAsyncRootsCache } from "./async-roots-cache.mjs";
+import { GENERATED_MANIFEST_DIRECTORY } from "./build-generated-assets.mjs";
 
 const PROJECT_INDEX_PATH = "/site-data/sunvox-projects.json";
 const SITE_DATA_UPDATE_EVENT = "sunvox-site-data:update";
@@ -21,6 +22,7 @@ const SITE_DATA_WATCH_PATHS = [
   "generated/instruments",
   "generated/recipes/sunvox-edit",
   "generated/recipes/music",
+  GENERATED_MANIFEST_DIRECTORY,
   "var/synth-lab",
 ];
 const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -91,6 +93,7 @@ function isSiteDataInput(filePath) {
     relativePath.startsWith("generated/instruments/") ||
     relativePath.startsWith("generated/recipes/sunvox-edit/") ||
     relativePath.startsWith("generated/recipes/music/") ||
+    relativePath.startsWith(`${GENERATED_MANIFEST_DIRECTORY}/`) ||
     relativePath.startsWith("var/synth-lab/")
   );
 }
@@ -105,7 +108,8 @@ function siteDataPathAffectsRoots(filePath, roots) {
   const relativePath = relative(WORKSPACE_ROOT, filePath).replaceAll("\\", "/");
   if (
     relativePath.startsWith("generated/recipes/sunvox-edit/") ||
-    relativePath.startsWith("generated/recipes/music/")
+    relativePath.startsWith("generated/recipes/music/") ||
+    relativePath.startsWith(`${GENERATED_MANIFEST_DIRECTORY}/`)
   ) {
     return true;
   }

@@ -156,6 +156,23 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
     ) {
       throw new Error(`Expected Music filter to show SunVox projects from derived count, got ${JSON.stringify(musicFilter)}`);
     }
+    const sortControl = page.getByRole('combobox', { name: 'Sort' });
+    for (const sort of ['newest', 'oldest']) {
+      await sortControl.selectOption(sort);
+      const dates = await page.locator('.project-button').evaluateAll((buttons) =>
+        buttons.map((button) => button.querySelector('time')?.dateTime ?? ''),
+      );
+      const ordered = dates.filter(Boolean).sort();
+      if (sort === 'newest') ordered.reverse();
+      const expected = [...ordered, ...dates.filter((date) => !date)];
+      if (new Set(ordered).size < 2 || dates.join(',') !== expected.join(',')) {
+        throw new Error(`Expected music sorted by creation date (${sort}), with undated music last`);
+      }
+      if (await page.locator('.project-group').count() !== 1) {
+        throw new Error('Expected music from both sources in one chronological group');
+      }
+    }
+    await sortControl.selectOption('path');
     await page.locator('.file-filter-tab', { hasText: 'All' }).click();
 
     if (initial.topbarButtons !== 2) {
@@ -771,6 +788,7 @@ export async function checkSite({ url = DEFAULT_URL, headed = false } = {}) {
       afterSelect.propertiesText.includes('Stored modules') ||
       afterSelect.propertiesText.includes('Stored patterns') ||
       afterSelect.propertiesText.includes('Embedded projects') ||
+      !afterSelect.propertiesText.includes('Created2022-04-17') ||
       !afterSelect.propertiesText.includes('BPM125') ||
       !afterSelect.propertiesText.includes('Speed6') ||
       !afterSelect.propertiesText.includes('Global volume130') ||

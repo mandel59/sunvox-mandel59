@@ -62,8 +62,10 @@ button:disabled:hover {
   outline: none;
 }
 
-input[type="search"] {
+input[type="search"],
+.file-sort-control select {
   width: 100%;
+  min-width: 0;
   min-height: 2.4rem;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -73,7 +75,8 @@ input[type="search"] {
   font: inherit;
 }
 
-input[type="search"]:focus {
+input[type="search"]:focus,
+.file-sort-control select:focus {
   border-color: var(--accent);
   outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
   outline-offset: 1px;
@@ -277,6 +280,15 @@ input[type="search"]:focus {
   font-size: 0.85rem;
 }
 
+.file-sort-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .file-filter-note {
   display: grid;
   gap: 0.4rem;
@@ -385,6 +397,12 @@ input[type="search"]:focus {
 .muted {
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.project-date {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .badge {

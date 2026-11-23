@@ -8,7 +8,8 @@ Human-authored recipes belong under `recipes/`.
 
 - `manifests/instruments/` and `manifests/music/` each contain one JSON file per
   distributed output. Each file records the recipe path, output ID, public path,
-  SHA-256 and byte size.
+  SHA-256 and byte size. Music records can also include a `createdOn` date in
+  `YYYY-MM-DD` format, which the Files browser uses for sorting.
 - `recipes/sunvox-edit/`: reproducible instrument recipes, including outputs
   that are intentionally absent from the distribution list.
 - `recipes/music/`: promoted music recipes.

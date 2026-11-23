@@ -299,6 +299,12 @@ JS/WASM player bridge remains a small classic script under [js/](js/). Project
 files with module positions also render a compact SVG module graph from the
 same generated index.
 
+For generated music, set `createdOn` to a calendar date in `YYYY-MM-DD` format
+in the output's JSON file under `generated/manifests/music/`. Music under
+`music/` uses the date in the original project name or filename.
+In the Files browser, `Sort` offers creation date in either direction. Music
+without a date appears after dated music.
+
 Run the local quality gate before committing codec, DB, or frontend changes:
 
 ```sh

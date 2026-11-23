@@ -95,3 +95,16 @@ test("manifest rejects duplicate paths, invalid hashes and non-distribution path
     assert.throws(() => validateManifest({ schemaVersion: 1, assets: [{ ...asset, ...patch }] }), /Invalid/u);
   }
 });
+
+test("optional music creation dates must be valid calendar dates", async () => {
+  const manifest = await readGeneratedManifest();
+  const asset = manifest.assets.find(({ path }) => path.endsWith("/wa-bgm-sketch.sunvox"));
+  assert.ok(asset);
+  assert.equal(asset.createdOn, "2026-06-10");
+  const withDate = (createdOn) => ({ schemaVersion: 1, assets: [{ ...asset, createdOn }] });
+  assert.doesNotThrow(() => validateManifest(withDate(undefined)));
+  assert.doesNotThrow(() => validateManifest(withDate("2024-02-29")));
+  for (const date of [null, "2026-6-10", "2025-02-29", "2026-02-30"]) {
+    assert.throws(() => validateManifest(withDate(date)), /Invalid createdOn .*YYYY-MM-DD/u);
+  }
+});

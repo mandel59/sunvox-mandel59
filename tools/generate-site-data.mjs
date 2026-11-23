@@ -8,6 +8,7 @@ import { analyzeSunsynthFile, parseProbe } from "./sunsynth-characterize.mjs";
 import { buildOutlineFromFile } from "./sunvox-outline.mjs";
 import { loadEditRecipe } from "./sunvox-edit-recipe.mjs";
 import { loadMusicRecipe } from "./sunvox-music-recipe.mjs";
+import { isMusicCreationDate, readGeneratedManifest } from "./build-generated-assets.mjs";
 
 const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -506,9 +507,21 @@ function documentSummary(outline, path) {
   };
 }
 
+function originalMusicDate(project) {
+  if (!project.path.startsWith("music/")) return undefined;
+  const dateInTitle = /^(\d{4}-\d{2}-\d{2})(?: \d{2}-\d{2})?$/u.exec(project.project?.name ?? "")?.[1];
+  if (isMusicCreationDate(dateInTitle)) return dateInTitle;
+  const dateInFilename = basename(project.path, extname(project.path));
+  return isMusicCreationDate(dateInFilename) ? dateInFilename : undefined;
+}
+
 export async function collectSiteData(paths = DEFAULT_ROOTS, options = {}) {
-  const files = await findSunVoxFiles(paths);
-  const generatedSourceRecipes = await collectGeneratedSourceRecipes(options);
+  const [files, generatedSourceRecipes, manifest] = await Promise.all([
+    findSunVoxFiles(paths),
+    collectGeneratedSourceRecipes(options),
+    readGeneratedManifest(WORKSPACE_ROOT),
+  ]);
+  const musicDates = new Map(manifest.assets.map(({ path, createdOn }) => [path, createdOn]));
   const projects = [];
   const catalogEntries = [];
   for (const file of files) {
@@ -516,8 +529,10 @@ export async function collectSiteData(paths = DEFAULT_ROOTS, options = {}) {
     const path = relativeWorkspacePath(file);
     const sourceRecipe = generatedSourceRecipes.get(path);
     const project = documentSummary(outline, path);
-    if (sourceRecipe && project.type === "project") {
-      project.sourceRecipe = sourceRecipe;
+    if (project.type === "project") {
+      if (sourceRecipe) project.sourceRecipe = sourceRecipe;
+      const createdOn = musicDates.get(path) ?? originalMusicDate(project);
+      if (createdOn) project.createdOn = createdOn;
     }
     const catalog = await generatedAssetCatalogEntry({ file, path, project, sourceRecipe, sourceRoots: paths });
     if (catalog) {
