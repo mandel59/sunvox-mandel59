@@ -67,6 +67,7 @@ Files promoted through this gate:
 | Voltage Garden | 1 | `voltage-garden.mjs` (score in `music-lib/voltage-garden/`) | #90 | #91 | Approved for distribution by the owner (2026-10-13) |
 | Glass Tide | 1 | `glass-tide.mjs` (score in `music-lib/glass-tide/`) | #95 | #96 | Approved for distribution by the owner (2026-10-19) |
 | Candy Comet | 1 | `candy-comet.mjs` (score in `music-lib/candy-comet/`) | #99 | #99 | Added to the generated recipes at the owner's request (2026-11-22); listening review pending |
+| Pixel Sprint | 1 | `pixel-sprint.mjs` (score in `music-lib/pixel-sprint/`) | #104 | #104 | Added to the generated recipes at the owner's request (2026-11-23); listening review pending |
 
 Inventory counts must match the music entries in `generated/manifest.json`.
 When a promotion Issue closes, update its row with the

@@ -240,6 +240,13 @@
       "bytes": 5453
     },
     {
+      "recipe": "generated/recipes/music/pixel-sprint.mjs",
+      "outputId": "pixelSprint",
+      "path": "generated/music/pixel-sprint.sunvox",
+      "sha256": "b8d157d3308e52c011abfde371ee0a270b93a602ff04c298a024c9d6e8321c1d",
+      "bytes": 73532
+    },
+    {
       "recipe": "generated/recipes/music/podcast-purpose-pack.mjs",
       "outputId": "adReadBed",
       "path": "generated/music/podcast-ad-read-bed.sunvox",
