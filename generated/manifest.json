@@ -191,6 +191,13 @@
       "bytes": 234806
     },
     {
+      "recipe": "generated/recipes/music/lemon-tram.mjs",
+      "outputId": "lemonTram",
+      "path": "generated/music/lemon-tram.sunvox",
+      "sha256": "a2b9767c44be8dac4c8c4a02f58de9ade5a558c59be351c431e525b330aff0a0",
+      "bytes": 146622
+    },
+    {
       "recipe": "generated/recipes/music/microtonal-43edo-studies.mjs",
       "outputId": "mosFifthCanon",
       "path": "generated/music/microtonal-43edo-mos-fifth-canon.sunvox",
